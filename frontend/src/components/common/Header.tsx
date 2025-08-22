@@ -43,7 +43,9 @@ export const Header = ({
     const { boardTitle, loading } = useBoardSettings();
 
     const getUserInitials = (): string => {
-        if (!user) return 'U';
+        if (!user) {
+            return 'U';
+        }
         const name = user.display_name || user.email;
         return `${name.split(' ')[0]?.[0] || ''}${name.split(' ')[1]?.[0] || ''}`.toUpperCase();
     };
