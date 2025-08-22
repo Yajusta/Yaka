@@ -23,7 +23,7 @@ Une application web moderne et intuitive pour la gestion collaborative de tâche
 - [Node.js](https://nodejs.org/fr/download) 18+
 - [pnpm](https://pnpm.io/) (recommandé) ou [npm](https://www.npmjs.com/)
 
-## 🚀 Installation et démarrage
+## 📦 Installation et démarrage
 
 ### 1. Cloner le projet
 
@@ -67,6 +67,21 @@ pnpm run dev
 ```
 
 Le frontend sera accessible sur <http://localhost:5173>
+
+## 🚀 Déploiement
+
+### 1. Modifier les variables d'environnement
+
+```bash
+cp .env.sample .env
+```
+
+### 2. Déployer avec Docker
+
+```bash
+docker compose build
+docker compose up -d
+```
 
 ## 👤 Compte administrateur par défaut
 
