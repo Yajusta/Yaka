@@ -1,0 +1,186 @@
+"""Service pour la gestion des utilisateurs."""
+
+from sqlalchemy.orm import Session
+from typing import Optional, List
+from ..models import User, UserRole, UserStatus
+from ..schemas import UserCreate, UserUpdate
+from ..utils.security import get_password_hash, verify_password
+from sqlalchemy.sql import func
+from sqlalchemy import and_
+import secrets
+import datetime
+from . import email as email_service
+
+# Note: email_service requires SMTP_* env vars to be set for invitations to be sent
+
+
+def get_user(db: Session, user_id: int) -> Optional[User]:
+    """Récupérer un utilisateur par son ID."""
+    return db.query(User).filter(User.__table__.c.id == user_id).first()
+
+
+def get_user_by_email(db: Session, email: str) -> Optional[User]:
+    """Récupérer un utilisateur par son email."""
+    return db.query(User).filter(User.__table__.c.email == email).first()
+
+
+def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
+    """Récupérer une liste d'utilisateurs."""
+    return db.query(User).offset(skip).limit(limit).all()
+
+
+def create_user(db: Session, user: UserCreate) -> User:
+    """Créer un nouvel utilisateur traditionnel (mot de passe fourni)."""
+    hashed_password = get_password_hash(user.password)
+    db_user = User(
+        email=user.email,
+        password_hash=hashed_password,
+        display_name=user.display_name,
+        role=user.role,
+        status=UserStatus.ACTIVE,
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+def invite_user(db: Session, email: str, display_name: str | None, role: UserRole) -> User:
+    """Créer un utilisateur en tant qu'invité et envoyer un email d'invitation."""
+    invite_token = secrets.token_urlsafe(32)
+    invited_at = datetime.datetime.utcnow()
+
+    db_user = User(
+        email=email,
+        display_name=display_name,
+        role=role,
+        status=UserStatus.INVITED,
+        invite_token=invite_token,
+        invited_at=invited_at,
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    try:
+        email_service.send_invitation(email=email, display_name=display_name, token=invite_token)
+    except Exception:
+        pass
+
+    return db_user
+
+
+def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[User]:
+    """Mettre à jour un utilisateur."""
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return None
+
+    update_data = user_update.dict(exclude_unset=True)
+
+    # Hacher le nouveau mot de passe si fourni
+    if "password" in update_data:
+        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+
+    for field, value in update_data.items():
+        setattr(db_user, field, value)
+
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+def get_user_by_invite_token(db: Session, token: str) -> Optional[User]:
+    return (
+        db.query(User)
+        .filter(and_(User.__table__.c.invite_token == token, User.__table__.c.status == UserStatus.INVITED))
+        .first()
+    )
+
+
+def set_password_from_invite(db: Session, user: User, password: str) -> bool:
+    # Ensure we operate on a loaded ORM instance from the DB so status comparisons
+    # produce a Python value (not a SQL expression/ColumnElement)
+    user_id = getattr(user, "id", None)
+    if not user_id:
+        return False
+
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return False
+
+    # Permettre la définition de mot de passe pour les utilisateurs invités ET pour la réinitialisation
+    if db_user.status not in [UserStatus.INVITED, UserStatus.ACTIVE]:
+        return False
+
+    db_user.password_hash = get_password_hash(password)
+    db_user.status = UserStatus.ACTIVE
+    db_user.invite_token = None
+    db_user.invited_at = None
+    db.commit()
+    db.refresh(db_user)
+    return True
+
+
+def request_password_reset(db: Session, email: str) -> bool:
+    """Demander une réinitialisation de mot de passe."""
+    user = get_user_by_email(db, email)
+    if not user or user.status != UserStatus.ACTIVE:
+        # Ne pas révéler si l'utilisateur existe ou non pour des raisons de sécurité
+        return True
+
+    reset_token = secrets.token_urlsafe(32)
+    user.invite_token = reset_token  # Réutiliser le champ invite_token pour la réinitialisation
+    user.invited_at = datetime.datetime.utcnow()
+
+    db.commit()
+
+    try:
+        email_service.send_password_reset(email=email, display_name=user.display_name, token=reset_token)
+    except Exception:
+        pass
+
+    return True
+
+
+def get_user_by_reset_token(db: Session, token: str) -> Optional[User]:
+    """Récupérer un utilisateur par son token de réinitialisation (pour utilisateurs actifs)."""
+    return (
+        db.query(User)
+        .filter(and_(User.__table__.c.invite_token == token, User.__table__.c.status == UserStatus.ACTIVE))
+        .first()
+    )
+
+
+def get_user_by_any_token(db: Session, token: str) -> Optional[User]:
+    """Récupérer un utilisateur par son token (invitation ou réinitialisation)."""
+    return db.query(User).filter(User.__table__.c.invite_token == token).first()
+
+
+def delete_user(db: Session, user_id: int) -> bool:
+    """Supprimer un utilisateur."""
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return False
+
+    db.delete(db_user)
+    db.commit()
+    return True
+
+
+def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
+    """Authentifier un utilisateur."""
+    user = get_user_by_email(db, email)
+    if not user:
+        return None
+    if not verify_password(password, getattr(user, "password_hash")):
+        return None
+    return user
+
+
+def create_admin_user(db: Session) -> User:
+    """Créer un utilisateur administrateur par défaut."""
+    admin_data = UserCreate(
+        email="admin@yaka.local", password="admin123", display_name="Admin Système", role=UserRole.ADMIN
+    )
+    return create_user(db, admin_data)

@@ -1,0 +1,26 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = "Backend de l'application Yaka (Yet Another Kanban App)."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.13.0",
+    "asgi-lifespan>=2.1.0",
+    "bcrypt>=4.0.0",
+    "email-validator==2.1.0",
+    "fastapi==0.104.1",
+    "httpx>=0.28.1",
+    "pydantic[email]==2.5.0",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+    "python-dotenv==1.0.0",
+    "python-jose[cryptography]==3.3.0",
+    "python-multipart==0.0.6",
+    "requests>=2.32.5",
+    "sqlalchemy==2.0.23",
+    "uvicorn[standard]==0.24.0",
+]
+
+[tool.uv]
+package = false

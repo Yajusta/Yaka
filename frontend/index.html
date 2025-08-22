@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yaka (Yet Another Kanban App)</title>
+  <link rel="preload" href="/fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+  <script>
+    // Forcer le mode clair par défaut
+    const savedTheme = localStorage.getItem('theme');
+    if (!savedTheme) {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script src="/demo-config.js"></script>
+  <script src="/api-config.js"></script>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

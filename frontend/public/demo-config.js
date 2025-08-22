@@ -1,0 +1,1 @@
+window.DEMO_MODE = 'false';

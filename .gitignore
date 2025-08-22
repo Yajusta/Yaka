@@ -1,0 +1,29 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.history
+
+.env
+*.bak
+
+frontend/node_modules/
+
+# Config
+.vscode/
+
+
+# AI assistants
+.claude/
+.cursor/
+.kiro/
+
+
+# Data
+*.db

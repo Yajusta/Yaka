@@ -1,0 +1,707 @@
+/* stylelint-disable at-rule-no-unknown */
+
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Font loading optimization */
+/* Normal weight */
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/space-grotesk.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Bold weight (mapped to same file if only one weight is available) */
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/space-grotesk.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Make Space Grotesk the default sans-serif font for Tailwind (v4 tokens) */
+  --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-success: #22c55e;
+  --color-success-foreground: #ffffff;
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #ffffff;
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Enhanced Kanban-specific colors */
+  --color-kanban-primary: var(--kanban-primary);
+  --color-kanban-secondary: var(--kanban-secondary);
+  --color-kanban-accent: var(--kanban-accent);
+  --color-kanban-surface: var(--kanban-surface);
+  --color-kanban-surface-elevated: var(--kanban-surface-elevated);
+  --color-priority-low: var(--priority-low);
+  --color-priority-medium: var(--priority-medium);
+  --color-priority-high: var(--priority-high);
+  --color-status-todo: var(--status-todo);
+  --color-status-progress: var(--status-progress);
+  --color-status-done: var(--status-done);
+}
+
+:root {
+  --radius: 12px;
+  --background: #fafbfc;
+  --foreground: #1a202c;
+  --card: #ffffff;
+  --card-foreground: #2d3748;
+  --popover: #ffffff;
+  --popover-foreground: #2d3748;
+  --primary: #667eea;
+  --primary-foreground: #ffffff;
+  --secondary: #f7fafc;
+  --secondary-foreground: #4a5568;
+  --muted: #edf2f7;
+  --muted-foreground: #718096;
+  --accent: #e2e8f0;
+  --accent-foreground: #2d3748;
+  --destructive: #e53e3e;
+  --border: #e2e8f0;
+  --input: #cbd5e0;
+  --ring: #667eea;
+  --chart-1: #667eea;
+  --chart-2: #48bb78;
+  --chart-3: #ed8936;
+  --chart-4: #9f7aea;
+  --chart-5: #38b2ac;
+  --sidebar: #f7fafc;
+  --sidebar-foreground: #2d3748;
+  --sidebar-primary: #667eea;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e2e8f0;
+  --sidebar-accent-foreground: #2d3748;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #667eea;
+
+  /* Enhanced Kanban colors */
+  --kanban-primary: #667eea;
+  --kanban-secondary: #764ba2;
+  --kanban-accent: #f093fb;
+  --kanban-surface: #ffffff;
+  --kanban-surface-elevated: #f7fafc;
+  --priority-low: #48bb78;
+  --priority-medium: #ed8936;
+  --priority-high: #e53e3e;
+  --status-todo: #cbd5e0;
+  --status-progress: #fbb6ce;
+  --status-done: #9ae6b4;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --card: #1e293b;
+  --card-foreground: #e2e8f0;
+  --popover: #1e293b;
+  --popover-foreground: #e2e8f0;
+  --primary: #818cf8;
+  --primary-foreground: #0f172a;
+  --secondary: #334155;
+  --secondary-foreground: #cbd5e1;
+  --muted: #334155;
+  --muted-foreground: #94a3b8;
+  --accent: #475569;
+  --accent-foreground: #e2e8f0;
+  --destructive: #f87171;
+  --border: #334155;
+  --input: #2d3748;
+  --ring: #818cf8;
+  --chart-1: #818cf8;
+  --chart-2: #34d399;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
+  --chart-5: #06b6d4;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --sidebar: #1e293b;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar: #1e293b;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-primary: #818cf8;
+  --sidebar-primary-foreground: #0f172a;
+  --sidebar-accent: #475569;
+  --sidebar-accent-foreground: #e2e8f0;
+  --sidebar-border: #334155;
+  --sidebar-ring: #818cf8;
+
+  /* Enhanced Kanban colors for dark mode */
+  --kanban-primary: #818cf8;
+  --kanban-secondary: #a78bfa;
+  --kanban-accent: #f472b6;
+  --kanban-surface: #1e293b;
+  --kanban-surface-elevated: #334155;
+  --priority-low: #34d399;
+  --priority-medium: #fbbf24;
+  --priority-high: #f87171;
+  --status-todo: #475569;
+  --status-progress: #7c3aed;
+  --status-done: #059669;
+}
+
+@layer base {
+  * {
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply border-border outline-ring/50;
+  }
+
+  /* Base styles to prevent FOUC */
+  html {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  body {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #fafbfc;
+    color: #1a202c;
+  }
+
+  /* Ensure stylesheets are loaded before content is displayed */
+  .app-loading {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .app-loaded {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  #root {
+    margin: auto;
+  }
+}
+
+/* Modern Kanban enhancements */
+@layer components {
+  .kanban-card {
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply bg-kanban-surface border-2 border-border/60 rounded-lg shadow-sm;
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply hover:shadow-md hover:-translate-y-0.5 hover:border-border/80;
+    /* transition-all duration-200 supprimé */
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply backdrop-blur-sm bg-kanban-surface/95;
+  }
+
+  .kanban-column {
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply bg-kanban-surface-elevated border-2 border-border/50 rounded-xl;
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply backdrop-blur-md bg-kanban-surface-elevated/90;
+  }
+
+  .priority-badge-low {
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply bg-priority-low/20 text-priority-low border-priority-low/30;
+  }
+
+  .priority-badge-medium {
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply bg-priority-medium/20 text-priority-medium border-priority-medium/30;
+  }
+
+  .priority-badge-high {
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply bg-priority-high/20 text-priority-high border-priority-high/30;
+  }
+
+  .glassmorphism {
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply backdrop-blur-md bg-white/10 border border-white/20;
+  }
+
+  .dark .glassmorphism {
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply backdrop-blur-md bg-black/10 border border-white/10;
+  }
+
+  /* Smooth animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  /* Enhanced drag and drop animations */
+  .drag-ghost {
+    opacity: 0.5;
+    transform: rotate(5deg) scale(1.05);
+    transition: all 0.2s cubic-bezier(0.2, 0, 0.2, 1);
+  }
+
+  .drag-placeholder {
+    opacity: 0.3;
+    transform: scale(0.95);
+    transition: all 0.3s cubic-bezier(0.2, 0, 0.2, 1);
+  }
+
+  .sortable-item {
+    /* transition: transform 300ms cubic-bezier(0.2, 0, 0.2, 1); */
+    transition: none;
+    /* Désactiver toute transition pour un drop instantané */
+  }
+
+  .sortable-item:not(.sortable-drag) {
+    transform-origin: center;
+  }
+
+  /* Smooth card reordering animations */
+  .kanban-card-container {
+    will-change: transform, opacity;
+    transition: none;
+    /* Par défaut, pas de transition */
+  }
+
+  /* Animation activée après drop et quand les cartes remontent - MAIS PAS immédiatement après drop */
+  .kanban-column:not(.kanban-column-dragging):not(.just-dropped) .kanban-card-container {
+    transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Animation activée PENDANT le drag quand placeholder est actif */
+  .kanban-column-dragging.placeholder-active .kanban-card-container {
+    transition: transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  }
+
+  /* Animation élastique pour les cartes quand un placeholder apparaît */
+  .kanban-column.placeholder-active .kanban-card-container {
+    transition: transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    will-change: transform;
+  }
+
+  /* Animation pour le placeholder lui-même */
+  .drop-indicator {
+    transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: center;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .drop-indicator.entering {
+    animation: placeholderEnter 350ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes placeholderEnter {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+
+    50% {
+      opacity: 0.7;
+      transform: scale(1.05);
+    }
+
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Animation de sortie pour le placeholder */
+  .drop-indicator.exiting {
+    animation: placeholderExit 250ms cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  }
+
+  @keyframes placeholderExit {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
+
+  /* Amélioration de l'effet élastique pour les cartes */
+  .kanban-column:not(.kanban-column-dragging) .kanban-card-container {
+    transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Priorité maximale pour les transitions pendant le drag avec placeholder */
+  .kanban-column-dragging.placeholder-active .kanban-card-container {
+    transition: transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    will-change: transform;
+    overflow: visible !important;
+  }
+
+  /* Transition plus douce pour le retour à la position normale */
+  .kanban-column:not(.placeholder-active) .kanban-card-container {
+    transition: transform 500ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  /* Animation élastique gérée par JavaScript FLIP */
+
+  /* Masquer les ascenseurs pendant l'animation élastique - cibler uniquement les zones scrollables */
+  .hide-scrollbars .overflow-y-auto {
+    overflow: hidden !important;
+  }
+
+  /* Masquer les scrollbars pendant le drag */
+  .kanban-column-dragging .overflow-y-auto {
+    overflow-y: hidden !important;
+  }
+
+  /* Réactiver les scrollbars après le drag */
+  .kanban-column:not(.kanban-column-dragging) .overflow-y-auto {
+    overflow-y: auto;
+  }
+
+  /* Désactiver complètement les transitions CSS pendant l'animation JavaScript */
+  .animating-elastic {
+    transition: none !important;
+  }
+
+  .kanban-card-container:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Improved drag overlay */
+  .drag-overlay {
+    pointer-events: none;
+    z-index: 1000;
+    transform: rotate(2deg) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    /* Transition supprimée pour un placement instantané */
+  }
+
+  /* Trash overlay priority */
+  .drag-overlay.z-[3000] {
+    z-index: 3000;
+  }
+
+  /* Force card appearance when over trash */
+  .card-trash-active {
+    transform: none !important;
+  }
+
+  .card-trash-active .card-content {
+    opacity: 0.95 !important;
+  }
+
+  /* Stronger trash styles */
+  .card-trash-active .glassmorphism,
+  .card-trash-active [data-slot="card"] {
+    background-color: rgba(229, 62, 62, 0.06) !important;
+    border-color: rgba(229, 62, 62, 0.4) !important;
+    box-shadow: 0 30px 60px rgba(229, 62, 62, 0.25) !important;
+    color: var(--destructive) !important;
+  }
+
+  .card-trash-active {
+    border: 2px solid rgba(229, 62, 62, 0.9) !important;
+  }
+
+  /* Force hiding dragged card: remove it from layout while dragging so placeholders
+     (rendered elsewhere) control spacing. Using display:none prevents an empty
+     gap equal to the card height. */
+  .card-being-dragged {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  /* Disable sortable animations completely during drag */
+  .sortable-context-dragging .sortable-item {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  /* Prevent cards from moving during drag */
+  [data-sortable-context] {
+    transition: none !important;
+  }
+
+  [data-sortable-context]>* {
+    transition: none !important;
+  }
+
+  /* Force all cards to stay in place during drag, SAUF si placeholder est actif */
+  .kanban-column-dragging:not(.placeholder-active) .kanban-card-container {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  /* PRIORITÉ MAXIMALE : Transitions élastiques pendant le drag avec placeholder */
+  .kanban-column-dragging.placeholder-active .kanban-card-container {
+    transition: transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    will-change: transform !important;
+    transform: none;
+    /* Reset, sera géré par JavaScript */
+  }
+
+  /* Désactiver TOUTES les transitions au moment du drop */
+  .kanban-column.drop-reset .kanban-card-container {
+    transition: none !important;
+    will-change: auto !important;
+  }
+
+  /* Disable any transform on draggable items */
+  [data-rbd-draggable-context-id] {
+    transform: none !important;
+  }
+
+  /* Column animations when cards are being dragged */
+  .kanban-column-dragging {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.2, 0, 0.2, 1);
+  }
+
+  /* Drop indicator styles */
+  .drop-indicator {
+    position: absolute;
+    pointer-events: none;
+    z-index: 998;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, #3b82f6 100%);
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+    transform: translateY(-2px);
+    animation: dropIndicatorPulse 1.5s ease-in-out infinite;
+  }
+
+  /* Top drop zone indicator */
+  .top-drop-zone {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .top-drop-zone.active {
+    border-color: #3b82f6 !important;
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  @keyframes dropIndicatorPulse {
+
+    0%,
+    100% {
+      opacity: 0.8;
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+    }
+
+    50% {
+      opacity: 1;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.8);
+    }
+  }
+
+  /* Card transition animation from mouse position to destination */
+  .card-transition-animation {
+    animation: cardSlideToDestination 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    pointer-events: none;
+    z-index: 1001;
+  }
+
+  @keyframes cardSlideToDestination {
+    0% {
+      transform: translate(0, 0) scale(1.02) rotate(2deg);
+      opacity: 1;
+    }
+
+    50% {
+      transform: translate(var(--dest-x, 0px), var(--dest-y, 0px)) scale(1.05) rotate(1deg);
+      opacity: 0.9;
+    }
+
+    100% {
+      transform: translate(var(--dest-x, 0px), var(--dest-y, 0px)) scale(0.98) rotate(0deg);
+      opacity: 0;
+    }
+  }
+
+  /* Placeholder card styles */
+  .placeholder-card {
+    opacity: 0.6;
+    transform: scale(0.98);
+    border: 2px dashed #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
+    transition: none;
+  }
+
+  .placeholder-card .card-content {
+    opacity: 0.7;
+  }
+
+  /* Style pour le placeholder dans la même colonne */
+  .placeholder-card {
+    backdrop-filter: blur(2px);
+    background: rgba(59, 130, 246, 0.08);
+    border: 2px dashed rgba(59, 130, 246, 0.4);
+  }
+
+  /* Horizontal scrolling for dynamic lists */
+  .kanban-horizontal-scroll {
+    /* stylelint-disable-next-line at-rule-no-unknown */
+    @apply overflow-x-auto overflow-y-hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    /* Improve scrolling performance */
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  .kanban-horizontal-scroll::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .kanban-horizontal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .kanban-horizontal-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+  }
+
+  .kanban-horizontal-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.7);
+  }
+
+  /* Smooth scrolling behavior */
+  .kanban-horizontal-scroll {
+    scroll-behavior: smooth;
+  }
+
+  /* Ensure columns maintain proper spacing in horizontal layout */
+  .kanban-lists-container {
+    display: flex;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+    /* Space for scrollbar */
+    min-height: 100%;
+    align-items: stretch;
+  }
+
+  .kanban-list-column {
+    flex-shrink: 0;
+    min-width: 300px;
+    width: 320px;
+    scroll-snap-align: start;
+  }
+
+  /* Responsive adjustments for horizontal scrolling */
+  @media (max-width: 1024px) {
+    .kanban-list-column {
+      min-width: 280px;
+      width: 300px;
+    }
+
+    .kanban-lists-container {
+      gap: 0.75rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .kanban-list-column {
+      min-width: 260px;
+      width: 280px;
+    }
+
+    .kanban-lists-container {
+      gap: 0.5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .kanban-list-column {
+      min-width: 240px;
+      width: 260px;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

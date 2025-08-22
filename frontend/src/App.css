@@ -1,0 +1,218 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Replace non-standard @custom-variant and @theme with Tailwind-compatible constructs
+   to avoid CSS language server errors while preserving variables. */
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.623 0.214 259.815);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.145 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.145 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Tailwind layers using only supported CSS for the language server */
+@layer base {
+
+  *,
+  *::before,
+  *::after {
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring), transparent 50%);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+}
+
+/* Kanban drag/drop visual enhancements */
+@layer components {
+  .drag-fade-enter {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  .drag-fade-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+}
+
+/* Styles personnalisés pour forcer les couleurs */
+.theme-light {
+  background-color: #f3f4f6 !important;
+}
+
+.theme-light .card {
+  background-color: #ffffff !important;
+  border: 2px solid #d1d5db !important;
+  color: #111827 !important;
+}
+
+.theme-light .header {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+.theme-light .header h1,
+.theme-light .header label,
+.theme-light .header .text-sm {
+  color: #111827 !important;
+}
+
+.theme-light [data-slot="dialog-content"] {
+  background-color: #ffffff !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+/* Styles pour les cartes cliquables en mode clair */
+.theme-light .card {
+  transition: all 0.2s ease !important;
+  cursor: grab !important;
+}
+
+.theme-light .card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.theme-light .card:active {
+  cursor: grabbing !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.theme-dark {
+  background-color: #111827 !important;
+}
+
+.theme-dark .card {
+  background-color: #1f2937 !important;
+  border: 2px solid #4b5563 !important;
+  color: #ffffff !important;
+}
+
+.theme-dark .header {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+.theme-dark .header h1,
+.theme-dark .header label,
+.theme-dark .header .text-sm {
+  color: #ffffff !important;
+}
+
+.theme-dark [data-slot="dialog-content"] {
+  background-color: #1f2937 !important;
+  border-color: #4b5563 !important;
+  color: #ffffff !important;
+}
+
+/* Styles pour les cartes cliquables en mode sombre */
+.theme-dark .card {
+  transition: all 0.2s ease !important;
+  cursor: grab !important;
+}
+
+.theme-dark .card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+.theme-dark .card:active {
+  cursor: grabbing !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Styles pour forcer l'affichage en colonnes */
+.grid {
+  display: grid !important;
+}
+
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+
+.md\:grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.gap-6 {
+  gap: 1.5rem !important;
+}
+
+.h-full {
+  height: 100% !important;
+}
+
+.p-6 {
+  padding: 1.5rem !important;
+}

@@ -1,0 +1,442 @@
+import { useState, useEffect, useMemo } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './hooks/useAuth.tsx';
+import { useTheme } from './hooks/useTheme.tsx';
+import { useToast } from './hooks/use-toast.tsx';
+import { BoardSettingsProvider } from './hooks/useBoardSettingsContext';
+import { UsersProvider, useUsers } from './hooks/useUsers';
+import { Toaster } from './components/ui/sonner';
+import LoginForm from './components/auth/LoginForm.tsx';
+import InvitePage from './components/auth/InvitePage.tsx';
+import { Header } from './components/common/Header.tsx';
+import { Footer } from './components/common/Footer.tsx';
+import UsersManager from './components/common/UsersManager';
+import { FilterBar } from './components/common/FilterBar.tsx';
+import { KanbanBoard } from './components/kanban/KanbanBoard.tsx';
+import CardForm from './components/cards/CardForm.tsx';
+import LabelManager from './components/common/LabelManager.tsx';
+import { ListManager } from './components/admin';
+import { InterfaceDialog } from './components/admin/InterfaceDialog';
+import { cardService, labelService } from './services/api.tsx';
+import { Card, Label } from './types/index.ts';
+import { toast as sonnerToast } from 'sonner';
+import './index.css';
+
+interface Filters {
+    search: string;
+    assignee_id: number | null;
+    priorite: string | null;
+    label_id: number | null;
+}
+
+const KanbanApp = () => {
+    const [showUsersManager, setShowUsersManager] = useState(false);
+    const [showListManager, setShowListManager] = useState(false);
+    const [showInterfaceDialog, setShowInterfaceDialog] = useState(false);
+    const { user, loading, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
+    const { toast } = useToast();
+
+    const [allCards, setAllCards] = useState<Card[]>([]);
+    const [cards, setCards] = useState<Card[]>([]);
+    const { users, refresh: refreshUsers } = useUsers();
+    const [labels, setLabels] = useState<Label[]>([]);
+    const [dataLoading, setDataLoading] = useState<boolean>(true);
+    const [filters, setFilters] = useState<Filters>({
+        search: '',
+        assignee_id: null,
+        priorite: null,
+        label_id: null
+    });
+    const [showCardForm, setShowCardForm] = useState<boolean>(false);
+    const [editingCard, setEditingCard] = useState<Card | null>(null);
+    const [showLabelManager, setShowLabelManager] = useState<boolean>(false);
+    const [listsRefreshTrigger, setListsRefreshTrigger] = useState<number>(0);
+    const [defaultListIdForNewCard, setDefaultListIdForNewCard] = useState<number | null>(null);
+
+    // Load initial data (cards + labels) - only when user changes, not filters
+    useEffect(() => {
+        const loadData = async () => {
+            if (!user) {
+                setDataLoading(false);
+                return;
+            }
+
+            try {
+                setDataLoading(true);
+                // Request the users list for all authenticated users. The backend will
+                // mask emails for non-admins, so it's safe to request this here.
+                const [cardsData, labelsData] = await Promise.all([
+                    cardService.getCards({}), // Load all cards without filters
+                    labelService.getLabels()
+                ]);
+
+                setAllCards(cardsData);
+                setLabels(labelsData);
+            } catch (error) {
+                console.error('Erreur lors du chargement des données:', error);
+            } finally {
+                setDataLoading(false);
+            }
+        };
+
+        loadData();
+    }, [user]); // Remove filters from dependency
+
+    // Normalize text for accent-insensitive search
+    const normalizeText = (text: string): string => {
+        return text
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, ''); // Remove diacritical marks
+    };
+
+    // Frontend filtering
+    const filteredCards = useMemo(() => {
+        let filtered = allCards;
+
+        // Search filter
+        if (filters.search) {
+            const searchTerm = normalizeText(filters.search);
+            filtered = filtered.filter(card =>
+                normalizeText(card.titre).includes(searchTerm) ||
+                (card.description && normalizeText(card.description).includes(searchTerm))
+            );
+        }
+
+        // Assignee filter
+        if (filters.assignee_id) {
+            filtered = filtered.filter(card => card.assignee_id === filters.assignee_id);
+        }
+
+        // Priority filter
+        if (filters.priorite) {
+            filtered = filtered.filter(card => card.priorite === filters.priorite);
+        }
+
+        // Label filter
+        if (filters.label_id) {
+            filtered = filtered.filter(card =>
+                card.labels?.some(label => label.id === filters.label_id)
+            );
+        }
+
+        return filtered;
+    }, [allCards, filters]);
+
+    // Update cards when filtered cards change
+    useEffect(() => {
+        setCards(filteredCards);
+    }, [filteredCards]);
+
+    // Ensure users are fetched when auth user changes
+    useEffect(() => {
+        if (user) {
+            refreshUsers();
+        }
+    }, [user]);
+
+    const handleCreateCard = (listId?: number): void => {
+        setEditingCard(null);
+        setShowCardForm(true);
+        // Si un listId est fourni, on peut le passer au formulaire
+        if (listId) {
+            setEditingCard(null); // Assurer que c'est bien une nouvelle carte
+        }
+    };
+
+    const handleCardUpdate = (updatedCard: Card, action: 'edit' | 'update' = 'edit'): void => {
+        if (action === 'edit') {
+            setEditingCard(updatedCard);
+            setShowCardForm(true);
+        } else {
+            setAllCards(prev => prev.map(c => c.id === updatedCard.id ? updatedCard : c));
+        }
+    };
+
+    const handleCardDelete = async (cardId: number): Promise<void> => {
+        try {
+            // Sauvegarder la carte avant suppression pour pouvoir la restaurer
+            const cardToDelete = allCards.find(card => card.id === cardId);
+            await cardService.archiveCard(cardId);
+            setAllCards(prev => prev.filter(card => card.id !== cardId));
+
+            // Importer Sonner pour utiliser les actions
+            // const { toast: sonnerToast } = await import('sonner');
+
+            sonnerToast.success('Carte supprimée', {
+                description: 'La carte a été supprimée avec succès',
+                action: {
+                    label: 'Annuler',
+                    onClick: async () => {
+                        try {
+                            if (cardToDelete) {
+                                await cardService.unarchiveCard(cardId);
+                                setAllCards(prev => [...prev, cardToDelete]);
+                                sonnerToast.success('Carte restaurée', {
+                                    description: 'La carte a été remise dans le kanban'
+                                });
+                            }
+                        } catch (restoreError: any) {
+                            console.error('Erreur lors de la restauration:', restoreError);
+                            sonnerToast.error('Erreur lors de la restauration', {
+                                description: restoreError.response?.data?.detail || 'Impossible de restaurer la carte'
+                            });
+                        }
+                    }
+                },
+                duration: 5000, // 5 secondes pour donner le temps d'annuler
+            });
+        } catch (error: any) {
+            console.error('Erreur lors de la suppression de la carte:', error);
+            toast({
+                title: "Erreur lors de la suppression",
+                description: error.response?.data?.detail || "Impossible de supprimer la carte",
+                variant: "destructive"
+            });
+        }
+    };
+
+    const handleCardMove = async (cardId: number, newListId: number, position?: number): Promise<void> => {
+        try {
+            // Find the current card to get its current list_id
+            const currentCard = allCards.find(card => card.id === cardId);
+            if (!currentCard) {
+                console.error('Card not found:', cardId);
+                return;
+            }
+
+            const currentListId = currentCard.list_id;
+
+            // If the card is already in the target list and no position is specified, do nothing
+            if (currentListId === newListId && position === undefined) {
+                return;
+            }
+
+            // Use the dedicated move endpoint with proper position tracking
+            const updatedCard = await cardService.moveCard(cardId, currentListId, newListId, position);
+
+            // Update the card in local state
+            const updatedCards = allCards.map(card =>
+                card.id === cardId ? updatedCard : card
+            );
+
+            // If position is specified, reorder the cards in the target list for immediate UI feedback
+            if (position !== undefined && position >= 0) {
+                const targetListCards = updatedCards.filter(card => card.list_id === newListId);
+                const movedCard = targetListCards.find(card => card.id === cardId);
+
+                if (movedCard) {
+                    // Remove the card from its current position in the array
+                    const cardsWithoutMoved = targetListCards.filter(card => card.id !== cardId);
+
+                    // Ensure position is within bounds
+                    const safePosition = Math.min(position, cardsWithoutMoved.length);
+
+                    // Insert the card at the specified position
+                    cardsWithoutMoved.splice(safePosition, 0, movedCard);
+
+                    // Update the cards array with the new order
+                    const otherCards = updatedCards.filter(card => card.list_id !== newListId);
+                    setAllCards([...otherCards, ...cardsWithoutMoved]);
+                } else {
+                    setAllCards(updatedCards);
+                }
+            } else {
+                // No specific position, just update the card's list
+                setAllCards(updatedCards);
+            }
+        } catch (error: any) {
+            console.error('Erreur lors du déplacement de la carte:', error);
+            toast({
+                title: "Erreur lors du déplacement",
+                description: error.response?.data?.detail || "Impossible de déplacer la carte",
+                variant: "destructive"
+            });
+        }
+    };
+
+    const handleCloseCardForm = (): void => {
+        setShowCardForm(false);
+        setEditingCard(null);
+        setDefaultListIdForNewCard(null);
+    };
+
+    const handleCardSave = async (): Promise<void> => {
+        setShowCardForm(false);
+        setEditingCard(null);
+        setDefaultListIdForNewCard(null);
+        // Reload cards to get updated data
+        await loadCards();
+    };
+
+    const loadCards = async (): Promise<void> => {
+        try {
+            const cardsData = await cardService.getCards({}); // Load all cards without filters
+            setAllCards(cardsData);
+            // Also refresh lists when cards are reloaded (after list operations)
+            setListsRefreshTrigger(prev => prev + 1);
+        } catch (error) {
+            console.error('Erreur lors du rechargement des cartes:', error);
+        }
+    };
+
+    const handleShowUsers = (): void => {
+        setShowUsersManager(true);
+    };
+
+    const handleShowLabels = (): void => {
+        setShowLabelManager(true);
+    };
+
+    const handleShowLists = (): void => {
+        setShowListManager(true);
+    };
+
+    const handleShowInterface = (): void => {
+        setShowInterfaceDialog(true);
+    };
+
+    const handleLogout = async (): Promise<void> => {
+        try {
+            await logout();
+            toast({
+                title: "Déconnexion réussie",
+                description: "Vous avez été déconnecté avec succès",
+            });
+        } catch (error) {
+            console.error('Erreur lors de la déconnexion:', error);
+            toast({
+                title: "Erreur lors de la déconnexion",
+                description: "Une erreur est survenue lors de la déconnexion",
+                variant: "destructive"
+            });
+        }
+    };
+
+    if (loading || dataLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center app-loading">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return <LoginForm />;
+    }
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 app-loaded">
+            <div className="flex flex-col min-h-screen">
+                <Header
+                    user={user}
+                    theme={theme}
+                    onShowUsers={handleShowUsers}
+                    onShowLabels={handleShowLabels}
+                    onShowLists={handleShowLists}
+                    onShowInterface={handleShowInterface}
+                    onToggleTheme={toggleTheme}
+                    onLogout={handleLogout}
+                />
+
+                <FilterBar
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    onCreateCard={handleCreateCard}
+                    users={users}
+                    labels={labels}
+                    localSearchValue={filters.search || ''}
+                    onLocalSearchChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
+                />
+
+                <KanbanBoard
+                    cards={cards}
+                    onCardUpdate={handleCardUpdate}
+                    onCardDelete={handleCardDelete}
+                    onCardMove={handleCardMove}
+                    onCreateCard={(listId) => {
+                        // Créer une nouvelle carte dans la liste spécifiée
+                        setDefaultListIdForNewCard(listId);
+                        setEditingCard(null);
+                        setShowCardForm(true);
+                    }}
+                    refreshTrigger={listsRefreshTrigger}
+                />
+
+                <CardForm
+                    card={editingCard}
+                    isOpen={showCardForm}
+                    onClose={handleCloseCardForm}
+                    onSave={handleCardSave}
+                    onDelete={handleCardDelete}
+                    defaultListId={defaultListIdForNewCard || editingCard?.list_id || -1} // Utiliser la liste spécifiée par le bouton "+" ou celle de la carte en cours d'édition
+                />
+
+                <LabelManager
+                    isOpen={showLabelManager}
+                    onClose={() => setShowLabelManager(false)}
+                />
+
+                <ListManager
+                    isOpen={showListManager}
+                    onClose={() => setShowListManager(false)}
+                    onListsUpdated={loadCards}
+                />
+
+                <UsersManager
+                    isOpen={showUsersManager}
+                    onClose={() => setShowUsersManager(false)}
+                />
+
+                <InterfaceDialog
+                    open={showInterfaceDialog}
+                    onOpenChange={setShowInterfaceDialog}
+                />
+
+                <Footer />
+            </div>
+        </div>
+    );
+};
+
+const AppContent = () => {
+    const location = useLocation();
+    const { theme } = useTheme();
+
+    useEffect(() => {
+        document.documentElement.className = theme;
+    }, [theme]);
+
+    // Routes qui ne nécessitent pas d'authentification
+    const publicRoutes = ['/invite'];
+    const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route));
+
+    if (isPublicRoute) {
+        return (
+            <Routes>
+                <Route path="/invite" element={<InvitePage />} />
+            </Routes>
+        );
+    }
+
+    // Routes protégées (nécessitent une authentification)
+    return <KanbanApp />;
+};
+
+const App = () => {
+    return (
+        <Router>
+            <AuthProvider>
+                <BoardSettingsProvider>
+                    <UsersProvider>
+                        <AppContent />
+                        <Toaster />
+                    </UsersProvider>
+                </BoardSettingsProvider>
+            </AuthProvider>
+        </Router>
+    );
+};
+
+export default App; 

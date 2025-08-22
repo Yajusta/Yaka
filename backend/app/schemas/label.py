@@ -1,0 +1,33 @@
+"""Schémas Pydantic pour les libellés."""
+
+from pydantic import BaseModel, Field
+from typing import Optional
+from datetime import datetime
+
+
+class LabelBase(BaseModel):
+    """Schéma de base pour les libellés."""
+    nom: str = Field(..., max_length=32, description="Nom du libellé (32 caractères max)")
+    couleur: str  # Code hexadécimal
+
+
+class LabelCreate(LabelBase):
+    """Schéma pour la création d'un libellé."""
+    pass
+
+
+class LabelUpdate(BaseModel):
+    """Schéma pour la mise à jour d'un libellé."""
+    nom: Optional[str] = Field(None, max_length=32, description="Nom du libellé (32 caractères max)")
+    couleur: Optional[str] = None
+
+
+class LabelResponse(LabelBase):
+    """Schéma de réponse pour les libellés."""
+    id: int
+    created_by: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+

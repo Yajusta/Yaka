@@ -1,0 +1,105 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: yaka-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - SMTP_HOST=${SMTP_HOST:-0.0.0.0}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-your_smtp_user}
+      - SMTP_PASS=${SMTP_PASS:-your_smtp_pass}
+      - SMTP_SECURE=${SMTP_SECURE:-starttls}
+      - SMTP_FROM=${SMTP_FROM:-no-reply@yaka.local}
+      - INVITE_BASE_URL=${INVITE_BASE_URL:-http://localhost:8000/invite}
+      - DEMO_MODE=${DEMO_MODE:-false}
+    volumes:
+      - ./data/:/app/data/
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - yaka-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - DEMO_MODE=${DEMO_MODE:-false}
+        - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
+    container_name: yaka-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - BASE_URL=http://localhost:8000
+      - DEMO_MODE=${DEMO_MODE:-false}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 300s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - yaka-network
+
+  demo-cron:
+    image: alpine:latest
+    container_name: yaka-demo-cron
+    environment:
+      - DEMO_MODE=${DEMO_MODE:-false}
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: >
+      sh -c "
+        if [ \"$DEMO_MODE\" = \"true\" ]; then
+          echo '🔄 Mode démo activé - Configuration du cron pour la réinitialisation horaire'
+          apk add --no-cache wget
+          echo '0 * * * * wget -q -O - http://yaka-backend:8000/demo/reset >/dev/null 2>&1' > /etc/crontabs/root
+          echo '🔄 Cron configuré pour réinitialiser la base toutes les heures'
+          crond -f -l 2
+        else
+          echo 'Mode démo désactivé - Cron en pause'
+          sleep infinity
+        fi
+      "
+    restart: unless-stopped
+    networks:
+      - yaka-network
+
+# Optional: PostgreSQL database (uncomment if you want to use PostgreSQL instead of SQLite)
+# db:
+#   image: postgres:15-alpine
+#   container_name: yaka-db
+#   environment:
+#     POSTGRES_DB: yaka
+#     POSTGRES_USER: yaka_user
+#     POSTGRES_PASSWORD: yaka_password
+#   volumes:
+#     - postgres_data:/var/lib/postgresql/data
+#   ports:
+#     - "5432:5432"
+#   restart: unless-stopped
+#   networks:
+#     - yaka-network
+
+volumes:
+  yaka_data:
+    driver: local
+# postgres_data:
+#   driver: local
+
+networks:
+  yaka-network:
+    driver: bridge
