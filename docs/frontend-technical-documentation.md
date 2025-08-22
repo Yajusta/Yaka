@@ -1,4 +1,4 @@
-# Documentation technique du Frontend - Application Kanban
+# Yaka - Documentation technique du frontend
 
 ## Vue d'ensemble
 
