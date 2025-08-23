@@ -29,7 +29,7 @@ L'envoie des emails d'invation est désactivé.
 - **Authentification sécurisée** avec JWT
 - **Cartes détaillées** avec titre, description, liste d'éléments, priorité, assigné, libellés, date d'échéance
 - **Recherche et filtres**
-- **Utilisaturs illimités**
+- **Utilisateurs illimités**
 - **Gestion des rôles** (administrateur / membre)
 - **Gestion des colonnes** pour mettre autant de colonnes que nécessaire
 - **Gestion des libellés** colorés pour la catégorisation
