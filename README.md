@@ -5,6 +5,12 @@
 
 Une application web moderne et intuitive pour la gestion collaborative de tâches utilisant la méthodologie Kanban.
 
+## 🖼️ Captures d'écran
+
+![Board](./docs/screenshot-001.png)
+
+![Card](./docs/screenshot-002.png)
+
 ## 🖥️ Démo
 
 Pour voir à quoi ressemble cette application avant de l'installer, le plus simple est d'aller tester [la démo](https://yaka-demo.yajusta.fr/).
@@ -16,7 +22,7 @@ Mot de passe : `admin123`
 ⚠️ L'environnement est public : ne mettez pas d'informations sensibles.
 L'envoie des emails d'invation est désactivé.
 
-## 🚀 Fonctionnalités
+## ⚙️ Fonctionnalités
 
 - **Tableau Kanban interactif**
 - **Drag & Drop** fluide pour déplacer les cartes
@@ -114,7 +120,7 @@ Un compte administrateur est créé automatiquement lors de l'initialisation :
 - **Email :** `admin@kyaka.local`
 - **Mot de passe :** `admin123`
 
-Une fois connecté, créez un nouvel administrateur avec votre email puis supprimez ce compte.
+Une fois connecté, créez un nouvel administrateur avec votre email puis supprimez ce compte par défaut.
 
 ## 📖 Documentation
 
