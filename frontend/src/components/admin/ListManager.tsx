@@ -310,7 +310,9 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
     };
 
     const validateEditForm = (): boolean => {
-        if (!editingList) return false;
+        if (!editingList) {
+          return false;
+        }
 
         const errors: FormErrors = {};
 
@@ -389,7 +391,9 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
     };
 
     const handleSaveEdit = async (): Promise<void> => {
-        if (!editingList) return;
+        if (!editingList) {
+          return;
+        }
 
         // Validate form
         if (!validateEditForm()) {

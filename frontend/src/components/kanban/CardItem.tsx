@@ -50,13 +50,21 @@ export const CardItem = ({
 
     // Normalize priority to get the correct border color
     const normalizePriority = (priority: string): 'low' | 'medium' | 'high' => {
-        if (!priority) return 'low';
+        if (!priority) {
+            return 'low';
+        }
         const lower = String(priority).toLowerCase();
         const normalized = lower.normalize('NFD').replace(/\p{Diacritic}/gu, '');
 
-        if (normalized.includes('high') || normalized.includes('elev') || normalized.includes('eleve')) return 'high';
-        if (normalized.includes('medium') || normalized.includes('moy')) return 'medium';
-        if (normalized.includes('low') || normalized.includes('faibl') || normalized.includes('faible')) return 'low';
+        if (normalized.includes('high') || normalized.includes('elev') || normalized.includes('eleve')) {
+            return 'high';
+        }
+        if (normalized.includes('medium') || normalized.includes('moy')) {
+            return 'medium';
+        }
+        if (normalized.includes('low') || normalized.includes('faibl') || normalized.includes('faible')) {
+            return 'low';
+        }
 
         return 'low';
     };
@@ -75,8 +83,14 @@ export const CardItem = ({
         overflow: 'visible'
     } as React.CSSProperties;
 
+    // Prevent mobile touch gestures (scroll/zoom) from conflicting with drag.
+    // Set touch-action to none so touching a card doesn't trigger page panning while attempting to drag.
+    style.touchAction = 'none';
+
     const formatDate = (dateString: string): string | null => {
-        if (!dateString) return null;
+        if (!dateString) {
+            return null;
+        }
         return new Date(dateString).toLocaleDateString('fr-FR');
     };
 

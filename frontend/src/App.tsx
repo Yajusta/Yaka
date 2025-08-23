@@ -54,6 +54,9 @@ const KanbanApp = () => {
     const [listsRefreshTrigger, setListsRefreshTrigger] = useState<number>(0);
     const [defaultListIdForNewCard, setDefaultListIdForNewCard] = useState<number | null>(null);
 
+    // Calculer si une modale est ouverte pour masquer le TrashZone
+    const isAnyModalOpen = showCardForm || showLabelManager || showListManager || showUsersManager || showInterfaceDialog;
+
     // Load initial data (cards + labels) - only when user changes, not filters
     useEffect(() => {
         const loadData = async () => {
@@ -362,6 +365,7 @@ const KanbanApp = () => {
                         setShowCardForm(true);
                     }}
                     refreshTrigger={listsRefreshTrigger}
+                    isAnyModalOpen={isAnyModalOpen}
                 />
 
                 <CardForm

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, DragOverEvent, useDroppable } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, DragOverEvent, useDroppable } from '@dnd-kit/core';
 import { KanbanColumn } from './KanbanColumn';
 import { CardItem } from './index';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
@@ -16,9 +16,10 @@ interface KanbanBoardProps {
     onCardMove: (cardId: number, newListId: number, position?: number) => void;
     onCreateCard?: (listId: number) => void;
     refreshTrigger?: number; // Prop pour forcer le rechargement des listes
+    isAnyModalOpen?: boolean; // Prop pour masquer le TrashZone quand une modale est ouverte
 }
 
-const TrashZone = ({ isActive, onOverChange }: { isActive: boolean; onOverChange?: (v: boolean) => void }) => {
+const TrashZone = ({ isActive, onOverChange, isAnyModalOpen }: { isActive: boolean; onOverChange?: (v: boolean) => void; isAnyModalOpen?: boolean }) => {
     const { setNodeRef, isOver } = useDroppable({ id: 'trash' });
 
     useEffect(() => {
@@ -26,7 +27,14 @@ const TrashZone = ({ isActive, onOverChange }: { isActive: boolean; onOverChange
     }, [isOver]);
 
     return (
-        <div ref={setNodeRef} data-trash-zone className="fixed bottom-6 right-6 z-[2000]">
+        <div
+            ref={setNodeRef}
+            data-trash-zone
+            className={cn(
+                "fixed bottom-6 right-6 z-[2000] transition-all duration-200",
+                isAnyModalOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+            )}
+        >
             <GlassmorphicCard
                 className={cn(
                     "p-4 transition-all duration-200 border-2 border-dashed pointer-events-auto",
@@ -52,7 +60,8 @@ export const KanbanBoard = ({
     onCardDelete,
     onCardMove,
     onCreateCard,
-    refreshTrigger
+    refreshTrigger,
+    isAnyModalOpen = false
 }: KanbanBoardProps) => {
     const [activeCard, setActiveCard] = useState<CardType | null>(null);
     const [dropTarget, setDropTarget] = useState<{ listId: number; position: number } | null>(null);
@@ -159,26 +168,56 @@ export const KanbanBoard = ({
 
 
 
-    // Event listener global pour capturer la position de la souris
+    // Event listener global pour capturer la position de la souris ou du tactile
     useEffect(() => {
-        const handleMouseMove = (event: MouseEvent) => {
-            if (activeCard) {
+        const handlePointerMove = (event: MouseEvent | TouchEvent) => {
+            if (!activeCard) {
+                return;
+            }
+
+            let clientX: number | null = null;
+            let clientY: number | null = null;
+
+            // TouchEvent
+            if ('touches' in event) {
+                // Prevent the page from scrolling while dragging
+                try { (event as TouchEvent).preventDefault(); } catch (e) { }
+                const touch = (event as TouchEvent).touches?.[0] || (event as any).changedTouches?.[0];
+                if (touch) {
+                    clientX = touch.clientX;
+                    clientY = touch.clientY;
+                }
+            } else {
+                // MouseEvent
+                clientX = (event as MouseEvent).clientX;
+                clientY = (event as MouseEvent).clientY;
+            }
+
+            if (clientX != null && clientY != null) {
                 // Calculer la position en temps réel
-                calculatePositionFromMouse(event.clientX, event.clientY);
+                calculatePositionFromMouse(clientX, clientY);
             }
         };
 
         if (activeCard) {
-            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mousemove', handlePointerMove as any);
+            // Use non-passive listener so we can preventDefault and avoid page scrolling during drag
+            document.addEventListener('touchmove', handlePointerMove as any, { passive: false });
+            // Pointer events cover mouse, touch and pen on many platforms — ensure we capture pointermove as well
+            document.addEventListener('pointermove', handlePointerMove as any, { passive: false });
         }
 
         return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mousemove', handlePointerMove as any);
+            document.removeEventListener('touchmove', handlePointerMove as any);
+            document.removeEventListener('pointermove', handlePointerMove as any);
         };
     }, [activeCard]);
 
     const calculatePositionFromMouse = (mouseX: number, mouseY: number): void => {
-        if (!activeCard) return;
+        if (!activeCard) {
+            return;
+        }
 
         // Trouver la colonne la plus proche de la souris
         const columnElements = boardRef.current?.querySelectorAll('[data-list-id]');
@@ -216,12 +255,32 @@ export const KanbanBoard = ({
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: { distance: 8 }  // Augmenter la distance pour éviter les drags accidentels
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 80,
+                tolerance: 5,
+            }
         })
     );
 
+    // While a card is active (being dragged), disable body touch-action to prevent page panning
+    useEffect(() => {
+        const original = document.body.style.touchAction || '';
+        if (activeCard) {
+            document.body.style.touchAction = 'none';
+        } else {
+            document.body.style.touchAction = original;
+        }
+        return () => {
+            document.body.style.touchAction = original;
+        };
+    }, [activeCard]);
+
     const handleDragStart = (event: DragStartEvent): void => {
         const { active } = event;
-        const card = cards.find(c => c.id === active.id);
+        // Find card by normalizing ids to string to avoid type mismatches (number vs string)
+        const card = cards.find(c => String(c.id) === String(active.id));
 
         // Capturer la taille de la carte avant qu'elle ne soit cachée
         const cardElement = document.querySelector(`[data-card-id="${active.id}"]`) as HTMLElement;
@@ -234,7 +293,12 @@ export const KanbanBoard = ({
         }
 
         setActiveCard(card || null);
-        setHiddenCardId(Number(active.id));  // Keep track of the hidden card
+        // Only hide the DOM card if we actually found the card object
+        if (card) {
+            setHiddenCardId(Number(active.id));  // Keep track of the hidden card
+        } else {
+            setHiddenCardId(null);
+        }
 
         // Capturer les positions de toutes les cartes dans la liste d'origine
         if (card?.list_id) {
@@ -262,18 +326,107 @@ export const KanbanBoard = ({
             return;
         }
 
-        const mouseEvent = event.activatorEvent as MouseEvent;
-        if (mouseEvent) {
-            calculatePositionFromMouse(mouseEvent.clientX, mouseEvent.clientY);
+        // If DnDKit reports a droppable under the pointer, use it as a quick fallback
+        const reportedOverId = event?.over?.id as string | undefined;
+        if (reportedOverId && reportedOverId !== 'trash') {
+            const reportedListId = parseInt(reportedOverId, 10);
+            if (!isNaN(reportedListId) && lists.some(list => list.id === reportedListId)) {
+                // If we don't yet have a dropTarget for this list, set it to the end (temporary)
+                const endPos = getCardsForList(reportedListId).length;
+                if (!dropTarget || dropTarget.listId !== reportedListId) {
+                    setDropTarget({ listId: reportedListId, position: endPos });
+                }
+            }
+        }
 
-            // Detect if mouse is over trash zone element
-            const trashElem = document.querySelector('[data-trash-zone]') as HTMLElement | null;
-            if (trashElem) {
-                const rect = trashElem.getBoundingClientRect();
-                const over = mouseEvent.clientX >= rect.left && mouseEvent.clientX <= rect.right && mouseEvent.clientY >= rect.top && mouseEvent.clientY <= rect.bottom;
-                setIsOverTrash(over);
+        const activatorEvent = event.activatorEvent as MouseEvent | TouchEvent | undefined;
+        if (activatorEvent) {
+            let clientX: number | null = null;
+            let clientY: number | null = null;
+
+            if ('touches' in activatorEvent) {
+                const touch = (activatorEvent as TouchEvent).touches?.[0] || (activatorEvent as any).changedTouches?.[0];
+                if (touch) {
+                    clientX = touch.clientX;
+                    clientY = touch.clientY;
+                }
             } else {
-                setIsOverTrash(false);
+                clientX = (activatorEvent as MouseEvent).clientX;
+                clientY = (activatorEvent as MouseEvent).clientY;
+            }
+
+            if (clientX != null && clientY != null) {
+                // Try to resolve the column directly under the pointer (more robust than closestCenter heuristics)
+                const elem = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+                let listEl = elem?.closest ? elem.closest('[data-list-id]') as HTMLElement | null : null;
+
+                // If closest failed (e.g. empty column), try to find a column whose rect contains the point
+                if (!listEl && boardRef.current) {
+                    const columns = boardRef.current.querySelectorAll('[data-list-id]');
+                    for (let i = 0; i < columns.length; i++) {
+                        const col = columns[i] as HTMLElement;
+                        const r = col.getBoundingClientRect();
+                        const contains = clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
+                        if (contains) {
+                            listEl = col;
+                            break;
+                        }
+                    }
+                }
+
+                if (listEl) {
+                    const listIdStr = listEl.getAttribute('data-list-id');
+                    if (listIdStr) {
+                        const listId = parseInt(listIdStr, 10);
+                        if (!isNaN(listId)) {
+                            // Compute precise insertion position inside that list
+                            calculatePositionInList(listId, clientY);
+                        }
+                    }
+                } else {
+                    // Fallback to previous center-based calculation
+                    calculatePositionFromMouse(clientX, clientY);
+                }
+
+                // Detect if pointer is over trash zone element
+                const trashElem = document.querySelector('[data-trash-zone]') as HTMLElement | null;
+                if (trashElem) {
+                    const rect = trashElem.getBoundingClientRect();
+                    const over = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+                    setIsOverTrash(over);
+                } else {
+                    setIsOverTrash(false);
+                }
+
+                // done
+            }
+        }
+
+        // Fallback: if no dropTarget was computed, try to infer the list under the pointer
+        if (!dropTarget && activatorEvent) {
+            let clientX: number | null = null;
+            let clientY: number | null = null;
+            if ('touches' in activatorEvent) {
+                const touch = (activatorEvent as TouchEvent).touches?.[0] || (activatorEvent as any).changedTouches?.[0];
+                if (touch) { clientX = touch.clientX; clientY = touch.clientY; }
+            } else {
+                clientX = (activatorEvent as MouseEvent).clientX;
+                clientY = (activatorEvent as MouseEvent).clientY;
+            }
+
+            if (clientX != null && clientY != null && boardRef.current) {
+                const elem = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+                const listEl = elem?.closest ? elem.closest('[data-list-id]') as HTMLElement | null : null;
+                if (listEl) {
+                    const listIdStr = listEl.getAttribute('data-list-id');
+                    if (listIdStr) {
+                        const listId = parseInt(listIdStr, 10);
+                        if (!isNaN(listId)) {
+                            const pos = getCardsForList(listId).length;
+                            setDropTarget({ listId, position: pos });
+                        }
+                    }
+                }
             }
         }
     };
@@ -289,6 +442,7 @@ export const KanbanBoard = ({
             if (cardsInList.length === 0) {
                 insertPosition = 0;
             } else {
+                // Debugging removed in cleanup
                 // Find the position based on mouse Y position
                 const columnRect = columnElement.getBoundingClientRect();
 
@@ -300,39 +454,31 @@ export const KanbanBoard = ({
                     insertPosition = 0;
                 } else {
                     // Approche simplifiée : calculer la position d'insertion basée sur la position Y de la souris
-                    // Créer une liste des cartes visibles (sans la carte active)
-                    const visibleCards = cardsInList.filter(c => c.id !== activeCard?.id);
+                    // Use DOM elements to compute insertion position. This is more robust when the active card
+                    // is hidden from the DOM (we rely on data-card-id attributes rendered for visible cards).
+                    const cardEls = Array.from(columnElement.querySelectorAll('[data-card-id]')) as HTMLElement[];
+                    let targetPosition = cardEls.length; // default to end
 
-                    // Trouver la position d'insertion en comparant avec les rectangles des cartes
-                    let targetPosition = visibleCards.length; // Par défaut, à la fin
-
-                    for (let i = 0; i < visibleCards.length; i++) {
-                        const card = visibleCards[i];
-                        const cardElement = columnElement.querySelector(`[data-card-id="${card.id}"]`);
-
-                        if (cardElement) {
-                            const cardRect = cardElement.getBoundingClientRect();
-                            const cardMiddle = cardRect.top + (cardRect.height / 2);
-
-                            if (mouseY < cardMiddle) {
-                                // On veut insérer avant cette carte
-                                targetPosition = i;
-                                boundaryY = cardMiddle;
-                                break;
-                            }
+                    for (let i = 0; i < cardEls.length; i++) {
+                        const el = cardEls[i];
+                        const rect = el.getBoundingClientRect();
+                        const middle = rect.top + rect.height / 2;
+                        if (mouseY < middle) {
+                            targetPosition = i;
+                            boundaryY = middle;
+                            break;
                         }
                     }
 
-                    if (targetPosition === visibleCards.length && visibleCards.length > 0) {
-                        const lastCard = visibleCards[visibleCards.length - 1];
-                        const lastEl = columnElement.querySelector(`[data-card-id="${lastCard.id}"]`);
-                        if (lastEl) {
-                            const r = (lastEl as HTMLElement).getBoundingClientRect();
-                            boundaryY = r.bottom;
-                        }
+                    if (targetPosition === cardEls.length && cardEls.length > 0) {
+                        const lastEl = cardEls[cardEls.length - 1];
+                        const r = lastEl.getBoundingClientRect();
+                        boundaryY = r.bottom;
                     }
 
                     insertPosition = targetPosition;
+
+                    // computed insertPosition
                 }
             }
 
@@ -341,7 +487,7 @@ export const KanbanBoard = ({
 
             // Éviter les mises à jour inutiles
             if (!dropTarget || dropTarget.listId !== listId || dropTarget.position !== insertPosition) {
-                const HYSTERESIS = 14; // px de marge pour éviter le flapping
+                const HYSTERESIS = 8; // px de marge pour éviter le flapping — réduit pour être plus réactif
                 const now = performance.now();
 
                 // Si on change de position dans la même colonne, appliquer une hystérésis et un throttle léger
@@ -350,7 +496,7 @@ export const KanbanBoard = ({
                         // Trop près de la frontière: ne pas changer
                         return;
                     }
-                    if (now - lastDropUpdateTsRef.current < 60) {
+                    if (now - lastDropUpdateTsRef.current < 40) {
                         // Throttle: trop rapproché
                         return;
                     }
@@ -363,7 +509,9 @@ export const KanbanBoard = ({
                 const cardEls = columnElement.querySelectorAll('[data-card-id]');
                 cardEls?.forEach((el) => {
                     const id = el.getAttribute('data-card-id');
-                    if (id) positions.set(id, el.getBoundingClientRect());
+                    if (id) {
+                        positions.set(id, el.getBoundingClientRect());
+                    }
                 });
                 setOriginalPositions(positions);
 
@@ -378,7 +526,16 @@ export const KanbanBoard = ({
         // Store the drop target before clearing it
         const finalDropTarget = dropTarget;
 
-        const activeId = active.id as number;
+        // Resolve active card id robustly (active.id can be number or string)
+        let activeId = Number(active.id);
+        if (Number.isNaN(activeId)) {
+            const found = cards.find(c => String(c.id) === String(active.id));
+            if (found) {
+                activeId = found.id;
+            }
+        }
+
+        // handleDragEnd
 
         // Mark this card as just dropped to keep it invisible
         setJustDroppedCardId(activeId);
@@ -413,7 +570,7 @@ export const KanbanBoard = ({
         // Utiliser notre finalDropTarget au lieu de la logique DndKit
         if (finalDropTarget) {
             const targetListId = finalDropTarget.listId;
-            const position = finalDropTarget.position;
+            const { position } = finalDropTarget;
 
             // Déplacer la carte exactement où le placeholder était affiché
             // Suppress animations for both source and destination lists
@@ -542,9 +699,13 @@ export const KanbanBoard = ({
                     </div>
                 </div>
 
-                <TrashZone isActive={!!activeCard} onOverChange={(v) => setIsOverTrash(v)} />
+                <TrashZone
+                    isActive={!!activeCard}
+                    onOverChange={(v) => setIsOverTrash(v)}
+                    isAnyModalOpen={isAnyModalOpen}
+                />
 
-                <div data-debug-is-over-trash style={{ display: 'none' }} data-over={String(isOverTrash)} />
+
 
                 <DragOverlay
                     dropAnimation={null}  // Désactiver l'animation de drop

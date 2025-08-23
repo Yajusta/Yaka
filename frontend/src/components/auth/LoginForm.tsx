@@ -41,7 +41,6 @@ const LoginForm = () => {
                 setIsDemoMode(demoMode);
             })
             .catch(_error => {
-                console.log('Demo config not found, demo mode disabled');
                 setIsDemoMode(false);
             });
 
@@ -51,7 +50,6 @@ const LoginForm = () => {
                 setBoardTitle(data.title);
             })
             .catch(_error => {
-                console.log('Board title not found, using default');
                 setBoardTitle('Yaka (Yet Another Kanban App)');
             });
     }, []);

@@ -23,7 +23,9 @@ export const useElasticTransition = ({
     const previousIsDragging = useRef<boolean>(false);
 
     const resetCardPositions = useCallback(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current) {
+            return;
+        }
 
         const cardElements = containerRef.current.querySelectorAll('.kanban-card-container');
         cardElements.forEach((element) => {
@@ -39,7 +41,9 @@ export const useElasticTransition = ({
 
     // Measure positions synchronously after every render so prevRectsRef holds the 'before' positions
     useLayoutEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current) {
+            return;
+        }
         const nodeList = containerRef.current.querySelectorAll('.kanban-card-container');
         const elems = Array.from(nodeList).filter(el => (el as HTMLElement).getAttribute('data-card-id')) as HTMLElement[];
         const rects = new Map<string, DOMRect>();
@@ -51,7 +55,9 @@ export const useElasticTransition = ({
     });
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current) {
+            return;
+        }
         const container = containerRef.current;
         const nodeList = container.querySelectorAll('.kanban-card-container');
         const cardElements = Array.from(nodeList).filter(el => (el as HTMLElement).getAttribute('data-card-id')) as HTMLElement[];
@@ -97,13 +103,12 @@ export const useElasticTransition = ({
                     lastRects.set(id, el.getBoundingClientRect());
                 });
 
-                // Debug info
-                console.debug('[FLIP] placeholder change', { dropTarget, previousDropTarget: previousDropTarget.current, columnAnimating: columnAnimatingRef.current });
-
                 // apply inverse transforms to moved cards (skip active card) and mark animating
                 cardElements.forEach(el => {
                     const id = el.getAttribute('data-card-id')!;
-                    if (String(activeCardId) === id) return;
+                    if (String(activeCardId) === id) {
+                        return;
+                    }
                     // cancel any running animations on this element to avoid double runs, but only if they belong to a different key
                     try {
                         const prevAnim = (el as any).__flipAnim as Animation | null;
@@ -114,10 +119,14 @@ export const useElasticTransition = ({
                             (el as any).__flipKey = null;
                         }
                     } catch (e) { }
-                    if (el.dataset.flipAnimating) return;
+                    if (el.dataset.flipAnimating) {
+                        return;
+                    }
                     const first = firstRects.get(id);
                     const last = lastRects.get(id);
-                    if (!first || !last) return;
+                    if (!first || !last) {
+                        return;
+                    }
                     const deltaY = first.top - last.top;
                     if (Math.abs(deltaY) > 1) {
                         el.style.transition = 'none';
@@ -135,11 +144,11 @@ export const useElasticTransition = ({
                         const id = el.getAttribute('data-card-id')!;
                         debugLast.set(id, el.getBoundingClientRect());
                     });
-                    console.debug('[FLIP] firstRects keys', Array.from(firstRects.keys()));
-                    console.debug('[FLIP] lastRects keys', Array.from(debugLast.keys()));
 
                     cardElements.forEach(el => {
-                        if (!el.style.transform || !el.dataset.flipAnimating) return;
+                        if (!el.style.transform || !el.dataset.flipAnimating) {
+                            return;
+                        }
 
                         // parse current translateY value
                         const match = el.style.transform.match(/translateY\((-?\d+(?:\.\d+)?)px\)/);

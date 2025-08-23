@@ -630,7 +630,8 @@
     gap: 1rem;
     padding-bottom: 0.5rem;
     /* Space for scrollbar */
-    min-height: 100%;
+    min-height: calc(100vh - 256px);
+    /* Ensure container has minimum height to footer */
     align-items: stretch;
   }
 
@@ -638,6 +639,8 @@
     flex-shrink: 0;
     min-width: 300px;
     width: 320px;
+    min-height: calc(100vh - 256px);
+    /* Ensure columns extend to footer */
     scroll-snap-align: start;
   }
 
@@ -646,10 +649,14 @@
     .kanban-list-column {
       min-width: 280px;
       width: 300px;
+      min-height: calc(100vh - 256px);
+      /* Ensure columns extend to footer on tablets */
     }
 
     .kanban-lists-container {
       gap: 0.75rem;
+      min-height: calc(100vh - 256px);
+      /* Ensure container has minimum height to footer on tablets */
     }
   }
 
@@ -657,10 +664,14 @@
     .kanban-list-column {
       min-width: 260px;
       width: 280px;
+      min-height: calc(100vh - 256px);
+      /* Adjusted for mobile header size */
     }
 
     .kanban-lists-container {
       gap: 0.5rem;
+      min-height: calc(100vh - 256px);
+      /* Ensure container has minimum height to footer on mobile */
     }
   }
 
@@ -668,6 +679,13 @@
     .kanban-list-column {
       min-width: 240px;
       width: 260px;
+      min-height: calc(100vh - 160px);
+      /* Adjusted for small mobile screens */
+    }
+
+    .kanban-lists-container {
+      min-height: calc(100vh - 160px);
+      /* Ensure container has minimum height to footer on small screens */
     }
   }
 }

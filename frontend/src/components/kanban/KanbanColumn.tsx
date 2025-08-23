@@ -43,6 +43,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         id: id,
     });
 
+    // removed debug logs
+    useEffect(() => {
+        /* no-op for now */
+    }, [dropTarget, isDragging, cards.length, id, list.id]);
+
     const containerRef = useElasticTransition({
         isDragging,
         dropTarget,
@@ -150,7 +155,9 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
 
                             // Ignorer les cartes cachées, SAUF si c'est la carte active dans cette colonne (pour afficher le placeholder)
-                            if (isHiddenCard && !(isActiveCard && isActiveCardInThisColumn)) return;
+                            if (isHiddenCard && !(isActiveCard && isActiveCardInThisColumn)) {
+                                return;
+                            }
 
                             // Si c'est la carte active dans cette colonne ET qu'on est en train de dragger, afficher le placeholder "position actuelle"
                             if (isActiveCard && isActiveCardInThisColumn && isDragging) {
@@ -178,7 +185,9 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
                             // Calculer l'index logique pour les placeholders
                             // Si c'est la carte active ou une carte cachée, ne pas ajouter de placeholder après
-                            if (isActiveCard || isHiddenCard) return;
+                            if (isActiveCard || isHiddenCard) {
+                                return;
+                            }
 
                             // Nouvelle logique simplifiée : calculer l'index dans la liste des cartes visibles
                             const visibleCards = cards.filter(c => c.id !== activeCardId);

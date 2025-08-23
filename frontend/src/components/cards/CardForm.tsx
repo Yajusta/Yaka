@@ -144,7 +144,9 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                 // For simplicity, we will upsert items sequentially
                 for (let idx = 0; idx < checklist.length; idx++) {
                     const item = checklist[idx];
-                    if (!item.texte || item.texte.trim() === '') continue;
+                    if (!item.texte || item.texte.trim() === '') {
+                        continue;
+                    }
                     if (item.id) {
                         await cardItemsService.updateItem(item.id, { texte: item.texte, is_done: item.is_done, position: idx + 1 });
                     } else {
@@ -182,7 +184,9 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
 
     const addChecklistItem = (): void => {
         const text = newItemText.trim().slice(0, 64);
-        if (!text) return;
+        if (!text) {
+            return;
+        }
         setChecklist(prev => [...prev, { texte: text, is_done: false, position: prev.length + 1 }]);
         setNewItemText('');
     };
@@ -206,10 +210,14 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-        if (!over || active.id === over.id) return;
+        if (!over || active.id === over.id) {
+            return;
+        }
         const oldIndex = checklist.findIndex(i => (i.id ?? `new-${i.position}`) === active.id);
         const newIndex = checklist.findIndex(i => (i.id ?? `new-${i.position}`) === over.id);
-        if (oldIndex === -1 || newIndex === -1) return;
+        if (oldIndex === -1 || newIndex === -1) {
+            return;
+        }
         const newItems = arrayMove(checklist, oldIndex, newIndex).map((it, idx) => ({ ...it, position: idx + 1 }));
         setChecklist(newItems);
     };
@@ -231,7 +239,9 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
     };
 
     const handleDelete = async (): Promise<void> => {
-        if (!card || !onDelete) return;
+        if (!card || !onDelete) {
+            return;
+        }
 
         try {
             onDelete(card.id);
