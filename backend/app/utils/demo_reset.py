@@ -120,12 +120,22 @@ def reset_database():
     try:
         # Supprimer toutes les données existantes
         print("Suppression des donnees existantes...")
+
+        # Supprimer d'abord les éléments de checklist
         db.query(CardItem).delete()
+
+        # Supprimer les relations many-to-many entre cartes et étiquettes
+        from app.database import engine
+        from sqlalchemy import text
+        db.execute(text("DELETE FROM card_labels"))
+
+        # Supprimer les entités principales
         db.query(Card).delete()
         db.query(KanbanList).delete()
         db.query(Label).delete()
         db.query(BoardSettings).delete()
         db.query(User).delete()
+
         db.commit()
         print("Base de donnees nettoyee avec succes")
 
