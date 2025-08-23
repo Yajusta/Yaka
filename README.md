@@ -28,13 +28,41 @@ L'envoie des emails d'invation est désactivé.
 - **Gestion des colonnes** pour mettre autant de colonnes que nécessaire
 - **Gestion des libellés** colorés pour la catégorisation
 
-## 📋 Prérequis
+## 🚀 Déploiement
+
+La méthode la plus simple pour utiliser Yaka sans se prendre la tête.
+
+### 1. Cloner le projet
+
+```bash
+git clone https://github.com/Yajusta/Yaka.git
+cd Yaka
+```
+
+### 1. Modifier les variables d'environnement
+
+```bash
+cp .env.sample .env
+```
+
+### 2. Déployer avec Docker
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+TODO : Faire une image Docker publique qui ne nécessitera pas de cloner le projet.
+
+## 📦 Installation et démarrage
+
+Si vous souhaitez le lancer à la main, c'est possible aussi.
+
+### 📋 Prérequis
 
 - [Python](https://www.python.org/downloads/) 3.12+ + [uv](https://docs.astral.sh/uv/)
 - [Node.js](https://nodejs.org/fr/download) 18+
 - [pnpm](https://pnpm.io/) (recommandé) ou [npm](https://www.npmjs.com/)
-
-## 📦 Installation et démarrage
 
 ### 1. Cloner le projet
 
@@ -79,21 +107,6 @@ pnpm run dev
 
 Le frontend sera accessible sur <http://localhost:5173>
 
-## 🚀 Déploiement
-
-### 1. Modifier les variables d'environnement
-
-```bash
-cp .env.sample .env
-```
-
-### 2. Déployer avec Docker
-
-```bash
-docker compose build
-docker compose up -d
-```
-
 ## 👤 Compte administrateur par défaut
 
 Un compte administrateur est créé automatiquement lors de l'initialisation :
@@ -121,14 +134,13 @@ Pour toute question ou problème :
 2. Vérifier les [issues existantes]([../../issues](https://github.com/Yajusta/Yaka/issues))
 3. Créer une nouvelle issue si nécessaire
 
-## 🔄 Roadmap
+## 🔄 Roadmap hypothétique
 
 - [ ] Notifications en temps réel (websockets)
 - [ ] Commentaires sur les cartes
 - [ ] Pièces jointes
 - [ ] Rapports et analytics
 - [ ] API publique
-- [ ] Application mobile
 - [ ] Intégrations tierces (Slack, Teams, etc.)
 
 ## 🛠️ Technologies
