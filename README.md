@@ -5,6 +5,17 @@
 
 Une application web moderne et intuitive pour la gestion collaborative de tâches utilisant la méthodologie Kanban.
 
+## 🖥️ Démo
+
+Pour voir à quoi ressemble cette application avant de l'installer, le plus simple est d'aller tester [la démo](https://yaka-demo.yajusta.fr/).
+
+Identifiant : `admin@yaka.local`
+Mot de passe : `admin123`
+
+🗑️ La base est supprimée régulièrement.
+⚠️ L'environnement est public : ne mettez pas d'informations sensibles.
+L'envoie des emails d'invation est désactivé.
+
 ## 🚀 Fonctionnalités
 
 - **Tableau Kanban interactif**
