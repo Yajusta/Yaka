@@ -6,11 +6,14 @@
 
 ## Features
 
-[ ]
+[x] "Archiver" au lieu de "Supprimer".
+[ ] Historique des changements de carte.
+[ ] Commentaires sur les tâches.
+[ ] Pièces jointes sur les tâches.
 
 ## Frontend
 
-[ ] Interface compatible "touch" pour les mobiles.
+[x] Interface compatible "touch" pour les mobiles.
 
 ## Backend
 

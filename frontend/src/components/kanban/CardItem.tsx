@@ -177,7 +177,7 @@ export const CardItem = ({
                                         className="flex items-center gap-2"
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
-                                        Supprimer
+                                        Archiver
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>

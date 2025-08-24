@@ -93,7 +93,9 @@ export const authService = {
     getCurrentUserFromStorage(): User | null {
         try {
             const user = localStorage.getItem('user');
-            if (!user) return null;
+            if (!user) {
+                return null;
+            }
 
             // Vérifier que ce n'est pas un objet déjà parsé
             if (typeof user === 'object') {
@@ -234,7 +236,7 @@ export const cardService = {
     },
 
     async getArchivedCards(): Promise<Card[]> {
-        const response = await api.get<Card[]>('/cards/archived/');
+        const response = await api.get<Card[]>('/cards/archived');
         return response.data;
     },
 
@@ -317,7 +319,9 @@ export const cardItemsService = {
     },
     async createItem(cardId: number, texte: string, position?: number, is_done: boolean = false): Promise<CardChecklistItem> {
         const payload: any = { card_id: cardId, texte, is_done };
-        if (typeof position === 'number') payload.position = position;
+        if (typeof position === 'number') {
+            payload.position = position;
+        }
         const response = await api.post<CardChecklistItem>('/card-items/', payload);
         return response.data;
     },

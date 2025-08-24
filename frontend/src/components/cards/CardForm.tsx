@@ -248,8 +248,8 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             onClose();
         } catch (error: any) {
             toast({
-                title: "Erreur lors de la suppression",
-                description: error.response?.data?.detail || "Impossible de supprimer la carte",
+                title: "Erreur lors de l'archivage",
+                description: error.response?.data?.detail || "Impossible d'archiver la carte",
                 variant: "destructive"
             });
         }
@@ -318,7 +318,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                         className={item.is_done ? 'line-through text-muted-foreground' : ''}
                                                         maxLength={64}
                                                     />
-                                                    <Button type="button" variant="ghost" size="icon" onClick={() => deleteChecklistItem(index)} title="Supprimer">
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => deleteChecklistItem(index)} title="Archiver">
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
@@ -441,7 +441,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                     className="flex items-center gap-2"
                                 >
                                     <Trash2 className="h-4 w-4" />
-
+                                    Archiver
                                 </Button>
                             )}
                         </div>

@@ -153,7 +153,17 @@ const KanbanApp = () => {
             setEditingCard(updatedCard);
             setShowCardForm(true);
         } else {
-            setAllCards(prev => prev.map(c => c.id === updatedCard.id ? updatedCard : c));
+            setAllCards(prev => {
+                // Vérifier si la carte existe déjà dans la liste
+                const existingCard = prev.find(c => c.id === updatedCard.id);
+                if (existingCard) {
+                    // Mettre à jour la carte existante
+                    return prev.map(c => c.id === updatedCard.id ? updatedCard : c);
+                } else {
+                    // Ajouter la carte (cas de restauration d'une carte archivée)
+                    return [...prev, updatedCard];
+                }
+            });
         }
     };
 
@@ -167,8 +177,8 @@ const KanbanApp = () => {
             // Importer Sonner pour utiliser les actions
             // const { toast: sonnerToast } = await import('sonner');
 
-            sonnerToast.success('Carte supprimée', {
-                description: 'La carte a été supprimée avec succès',
+            sonnerToast.success('Carte archivée', {
+                description: 'La carte a été archivée avec succès',
                 action: {
                     label: 'Annuler',
                     onClick: async () => {
@@ -193,8 +203,8 @@ const KanbanApp = () => {
         } catch (error: any) {
             console.error('Erreur lors de la suppression de la carte:', error);
             toast({
-                title: "Erreur lors de la suppression",
-                description: error.response?.data?.detail || "Impossible de supprimer la carte",
+                title: "Erreur lors de l'archivage",
+                description: error.response?.data?.detail || "Impossible d'archiver la carte",
                 variant: "destructive"
             });
         }

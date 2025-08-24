@@ -3,6 +3,7 @@ import { DndContext, DragOverlay, closestCenter, PointerSensor, TouchSensor, use
 import { KanbanColumn } from './KanbanColumn';
 import { CardItem } from './index';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
+import { ArchiveManager } from '../admin/ArchiveManager';
 import { Trash2, Loader2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Card as CardType, KanbanList } from '../../types/index';
@@ -19,12 +20,30 @@ interface KanbanBoardProps {
     isAnyModalOpen?: boolean; // Prop pour masquer le TrashZone quand une modale est ouverte
 }
 
-const TrashZone = ({ isActive, onOverChange, isAnyModalOpen }: { isActive: boolean; onOverChange?: (v: boolean) => void; isAnyModalOpen?: boolean }) => {
+const TrashZone = ({
+    isActive,
+    onOverChange,
+    isAnyModalOpen,
+    onClick
+}: {
+    isActive: boolean;
+    onOverChange?: (v: boolean) => void;
+    isAnyModalOpen?: boolean;
+    onClick?: () => void;
+}) => {
     const { setNodeRef, isOver } = useDroppable({ id: 'trash' });
 
     useEffect(() => {
         onOverChange?.(!!isOver);
     }, [isOver]);
+
+    const handleClick = (e: React.MouseEvent) => {
+        // Only handle click if we're not dragging
+        if (!isActive && onClick) {
+            e.stopPropagation();
+            onClick();
+        }
+    };
 
     return (
         <div
@@ -34,10 +53,11 @@ const TrashZone = ({ isActive, onOverChange, isAnyModalOpen }: { isActive: boole
                 "fixed bottom-6 right-6 z-[2000] transition-all duration-200",
                 isAnyModalOpen ? "opacity-0 pointer-events-none" : "opacity-100"
             )}
+            onClick={handleClick}
         >
             <GlassmorphicCard
                 className={cn(
-                    "p-4 transition-all duration-200 border-2 border-dashed pointer-events-auto",
+                    "p-4 transition-all duration-200 border-2 border-dashed pointer-events-auto cursor-pointer hover:opacity-80",
                     isOver
                         ? "border-destructive bg-destructive/20 scale-110 shadow-2xl"
                         : isActive
@@ -47,7 +67,7 @@ const TrashZone = ({ isActive, onOverChange, isAnyModalOpen }: { isActive: boole
             >
                 <div className="flex items-center space-x-2 text-destructive">
                     <Trash2 className="h-5 w-5" />
-                    <span className="text-sm font-medium">Supprimer</span>
+                    <span className="text-sm font-medium">Archives</span>
                 </div>
             </GlassmorphicCard>
         </div>
@@ -77,6 +97,7 @@ export const KanbanBoard = ({
     const [listsError, setListsError] = useState<string | null>(null);
     const [shouldCenter, setShouldCenter] = useState<boolean>(false);
     const [optimalColumnWidth, setOptimalColumnWidth] = useState<number>(280);
+    const [showArchiveManager, setShowArchiveManager] = useState<boolean>(false);
     const boardRef = useRef<HTMLDivElement>(null);
     const lastDropUpdateTsRef = useRef<number>(0);
 
@@ -162,6 +183,22 @@ export const KanbanBoard = ({
         setActiveCardSize(null);
         setOriginalPositions(new Map());
         setAnimationData(new Map());
+    };
+
+    const handleCardRestored = (restoredCard: CardType) => {
+        // The card has been restored, we need to notify the parent component
+        // so it can update its state and refresh the cards
+        if (onCardUpdate) {
+            onCardUpdate(restoredCard, 'update');
+        }
+    };
+
+    const handleOpenArchiveManager = () => {
+        setShowArchiveManager(true);
+    };
+
+    const handleCloseArchiveManager = () => {
+        setShowArchiveManager(false);
     };
 
 
@@ -702,7 +739,8 @@ export const KanbanBoard = ({
                 <TrashZone
                     isActive={!!activeCard}
                     onOverChange={(v) => setIsOverTrash(v)}
-                    isAnyModalOpen={isAnyModalOpen}
+                    isAnyModalOpen={isAnyModalOpen || showArchiveManager}
+                    onClick={handleOpenArchiveManager}
                 />
 
 
@@ -729,6 +767,14 @@ export const KanbanBoard = ({
                     ) : null}
                 </DragOverlay>
             </DndContext>
+
+            {/* Archive Manager Dialog */}
+            <ArchiveManager
+                isOpen={showArchiveManager}
+                onClose={handleCloseArchiveManager}
+                onCardRestored={handleCardRestored}
+                availableLists={lists}
+            />
         </div>
     );
-}; 
+};
