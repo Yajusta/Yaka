@@ -1,5 +1,6 @@
 """Service pour la gestion des utilisateurs."""
 
+import contextlib
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from ..models import User, UserRole, UserStatus
@@ -12,6 +13,11 @@ import datetime
 from . import email as email_service
 
 # Note: email_service requires SMTP_* env vars to be set for invitations to be sent
+
+
+def get_system_timezone_datetime():
+    """Retourne la date et heure actuelle dans le fuseau horaire du système."""
+    return datetime.datetime.now().astimezone()
 
 
 def get_user(db: Session, user_id: int) -> Optional[User]:
@@ -48,7 +54,7 @@ def create_user(db: Session, user: UserCreate) -> User:
 def invite_user(db: Session, email: str, display_name: str | None, role: UserRole) -> User:
     """Créer un utilisateur en tant qu'invité et envoyer un email d'invitation."""
     invite_token = secrets.token_urlsafe(32)
-    invited_at = datetime.datetime.utcnow()
+    invited_at = get_system_timezone_datetime()
 
     db_user = User(
         email=email,
@@ -62,11 +68,8 @@ def invite_user(db: Session, email: str, display_name: str | None, role: UserRol
     db.commit()
     db.refresh(db_user)
 
-    try:
+    with contextlib.suppress(Exception):
         email_service.send_invitation(email=email, display_name=display_name, token=invite_token)
-    except Exception:
-        pass
-
     return db_user
 
 
@@ -131,15 +134,12 @@ def request_password_reset(db: Session, email: str) -> bool:
 
     reset_token = secrets.token_urlsafe(32)
     user.invite_token = reset_token  # Réutiliser le champ invite_token pour la réinitialisation
-    user.invited_at = datetime.datetime.utcnow()
+    user.invited_at = get_system_timezone_datetime()
 
     db.commit()
 
-    try:
+    with contextlib.suppress(Exception):
         email_service.send_password_reset(email=email, display_name=user.display_name, token=reset_token)
-    except Exception:
-        pass
-
     return True
 
 
@@ -170,12 +170,10 @@ def delete_user(db: Session, user_id: int) -> bool:
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     """Authentifier un utilisateur."""
-    user = get_user_by_email(db, email)
-    if not user:
+    if user := get_user_by_email(db, email):
+        return user if verify_password(password, getattr(user, "password_hash")) else None
+    else:
         return None
-    if not verify_password(password, getattr(user, "password_hash")):
-        return None
-    return user
 
 
 def create_admin_user(db: Session) -> User:

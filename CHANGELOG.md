@@ -4,3 +4,4 @@
 
 - [NEW] Gestion de l'archivage / désarchivage.
 - [NEW] Historique des actions effectuées sur les cartes.
+- [FIX] Prise en compte du fuseau horaire pour les dates.

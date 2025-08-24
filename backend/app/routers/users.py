@@ -1,5 +1,6 @@
 """Routeur pour la gestion des utilisateurs."""
 
+import contextlib
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -53,8 +54,7 @@ async def read_users(
 @router.post("/", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Créer un nouvel utilisateur (Admin uniquement)."""
-    db_user = user_service.get_user_by_email(db, email=user.email)
-    if db_user:
+    if db_user := user_service.get_user_by_email(db, email=user.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Un utilisateur avec cet email existe déjà"
         )
@@ -66,8 +66,7 @@ async def invite_user(
     payload: InvitePayload, db: Session = Depends(get_db), current_user: User = Depends(require_admin)
 ):
     """Inviter un utilisateur par email (Admin uniquement)."""
-    existing = user_service.get_user_by_email(db, email=payload.email)
-    if existing:
+    if existing := user_service.get_user_by_email(db, email=payload.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Un utilisateur avec cet email existe déjà"
         )
@@ -95,9 +94,7 @@ async def update_user(
 
 
 @router.post("/{user_id}/resend-invitation", response_model=UserResponse)
-async def resend_invitation(
-    user_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)
-):
+async def resend_invitation(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Renvoyer une invitation à un utilisateur existant (Admin uniquement)."""
     db_user = user_service.get_user(db, user_id=user_id)
     if db_user is None:
@@ -105,12 +102,12 @@ async def resend_invitation(
 
     if db_user.status != UserStatus.INVITED:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="L'utilisateur n'est pas dans un état d'invitation"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="L'utilisateur n'est pas dans un état d'invitation"
         )
 
     # Vérifier le délai d'une minute
     from datetime import datetime, timezone
+
     if db_user.invited_at:
         # Convertir invited_at en timezone-aware si nécessaire
         if db_user.invited_at.tzinfo is None:
@@ -119,17 +116,18 @@ async def resend_invitation(
         else:
             invited_at_aware = db_user.invited_at
 
-        time_diff = datetime.now(timezone.utc) - invited_at_aware
+        time_diff = datetime.now().astimezone() - invited_at_aware
         if time_diff.total_seconds() < 60:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Une invitation a déjà été envoyée il y a moins d'une minute"
+                detail="Une invitation a déjà été envoyée il y a moins d'une minute",
             )
 
     # Générer un nouveau token et mettre à jour l'horodatage
     import secrets
+
     new_token = secrets.token_urlsafe(32)
-    new_invited_at = datetime.now(timezone.utc)
+    new_invited_at = datetime.now().astimezone()
 
     db_user.invite_token = new_token
     # S'assurer que invited_at est timezone-aware
@@ -138,12 +136,10 @@ async def resend_invitation(
     db.refresh(db_user)
 
     # Renvoyer l'email d'invitation
-    try:
+    with contextlib.suppress(Exception):
         from ..services import email as email_service
-        email_service.send_invitation(email=db_user.email, display_name=db_user.display_name, token=new_token)
-    except Exception:
-        pass  # Ne pas échouer si l'email ne peut pas être envoyé
 
+        email_service.send_invitation(email=db_user.email, display_name=db_user.display_name, token=new_token)
     return db_user
 
 
@@ -155,10 +151,10 @@ async def delete_user(user_id: int, db: Session = Depends(get_db), current_user:
             status_code=status.HTTP_400_BAD_REQUEST, detail="Vous ne pouvez pas supprimer votre propre compte"
         )
 
-    success = user_service.delete_user(db, user_id=user_id)
-    if not success:
+    if success := user_service.delete_user(db, user_id=user_id):
+        return {"message": "Utilisateur supprimé avec succès"}
+    else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
-    return {"message": "Utilisateur supprimé avec succès"}
 
 
 @router.post("/set-password")
@@ -171,7 +167,7 @@ async def set_password(payload: SetPasswordPayload, db: Session = Depends(get_db
     if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token invalide ou expiré")
 
-    updated = user_service.set_password_from_invite(db, user=user, password=payload.password)
-    if not updated:
+    if updated := user_service.set_password_from_invite(db, user=user, password=payload.password):
+        return {"message": "Mot de passe défini avec succès"}
+    else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Impossible de définir le mot de passe")
-    return {"message": "Mot de passe défini avec succès"}

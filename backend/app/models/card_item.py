@@ -9,6 +9,11 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from ..database import Base
 
 
+def get_system_timezone_datetime():
+    """Retourne la date et heure actuelle dans le fuseau horaire du système."""
+    return datetime.datetime.now().astimezone()
+
+
 class CardItem(Base):
     """Élément de checklist lié à une carte."""
 
@@ -21,8 +26,8 @@ class CardItem(Base):
     texte: Mapped[str] = mapped_column(String(500), nullable=False)
     is_done: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=datetime.datetime.utcnow)
-    updated_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=datetime.datetime.utcnow)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=get_system_timezone_datetime)
+    updated_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=get_system_timezone_datetime)
 
     # Relations
     card: Mapped["Card"] = relationship("Card", back_populates="items")

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { CardHistoryEntry } from '../../types';
 import api from '../../services/api';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Clock } from 'lucide-react';
 
@@ -69,6 +69,25 @@ export const CardHistoryModal: React.FC<CardHistoryModalProps> = ({
         return colors[action] || 'text-gray-600';
     };
 
+    const formatDateWithTimezone = (dateString: string): string => {
+        try {
+            // Parser la date ISO depuis le backend
+            const date = parseISO(dateString);
+            // Convertir vers le timezone local en ajoutant le décalage
+            const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            // Formater avec le locale français
+            return format(localDate, "d MMMM yyyy 'à' HH:mm", {
+                locale: fr
+            });
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            // Fallback en cas d'erreur
+            return format(new Date(dateString), "d MMMM yyyy 'à' HH:mm", {
+                locale: fr
+            });
+        }
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -118,9 +137,7 @@ export const CardHistoryModal: React.FC<CardHistoryModalProps> = ({
                                                 {formatAction(entry.action)}
                                             </span>
                                             <span className="text-xs text-muted-foreground">
-                                                {format(new Date(entry.created_at), "d MMMM yyyy 'à' HH:mm", {
-                                                    locale: fr
-                                                })}
+                                                {formatDateWithTimezone(entry.created_at)}
                                             </span>
                                         </div>
 
