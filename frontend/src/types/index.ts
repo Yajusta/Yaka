@@ -115,6 +115,16 @@ export interface CardChecklistItem {
     updated_at: string;
 }
 
+export interface CardHistoryEntry {
+    id: number;
+    card_id: number;
+    user_id: number;
+    action: string;
+    description: string;
+    created_at: string;
+    user?: User;
+}
+
 // List management types
 export interface KanbanListCreate {
     name: string;

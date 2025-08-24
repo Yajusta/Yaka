@@ -3,8 +3,17 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func
 from typing import Optional, List
-from ..models import Card, Label, KanbanList
-from ..schemas import CardCreate, CardUpdate, CardListUpdate, CardFilter, CardMoveRequest, BulkCardMoveRequest
+from ..models import Card, Label, KanbanList, User, CardPriority
+from ..schemas import (
+    CardCreate,
+    CardUpdate,
+    CardListUpdate,
+    CardFilter,
+    CardMoveRequest,
+    BulkCardMoveRequest,
+    CardHistoryCreate,
+)
+from . import card_history as card_history_service
 
 
 def get_card(db: Session, card_id: int) -> Optional[Card]:
@@ -58,15 +67,18 @@ def create_card(db: Session, card: CardCreate, created_by: int) -> Card:
     Comportement spécial: si ``card.list_id`` vaut -1, la carte sera automatiquement
     affectée à la liste valide ayant l'order le plus bas.
     """
+    from . import card_history as card_history_service
+    from ..schemas import CardHistoryCreate
+
     # Résoudre la liste cible
     target_list_id = card.list_id
     if target_list_id == -1:
-        lowest_list = db.query(KanbanList).order_by(KanbanList.order.asc()).first()
-        if not lowest_list:
+        if lowest_list := db.query(KanbanList).order_by(KanbanList.order.asc()).first():
+            target_list_id = lowest_list.id
+
+        else:
             # Aucune liste valide n'existe
             raise ValueError("Aucune liste valide n'est disponible pour créer la carte")
-        target_list_id = lowest_list.id
-
     # Déterminer la position de la nouvelle carte
     if card.position is not None:
         # Position spécifiée - décaler les autres cartes
@@ -96,10 +108,23 @@ def create_card(db: Session, card: CardCreate, created_by: int) -> Card:
     db.add(db_card)
     db.commit()
     db.refresh(db_card)
+
+    # Créer une entrée d'historique pour la création de la carte
+    try:
+        history_entry = CardHistoryCreate(
+            card_id=db_card.id, user_id=created_by, action="create", description=f"Carte « {db_card.titre} » créée"
+        )
+        card_history_service.create_card_history_entry(db, history_entry)
+    except Exception as e:
+        # Ne pas échouer la création de la carte si l'historique échoue
+        print(f"Warning: Failed to create history entry for card creation: {e}")
+
     return db_card
 
 
-def update_card(db: Session, card_id: int, card_update: CardUpdate) -> Optional[Card]:
+def update_card(
+    db: Session, card_id: int, card_update: CardUpdate, updated_by: Optional[int] = None
+) -> Optional[Card]:
     """Mettre à jour une carte."""
     db_card = get_card(db, card_id)
     if not db_card:
@@ -112,10 +137,21 @@ def update_card(db: Session, card_id: int, card_update: CardUpdate) -> Optional[
 
     # Si on reçoit list_id = -1 lors d'une mise à jour, le résoudre vers la liste au plus petit order
     if "list_id" in update_data and update_data["list_id"] == -1:
-        lowest_list = db.query(KanbanList).order_by(KanbanList.order.asc()).first()
-        if not lowest_list:
+        if lowest_list := db.query(KanbanList).order_by(KanbanList.order.asc()).first():
+            update_data["list_id"] = lowest_list.id
+
+        else:
             raise ValueError("Aucune liste valide n'est disponible pour mettre à jour la carte")
-        update_data["list_id"] = lowest_list.id
+    # Stocker les valeurs avant modification pour l'historique
+    old_values = {}
+    if "titre" in update_data:
+        old_values["titre"] = db_card.titre
+    if "description" in update_data:
+        old_values["description"] = db_card.description
+    if "priorite" in update_data:
+        old_values["priorite"] = db_card.priorite
+    if "assignee_id" in update_data:
+        old_values["assignee_id"] = db_card.assignee_id
 
     for field, value in update_data.items():
         setattr(db_card, field, value)
@@ -127,7 +163,67 @@ def update_card(db: Session, card_id: int, card_update: CardUpdate) -> Optional[
 
     db.commit()
     db.refresh(db_card)
+
+    # Créer des entrées d'historique spécifiques pour les modifications
+    if updated_by:
+        try:
+            # Priorité changée
+            if "priorite" in old_values and old_values["priorite"] != db_card.priorite:
+                priority_labels = {
+                    CardPriority.LOW: "faible",
+                    CardPriority.MEDIUM: "moyenne",
+                    CardPriority.HIGH: "élevée",
+                }
+                old_priority_label = priority_labels.get(old_values["priorite"], str(old_values["priorite"]))
+                new_priority_label = priority_labels.get(db_card.priorite, str(db_card.priorite))
+                history_entry = CardHistoryCreate(
+                    card_id=db_card.id,
+                    user_id=updated_by,
+                    action="priority_change",
+                    description=f"Priorité changée de « {old_priority_label} » à « {new_priority_label} »",
+                )
+                card_history_service.create_card_history_entry(db, history_entry)
+
+            # Assigné changé
+            if "assignee_id" in old_values and old_values["assignee_id"] != db_card.assignee_id:
+                _assignee_changed(old_values, db, db_card, updated_by)
+
+            if other_changes := [key for key in old_values if key not in ["priorite", "assignee_id"]]:
+                history_entry = CardHistoryCreate(
+                    card_id=db_card.id,
+                    user_id=updated_by,
+                    action="update",
+                    description=f"Carte « {db_card.titre} » modifiée",
+                )
+                card_history_service.create_card_history_entry(db, history_entry)
+
+        except Exception as e:
+            # Ne pas échouer la mise à jour de la carte si l'historique échoue
+            print(f"Warning: Failed to create history entries for card update: {e}")
+
     return db_card
+
+
+def _assignee_changed(old_values, db, db_card, updated_by):
+    # Récupérer les noms des utilisateurs
+    old_assignee = None
+    new_assignee = None
+    if old_values["assignee_id"]:
+        old_user = db.query(User).filter(User.id == old_values["assignee_id"]).first()
+        old_assignee = old_user.display_name if old_user else f"Utilisateur {old_values['assignee_id']}"
+    if db_card.assignee_id:
+        new_user = db.query(User).filter(User.id == db_card.assignee_id).first()
+        new_assignee = new_user.display_name if new_user else f"Utilisateur {db_card.assignee_id}"
+
+    old_assignee_text = old_assignee or "personne"
+    new_assignee_text = new_assignee or "personne"
+    history_entry = CardHistoryCreate(
+        card_id=db_card.id,
+        user_id=updated_by,
+        action="assignee_change",
+        description=f"Assigné changé de « {old_assignee_text} » à « {new_assignee_text} »",
+    )
+    card_history_service.create_card_history_entry(db, history_entry)
 
 
 def update_card_list(db: Session, card_id: int, list_update: CardListUpdate) -> Optional[Card]:
@@ -139,18 +235,19 @@ def update_card_list(db: Session, card_id: int, list_update: CardListUpdate) -> 
     # Gérer le cas spécial list_id = -1
     target_list_id = list_update.list_id
     if target_list_id == -1:
-        lowest_list = db.query(KanbanList).order_by(KanbanList.order.asc()).first()
-        if not lowest_list:
-            return None
-        target_list_id = lowest_list.id
+        if lowest_list := db.query(KanbanList).order_by(KanbanList.order.asc()).first():
+            target_list_id = lowest_list.id
 
+        else:
+            return None
     db_card.list_id = target_list_id
     db.commit()
     db.refresh(db_card)
+
     return db_card
 
 
-def archive_card(db: Session, card_id: int) -> Optional[Card]:
+def archive_card(db: Session, card_id: int, archived_by: Optional[int] = None) -> Optional[Card]:
     """Archiver une carte."""
     db_card = get_card(db, card_id)
     if not db_card:
@@ -159,10 +256,24 @@ def archive_card(db: Session, card_id: int) -> Optional[Card]:
     db_card.is_archived = True
     db.commit()
     db.refresh(db_card)
+
+    # Créer une entrée d'historique pour l'archivage
+    if archived_by:
+        try:
+            history_entry = CardHistoryCreate(
+                card_id=db_card.id,
+                user_id=archived_by,
+                action="archive",
+                description=f"Carte « {db_card.titre} » archivée",
+            )
+            card_history_service.create_card_history_entry(db, history_entry)
+        except Exception as e:
+            print(f"Warning: Failed to create history entry for card archive: {e}")
+
     return db_card
 
 
-def unarchive_card(db: Session, card_id: int) -> Optional[Card]:
+def unarchive_card(db: Session, card_id: int, unarchived_by: Optional[int] = None) -> Optional[Card]:
     """Désarchiver une carte."""
     db_card = get_card(db, card_id)
     if not db_card:
@@ -171,6 +282,20 @@ def unarchive_card(db: Session, card_id: int) -> Optional[Card]:
     db_card.is_archived = False
     db.commit()
     db.refresh(db_card)
+
+    # Créer une entrée d'historique pour la restauration
+    if unarchived_by:
+        try:
+            history_entry = CardHistoryCreate(
+                card_id=db_card.id,
+                user_id=unarchived_by,
+                action="unarchive",
+                description=f"Carte « {db_card.titre} » restaurée",
+            )
+            card_history_service.create_card_history_entry(db, history_entry)
+        except Exception as e:
+            print(f"Warning: Failed to create history entry for card unarchive: {e}")
+
     return db_card
 
 
@@ -185,7 +310,9 @@ def delete_card(db: Session, card_id: int) -> bool:
     return True
 
 
-def move_card(db: Session, card_id: int, move_request: CardMoveRequest) -> Optional[Card]:
+def move_card(
+    db: Session, card_id: int, move_request: CardMoveRequest, moved_by: Optional[int] = None
+) -> Optional[Card]:
     """Déplacer une carte entre listes avec gestion de position."""
     db_card = get_card(db, card_id)
     if not db_card:
@@ -199,6 +326,10 @@ def move_card(db: Session, card_id: int, move_request: CardMoveRequest) -> Optio
     old_position = db_card.position
     new_list_id = move_request.target_list_id
 
+    # Récupérer le nom de l'ancienne liste pour l'historique
+    old_list = db.query(KanbanList).filter(KanbanList.id == old_list_id).first()
+    old_list_name = old_list.name if old_list else f"Liste {old_list_id}"
+
     # Si on déplace dans la même liste, on réorganise les positions
     if old_list_id == new_list_id:
         # Réorganisation dans la même liste - utiliser la position fournie ou mettre à la fin
@@ -209,7 +340,6 @@ def move_card(db: Session, card_id: int, move_request: CardMoveRequest) -> Optio
             target_position = (max_position or 0) + 1
 
         _reorder_cards_in_same_list(db, card_id, old_position, target_position, new_list_id)
-        db_card.position = target_position
     else:
         # Déplacement vers une autre liste
         # 1. Compacter les positions dans l'ancienne liste
@@ -227,10 +357,25 @@ def move_card(db: Session, card_id: int, move_request: CardMoveRequest) -> Optio
 
         # 3. Mettre à jour la carte
         db_card.list_id = new_list_id
-        db_card.position = target_position
-
+    db_card.position = target_position
     db.commit()
     db.refresh(db_card)
+
+    # Créer une entrée d'historique pour le déplacement si les listes sont différentes
+    if moved_by and old_list_id != new_list_id:
+        try:
+            new_list = db.query(KanbanList).filter(KanbanList.id == new_list_id).first()
+            new_list_name = new_list.name if new_list else f"Liste {new_list_id}"
+            history_entry = CardHistoryCreate(
+                card_id=db_card.id,
+                user_id=moved_by,
+                action="move",
+                description=f"Carte « {db_card.titre} » déplacée de « {old_list_name} » à « {new_list_name} »",
+            )
+            card_history_service.create_card_history_entry(db, history_entry)
+        except Exception as e:
+            print(f"Warning: Failed to create history entry for card move: {e}")
+
     return db_card
 
 

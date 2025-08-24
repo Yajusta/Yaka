@@ -4,7 +4,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .models import User, Label, Card, KanbanList, BoardSettings
-from .routers import auth_router, users_router, labels_router, cards_router, lists_router, board_settings_router
+from .routers import (
+    auth_router,
+    users_router,
+    labels_router,
+    cards_router,
+    lists_router,
+    board_settings_router,
+)
 from .routers.card_items import router as card_items_router
 from .services.user import create_admin_user, get_user_by_email
 from .services.board_settings import initialize_default_settings
@@ -52,15 +59,13 @@ async def startup_event():
         # Vérifier s'il y a déjà des données dans la base
         from .models import User
 
-        admin_user = get_user_by_email(db, "admin@yaka.local")
-
-        if not admin_user:
+        if admin_user := get_user_by_email(db, "admin@yaka.local"):
+            print("Base de donnees existante detectee, aucune initialisation automatique effectuee")
+            print("Pour reinitialiser en mode demo, utilisez l'endpoint POST /demo/reset")
+        else:
             # Base de données vide ou nouvellement créée, configurer avec les données de base
             print("Base de donnees vide detectee, configuration initiale...")
             setup_fresh_database()
-        else:
-            print("Base de donnees existante detectee, aucune initialisation automatique effectuee")
-            print("Pour reinitialiser en mode demo, utilisez l'endpoint POST /demo/reset")
     finally:
         db.close()
 
@@ -94,4 +99,7 @@ async def demo_reset():
     except Exception as e:
         from fastapi import HTTPException
 
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la réinitialisation: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de la réinitialisation: {str(e)}",
+        ) from e

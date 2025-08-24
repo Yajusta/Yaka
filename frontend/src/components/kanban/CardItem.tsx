@@ -2,13 +2,15 @@ import { useDraggable } from '@dnd-kit/core';
 import { CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { CalendarDays, Edit, Trash2, MoreHorizontal } from 'lucide-react';
+import { CalendarDays, Edit, Trash2, MoreHorizontal, Clock } from 'lucide-react';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { PriorityChanger } from './PriorityChanger';
 import { AssigneeChanger } from './AssigneeChanger';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { CardHistoryModal } from './CardHistoryModal';
 import { Card } from '../../types/index';
 import { useAuth } from '../../hooks/useAuth';
+import { useState } from 'react';
 
 interface CardItemProps {
     card: Card;
@@ -32,6 +34,7 @@ export const CardItem = ({
     isInTrashZone = false
 }: CardItemProps) => {
     const { user: currentUser } = useAuth();
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
 
     const {
         attributes,
@@ -169,6 +172,16 @@ export const CardItem = ({
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-40">
                                     <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowHistoryModal(true);
+                                        }}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Clock className="h-3.5 w-3.5" />
+                                        Voir l'historique
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
                                         variant="destructive"
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -261,6 +274,13 @@ export const CardItem = ({
                     </div>
                 </div>
             </CardContent>
+
+            <CardHistoryModal
+                isOpen={showHistoryModal}
+                onClose={() => setShowHistoryModal(false)}
+                cardId={card.id}
+                cardTitle={card.titre}
+            />
         </GlassmorphicCard>
     );
 };

@@ -3,13 +3,15 @@
 ## Bugs
 
 [ ] Déplacement horizontal quand il y a un scroll.
+[ ] Prendre en compte le fuseau horaire.
 
 ## Features
 
 [x] "Archiver" au lieu de "Supprimer".
-[ ] Historique des changements de carte.
+[x] Historique des changements de carte.
 [ ] Commentaires sur les tâches.
 [ ] Pièces jointes sur les tâches.
+[ ] Multilangue.
 
 ## Frontend
 

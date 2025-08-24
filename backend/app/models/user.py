@@ -56,8 +56,10 @@ class User(Base):
         "Card", foreign_keys="Card.assignee_id", back_populates="assignee"
     )
     created_labels: Mapped[List["Label"]] = relationship("Label", back_populates="creator")
+    card_actions: Mapped[List["CardHistory"]] = relationship("CardHistory", back_populates="user")
 
 
 if TYPE_CHECKING:
     from .card import Card
     from .label import Label
+    from .card_history import CardHistory

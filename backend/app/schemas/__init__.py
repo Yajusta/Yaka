@@ -21,6 +21,11 @@ from .card import (
     CardMoveRequest,
     BulkCardMoveRequest,
 )
+from .card_history import (
+    CardHistoryBase,
+    CardHistoryCreate,
+    CardHistoryResponse,
+)
 from .kanban_list import (
     KanbanListBase,
     KanbanListCreate,
@@ -51,6 +56,9 @@ __all__ = [
     "CardFilter",
     "CardMoveRequest",
     "BulkCardMoveRequest",
+    "CardHistoryBase",
+    "CardHistoryCreate",
+    "CardHistoryResponse",
     "KanbanListBase",
     "KanbanListCreate",
     "KanbanListUpdate",
