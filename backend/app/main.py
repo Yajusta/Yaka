@@ -13,6 +13,7 @@ from .routers import (
     board_settings_router,
 )
 from .routers.card_items import router as card_items_router
+from .routers.card_comments import router as card_comments_router
 from .services.user import create_admin_user, get_user_by_email
 from .services.board_settings import initialize_default_settings
 from .services.email import FROM_ADDRESS, SMTP_USER, SMTP_HOST
@@ -48,6 +49,7 @@ app.include_router(cards_router)
 app.include_router(lists_router)
 app.include_router(board_settings_router)
 app.include_router(card_items_router)
+app.include_router(card_comments_router)
 
 
 @app.on_event("startup")

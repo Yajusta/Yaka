@@ -35,6 +35,7 @@ export interface Card {
     created_at: string;
     updated_at: string;
     items?: CardChecklistItem[]; // éléments de checklist
+    comments?: CardComment[]; // commentaires
 }
 
 export interface Label {
@@ -113,6 +114,17 @@ export interface CardChecklistItem {
     position: number;
     created_at: string;
     updated_at: string;
+}
+
+export interface CardComment {
+    id: number;
+    card_id: number;
+    user_id: number;
+    comment: string;
+    is_deleted: boolean;
+    created_at: string;
+    updated_at: string;
+    user?: User;
 }
 
 export interface CardHistoryEntry {

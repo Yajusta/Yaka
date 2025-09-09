@@ -33,6 +33,12 @@ L'envoie des emails d'invation est désactivé.
 - **Gestion des rôles** (administrateur / membre)
 - **Gestion des colonnes** pour mettre autant de colonnes que nécessaire
 - **Gestion des libellés** colorés pour la catégorisation
+- **Historisation des évènements** pour suivre qui a fait quoi
+- **Gestion des archives** pour ne jamais rien perdre
+
+## 📝 Changelog
+
+[Changelog](CHANGELOG.md)
 
 ## 🚀 Déploiement
 

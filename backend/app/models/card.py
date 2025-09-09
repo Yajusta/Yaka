@@ -66,6 +66,7 @@ class Card(Base):
     )
     labels: Mapped[List["Label"]] = relationship("Label", secondary=card_labels, back_populates="cards")
     items: Mapped[List["CardItem"]] = relationship("CardItem", back_populates="card", cascade="all, delete-orphan")
+    comments: Mapped[List["CardComment"]] = relationship("CardComment", back_populates="card", cascade="all, delete-orphan")
     history: Mapped[List["CardHistory"]] = relationship("CardHistory", back_populates="card", cascade="all, delete-orphan")
 
 
@@ -76,4 +77,5 @@ if TYPE_CHECKING:
     from .label import Label
     from .kanban_list import KanbanList
     from .card_item import CardItem
+    from .card_comment import CardComment
     from .card_history import CardHistory

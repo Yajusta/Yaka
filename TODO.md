@@ -3,13 +3,14 @@
 ## Bugs
 
 [ ] Déplacement horizontal quand il y a un scroll.
-[ ] Prendre en compte le fuseau horaire.
+[x] Prendre en compte le fuseau horaire.
+[x] Affichage d'une tache sur un écran de téléphone déborde en hauteur.
 
 ## Features
 
 [x] "Archiver" au lieu de "Supprimer".
 [x] Historique des changements de carte.
-[ ] Commentaires sur les tâches.
+[x] Commentaires sur les tâches.
 [ ] Pièces jointes sur les tâches.
 [ ] Multilangue.
 

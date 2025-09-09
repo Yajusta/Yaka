@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { User, Card, Label, Filters, CreateCardData, UpdateCardData, CreateLabelData, UpdateLabelData, CardChecklistItem } from '../types';
+import { User, Card, Label, Filters, CreateCardData, UpdateCardData, CreateLabelData, UpdateLabelData, CardChecklistItem, CardComment } from '../types';
 
 // Configuration de base d'Axios
 // Utiliser la variable d'environnement si disponible, sinon la valeur par défaut
@@ -331,6 +331,25 @@ export const cardItemsService = {
     },
     async deleteItem(itemId: number): Promise<void> {
         await api.delete(`/card-items/${itemId}`);
+    }
+};
+
+// Services pour les commentaires
+export const cardCommentsService = {
+    async getComments(cardId: number): Promise<CardComment[]> {
+        const response = await api.get<CardComment[]>(`/card-comments/card/${cardId}`);
+        return response.data;
+    },
+    async createComment(cardId: number, comment: string): Promise<CardComment> {
+        const response = await api.post<CardComment>('/card-comments/', { card_id: cardId, comment });
+        return response.data;
+    },
+    async updateComment(commentId: number, comment: string): Promise<CardComment> {
+        const response = await api.put<CardComment>(`/card-comments/${commentId}`, { comment });
+        return response.data;
+    },
+    async deleteComment(commentId: number): Promise<void> {
+        await api.delete(`/card-comments/${commentId}`);
     }
 };
 
