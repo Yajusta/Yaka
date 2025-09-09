@@ -2,7 +2,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { CalendarDays, Edit, Trash2, MoreHorizontal, Clock } from 'lucide-react';
+import { CalendarDays, Edit, Trash2, MoreHorizontal, Clock, MessageCircle } from 'lucide-react';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { PriorityChanger } from './PriorityChanger';
 import { AssigneeChanger } from './AssigneeChanger';
@@ -97,6 +97,16 @@ export const CardItem = ({
         return new Date(dateString).toLocaleDateString('fr-FR');
     };
 
+    const formatCommentDate = (dateString: string): string => {
+        return new Date(dateString).toLocaleString('fr-FR', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
     const handleEdit = (e: React.MouseEvent): void => {
         e.stopPropagation();
         onUpdate(card, 'edit');
@@ -131,6 +141,9 @@ export const CardItem = ({
     const totalItems = card.items?.length || 0;
     const doneItems = card.items?.filter(i => i.is_done).length || 0;
     const progress = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
+
+    const totalComments = card.comments?.length || 0;
+    const recentComments = card.comments?.slice(-5).reverse() || []; // Les 5 plus récents
 
     return (
         <GlassmorphicCard
@@ -239,32 +252,96 @@ export const CardItem = ({
                                 </div>
                             )}
                             {totalItems > 0 && (
-                                <div className="flex items-center gap-2 ml-1" title="Progression de la checklist">
-                                    <div className="relative h-5 w-5">
-                                        <svg className="h-5 w-5 text-muted-foreground" viewBox="0 0 36 36">
-                                            <path
-                                                className="text-muted-foreground/20"
-                                                strokeWidth="4"
-                                                stroke="currentColor"
-                                                fill="none"
-                                                pathLength="100"
-                                                d="M18 2 a 16 16 0 1 0 0 32 a 16 16 0 1 0 0 -32"
-                                            />
-                                            <path
-                                                className="text-primary"
-                                                strokeWidth="4"
-                                                strokeLinecap="round"
-                                                stroke="currentColor"
-                                                fill="none"
-                                                pathLength="100"
-                                                strokeDasharray={`${progress} ${100 - progress}`}
-                                                transform="scale(-1,1) translate(-36,0)"
-                                                d="M18 2 a 16 16 0 1 0 0 32 a 16 16 0 1 0 0 -32"
-                                            />
-                                        </svg>
-                                    </div>
-                                    <span className="text-xs text-muted-foreground">{doneItems} / {totalItems}</span>
-                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <div className="flex items-center gap-2 ml-1 cursor-pointer" title="Progression de la checklist">
+                                            <div className="relative h-5 w-5">
+                                                <svg className="h-5 w-5 text-muted-foreground" viewBox="0 0 36 36">
+                                                    <path
+                                                        className="text-muted-foreground/20"
+                                                        strokeWidth="4"
+                                                        stroke="currentColor"
+                                                        fill="none"
+                                                        pathLength="100"
+                                                        d="M18 2 a 16 16 0 1 0 0 32 a 16 16 0 1 0 0 -32"
+                                                    />
+                                                    <path
+                                                        className="text-primary"
+                                                        strokeWidth="4"
+                                                        strokeLinecap="round"
+                                                        stroke="currentColor"
+                                                        fill="none"
+                                                        pathLength="100"
+                                                        strokeDasharray={`${progress} ${100 - progress}`}
+                                                        transform="scale(-1,1) translate(-36,0)"
+                                                        d="M18 2 a 16 16 0 1 0 0 32 a 16 16 0 1 0 0 -32"
+                                                    />
+                                                </svg>
+                                            </div>
+                                            <span className="text-xs text-muted-foreground">{doneItems} / {totalItems}</span>
+                                        </div>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-72 p-0 bg-background border border-border" sideOffset={5}>
+                                        <div className="p-3 space-y-2">
+                                            <div className="text-sm font-medium text-foreground">
+                                                Checklist ({doneItems}/{totalItems})
+                                            </div>
+                                            <div className="space-y-1 max-h-64 overflow-y-auto">
+                                                {card.items?.map((item) => (
+                                                    <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border">
+                                                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${item.is_done ? 'bg-primary border-primary' : 'border-muted-foreground'}`}>
+                                                            {item.is_done && (
+                                                                <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                                                    <path d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                        <span className={`text-sm ${item.is_done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                                                            {item.texte}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+                            {totalComments > 0 && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <div className="flex items-center cursor-pointer">
+                                            <MessageCircle className="h-3 w-3 text-blue-500" />
+                                        </div>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-80 p-0 bg-background border border-border" sideOffset={5}>
+                                        <div className="p-3 space-y-2">
+                                            {recentComments.length > 0 && (
+                                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                                    {recentComments.map((comment) => (
+                                                        <div key={comment.id} className="p-2 rounded-lg bg-muted/50 border border-border">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <div className="font-medium text-sm text-foreground">
+                                                                    {comment.user?.display_name || 'Utilisateur inconnu'}
+                                                                </div>
+                                                                <div className="text-xs text-muted-foreground">
+                                                                    {formatCommentDate(comment.created_at)}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-sm text-foreground leading-relaxed">
+                                                                {comment.comment}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {totalComments > recentComments.length && (
+                                                <div className="text-xs text-muted-foreground italic text-center py-1 border-t border-border">
+                                                    + {totalComments - recentComments.length} commentaire{totalComments - recentComments.length > 1 ? 's' : ''} plus ancien{totalComments - recentComments.length > 1 ? 's' : ''}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             )}
                         </div>
 

@@ -6,6 +6,7 @@ from datetime import datetime, date
 from ..models.card import CardPriority
 from .label import LabelResponse
 from .card_item import CardItemResponse
+from .card_comment import CardCommentResponse
 from .user import UserResponse
 
 
@@ -62,6 +63,7 @@ class CardResponse(CardBase):
     creator: Optional[UserResponse] = None
     assignee: Optional[UserResponse] = None
     items: List[CardItemResponse] = []
+    comments: List[CardCommentResponse] = []
 
     class Config:
         from_attributes = True
@@ -88,10 +90,8 @@ class CardMoveRequest(BaseModel):
     @validator("target_list_id")
     def validate_move_request(cls, v, values):
         """Valide la demande de déplacement."""
-        if "source_list_id" in values and v == values["source_list_id"]:
-            # Permettre le déplacement dans la même liste si une position est spécifiée
-            # Cela permet la réorganisation des cartes dans une même colonne
-            return v
+        # Permettre le déplacement dans la même liste si une position est spécifiée
+        # Cela permet la réorganisation des cartes dans une même colonne
         return v
 
 

@@ -1,9 +1,9 @@
 """Service pour la gestion des cartes."""
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, func
 from typing import Optional, List
-from ..models import Card, Label, KanbanList, User, CardPriority
+from ..models import Card, Label, KanbanList, User, CardPriority, CardComment
 from ..schemas import (
     CardCreate,
     CardUpdate,
@@ -17,8 +17,12 @@ from . import card_history as card_history_service
 
 
 def get_card(db: Session, card_id: int) -> Optional[Card]:
-    """Récupérer une carte par son ID."""
-    return db.query(Card).filter(Card.id == card_id).first()
+    """Récupérer une carte par son ID avec ses relations."""
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if card:
+        # Filtrer les commentaires pour ne garder que les non supprimés
+        card.comments = [comment for comment in card.comments if not comment.is_deleted]
+    return card
 
 
 def get_cards(db: Session, filters: CardFilter, skip: int = 0, limit: int = 100) -> List[Card]:
@@ -53,7 +57,15 @@ def get_cards(db: Session, filters: CardFilter, skip: int = 0, limit: int = 100)
     # Trier par position dans la liste, puis par date de création
     query = query.order_by(Card.position, Card.created_at)
 
-    return query.offset(skip).limit(limit).all()
+    cards = query.options(
+        joinedload(Card.comments).joinedload(CardComment.user)
+    ).offset(skip).limit(limit).all()
+    
+    # Filtrer les commentaires pour ne garder que les non supprimés
+    for card in cards:
+        card.comments = [comment for comment in card.comments if not comment.is_deleted]
+    
+    return cards
 
 
 def get_archived_cards(db: Session, skip: int = 0, limit: int = 100) -> List[Card]:
