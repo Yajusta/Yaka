@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDroppable } from '@dnd-kit/core';
 import { CardItem } from './CardItem';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
@@ -39,6 +40,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     activeCardSize,
     originalPositions
 }) => {
+    const { t } = useTranslation();
     const { setNodeRef } = useDroppable({
         id: id,
     });
@@ -88,7 +90,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     <div className="flex items-center justify-between group">
                         <div>
                             <h3 className="text-lg font-semibold text-foreground">{list.name}</h3>
-                            <p className="text-sm text-muted-foreground">{cards.length} carte{cards.length !== 1 ? 's' : ''}</p>
+                            <p className="text-sm text-muted-foreground">{t('list.card', { count: cards.length })}</p>
                         </div>
                         {onCreateCard && (
                             <Button
@@ -96,7 +98,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                                 size="sm"
                                 onClick={() => onCreateCard(list.id)}
                                 className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary/10"
-                                title="Créer une nouvelle carte dans cette liste"
+                                title={t('list.createCardInList')}
                             >
                                 <Plus className="h-4 w-4" />
                             </Button>

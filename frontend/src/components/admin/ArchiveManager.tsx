@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, KanbanList } from '../../types/index';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -29,6 +30,7 @@ export const ArchiveManager = ({
     const [loading, setLoading] = useState<boolean>(false);
     const [restoringCardId, setRestoringCardId] = useState<number | null>(null);
     const { toast } = useToast();
+    const { t } = useTranslation();
 
     // Load archived cards when dialog opens
     useEffect(() => {
@@ -45,8 +47,8 @@ export const ArchiveManager = ({
         } catch (error) {
             console.error('Erreur lors du chargement des cartes archivées:', error);
             toast({
-                title: "Erreur",
-                description: "Impossible de charger les cartes archivées",
+                title: t('common.error'),
+                description: t('archive.loadError'),
                 variant: "destructive"
             });
         } finally {
@@ -63,8 +65,8 @@ export const ArchiveManager = ({
 
             if (!targetList) {
                 toast({
-                    title: "Erreur",
-                    description: "Aucune liste disponible pour restaurer la carte",
+                    title: t('common.error'),
+                    description: t('archive.noListAvailable'),
                     variant: "destructive"
                 });
                 return;
@@ -80,15 +82,18 @@ export const ArchiveManager = ({
             onCardRestored?.(restoredCard);
 
             toast({
-                title: "Carte restaurée",
-                description: `La carte "${card.titre}" a été restaurée dans la liste "${targetList.name}"`,
+                title: t('archive.cardRestored'),
+                description: t('archive.cardRestoredDescription', { 
+                    cardTitle: card.titre, 
+                    listName: targetList.name 
+                }),
                 variant: "success"
             });
         } catch (error: any) {
             console.error('Erreur lors de la restauration:', error);
             toast({
-                title: "Erreur lors de la restauration",
-                description: error.response?.data?.detail || "Impossible de restaurer la carte",
+                title: t('archive.restoreError'),
+                description: error.response?.data?.detail || t('archive.restoreErrorDescription'),
                 variant: "destructive"
             });
         } finally {
@@ -98,12 +103,12 @@ export const ArchiveManager = ({
 
     const formatDate = (dateString?: string): string => {
         if (!dateString) {
-            return 'Date inconnue';
+            return t('common.unknownDate');
         }
         try {
             return format(new Date(dateString), 'dd MMMM yyyy à HH:mm', { locale: fr });
         } catch {
-            return 'Date inconnue';
+            return t('common.unknownDate');
         }
     };
 
@@ -113,10 +118,10 @@ export const ArchiveManager = ({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <ArchiveRestore className="h-5 w-5" />
-                        Cartes archivées ({archivedCards.length})
+                        {t('archive.title')} ({archivedCards.length})
                     </DialogTitle>
                     <DialogDescription>
-                        Liste de toutes les cartes archivées. Cliquez sur "Restaurer" pour remettre une carte dans le kanban.
+                        {t('archive.description')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -124,13 +129,13 @@ export const ArchiveManager = ({
                     {loading ? (
                         <div className="flex items-center justify-center py-8">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                            <span className="ml-2">Chargement des cartes archivées...</span>
+                            <span className="ml-2">{t('archive.loading')}</span>
                         </div>
                     ) : archivedCards.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                             <ArchiveRestore className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>Aucune carte archivée</p>
-                            <p className="text-sm mt-1">Les cartes archivées apparaîtront ici</p>
+                            <p>{t('archive.noCards')}</p>
+                            <p className="text-sm mt-1">{t('archive.noCardsDescription')}</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -161,7 +166,7 @@ export const ArchiveManager = ({
                                                 <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                                                     <div className="flex items-center gap-1">
                                                         <Calendar className="h-3 w-3" />
-                                                        <span>Archivée le {formatDate(card.updated_at)}</span>
+                                                        <span>{t('archive.archivedOn', { date: formatDate(card.updated_at) })}</span>
                                                     </div>
 
                                                     {card.assignee && (
@@ -208,7 +213,7 @@ export const ArchiveManager = ({
                                                 ) : (
                                                     <RotateCcw className="h-4 w-4" />
                                                 )}
-                                                Restaurer
+                                                {t('archive.restore')}
                                             </Button>
                                         </div>
                                     </div>

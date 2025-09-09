@@ -43,6 +43,7 @@ def create_user(db: Session, user: UserCreate) -> User:
         password_hash=hashed_password,
         display_name=user.display_name,
         role=user.role,
+        language=user.language or 'fr',
         status=UserStatus.ACTIVE,
     )
     db.add(db_user)
@@ -60,6 +61,7 @@ def invite_user(db: Session, email: str, display_name: str | None, role: UserRol
         email=email,
         display_name=display_name,
         role=role,
+        language='fr',
         status=UserStatus.INVITED,
         invite_token=invite_token,
         invited_at=invited_at,

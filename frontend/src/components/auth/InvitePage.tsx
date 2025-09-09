@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api.tsx';
 import { Button } from '../ui/button';
@@ -6,8 +7,10 @@ import { Input } from '../ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import LanguageSelector from '../common/LanguageSelector.tsx';
 
 const InvitePage = () => {
+    const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [password, setPassword] = useState('');
@@ -23,22 +26,22 @@ const InvitePage = () => {
 
     useEffect(() => {
         if (!token) {
-            setError('Token manquant ou invalide');
+            setError(t('invite.missingToken'));
         }
     }, [token]);
 
     const validatePassword = (pwd: string): string | null => {
         if (pwd.length < 8) {
-            return 'Le mot de passe doit contenir au moins 8 caractères';
+            return t('invite.passwordTooShort');
         }
         if (!/(?=.*[a-z])/.test(pwd)) {
-            return 'Le mot de passe doit contenir au moins une lettre minuscule';
+            return t('invite.passwordMissingLowercase');
         }
         if (!/(?=.*[A-Z])/.test(pwd)) {
-            return 'Le mot de passe doit contenir au moins une lettre majuscule';
+            return t('invite.passwordMissingUppercase');
         }
         if (!/(?=.*\d)/.test(pwd)) {
-            return 'Le mot de passe doit contenir au moins un chiffre';
+            return t('invite.passwordMissingNumber');
         }
         return null;
     };
@@ -48,12 +51,12 @@ const InvitePage = () => {
 
 
         if (!token) {
-            setError('Token manquant');
+            setError(t('invite.missingToken'));
             return;
         }
 
         if (password !== confirmPassword) {
-            setError('Les mots de passe ne correspondent pas');
+            setError(t('invite.passwordsDoNotMatch'));
             return;
         }
 
@@ -80,7 +83,7 @@ const InvitePage = () => {
             }, 5 * 1000);
         } catch (err: any) {
             console.error('Erreur lors de la définition du mot de passe:', err);
-            setError(err?.response?.data?.detail || 'Erreur lors de la définition du mot de passe');
+            setError(err?.response?.data?.detail || t('invite.setPasswordError'));
         } finally {
             setLoading(false);
         }
@@ -89,14 +92,18 @@ const InvitePage = () => {
     if (success) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
+                {/* Language selector en haut à droite */}
+                <div className="absolute top-4 right-4">
+                    <LanguageSelector />
+                </div>
                 <Card className="w-full max-w-md">
                     <CardHeader className="text-center">
                         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
                             <Mail className="h-6 w-6 text-green-600 dark:text-green-400" />
                         </div>
-                        <CardTitle className="text-2xl font-bold">Mot de passe défini !</CardTitle>
+                        <CardTitle className="text-2xl font-bold">{t('invite.passwordSetSuccess')}</CardTitle>
                         <CardDescription>
-                            Votre mot de passe a été défini avec succès. Vous allez être redirigé vers la page de connexion.
+                            {t('invite.passwordSetSuccessDescription')}
                         </CardDescription>
                     </CardHeader>
                 </Card>
@@ -106,18 +113,22 @@ const InvitePage = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
+            {/* Language selector en haut à droite */}
+            <div className="absolute top-4 right-4">
+                <LanguageSelector />
+            </div>
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                         <Lock className="h-6 w-6 text-primary" />
                     </div>
                     <CardTitle className="text-2xl font-bold">
-                        {isResetPassword ? 'Réinitialiser le mot de passe' : 'Définir votre mot de passe'}
+                        {isResetPassword ? t('invite.resetPassword') : t('invite.setPassword')}
                     </CardTitle>
                     <CardDescription>
                         {isResetPassword
-                            ? 'Choisissez un nouveau mot de passe pour votre compte'
-                            : 'Bienvenue ! Choisissez un mot de passe pour activer votre compte'
+                            ? t('invite.resetPasswordDescription')
+                            : t('invite.setPasswordDescription')
                         }
                     </CardDescription>
                 </CardHeader>
@@ -131,7 +142,7 @@ const InvitePage = () => {
 
                         <div className="space-y-2">
                             <label htmlFor="password" className="text-sm font-medium">
-                                Nouveau mot de passe
+                                {t('invite.newPassword')}
                             </label>
                             <div className="relative">
                                 <Input
@@ -161,7 +172,7 @@ const InvitePage = () => {
 
                         <div className="space-y-2">
                             <label htmlFor="confirmPassword" className="text-sm font-medium">
-                                Confirmer le mot de passe
+                                {t('invite.confirmPassword')}
                             </label>
                             <div className="relative">
                                 <Input
@@ -190,12 +201,12 @@ const InvitePage = () => {
                         </div>
 
                         <div className="text-xs text-muted-foreground space-y-1">
-                            <p>Le mot de passe doit contenir :</p>
+                            <p>{t('invite.passwordRequirements')}</p>
                             <ul className="list-disc list-inside space-y-1 ml-2">
-                                <li>Au moins 8 caractères</li>
-                                <li>Une lettre minuscule</li>
-                                <li>Une lettre majuscule</li>
-                                <li>Un chiffre</li>
+                                <li>{t('invite.passwordMinLength')}</li>
+                                <li>{t('invite.passwordLowercase')}</li>
+                                <li>{t('invite.passwordUppercase')}</li>
+                                <li>{t('invite.passwordNumber')}</li>
                             </ul>
                         </div>
 
@@ -207,10 +218,10 @@ const InvitePage = () => {
                             {loading ? (
                                 <div className="flex items-center space-x-2">
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                    <span>Définition en cours...</span>
+                                    <span>{t('invite.settingPassword')}</span>
                                 </div>
                             ) : (
-                                'Définir le mot de passe'
+                                t('invite.setPasswordButton')
                             )}
                         </Button>
                     </form>

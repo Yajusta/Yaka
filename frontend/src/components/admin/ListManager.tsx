@@ -55,6 +55,7 @@ import {
     validateListDeletion,
     getErrorMessage
 } from '../../utils/validation';
+import { useTranslation } from 'react-i18next';
 import { LoadingState } from '../ui/loading-state';
 import ErrorBoundary from '../ui/error-boundary';
 import ProgressBar from '../ui/progress-bar';
@@ -114,6 +115,7 @@ const SortableListItem = ({
         transition,
         opacity: isDragging ? 0.5 : 1,
     };
+    const { t } = useTranslation();
 
     return (
         <Card
@@ -135,7 +137,7 @@ const SortableListItem = ({
                                 <Input
                                     value={editingName}
                                     onChange={(e) => onEditingNameChange(e.target.value)}
-                                    placeholder="Nom de la liste"
+                                    placeholder={t('list.title')}
                                     maxLength={100}
                                     className={`${editingErrors.name ? 'border-red-500' : ''}`}
                                     autoFocus
@@ -179,7 +181,7 @@ const SortableListItem = ({
                         <div className="flex-1">
                             <div className="font-medium">{list.name}</div>
                             <div className="text-sm text-gray-500">
-                                {cardCount} carte{cardCount !== 1 ? 's' : ''}
+                                {t('list.card', { count: cardCount })}
                             </div>
                         </div>
                     )}
@@ -216,6 +218,7 @@ const SortableListItem = ({
 
 const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProps) => {
     const { user } = useAuth();
+    const { t } = useTranslation();
     const [lists, setLists] = useState<KanbanList[]>([]);
     const [listCardCounts, setListCardCounts] = useState<Record<number, number>>({});
     const [loading, setLoading] = useState<boolean>(false);
@@ -280,7 +283,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
             console.error('Error loading lists:', error);
             const errorMessage = getErrorMessage(error);
             toast({
-                title: "Erreur de chargement",
+                title: t('list.loadError'),
                 description: errorMessage,
                 variant: "destructive"
             });
@@ -311,7 +314,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
 
     const validateEditForm = (): boolean => {
         if (!editingList) {
-          return false;
+            return false;
         }
 
         const errors: FormErrors = {};
@@ -337,7 +340,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
 
         if (!validation.isValid) {
             toast({
-                title: "Validation échouée",
+                title: t('list.validationFailed'),
                 description: validation.error,
                 variant: "destructive"
             });
@@ -365,7 +368,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
             await listsApi.createList(listData);
 
             toast({
-                title: `Liste "${formData.name.trim()}" créée avec succès`,
+                title: t('list.createSuccess', { listName: formData.name.trim() }),
                 variant: "success"
             });
 
@@ -378,7 +381,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
             console.error('Error creating list:', error);
             const errorMessage = getErrorMessage(error);
             toast({
-                title: "Erreur de création",
+                title: t('list.createError'),
                 description: errorMessage,
                 variant: "destructive"
             });
@@ -392,7 +395,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
 
     const handleSaveEdit = async (): Promise<void> => {
         if (!editingList) {
-          return;
+            return;
         }
 
         // Validate form
@@ -408,7 +411,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
             await listsApi.updateList(editingList.id, updateData);
 
             toast({
-                title: `Liste "${editingName.trim()}" modifiée avec succès`,
+                title: t('list.updateSuccess', { listName: editingName.trim() }),
                 variant: "success"
             });
 
@@ -421,7 +424,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
             console.error('Error updating list:', error);
             const errorMessage = getErrorMessage(error);
             toast({
-                title: "Erreur de modification",
+                title: t('list.updateError'),
                 description: errorMessage,
                 variant: "destructive"
             });
@@ -439,8 +442,8 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
             // Check if this is the last list (Requirement 4.1)
             if (lists.length <= 1) {
                 toast({
-                    title: "Validation échouée",
-                    description: "Impossible de supprimer la dernière liste. Au moins une liste doit exister dans le système.",
+                    title: t('list.validationFailed'),
+                    description: t('list.cannotDeleteLastList'),
                     variant: "destructive"
                 });
                 return;
@@ -500,12 +503,15 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
             }
 
             // Success message with appropriate details
-            const successMessage = cardCount > 0
-                ? `Liste "${list.name}" supprimée avec succès. ${cardCount} carte${cardCount > 1 ? 's ont été déplacées' : ' a été déplacée'} vers la liste cible.`
-                : `Liste "${list.name}" supprimée avec succès.`;
+            let successMessage: string;
+            if (cardCount > 0) {
+                successMessage = t('list.deleteSuccessWithCards', { listName: list.name, count: cardCount });
+            } else {
+                successMessage = t('list.deleteSuccess', { listName: list.name });
+            }
 
             toast({
-                title: "Succès",
+                title: t('common.success'),
                 description: successMessage,
                 variant: "success"
             });
@@ -525,7 +531,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
             console.error('Error deleting list:', error);
             const errorMessage = getErrorMessage(error);
             toast({
-                title: "Erreur de suppression",
+                title: t('list.deleteError'),
                 description: errorMessage,
                 variant: "destructive"
             });
@@ -558,7 +564,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                 await listsApi.reorderLists(listOrders);
 
                 toast({
-                    title: "Ordre des listes mis à jour avec succès",
+                    title: t('list.reorderSuccess'),
                     variant: "success"
                 });
 
@@ -569,7 +575,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                 await loadLists();
                 const errorMessage = getErrorMessage(error);
                 toast({
-                    title: "Erreur de réorganisation",
+                    title: t('list.reorderError'),
                     description: errorMessage,
                     variant: "destructive"
                 });
@@ -619,7 +625,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
             <Dialog open={isOpen} onOpenChange={onClose}>
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Gestion des listes</DialogTitle>
+                        <DialogTitle>{t('list.listManagement')}</DialogTitle>
                     </DialogHeader>
 
                     <div className="space-y-4">
@@ -627,7 +633,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                         <div className="flex justify-end">
                             <Button onClick={handleCreate}>
                                 <Plus className="h-4 w-4 mr-2" />
-                                Nouvelle liste
+                                {t('list.newList')}
                             </Button>
                         </div>
 
@@ -635,17 +641,17 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                         {showForm && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Nouvelle liste</CardTitle>
+                                    <CardTitle>{t('list.newList')}</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <form onSubmit={handleSubmit} className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="name">Nom de la liste</Label>
+                                            <Label htmlFor="name">{t('list.title')}</Label>
                                             <Input
                                                 id="name"
                                                 value={formData.name}
                                                 onChange={(e) => handleNameChange(e.target.value)}
-                                                placeholder="Nom de la liste"
+                                                placeholder={t('list.title')}
                                                 maxLength={100}
                                                 required
                                                 autoFocus
@@ -658,19 +664,19 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                                                 </div>
                                             )}
                                             <p className="text-xs text-gray-500">
-                                                {formData.name.length}/100 caractères maximum
+                                                {formData.name.length}/100 {t('common.charactersMax')}
                                             </p>
                                         </div>
 
                                         <div className="flex justify-end space-x-2">
                                             <Button type="button" variant="outline" onClick={handleCloseForm}>
-                                                Annuler
+                                                {t('common.cancel')}
                                             </Button>
                                             <Button
                                                 type="submit"
                                                 disabled={!formData.name.trim() || !!formErrors.name}
                                             >
-                                                Créer
+                                                {t('common.create')}
                                             </Button>
                                         </div>
                                     </form>
@@ -680,11 +686,11 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
 
                         {/* Liste des listes avec drag & drop */}
                         {loading ? (
-                            <LoadingState message="Chargement des listes..." size="lg" />
+                            <LoadingState message={t('list.loading')} size="lg" />
                         ) : (
                             <div className="space-y-2">
                                 <div className="text-sm text-gray-600 mb-4">
-                                    Utilisez la poignée pour glisser et réorganiser les listes.
+                                    {t('list.dragAndDropHint')}
                                 </div>
 
                                 <DndContext
@@ -716,7 +722,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
 
                                 {lists.length === 0 && !loading && (
                                     <div className="text-center py-8 text-gray-500">
-                                        Aucune liste créée pour le moment
+                                        {t('list.noLists')}
                                     </div>
                                 )}
                             </div>
@@ -739,12 +745,12 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                     <DialogHeader>
                         <DialogTitle className="flex items-center space-x-2">
                             <AlertTriangle className="h-5 w-5 text-orange-500" />
-                            <span>{isDeleting ? 'Suppression en cours...' : 'Supprimer la liste'}</span>
+                            <span>{isDeleting ? t('list.deletingInProgress') : t('list.deleteList')}</span>
                         </DialogTitle>
                         <DialogDescription>
                             {isDeleting
-                                ? 'Veuillez patienter pendant le déplacement des cartes et la suppression de la liste.'
-                                : 'Cette action est irréversible. Assurez-vous de bien vouloir supprimer cette liste.'
+                                ? t('list.deletingDescription')
+                                : t('list.deleteWarning')
                             }
                         </DialogDescription>
                     </DialogHeader>
@@ -752,11 +758,11 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                     <div className="space-y-4">
                         <div className="p-3 bg-gray-50 rounded-md">
                             <p className="font-medium">
-                                Liste à supprimer : "{listToDelete?.name}"
+                                {t('list.listToDelete', { listName: listToDelete?.name })}
                             </p>
                             {cardCount > 0 && (
                                 <p className="text-sm text-orange-600 mt-1">
-                                    ⚠️ Cette liste contient {cardCount} carte{cardCount > 1 ? 's' : ''}
+                                    ⚠️ {t('list.listContainsCards', { count: cardCount })}
                                 </p>
                             )}
                         </div>
@@ -766,12 +772,12 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                             <div className="space-y-3">
                                 <div className="p-3 border border-blue-200 bg-blue-50 rounded-md">
                                     <p className="text-sm text-blue-800 font-medium mb-2">
-                                        Déplacement des cartes en cours...
+                                        {t('list.movingCardsInProgress')}
                                     </p>
                                     <ProgressBar
                                         current={deletionProgress.current}
                                         total={deletionProgress.total}
-                                        label={deletionProgress.cardName ? `Déplacement: ${deletionProgress.cardName}` : 'Préparation...'}
+                                        label={deletionProgress.cardName ? t('list.movingCard', { cardName: deletionProgress.cardName }) : t('list.preparing')}
                                         showPercentage={true}
                                     />
                                 </div>
@@ -785,36 +791,35 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                                     <div className="space-y-3">
                                         <div className="p-3 border border-orange-200 bg-orange-50 rounded-md">
                                             <p className="text-sm text-orange-800 font-medium">
-                                                Réassignation des cartes requise
+                                                {t('list.reassignmentRequired')}
                                             </p>
                                             <p className="text-xs text-orange-700 mt-1">
-                                                Les {cardCount} carte{cardCount > 1 ? 's' : ''} de cette liste
-                                                {cardCount > 1 ? ' seront déplacées' : ' sera déplacée'} vers la liste sélectionnée.
+                                                {t('list.cardsWillBeMoved', { count: cardCount })}
                                             </p>
                                         </div>
 
                                         <div className="space-y-2">
                                             <Label htmlFor="target-list-select">
-                                                Liste de destination <span className="text-red-500">*</span>
+                                                {t('list.destinationList')} <span className="text-red-500">*</span>
                                             </Label>
                                             <Select
                                                 value={targetListId?.toString() || ''}
                                                 onValueChange={(value) => setTargetListId(Number(value))}
                                             >
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Sélectionner une liste de destination" />
+                                                    <SelectValue placeholder={t('list.selectDestinationList')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {availableTargetLists.map(list => (
                                                         <SelectItem key={list.id} value={list.id.toString()}>
-                                                            {list.name} ({listCardCounts[list.id] || 0} carte{(listCardCounts[list.id] || 0) !== 1 ? 's' : ''})
+                                                            {list.name} ({t('list.card', { count: listCardCounts[list.id] || 0 })})
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
                                             {cardCount > 0 && !targetListId && (
                                                 <p className="text-xs text-red-600">
-                                                    Vous devez sélectionner une liste de destination
+                                                    {t('list.mustSelectDestination')}
                                                 </p>
                                             )}
                                         </div>
@@ -822,7 +827,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                                 ) : (
                                     <div className="p-3 border border-green-200 bg-green-50 rounded-md">
                                         <p className="text-sm text-green-800">
-                                            ✓ Cette liste est vide et peut être supprimée sans impact
+                                            ✓ {t('list.emptyListSafeToDelete')}
                                         </p>
                                     </div>
                                 )}
@@ -839,7 +844,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                                         setTargetListId(null);
                                     }}
                                 >
-                                    Annuler
+                                    {t('common.cancel')}
                                 </Button>
                                 <Button
                                     variant="destructive"
@@ -852,8 +857,8 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                                             // Additional validation before confirming
                                             if (cardCount > 0 && !targetId) {
                                                 toast({
-                                                    title: "Validation échouée",
-                                                    description: "Vous devez sélectionner une liste de destination pour les cartes",
+                                                    title: t('list.validationFailed'),
+                                                    description: t('list.mustSelectDestinationForCards'),
                                                     variant: "destructive"
                                                 });
                                                 return;
@@ -867,7 +872,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                                     disabled={cardCount > 0 && !targetListId}
                                     className="min-w-[100px]"
                                 >
-                                    {cardCount > 0 ? 'Déplacer et supprimer' : 'Supprimer'}
+                                    {cardCount > 0 ? t('list.moveCardsAndDelete') : t('common.delete')}
                                 </Button>
                             </div>
                         )}
@@ -880,6 +885,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
 
 // Wrap with ErrorBoundary for better error handling
 const ListManager = (props: ListManagerProps) => {
+    const { t } = useTranslation();
     return (
         <ErrorBoundary
             fallback={
@@ -888,17 +894,16 @@ const ListManager = (props: ListManagerProps) => {
                         <DialogHeader>
                             <DialogTitle className="flex items-center space-x-2">
                                 <AlertTriangle className="h-5 w-5 text-red-500" />
-                                <span>Erreur</span>
+                                <span>{t('common.error')}</span>
                             </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
                             <p className="text-sm text-gray-600">
-                                Une erreur s'est produite lors du chargement de la gestion des listes.
-                                Veuillez fermer cette fenêtre et réessayer.
+                                {t('list.loadingError')}
                             </p>
                             <div className="flex justify-end">
                                 <Button onClick={props.onClose}>
-                                    Fermer
+                                    {t('common.close')}
                                 </Button>
                             </div>
                         </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { CardHistoryEntry } from '../../types';
 import api from '../../services/api';
@@ -19,6 +20,7 @@ export const CardHistoryModal: React.FC<CardHistoryModalProps> = ({
     cardId,
     cardTitle
 }) => {
+    const { t } = useTranslation();
     const [history, setHistory] = useState<CardHistoryEntry[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export const CardHistoryModal: React.FC<CardHistoryModalProps> = ({
             setHistory(response.data);
         } catch (err) {
             console.error('Error fetching card history:', err);
-            setError('Erreur lors du chargement de l\'historique');
+            setError(t('card.loadHistoryError'));
         } finally {
             setLoading(false);
         }
@@ -45,13 +47,13 @@ export const CardHistoryModal: React.FC<CardHistoryModalProps> = ({
 
     const formatAction = (action: string): string => {
         const actionLabels: Record<string, string> = {
-            'create': 'Création',
-            'update': 'Modification',
-            'priority_change': 'Changement de priorité',
-            'assignee_change': 'Changement d\'assigné',
-            'move': 'Déplacement',
-            'archive': 'Archivage',
-            'unarchive': 'Restauration'
+            'create': t('card.historyAction.create'),
+            'update': t('card.historyAction.update'),
+            'priority_change': t('card.historyAction.priority_change'),
+            'assignee_change': t('card.historyAction.assignee_change'),
+            'move': t('card.historyAction.move'),
+            'archive': t('card.historyAction.archive'),
+            'unarchive': t('card.historyAction.unarchive')
         };
         return actionLabels[action] || action;
     };
@@ -94,7 +96,7 @@ export const CardHistoryModal: React.FC<CardHistoryModalProps> = ({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Clock className="h-5 w-5" />
-                        Historique de la carte "{cardTitle}"
+                        {t('card.historyTitle', { cardTitle })}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -102,7 +104,7 @@ export const CardHistoryModal: React.FC<CardHistoryModalProps> = ({
                     {loading && (
                         <div className="text-center py-8">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                            <p className="mt-2 text-muted-foreground">Chargement de l'historique...</p>
+                            <p className="mt-2 text-muted-foreground">{t('card.loadingHistory')}</p>
                         </div>
                     )}
 
@@ -114,7 +116,7 @@ export const CardHistoryModal: React.FC<CardHistoryModalProps> = ({
 
                     {!loading && !error && history.length === 0 && (
                         <div className="text-center py-8">
-                            <p className="text-muted-foreground">Aucun historique disponible pour cette carte.</p>
+                            <p className="text-muted-foreground">{t('card.noHistoryAvailable')}</p>
                         </div>
                     )}
 
@@ -147,7 +149,7 @@ export const CardHistoryModal: React.FC<CardHistoryModalProps> = ({
 
                                         {entry.user && (
                                             <p className="text-xs text-muted-foreground mt-1">
-                                                par {entry.user.display_name || entry.user.email}
+                                                {t('card.historyBy', { userName: entry.user.display_name || entry.user.email })}
                                             </p>
                                         )}
                                     </div>

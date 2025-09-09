@@ -1,10 +1,12 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { PriorityBadge } from '../ui/PriorityBadge';
-import { Card, UpdateCardData, getPriorityIcon, getPriorityLabel, getPriorityIconColor } from '../../types';
+import { Card, UpdateCardData, getPriorityIcon, getPriorityIconColor } from '../../types';
 import { cardService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
+import { useTranslatedLabels } from '../../hooks/useTranslatedLabels';
 
 interface PriorityChangerProps {
     card: Card;
@@ -14,10 +16,14 @@ interface PriorityChangerProps {
 const priorities: ('low' | 'medium' | 'high')[] = ['high', 'medium', 'low'];
 
 export const PriorityChanger: React.FC<PriorityChangerProps> = ({ card, onPriorityChange }) => {
+    const { t } = useTranslation();
     const { toast } = useToast();
+    const { getPriorityLabel } = useTranslatedLabels();
 
     const handlePriorityChange = async (newPriority: 'low' | 'medium' | 'high') => {
-        if (newPriority === card.priorite) return;
+        if (newPriority === card.priorite) {
+            return;
+        }
 
         const updatePayload: UpdateCardData = {
             priorite: newPriority,
@@ -27,15 +33,15 @@ export const PriorityChanger: React.FC<PriorityChangerProps> = ({ card, onPriori
             const updatedCard = await cardService.updateCard(card.id, updatePayload);
             onPriorityChange(updatedCard);
             toast({
-                title: "Priorité mise à jour",
-                description: `La priorité de la carte "${card.titre}" est maintenant "${getPriorityLabel(newPriority)}".`,
+                title: t('card.priorityUpdated'),
+                description: t('card.priorityUpdatedDescription', { cardTitle: card.titre, priority: getPriorityLabel(newPriority) }),
                 variant: "success",
             });
         } catch (error) {
             console.error("Failed to update priority", error);
             toast({
-                title: "Erreur",
-                description: "Impossible de mettre à jour la priorité de la carte.",
+                title: t('common.error'),
+                description: t('card.updatePriorityError'),
                 variant: "destructive",
             });
         }

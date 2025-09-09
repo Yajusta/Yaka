@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from '../ui/alert.tsx';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog.tsx';
 import { Loader2, AlertTriangle, Eye, Trash } from 'lucide-react';
 import { Footer } from '../common/Footer.tsx';
+import LanguageSelector from '../common/LanguageSelector.tsx';
+import { useTranslation } from 'react-i18next';
 
 // Déclaration pour les variables globales injectées par nginx
 declare global {
@@ -18,6 +20,7 @@ declare global {
 }
 
 const LoginForm = () => {
+    const { t } = useTranslation();
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');
@@ -62,7 +65,7 @@ const LoginForm = () => {
         try {
             await login(email, password);
         } catch (error: any) {
-            setError(error.response?.data?.detail || 'Erreur de connexion');
+            setError(error.response?.data?.detail || t('auth.loginError'));
         } finally {
             setLoading(false);
         }
@@ -77,7 +80,7 @@ const LoginForm = () => {
             await authService.requestPasswordReset(resetEmail);
             setResetSuccess(true);
         } catch (error: any) {
-            setResetError(error.response?.data?.detail || 'Erreur lors de la demande de réinitialisation');
+            setResetError(error.response?.data?.detail || t('auth.resetPasswordError'));
         } finally {
             setResetLoading(false);
         }
@@ -85,6 +88,11 @@ const LoginForm = () => {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+            {/* Language selector en haut à droite */}
+            <div className="absolute top-4 right-4">
+                <LanguageSelector />
+            </div>
+
             {/* Logo et titre du board */}
             <div className="flex flex-col items-center mb-6">
                 <img
@@ -100,9 +108,9 @@ const LoginForm = () => {
             <div className="flex-1 flex items-center justify-center">
                 <Card className="w-full max-w-md">
                     <CardHeader className="space-y-1">
-                        <CardTitle className="text-2xl text-center">Connexion</CardTitle>
+                        <CardTitle className="text-2xl text-center">{t('auth.login')}</CardTitle>
                         <CardDescription className="text-center">
-                            Connectez-vous à votre compte
+                            {t('auth.connectToAccount')}
                         </CardDescription>
                         {isDemoMode && (
                             <div className="mt-4 space-y-3">
@@ -112,11 +120,11 @@ const LoginForm = () => {
                                         <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
                                         <div>
                                             <div className="text-amber-800 text-sm font-medium">
-                                                🔄 Mode Démo activé
+                                                🔄 {t('auth.demoModeEnabled')}
                                             </div>
                                             <div className="text-amber-700 text-sm mt-1">
-                                                Identifiant : <strong>admin@yaka.local</strong><br />
-                                                Mot de passe : <strong>admin123</strong>
+                                                {t('auth.demoCredentials')} : <strong>admin@yaka.local</strong><br />
+                                                {t('auth.password')} : <strong>admin123</strong>
                                             </div>
                                         </div>
                                     </div>
@@ -126,8 +134,8 @@ const LoginForm = () => {
                                 <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
                                     <Trash className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
                                     <div className="text-red-700 text-sm">
-                                        <strong>La base est supprimée régulièrement</strong><br />
-                                        Toutes les données sont réinitialisées chaque heure
+                                        <strong>{t('auth.databaseDeletedRegularly')}</strong><br />
+                                        {t('auth.dataResetHourly')}
                                     </div>
                                 </div>
 
@@ -135,8 +143,8 @@ const LoginForm = () => {
                                 <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
                                     <Eye className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
                                     <div className="text-red-700 text-sm">
-                                        <strong>L'environnement est public</strong><br />
-                                        Ne mettez pas d'informations sensibles
+                                        <strong>{t('auth.publicEnvironment')}</strong><br />
+                                        {t('auth.noSensitiveInfo')}
                                     </div>
                                 </div>
                             </div>
@@ -151,7 +159,7 @@ const LoginForm = () => {
                             )}
 
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="email">{t('auth.email')}</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -163,7 +171,7 @@ const LoginForm = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="password">Mot de passe</Label>
+                                <Label htmlFor="password">{t('auth.password')}</Label>
                                 <Input
                                     id="password"
                                     type="password"
@@ -176,7 +184,7 @@ const LoginForm = () => {
 
                             <Button type="submit" className="w-full" disabled={loading}>
                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Se connecter
+                                {t('auth.login')}
                             </Button>
                         </form>
 
@@ -184,14 +192,14 @@ const LoginForm = () => {
                             <Dialog>
                                 <DialogTrigger asChild>
                                     <Button variant="link" className="text-sm">
-                                        Mot de passe oublié ?
+                                        {t('auth.forgotPassword')}
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent>
                                     <DialogHeader>
-                                        <DialogTitle>Réinitialiser le mot de passe</DialogTitle>
+                                        <DialogTitle>{t('auth.resetPasswordDialogTitle')}</DialogTitle>
                                         <DialogDescription>
-                                            Entrez votre adresse email pour recevoir un lien de réinitialisation.
+                                            {t('auth.resetPasswordDialogDescription')}
                                         </DialogDescription>
                                     </DialogHeader>
 
@@ -199,7 +207,7 @@ const LoginForm = () => {
                                         <div className="text-center py-4">
                                             <Alert>
                                                 <AlertDescription>
-                                                    Si cet email existe, un lien de réinitialisation a été envoyé.
+                                                    {t('auth.resetPasswordSuccess')}
                                                 </AlertDescription>
                                             </Alert>
                                         </div>
@@ -212,20 +220,20 @@ const LoginForm = () => {
                                             )}
 
                                             <div className="space-y-2">
-                                                <Label htmlFor="resetEmail">Email</Label>
+                                                <Label htmlFor="resetEmail">{t('auth.email')}</Label>
                                                 <Input
                                                     id="resetEmail"
                                                     type="email"
                                                     value={resetEmail}
                                                     onChange={(e) => setResetEmail(e.target.value)}
                                                     required
-                                                    placeholder="votre@email.com"
+                                                    placeholder={t('auth.emailPlaceholder')}
                                                 />
                                             </div>
 
                                             <Button type="submit" className="w-full" disabled={resetLoading}>
                                                 {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Envoyer le lien
+                                                {t('auth.sendResetLink')}
                                             </Button>
                                         </form>
                                     )}

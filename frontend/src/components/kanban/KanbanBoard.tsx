@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DndContext, DragOverlay, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, DragOverEvent, useDroppable } from '@dnd-kit/core';
 import { KanbanColumn } from './KanbanColumn';
 import { CardItem } from './index';
@@ -44,6 +45,7 @@ const TrashZone = ({
             onClick();
         }
     };
+    const { t } = useTranslation();
 
     return (
         <div
@@ -67,7 +69,7 @@ const TrashZone = ({
             >
                 <div className="flex items-center space-x-2 text-destructive">
                     <Trash2 className="h-5 w-5" />
-                    <span className="text-sm font-medium">Archives</span>
+                    <span className="text-sm font-medium">{t('archive.title')}</span>
                 </div>
             </GlassmorphicCard>
         </div>
@@ -83,6 +85,7 @@ export const KanbanBoard = ({
     refreshTrigger,
     isAnyModalOpen = false
 }: KanbanBoardProps) => {
+    const { t } = useTranslation();
     const [activeCard, setActiveCard] = useState<CardType | null>(null);
     const [dropTarget, setDropTarget] = useState<{ listId: number; position: number } | null>(null);
     const [justDroppedCardId, setJustDroppedCardId] = useState<number | null>(null);
@@ -111,7 +114,7 @@ export const KanbanBoard = ({
                 setLists(fetchedLists);
             } catch (error) {
                 console.error('Error fetching lists:', error);
-                setListsError('Erreur lors du chargement des listes');
+                setListsError(t('list.loadError'));
             } finally {
                 setListsLoading(false);
             }
@@ -595,7 +598,7 @@ export const KanbanBoard = ({
             try {
                 onCardDelete(activeId);
             } catch (e) {
-                console.error("Erreur lors de l'archivage de la carte:", e);
+                console.error(t('card.archiveError'), e);
             }
 
             setTimeout(() => {
@@ -649,7 +652,7 @@ export const KanbanBoard = ({
             <div className="flex-1 p-4 bg-background min-h-0 relative flex items-center justify-center">
                 <div className="flex items-center space-x-2 text-muted-foreground">
                     <Loader2 className="h-6 w-6 animate-spin" />
-                    <span>Chargement des listes...</span>
+                    <span>{t('list.loading')}</span>
                 </div>
             </div>
         );
@@ -665,7 +668,7 @@ export const KanbanBoard = ({
                         onClick={() => window.location.reload()}
                         className="text-sm text-muted-foreground hover:text-foreground"
                     >
-                        Actualiser la page
+                        {t('errors.reloadPage')}
                     </button>
                 </div>
             </div>
@@ -677,8 +680,8 @@ export const KanbanBoard = ({
         return (
             <div className="flex-1 p-4 bg-background min-h-0 relative flex items-center justify-center">
                 <div className="text-center text-muted-foreground">
-                    <p>Aucune liste disponible</p>
-                    <p className="text-sm mt-1">Contactez un administrateur pour créer des listes</p>
+                    <p>{t('list.noLists')}</p>
+                    <p className="text-sm mt-1">{t('list.contactAdmin')}</p>
                 </div>
             </div>
         );

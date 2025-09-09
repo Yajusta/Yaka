@@ -6,6 +6,7 @@ import { Badge } from '../ui/badge';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { Search, Filter, X, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface User {
     id: number;
@@ -45,6 +46,7 @@ export const FilterBar = ({
     labels,
     localSearchValue = '',
 }: FilterBarProps) => {
+    const { t } = useTranslation();
     const [showFilters, setShowFilters] = useState(false);
     const [searchValue, setSearchValue] = useState(localSearchValue);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -139,7 +141,7 @@ export const FilterBar = ({
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                             <Input
                                 ref={searchInputRef}
-                                placeholder="Rechercher des cartes..."
+                                placeholder={t('common.search')}
                                 value={searchValue}
                                 onChange={(e) => setSearchValue(e.target.value)}
                                 onFocus={handleSearchFocus}
@@ -158,7 +160,7 @@ export const FilterBar = ({
                             )}
                         >
                             <Filter className="h-4 w-4 mr-2" />
-                            Filtres
+                            {t('common.filters')}
                             {hasActiveFilters() && (
                                 <Badge variant="secondary" className="ml-2 bg-primary text-primary-foreground">
                                     {getActiveFilterCount()}
@@ -175,7 +177,7 @@ export const FilterBar = ({
                         {hasActiveFilters() && (
                             <Button variant="ghost" onClick={clearFilters} className="text-muted-foreground hover:text-foreground">
                                 <X className="h-4 w-4 mr-2" />
-                                Effacer
+                                {t('common.clear')}
                             </Button>
                         )}
                     </div>
@@ -183,7 +185,7 @@ export const FilterBar = ({
                     {/* Create card button */}
                     <Button onClick={onCreateCard} className="bg-primary hover:bg-primary/90 shadow-sm">
                         <Plus className="h-4 w-4 mr-2" />
-                        Nouvelle carte
+                        {t('card.newCard')}
                     </Button>
                 </div>
 
@@ -195,16 +197,16 @@ export const FilterBar = ({
                         <div className="flex flex-col md:flex-row gap-3">
                             {/* Label filter */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Libellé</label>
+                                <label className="text-sm font-medium text-foreground">{t('card.labels')}</label>
                                 <Select
                                     value={filters.label_id?.toString() || ''}
                                     onValueChange={(value) => handleFilterChange('label_id', value ? parseInt(value) : null)}
                                 >
                                     <SelectTrigger className="bg-background/50 border-border/50">
-                                        <SelectValue placeholder="Tous les libellés" />
+                                        <SelectValue placeholder={t('filter.allLabels')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">Tous les libellés</SelectItem>
+                                        <SelectItem value="all">{t('filter.allLabels')}</SelectItem>
                                         {labels.map(label => (
                                             <SelectItem key={label.id} value={label.id.toString()}>
                                                 <div className="flex items-center">
@@ -222,38 +224,38 @@ export const FilterBar = ({
 
                             {/* Priority filter */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Priorité</label>
+                                <label className="text-sm font-medium text-foreground">{t('card.priority')}</label>
                                 <Select
                                     value={filters.priorite || ''}
                                     onValueChange={(value) => handleFilterChange('priorite', value)}
                                 >
                                     <SelectTrigger className="bg-background/50 border-border/50">
-                                        <SelectValue placeholder="Toutes les priorités" />
+                                        <SelectValue placeholder={t('filter.allPriorities')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">Toutes les priorités</SelectItem>
-                                        <SelectItem value="high">Élevé</SelectItem>
-                                        <SelectItem value="medium">Moyen</SelectItem>
-                                        <SelectItem value="low">Faible</SelectItem>
+                                        <SelectItem value="all">{t('filter.allPriorities')}</SelectItem>
+                                        <SelectItem value="high">{t('priority.high')}</SelectItem>
+                                        <SelectItem value="medium">{t('priority.medium')}</SelectItem>
+                                        <SelectItem value="low">{t('priority.low')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             {/* Assignee filter */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Assigné à</label>
+                                <label className="text-sm font-medium text-foreground">{t('card.assignee')}</label>
                                 <Select
                                     value={filters.assignee_id?.toString() || ''}
                                     onValueChange={(value) => handleFilterChange('assignee_id', value ? parseInt(value) : null)}
                                 >
                                     <SelectTrigger className="bg-background/50 border-border/50">
-                                        <SelectValue placeholder="Tous les utilisateurs" />
+                                        <SelectValue placeholder={t('filter.allUsers')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">Tous les utilisateurs</SelectItem>
+                                        <SelectItem value="all">{t('filter.allUsers')}</SelectItem>
                                         {users.map(user => (
                                             <SelectItem key={user.id} value={user.id.toString()}>
-                                                {user.display_name || user.email || 'Utilisateur sans nom'}
+                                                {user.display_name || user.email || t('user.noName')}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -270,7 +272,7 @@ export const FilterBar = ({
                         <div className="flex flex-wrap gap-2">
                             {getSelectedUser() && (
                                 <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                                    Assigné: {getSelectedUser()?.display_name || getSelectedUser()?.email || 'Utilisateur sans nom'}
+                                    {t('filter.assigned')}: {getSelectedUser()?.display_name || getSelectedUser()?.email || t('user.noName')}
                                     <X
                                         className="h-3 w-3 ml-1 cursor-pointer hover:text-primary/80"
                                         onClick={() => handleFilterChange('assignee_id', null)}
@@ -279,7 +281,7 @@ export const FilterBar = ({
                             )}
                             {filters.priorite && (
                                 <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                                    Priorité: {filters.priorite === 'low' ? 'Faible' : filters.priorite === 'medium' ? 'Moyen' : filters.priorite === 'high' ? 'Élevé' : filters.priorite}
+                                    {t('card.priority')}: {filters.priorite === 'low' ? t('priority.low') : filters.priorite === 'medium' ? t('priority.medium') : filters.priorite === 'high' ? t('priority.high') : filters.priorite}
                                     <X
                                         className="h-3 w-3 ml-1 cursor-pointer hover:text-primary/80"
                                         onClick={() => handleFilterChange('priorite', null)}
@@ -288,7 +290,7 @@ export const FilterBar = ({
                             )}
                             {getSelectedLabel() && (
                                 <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                                    Libellé: {getSelectedLabel()?.nom}
+                                    {t('card.labels')}: {getSelectedLabel()?.nom}
                                     <X
                                         className="h-3 w-3 ml-1 cursor-pointer hover:text-primary/80"
                                         onClick={() => handleFilterChange('label_id', null)}

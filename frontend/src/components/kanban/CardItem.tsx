@@ -11,6 +11,7 @@ import { CardHistoryModal } from './CardHistoryModal';
 import { Card } from '../../types/index';
 import { useAuth } from '../../hooks/useAuth';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface CardItemProps {
     card: Card;
@@ -34,6 +35,7 @@ export const CardItem = ({
     isInTrashZone = false
 }: CardItemProps) => {
     const { user: currentUser } = useAuth();
+    const { t } = useTranslation();
     const [showHistoryModal, setShowHistoryModal] = useState(false);
 
     const {
@@ -143,7 +145,7 @@ export const CardItem = ({
     const progress = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
 
     const totalComments = card.comments?.length || 0;
-    const recentComments = card.comments?.slice(-5).reverse() || []; // Les 5 plus récents
+    const recentComments = card.comments?.slice(-5).reverse() || []; // The 5 most recent
 
     return (
         <GlassmorphicCard
@@ -168,7 +170,7 @@ export const CardItem = ({
                                 size="sm"
                                 className="h-7 w-7 p-0 hover:bg-primary/10"
                                 onClick={handleEdit}
-                                title="Modifier la carte"
+                                title={t('card.editCard')}
                             >
                                 <Edit className="h-3.5 w-3.5" />
                             </Button>
@@ -178,7 +180,7 @@ export const CardItem = ({
                                         variant="ghost"
                                         size="sm"
                                         className="h-7 w-7 p-0 hover:bg-muted"
-                                        title="Actions"
+                                        title={t('common.actions')}
                                     >
                                         <MoreHorizontal className="h-3.5 w-3.5" />
                                     </Button>
@@ -192,7 +194,7 @@ export const CardItem = ({
                                         className="flex items-center gap-2"
                                     >
                                         <Clock className="h-3.5 w-3.5" />
-                                        Voir l'historique
+                                        {t('card.history')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         variant="destructive"
@@ -203,7 +205,7 @@ export const CardItem = ({
                                         className="flex items-center gap-2"
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
-                                        Archiver
+                                        {t('card.archiveCard')}
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -245,7 +247,7 @@ export const CardItem = ({
                             {card.date_echeance && (
                                 <div
                                     className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
-                                    title="Date d'échéance"
+                                    title={t('card.dueDate')}
                                 >
                                     <CalendarDays className="h-3 w-3 mr-1" />
                                     <span className="text-xs">{formatDate(card.date_echeance)}</span>
@@ -254,7 +256,7 @@ export const CardItem = ({
                             {totalItems > 0 && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <div className="flex items-center gap-2 ml-1 cursor-pointer" title="Progression de la checklist">
+                                        <div className="flex items-center gap-2 ml-1 cursor-pointer" title={t('card.checklistProgress')}>
                                             <div className="relative h-5 w-5">
                                                 <svg className="h-5 w-5 text-muted-foreground" viewBox="0 0 36 36">
                                                     <path
@@ -284,7 +286,7 @@ export const CardItem = ({
                                     <DropdownMenuContent align="start" className="w-72 p-0 bg-background border border-border" sideOffset={5}>
                                         <div className="p-3 space-y-2">
                                             <div className="text-sm font-medium text-foreground">
-                                                Checklist ({doneItems}/{totalItems})
+                                                {t('card.checklist')} ({doneItems}/{totalItems})
                                             </div>
                                             <div className="space-y-1 max-h-64 overflow-y-auto">
                                                 {card.items?.map((item) => (
@@ -309,7 +311,7 @@ export const CardItem = ({
                             {totalComments > 0 && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <div className="flex items-center cursor-pointer">
+                                        <div className="flex items-center cursor-pointer" title={t('card.comments')}    >
                                             <MessageCircle className="h-3 w-3 text-blue-500" />
                                         </div>
                                     </DropdownMenuTrigger>
@@ -321,7 +323,7 @@ export const CardItem = ({
                                                         <div key={comment.id} className="p-2 rounded-lg bg-muted/50 border border-border">
                                                             <div className="flex items-center justify-between mb-1">
                                                                 <div className="font-medium text-sm text-foreground">
-                                                                    {comment.user?.display_name || 'Utilisateur inconnu'}
+                                                                    {comment.user?.display_name || t('user.unknownUser')}
                                                                 </div>
                                                                 <div className="text-xs text-muted-foreground">
                                                                     {formatCommentDate(comment.created_at)}
@@ -336,7 +338,7 @@ export const CardItem = ({
                                             )}
                                             {totalComments > recentComments.length && (
                                                 <div className="text-xs text-muted-foreground italic text-center py-1 border-t border-border">
-                                                    + {totalComments - recentComments.length} commentaire{totalComments - recentComments.length > 1 ? 's' : ''} plus ancien{totalComments - recentComments.length > 1 ? 's' : ''}
+                                                    + {totalComments - recentComments.length} {t('card.olderComment', {count: totalComments - recentComments.length})}
                                                 </div>
                                             )}
                                         </div>

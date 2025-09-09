@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, JSX } from 'react';
 import { authService } from '../services/api';
 import { User, AuthContextType } from '../types';
 
@@ -63,10 +63,6 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
         } catch (error) {
             console.error('Erreur lors de la déconnexion:', error);
         }
-    };
-
-    const isAdmin = (): boolean => {
-        return user?.role === 'admin';
     };
 
     const value: AuthContextType = {

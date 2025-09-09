@@ -5,7 +5,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..schemas import UserCreate, UserUpdate, UserResponse, SetPasswordPayload, UserListItem
+from ..schemas import UserCreate, UserUpdate, UserResponse, SetPasswordPayload, UserListItem, LanguageUpdate
 from ..services import user as user_service
 from ..utils.dependencies import require_admin, get_current_active_user
 from ..models import User, UserRole, UserStatus
@@ -91,6 +91,27 @@ async def update_user(
     if db_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
     return db_user
+
+
+@router.put("/me/language", response_model=UserResponse)
+async def update_user_language(
+    payload: LanguageUpdate, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_active_user)
+):
+    """Mettre à jour la langue de l'utilisateur connecté."""
+    if payload.language not in ['fr', 'en']:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Langue non supportée. Les langues supportées sont: fr, en"
+        )
+    
+    # Mettre à jour directement le champ language
+    current_user.language = payload.language
+    db.commit()
+    db.refresh(current_user)
+    
+    return current_user
 
 
 @router.post("/{user_id}/resend-invitation", response_model=UserResponse)

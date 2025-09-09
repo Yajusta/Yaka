@@ -12,6 +12,7 @@ class UserBase(BaseModel):
     email: str
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
     role: UserRole = UserRole.USER
+    language: Optional[str] = Field('fr', description="Langue préférée (fr, en, etc.)")
 
 
 class UserCreate(UserBase):
@@ -26,7 +27,14 @@ class UserUpdate(BaseModel):
     email: Optional[str] = None
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
     role: Optional[UserRole] = None
+    language: Optional[str] = Field(None, description="Langue préférée (fr, en, etc.)")
     password: Optional[str] = None
+
+
+class LanguageUpdate(BaseModel):
+    """Schéma pour la mise à jour de la langue uniquement."""
+
+    language: str = Field(..., description="Langue préférée (fr, en, etc.)")
 
 
 class SetPasswordPayload(BaseModel):

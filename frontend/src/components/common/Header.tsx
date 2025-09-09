@@ -11,6 +11,8 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { LogOut, User, Settings, Sun, Moon, Users, List, Tag, Palette } from 'lucide-react';
 import { useBoardSettings } from '../../hooks/useBoardSettingsContext';
+import LanguageSelector from './LanguageSelector';
+import { useTranslation } from 'react-i18next';
 
 interface User {
     id: number;
@@ -41,6 +43,7 @@ export const Header = ({
     onLogout
 }: HeaderProps) => {
     const { boardTitle, loading } = useBoardSettings();
+    const { t } = useTranslation();
 
     const getUserInitials = (): string => {
         if (!user) {
@@ -82,7 +85,7 @@ export const Header = ({
                                         variant="outline"
                                         size="sm"
                                         className="bg-background/50 border-border/50 hover:bg-background"
-                                        title="Paramètres administrateur"
+                                        title={t('settings.admin')}
                                     >
                                         <Settings className="h-4 w-4" />
                                     </Button>
@@ -90,31 +93,34 @@ export const Header = ({
                                 <DropdownMenuContent align="end" className="w-48">
                                     <DropdownMenuItem onClick={onShowInterface}>
                                         <Palette className="h-4 w-4 mr-2" />
-                                        Interface
+                                        {t('settings.interface')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={onShowUsers}>
                                         <Users className="h-4 w-4 mr-2" />
-                                        Utilisateurs
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={onShowLabels}>
-                                        <Tag className="h-4 w-4 mr-2" />
-                                        Libellés
+                                        {t('navigation.users')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={onShowLists}>
                                         <List className="h-4 w-4 mr-2" />
-                                        Listes
+                                        {t('navigation.lists')}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={onShowLabels}>
+                                        <Tag className="h-4 w-4 mr-2" />
+                                        {t('navigation.labels')}
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         )}
 
+                        {/* Language selector */}
+                        <LanguageSelector />
+                        
                         {/* Theme toggle */}
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={onToggleTheme}
                             className="h-9 w-9 p-0 hover:bg-primary/10"
-                            title="Basculer le thème"
+                            title={t('settings.theme')}
                         >
                             {theme === 'light' ? (
                                 <Moon className="h-4 w-4" />
@@ -151,7 +157,7 @@ export const Header = ({
                                             <div className={`w-2 h-2 rounded-full mr-2 ${user?.role === 'admin' ? 'bg-green-500' : 'bg-blue-500'
                                                 }`} />
                                             <p className="text-xs text-muted-foreground">
-                                                {user?.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
+                                                {user?.role === 'admin' ? t('role.admin') : t('role.user')}
                                             </p>
                                         </div>
                                     </div>
@@ -159,7 +165,7 @@ export const Header = ({
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={onLogout} className="text-destructive focus:text-destructive">
                                     <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Se déconnecter</span>
+                                    <span>{t('auth.logout')}</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

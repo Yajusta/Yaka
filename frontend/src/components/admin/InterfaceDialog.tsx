@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -19,6 +20,7 @@ interface InterfaceDialogProps {
 }
 
 export const InterfaceDialog = ({ open, onOpenChange }: InterfaceDialogProps) => {
+    const { t } = useTranslation();
     const { boardTitle, updateBoardTitle, error: hookError } = useBoardSettings();
     const [newTitle, setNewTitle] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -32,7 +34,9 @@ export const InterfaceDialog = ({ open, onOpenChange }: InterfaceDialogProps) =>
     }, [open, boardTitle]);
 
     const handleSave = async () => {
-        if (!newTitle?.trim()) return;
+        if (!newTitle?.trim()) {
+            return;
+        }
 
         setIsSaving(true);
         setSaveSuccess(false);
@@ -67,16 +71,16 @@ export const InterfaceDialog = ({ open, onOpenChange }: InterfaceDialogProps) =>
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Paramètres d'interface</DialogTitle>
+                    <DialogTitle>{t('settings.interface')}</DialogTitle>
                     <DialogDescription>
-                        Modifiez le titre affiché de votre tableau Kanban.
+                        {t('settings.interfaceDescription')}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="title" className="text-right">
-                            Titre
+                            {t('settings.title')}
                         </Label>
                         <Input
                             id="title"
@@ -89,32 +93,32 @@ export const InterfaceDialog = ({ open, onOpenChange }: InterfaceDialogProps) =>
                                 }
                             }}
                             className="col-span-3"
-                            placeholder="Entrez le titre du tableau"
+                            placeholder={t('settings.enterBoardTitle')}
                             disabled={isSaving}
                             maxLength={64}
                         />
                         <div className="col-span-3 col-start-2 text-xs text-muted-foreground">
-                            {newTitle?.length || 0}/64 caractères
+                            {newTitle?.length || 0}/64 {t('common.charactersMax')}
                         </div>
                     </div>
 
                     {hookError && (
                         <div className="text-sm text-destructive text-center bg-destructive/10 p-2 rounded-md">
-                            Erreur: {hookError}
+                            {t('common.error')}: {hookError}
                         </div>
                     )}
 
                     {saveSuccess && (
                         <div className="flex items-center justify-center text-sm text-green-600">
                             <CheckCircle className="h-4 w-4 mr-2" />
-                            Titre mis à jour avec succès !
+                            {t('settings.titleUpdatedSuccess')}
                         </div>
                     )}
                 </div>
 
                 <DialogFooter>
                     <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
-                        Annuler
+                        {t('common.cancel')}
                     </Button>
                     <Button
                         onClick={handleSave}
@@ -123,10 +127,10 @@ export const InterfaceDialog = ({ open, onOpenChange }: InterfaceDialogProps) =>
                         {isSaving ? (
                             <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Enregistrement...
+                                {t('common.saving')}
                             </>
                         ) : (
-                            'Enregistrer'
+                            t('common.save')
                         )}
                     </Button>
                 </DialogFooter>

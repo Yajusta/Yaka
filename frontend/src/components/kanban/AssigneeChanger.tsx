@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { User as UserIcon } from 'lucide-react';
 import { Card, UpdateCardData } from '../../types';
@@ -13,11 +14,14 @@ interface AssigneeChangerProps {
 }
 
 export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssigneeChange, isCurrentUserAssigned = false }) => {
+    const { t } = useTranslation();
     const { toast } = useToast();
     const { users } = useUsers();
 
     const handleAssigneeChange = async (newAssigneeId: number | null) => {
-        if (newAssigneeId === card.assignee_id) return;
+        if (newAssigneeId === card.assignee_id) {
+            return;
+        }
 
         const updatePayload: UpdateCardData = {
             assignee_id: newAssigneeId,
@@ -27,14 +31,16 @@ export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssign
             const updatedCard = await cardService.updateCard(card.id, updatePayload);
             onAssigneeChange(updatedCard);
             toast({
-                title: `La carte "${card.titre}" est maintenant assignée à ${users.find(u => u.id === newAssigneeId)?.display_name || 'personne'}.`,
+                title: newAssigneeId
+                    ? t('card.cardAssignedTo', { cardTitle: card.titre, userName: users.find(u => u.id === newAssigneeId)?.display_name || t('user.unknownUser') })
+                    : t('card.cardUnassignedTo', { cardTitle: card.titre }),
                 variant: "success",
             });
         } catch (error) {
             console.error("Failed to update assignee", error);
             toast({
-                title: "Erreur",
-                description: "Impossible de mettre à jour l'assigné de la carte.",
+                title: t('common.error'),
+                description: t('card.updateAssigneeError'),
                 variant: "destructive",
             });
         }
@@ -43,7 +49,7 @@ export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssign
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <div className="flex items-center space-x-1 cursor-pointer" title="Changer l'assigné">
+                <div className="flex items-center space-x-1 cursor-pointer" title={t('card.changeAssignee')}>
                     {card.assignee ? (
                         <>
                             <UserIcon className={`h-3 w-3 ${isCurrentUserAssigned ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
@@ -60,7 +66,7 @@ export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssign
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 <DropdownMenuItem onSelect={() => handleAssigneeChange(null)}>
-                    Aucun
+                    {t('card.unassign')}
                 </DropdownMenuItem>
                 {users.map((user) => (
                     <DropdownMenuItem key={user.id} onSelect={() => handleAssigneeChange(user.id)}>

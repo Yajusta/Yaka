@@ -9,6 +9,7 @@ import { Trash2, Edit, Plus } from 'lucide-react';
 import { labelService } from '../../services/api.tsx';
 import { useToast } from '../../hooks/use-toast.tsx';
 import { Label as LabelType } from '../../types/index.ts';
+import { useTranslation } from 'react-i18next';
 
 interface LabelManagerProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ interface FormData {
 }
 
 const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
+    const { t } = useTranslation();
     const [labels, setLabels] = useState<LabelType[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [editingLabel, setEditingLabel] = useState<LabelType | null>(null);
@@ -44,8 +46,8 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
             setLabels(data);
         } catch (error) {
             toast({
-                title: "Erreur",
-                description: "Impossible de charger les libellés",
+                title: t('common.error'),
+                description: t('errors.loadingError'),
                 variant: "destructive"
             });
         } finally {
@@ -59,13 +61,13 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
             if (editingLabel) {
                 await labelService.updateLabel(editingLabel.id, { ...formData, id: editingLabel.id });
                 toast({
-                    title: "Libellé modifié avec succès",
+                    title: t('label.labelUpdated'),
                     variant: "success"
                 });
             } else {
                 await labelService.createLabel(formData);
                 toast({
-                    title: "Libellé créé avec succès",
+                    title: t('label.labelCreated'),
                     variant: "success"
                 });
             }
@@ -75,8 +77,8 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
             loadLabels();
         } catch (error: any) {
             toast({
-                title: "Erreur",
-                description: "Impossible de sauvegarder le libellé",
+                title: t('common.error'),
+                description: t('errors.saveError'),
                 variant: "destructive"
             });
         }
@@ -92,21 +94,21 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
     };
 
     const handleDelete = async (labelId: number): Promise<void> => {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer ce libellé ?')) {
+        if (!confirm(t('common.confirmDelete'))) {
             return;
         }
 
         try {
             await labelService.deleteLabel(labelId);
             toast({
-                title: "Libellé supprimé avec succès",
+                title: t('label.labelDeleted'),
                 variant: "success"
             });
             loadLabels();
         } catch (error: any) {
             toast({
-                title: "Erreur",
-                description: "Impossible de supprimer le libellé",
+                title: t('common.error'),
+                description: t('errors.deleteError'),
                 variant: "destructive"
             });
         }
@@ -128,7 +130,7 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Gestion des libellés</DialogTitle>
+                    <DialogTitle>{t('label.labelManagement')}</DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-4">
@@ -136,7 +138,7 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
                     <div className="flex justify-end">
                         <Button onClick={handleCreate}>
                             <Plus className="h-4 w-4 mr-2" />
-                            Nouveau libellé
+                            {t('label.newLabel')}
                         </Button>
                     </div>
 
@@ -145,28 +147,28 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
                         <Card>
                             <CardHeader>
                                 <CardTitle>
-                                    {editingLabel ? 'Modifier le libellé' : 'Nouveau libellé'}
+                                    {editingLabel ? t('label.editLabel') : t('label.newLabel')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <form onSubmit={handleSubmit} className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="nom">Nom</Label>
+                                        <Label htmlFor="nom">{t('label.name')}</Label>
                                         <Input
                                             id="nom"
                                             value={formData.nom}
                                             onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                                            placeholder="Nom du libellé"
+                                            placeholder={t('label.name')}
                                             maxLength={32}
                                             required
                                         />
                                         <p className="text-xs text-gray-500">
-                                            {formData.nom.length}/32 caractères maximum
+                                            {formData.nom.length}/32 {t('common.charactersMax')}
                                         </p>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="couleur">Couleur</Label>
+                                        <Label htmlFor="couleur">{t('label.color')}</Label>
                                         <div className="flex items-center space-x-2">
                                             <Input
                                                 id="couleur"
@@ -186,10 +188,10 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
 
                                     <div className="flex justify-end space-x-2">
                                         <Button type="button" variant="outline" onClick={handleCloseForm}>
-                                            Annuler
+                                            {t('common.cancel')}
                                         </Button>
                                         <Button type="submit">
-                                            {editingLabel ? 'Modifier' : 'Créer'}
+                                            {editingLabel ? t('common.update') : t('common.create')}
                                         </Button>
                                     </div>
                                 </form>
@@ -251,7 +253,7 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
 
                             {labels.length === 0 && !loading && (
                                 <div className="text-center py-8 text-gray-500">
-                                    Aucun libellé créé pour le moment
+                                    {t('label.noLabels')}
                                 </div>
                             )}
                         </div>

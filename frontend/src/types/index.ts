@@ -3,12 +3,13 @@ import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 export interface User {
     id: number;
-    username: string;
+    username?: string;
     email: string;
     display_name?: string;
     role?: string;
+    language?: string;
     created_at: string;
-    updated_at: string;
+    updated_at?: string;
 }
 
 export interface KanbanList {
@@ -186,18 +187,7 @@ export const UserRole = {
 } as const;
 
 // Legacy function - kept for backward compatibility during transition
-export const getStatusLabel = (status: string): string => {
-    switch (status) {
-        case CardStatus.A_FAIRE:
-            return 'À faire';
-        case CardStatus.EN_COURS:
-            return 'En cours';
-        case CardStatus.TERMINE:
-            return 'Terminé';
-        default:
-            return status;
-    }
-};
+// This function is now moved to useTranslatedLabels hook for proper i18n support
 
 // New function for getting list name from KanbanList
 export const getListName = (list: KanbanList | undefined): string => {
@@ -217,18 +207,8 @@ export const getPriorityColor = (priority: string): string => {
     }
 };
 
-export const getPriorityLabel = (priority: string): string => {
-    switch (priority) {
-        case CardPriority.LOW:
-            return 'Faible';
-        case CardPriority.MEDIUM:
-            return 'Moyenne';
-        case CardPriority.HIGH:
-            return 'Élevée';
-        default:
-            return 'Inconnue';
-    }
-};
+// This function is now moved to useTranslatedLabels hook for proper i18n support
+// Kept for backward compatibility - use useTranslatedLabels hook instead
 
 export const getPriorityIcon = (priority: string): React.ComponentType<{ className?: string }> => {
     switch (priority) {

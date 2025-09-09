@@ -39,6 +39,7 @@ class User(Base):
     display_name: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER, nullable=False)
     status: Mapped[UserStatus] = mapped_column(Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False)
+    language: Mapped[Optional[str]] = mapped_column(String(2), nullable=True, server_default='fr')
     invite_token: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
     invited_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())

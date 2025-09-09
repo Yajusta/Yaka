@@ -17,6 +17,7 @@ import { useToast } from '../../hooks/use-toast.tsx';
 import { Card, Label as LabelType, CardComment } from '../../types/index.ts';
 import { useUsers } from '../../hooks/useUsers';
 import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
 interface CardFormProps {
     card: Card | null;
@@ -38,6 +39,7 @@ interface FormData {
 }
 
 const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: CardFormProps) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState<FormData>({
         titre: '',
         description: '',
@@ -66,8 +68,8 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             setLabels(labelsData);
         } catch {
             toast({
-                title: "Erreur",
-                description: "Impossible de charger les données",
+                title: t('common.error'),
+                description: t('card.loadError'),
                 variant: "destructive"
             });
         }
@@ -168,12 +170,12 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             onSave(savedCard);
             onClose();
             toast({
-                title: card ? "Carte mise à jour" : "Carte créée",
+                title: card ? t('card.updateSuccess') : t('card.createSuccess'),
                 variant: "success"
             });
         } catch (error: any) {
             toast({
-                title: error.response?.data?.detail || "Erreur lors de la sauvegarde",
+                title: error.response?.data?.detail || t('card.saveError'),
                 variant: "destructive"
             });
         } finally {
@@ -226,11 +228,11 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             const newComment = await cardCommentsService.createComment(card.id, text);
             setComments(prev => [newComment, ...prev]);
             setNewCommentText('');
-            toast({ title: "Commentaire ajouté", variant: "success" });
+            toast({ title: t('card.commentAdded'), variant: "success" });
         } catch (error: any) {
             toast({
-                title: "Erreur",
-                description: error.response?.data?.detail || "Impossible d'ajouter le commentaire",
+                title: t('common.error'),
+                description: error.response?.data?.detail || t('card.addCommentError'),
                 variant: "destructive"
             });
         }
@@ -259,11 +261,11 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             setComments(prev => prev.map(c => c.id === editingCommentId ? updatedComment : c));
             setEditingCommentId(null);
             setEditingCommentText('');
-            toast({ title: "Commentaire modifié", variant: "success" });
+            toast({ title: t('card.commentUpdated'), variant: "success" });
         } catch (error: any) {
             toast({
-                title: "Erreur",
-                description: error.response?.data?.detail || "Impossible de modifier le commentaire",
+                title: t('common.error'),
+                description: error.response?.data?.detail || t('card.updateCommentError'),
                 variant: "destructive"
             });
         }
@@ -273,11 +275,11 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
         try {
             await cardCommentsService.deleteComment(commentId);
             setComments(prev => prev.filter(c => c.id !== commentId));
-            toast({ title: "Commentaire supprimé", variant: "success" });
+            toast({ title: t('card.commentDeleted'), variant: "success" });
         } catch (error: any) {
             toast({
-                title: "Erreur",
-                description: error.response?.data?.detail || "Impossible de supprimer le commentaire",
+                title: t('common.error'),
+                description: error.response?.data?.detail || t('card.deleteCommentError'),
                 variant: "destructive"
             });
         }
@@ -323,8 +325,8 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             onClose();
         } catch (error: any) {
             toast({
-                title: "Erreur lors de l'archivage",
-                description: error.response?.data?.detail || "Impossible d'archiver la carte",
+                title: t('card.archiveError'),
+                description: error.response?.data?.detail || t('card.archiveErrorDescription'),
                 variant: "destructive"
             });
         }
@@ -335,16 +337,16 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             <DialogContent className="max-h-screen overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
-                        {card ? 'Modifier la carte' : 'Nouvelle carte'}
+                        {card ? t('card.editCard') : t('card.newCard')}
                     </DialogTitle>
                     <DialogDescription>
-                        {card ? 'Modifier les informations de la carte.' : 'Remplissez les détails pour créer une nouvelle carte.'}
+                        {card ? t('card.editCardDescription') : t('card.newCardDescription')}
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-3">
                     <div className="space-y-2">
-                        <Label htmlFor="titre">Titre *</Label>
+                        <Label htmlFor="titre">{t('card.title')} *</Label>
                         <Input
                             id="titre"
                             value={formData.titre}
@@ -354,7 +356,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
+                        <Label htmlFor="description">{t('card.description')}</Label>
                         <Textarea
                             id="description"
                             value={formData.description}
@@ -365,7 +367,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
 
                     {/* Checklist Section */}
                     <div className="space-y-2">
-                        <Label>Checklist</Label>
+                        <Label>{t('card.checklist')}</Label>
                         <div className="space-y-2">
                             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                                 <SortableContext items={checklist.map(i => i.id ?? `new-${i.position}`)} strategy={verticalListSortingStrategy}>
@@ -375,7 +377,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                 <div className="flex items-center gap-2">
                                                     <div
                                                         className="h-6 w-6 flex items-center justify-center text-muted-foreground cursor-grab active:cursor-grabbing"
-                                                        title="Déplacer"
+                                                        title={t('card.move')}
                                                         {...attributes}
                                                         {...listeners}
                                                     >
@@ -393,7 +395,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                         className={item.is_done ? 'line-through text-muted-foreground' : ''}
                                                         maxLength={64}
                                                     />
-                                                    <Button type="button" variant="ghost" size="icon" onClick={() => deleteChecklistItem(index)} title="Archiver">
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => deleteChecklistItem(index)} title={t('card.archive')}>
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
@@ -404,20 +406,20 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                             </DndContext>
                             <div className="flex items-center gap-2">
                                 <Input
-                                    placeholder="Ajouter un élément"
+                                    placeholder={t('card.addChecklistItem')}
                                     value={newItemText}
                                     onChange={(e) => setNewItemText(e.target.value)}
                                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(); } }}
                                     maxLength={64}
                                 />
-                                <Button type="button" variant="secondary" onClick={addChecklistItem}>Ajouter</Button>
+                                <Button type="button" variant="secondary" onClick={addChecklistItem}>{t('card.add')}</Button>
                             </div>
                         </div>
                     </div>
 
                     {/* Commentaires Section */}
                     <div className="space-y-2">
-                        <Label>Commentaires</Label>
+                        <Label>{t('card.comments')}</Label>
                         <div className="space-y-2">
                             <div className="flex gap-2">
                                 {editingCommentId ? (
@@ -425,7 +427,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                         <Textarea
                                             value={editingCommentText}
                                             onChange={(e) => setEditingCommentText(e.target.value)}
-                                            placeholder="Modifier le commentaire..."
+                                            placeholder={t('card.editCommentPlaceholder')}
                                             className="flex-1"
                                             rows={3}
                                             maxLength={1000}
@@ -436,14 +438,14 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                 variant="outline"
                                                 onClick={() => { setEditingCommentId(null); setEditingCommentText(''); }}
                                             >
-                                                Annuler
+                                                {t('common.cancel')}
                                             </Button>
                                             <Button
                                                 type="button"
                                                 variant="default"
                                                 onClick={saveCommentEdit}
                                             >
-                                                Sauvegarder
+                                                {t('common.save')}
                                             </Button>
                                         </div>
                                     </>
@@ -452,7 +454,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                         <Textarea
                                             value={newCommentText}
                                             onChange={(e) => setNewCommentText(e.target.value)}
-                                            placeholder="Ajouter un commentaire..."
+                                            placeholder={t('card.addCommentPlaceholder')}
                                             className="flex-1"
                                             rows={3}
                                             maxLength={1000}
@@ -463,7 +465,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                             onClick={addComment}
                                             disabled={!newCommentText.trim()}
                                         >
-                                            Ajouter
+                                            {t('card.add')}
                                         </Button>
                                     </>
                                 )}
@@ -473,7 +475,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                     <div key={comment.id} className="p-3 bg-muted rounded-md space-y-1">
                                         <div className="flex justify-between items-start">
                                             <div className="text-sm font-medium">
-                                                {comment.user?.display_name || 'Utilisateur inconnu'}
+                                                {comment.user?.display_name || t('user.unknownUser')}
                                                 <span className="text-muted-foreground ml-2">
                                                     {new Date(comment.created_at).toLocaleString('fr-FR')}
                                                 </span>
@@ -485,7 +487,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => editComment(comment.id)}
-                                                        title="Modifier"
+                                                        title={t('common.edit')}
                                                     >
                                                         <Pencil className="h-4 w-4" />
                                                     </Button>
@@ -494,7 +496,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => deleteComment(comment.id)}
-                                                        title="Supprimer"
+                                                        title={t('common.delete')}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
@@ -506,7 +508,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                 ))}
                                 {comments.length === 0 && (
                                     <div className="text-sm text-muted-foreground text-center py-4">
-                                        Aucun commentaire
+                                        {t('card.noComments')}
                                     </div>
                                 )}
                             </div>
@@ -514,7 +516,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Libellés</Label>
+                        <Label>{t('card.labels')}</Label>
                         <div className="flex flex-wrap gap-2">
                             {labels.map(label => (
                                 <Badge
@@ -538,7 +540,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
 
                     <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-2">
-                            <Label htmlFor="priorite">Priorité</Label>
+                            <Label htmlFor="priorite">{t('card.priority')}</Label>
                             <Select
                                 value={formData.priorite}
                                 onValueChange={(value) => setFormData(prev => ({ ...prev, priorite: value }))}
@@ -550,19 +552,19 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                     <SelectItem value="high">
                                         <div className="flex items-center gap-2">
                                             <ArrowUp className="h-4 w-4 text-destructive" />
-                                            <span>Élevée</span>
+                                            <span>{t('priority.high')}</span>
                                         </div>
                                     </SelectItem>
                                     <SelectItem value="medium">
                                         <div className="flex items-center gap-2">
                                             <Minus className="h-4 w-4 text-sky-600" />
-                                            <span>Moyenne</span>
+                                            <span>{t('priority.medium')}</span>
                                         </div>
                                     </SelectItem>
                                     <SelectItem value="low">
                                         <div className="flex items-center gap-2">
                                             <ArrowDown className="h-4 w-4 text-muted-foreground" />
-                                            <span>Faible</span>
+                                            <span>{t('priority.low')}</span>
                                         </div>
                                     </SelectItem>
                                 </SelectContent>
@@ -570,7 +572,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="date_echeance">Date d'échéance</Label>
+                            <Label htmlFor="date_echeance">{t('card.dueDate')}</Label>
                             <Input
                                 id="date_echeance"
                                 type="date"
@@ -580,7 +582,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="assignee">Assigné à</Label>
+                            <Label htmlFor="assignee">{t('card.assignee')}</Label>
                             <Select
                                 value={formData.assignee_id?.toString() || 'none'}
                                 onValueChange={(value) => setFormData(prev => ({
@@ -589,10 +591,10 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                 }))}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Sélectionner un utilisateur" />
+                                    <SelectValue placeholder={t('card.selectUser')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="none">Aucun</SelectItem>
+                                    <SelectItem value="none">{t('card.unassign')}</SelectItem>
                                     {users.map(user => (
                                         <SelectItem key={user.id} value={user.id.toString()}>
                                             {user.display_name}
@@ -614,16 +616,16 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                     className="flex items-center gap-2"
                                 >
                                     <Trash2 className="h-4 w-4" />
-                                    Archiver
+                                    {t('card.archiveCard')}
                                 </Button>
                             )}
                         </div>
                         <div className="flex gap-2 ml-auto">
                             <Button type="button" variant="outline" onClick={onClose}>
-                                Annuler
+                                {t('common.cancel')}
                             </Button>
                             <Button type="submit" disabled={loading}>
-                                {loading ? 'Sauvegarde...' : (card ? 'Modifier' : 'Créer')}
+                                {loading ? t('common.saving') : (card ? t('common.update') : t('common.create'))}
                             </Button>
                         </div>
                     </DialogFooter>

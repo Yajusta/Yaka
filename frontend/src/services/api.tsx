@@ -67,12 +67,20 @@ export const authService = {
 
         // Récupérer les informations utilisateur
         const userResponse = await api.get<User>('/auth/me');
-        localStorage.setItem('user', JSON.stringify(userResponse.data));
+        const userData = userResponse.data;
+        localStorage.setItem('user', JSON.stringify(userData));
+
+        // Set the language from user preferences
+        if (userData.language) {
+            // Dynamically import i18n to avoid circular dependency
+            const i18n = await import('../i18n').then(module => module.default);
+            await i18n.changeLanguage(userData.language);
+        }
 
         // Clear any redirect guard now that we're authenticated
         try { sessionStorage.removeItem('auth_redirecting'); } catch { }
 
-        return userResponse.data;
+        return userData;
     },
 
     async logout(): Promise<void> {
@@ -83,7 +91,16 @@ export const authService = {
 
     async getCurrentUser(): Promise<User> {
         const response = await api.get<User>('/auth/me');
-        return response.data;
+        const userData = response.data;
+        
+        // Set the language from user preferences
+        if (userData.language) {
+            // Dynamically import i18n to avoid circular dependency
+            const i18n = await import('../i18n').then(module => module.default);
+            await i18n.changeLanguage(userData.language);
+        }
+        
+        return userData;
     },
 
     isAuthenticated(): boolean {
@@ -176,6 +193,12 @@ export const userService = {
     async updateUser(userId: number, userData: Partial<User>): Promise<User> {
         const response = await api.put<User>(`/users/${userId}`, userData);
         resetUsersCache(); // Reset cache after updating user
+        return response.data;
+    },
+
+    async updateLanguage(language: string): Promise<User> {
+        const response = await api.put<User>('/users/me/language', { language });
+        resetUsersCache(); // Reset cache after updating language
         return response.data;
     },
 

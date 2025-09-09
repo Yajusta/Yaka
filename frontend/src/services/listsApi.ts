@@ -9,6 +9,7 @@ import {
     Card 
 } from '../types';
 import { cardsApi } from './cardsApi';
+import { handleApiError, ApiError } from './errorHandler';
 
 // Types for API responses
 interface ListCardsCountResponse {
@@ -20,91 +21,6 @@ interface ListCardsCountResponse {
 interface ListReorderRequest {
     list_orders: Record<number, number>;
 }
-
-// Error handling utility
-class ListsApiError extends Error {
-    constructor(
-        message: string,
-        public status?: number,
-        public code?: string
-    ) {
-        super(message);
-        this.name = 'ListsApiError';
-    }
-}
-
-// Helper function to handle API errors
-const handleApiError = (error: any): never => {
-    // Handle network errors
-    if (!error.response) {
-        throw new ListsApiError(
-            'Erreur de connexion. Vérifiez votre connexion internet et réessayez.',
-            0,
-            'NETWORK_ERROR'
-        );
-    }
-
-    // Handle specific HTTP status codes with user-friendly messages
-    const status = error.response.status;
-    const detail = error.response.data?.detail;
-    
-    switch (status) {
-        case 400:
-            throw new ListsApiError(
-                detail || 'Données invalides. Vérifiez les informations saisies.',
-                status,
-                'VALIDATION_ERROR'
-            );
-        case 401:
-            throw new ListsApiError(
-                'Vous n\'êtes pas autorisé à effectuer cette action. Veuillez vous reconnecter.',
-                status,
-                'UNAUTHORIZED'
-            );
-        case 403:
-            throw new ListsApiError(
-                'Vous n\'avez pas les permissions nécessaires pour effectuer cette action.',
-                status,
-                'FORBIDDEN'
-            );
-        case 404:
-            throw new ListsApiError(
-                detail || 'La ressource demandée n\'a pas été trouvée.',
-                status,
-                'NOT_FOUND'
-            );
-        case 409:
-            throw new ListsApiError(
-                detail || 'Conflit détecté. Cette action ne peut pas être effectuée en raison d\'un conflit avec l\'état actuel.',
-                status,
-                'CONFLICT'
-            );
-        case 422:
-            throw new ListsApiError(
-                detail || 'Données de validation incorrectes.',
-                status,
-                'UNPROCESSABLE_ENTITY'
-            );
-        case 500:
-            throw new ListsApiError(
-                'Erreur interne du serveur. Veuillez réessayer plus tard.',
-                status,
-                'INTERNAL_SERVER_ERROR'
-            );
-        case 503:
-            throw new ListsApiError(
-                'Service temporairement indisponible. Veuillez réessayer plus tard.',
-                status,
-                'SERVICE_UNAVAILABLE'
-            );
-        default:
-            throw new ListsApiError(
-                detail || 'Une erreur inattendue s\'est produite.',
-                status,
-                'UNKNOWN_ERROR'
-            );
-    }
-};
 
 // Cache management for lists data
 class ListsCache {
@@ -265,7 +181,7 @@ export const listsApi = {
     async getListCardsCount(listId: number): Promise<ListWithCardCount> {
         try {
             const response: AxiosResponse<ListCardsCountResponse> = await api.get(`/lists/${listId}/cards-count`);
-            const data = response.data;
+            const {data} = response;
             
             return {
                 list: {
@@ -399,7 +315,7 @@ export const listsApi = {
 };
 
 // Export error class for error handling in components
-export { ListsApiError };
+export { ApiError as ListsApiError };
 
 // Export default
 export default listsApi;

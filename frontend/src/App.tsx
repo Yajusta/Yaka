@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthProvider, useAuth } from './hooks/useAuth.tsx';
 import { useTheme } from './hooks/useTheme.tsx';
 import { useToast } from './hooks/use-toast.tsx';
 import { BoardSettingsProvider } from './hooks/useBoardSettingsContext';
 import { UsersProvider, useUsers } from './hooks/useUsers';
+import { useUserLanguage } from './hooks/useUserLanguage';
 import { Toaster } from './components/ui/sonner';
 import LoginForm from './components/auth/LoginForm.tsx';
 import InvitePage from './components/auth/InvitePage.tsx';
@@ -30,6 +32,7 @@ interface Filters {
 }
 
 const KanbanApp = () => {
+    const { t } = useTranslation();
     const [showUsersManager, setShowUsersManager] = useState(false);
     const [showListManager, setShowListManager] = useState(false);
     const [showInterfaceDialog, setShowInterfaceDialog] = useState(false);
@@ -78,6 +81,11 @@ const KanbanApp = () => {
                 setLabels(labelsData);
             } catch (error) {
                 console.error('Erreur lors du chargement des données:', error);
+                toast({
+                    title: t('app.loadDataError'),
+                    description: t('errors.tryAgain'),
+                    variant: "destructive"
+                });
             } finally {
                 setDataLoading(false);
             }
@@ -177,23 +185,23 @@ const KanbanApp = () => {
             // Importer Sonner pour utiliser les actions
             // const { toast: sonnerToast } = await import('sonner');
 
-            sonnerToast.success('Carte archivée', {
-                description: 'La carte a été archivée avec succès',
+            sonnerToast.success(t('app.cardArchived'), {
+                description: t('app.cardArchivedDescription'),
                 action: {
-                    label: 'Annuler',
+                    label: t('app.undo'),
                     onClick: async () => {
                         try {
                             if (cardToDelete) {
                                 await cardService.unarchiveCard(cardId);
                                 setAllCards(prev => [...prev, cardToDelete]);
-                                sonnerToast.success('Carte restaurée', {
-                                    description: 'La carte a été remise dans le kanban'
+                                sonnerToast.success(t('app.cardRestored'), {
+                                    description: t('app.cardRestoredDescription')
                                 });
                             }
                         } catch (restoreError: any) {
                             console.error('Erreur lors de la restauration:', restoreError);
-                            sonnerToast.error('Erreur lors de la restauration', {
-                                description: restoreError.response?.data?.detail || 'Impossible de restaurer la carte'
+                            sonnerToast.error(t('app.restoreError'), {
+                                description: restoreError.response?.data?.detail || t('app.restoreErrorDescription')
                             });
                         }
                     }
@@ -203,8 +211,8 @@ const KanbanApp = () => {
         } catch (error: any) {
             console.error('Erreur lors de la suppression de la carte:', error);
             toast({
-                title: "Erreur lors de l'archivage",
-                description: error.response?.data?.detail || "Impossible d'archiver la carte",
+                title: t('app.archiveError'),
+                description: error.response?.data?.detail || t('app.archiveErrorDescription'),
                 variant: "destructive"
             });
         }
@@ -262,8 +270,8 @@ const KanbanApp = () => {
         } catch (error: any) {
             console.error('Erreur lors du déplacement de la carte:', error);
             toast({
-                title: "Erreur lors du déplacement",
-                description: error.response?.data?.detail || "Impossible de déplacer la carte",
+                title: t('app.moveError'),
+                description: error.response?.data?.detail || t('app.moveErrorDescription'),
                 variant: "destructive"
             });
         }
@@ -291,6 +299,11 @@ const KanbanApp = () => {
             setListsRefreshTrigger(prev => prev + 1);
         } catch (error) {
             console.error('Erreur lors du rechargement des cartes:', error);
+            toast({
+                title: t('app.reloadCardsError'),
+                description: t('errors.tryAgain'),
+                variant: "destructive"
+            });
         }
     };
 
@@ -314,14 +327,14 @@ const KanbanApp = () => {
         try {
             await logout();
             toast({
-                title: "Déconnexion réussie",
-                description: "Vous avez été déconnecté avec succès",
+                title: t('app.logoutSuccess'),
+                description: t('app.logoutSuccessDescription'),
             });
         } catch (error) {
             console.error('Erreur lors de la déconnexion:', error);
             toast({
-                title: "Erreur lors de la déconnexion",
-                description: "Une erreur est survenue lors de la déconnexion",
+                title: t('app.logoutError'),
+                description: t('app.logoutErrorDescription'),
                 variant: "destructive"
             });
         }
@@ -417,6 +430,7 @@ const KanbanApp = () => {
 const AppContent = () => {
     const location = useLocation();
     const { theme } = useTheme();
+    useUserLanguage(); // Initialize user language
 
     useEffect(() => {
         document.documentElement.className = theme;
