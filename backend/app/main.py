@@ -4,6 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .models import User, Label, Card, KanbanList, BoardSettings
+from alembic import command
+from alembic.config import Config
 from .routers import (
     auth_router,
     users_router,
@@ -21,8 +23,13 @@ from .database import SessionLocal
 from .utils.demo_mode import is_demo_mode
 from .utils.demo_reset import reset_database, setup_fresh_database
 
-# Créer les tables de la base de données
-Base.metadata.create_all(bind=engine)
+# Exécuter les migrations Alembic au démarrage
+def run_migrations():
+    """Exécute les migrations Alembic."""
+    alembic_cfg = Config("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+
+run_migrations()
 
 # Créer l'application FastAPI
 app = FastAPI(
