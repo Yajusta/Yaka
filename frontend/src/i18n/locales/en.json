@@ -54,7 +54,19 @@
         "passwordTooShort": "Password is too short",
         "accountNotFound": "Account not found",
         "accountDisabled": "Account is disabled",
-        "tooManyAttempts": "Too many attempts, please try again later"
+        "tooManyAttempts": "Too many attempts, please try again later",
+        "demoModeEnabled": "Demo mode enabled",
+        "demoCredentials": "Demo credentials",
+        "databaseDeletedRegularly": "Database deleted regularly",
+        "dataResetHourly": "Data is reset every hour",
+        "publicEnvironment": "Public environment",
+        "noSensitiveInfo": "Do not enter sensitive information",
+        "resetPasswordDialogTitle": "Reset password",
+        "resetPasswordDialogDescription": "Enter your email address and we'll send you a link to reset your password",
+        "resetPasswordSuccess": "Password reset email sent successfully",
+        "resetPasswordError": "Error resetting password",
+        "emailPlaceholder": "Enter your email",
+        "sendResetLink": "Send reset link"
     },
     "navigation": {
         "dashboard": "Dashboard",

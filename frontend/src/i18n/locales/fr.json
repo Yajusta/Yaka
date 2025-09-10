@@ -54,7 +54,19 @@
         "passwordTooShort": "Le mot de passe est trop court",
         "accountNotFound": "Compte non trouvé",
         "accountDisabled": "Compte désactivé",
-        "tooManyAttempts": "Trop de tentatives, veuillez réessayer plus tard"
+        "tooManyAttempts": "Trop de tentatives, veuillez réessayer plus tard",
+        "demoModeEnabled": "Mode « démo » activé",
+        "demoCredentials": "Identifiants de démo",
+        "databaseDeletedRegularly": "Base de données supprimée régulièrement",
+        "dataResetHourly": "Les données sont réinitialisées toutes les heures",
+        "publicEnvironment": "Environnement public",
+        "noSensitiveInfo": "N'entrez pas d'informations sensibles",
+        "resetPasswordDialogTitle": "Réinitialiser le mot de passe",
+        "resetPasswordDialogDescription": "Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe",
+        "resetPasswordSuccess": "Email de réinitialisation du mot de passe envoyé avec succès",
+        "resetPasswordError": "Erreur lors de la réinitialisation du mot de passe",
+        "emailPlaceholder": "Entrez votre email",
+        "sendResetLink": "Envoyer le lien de réinitialisation"
     },
     "navigation": {
         "dashboard": "Tableau de bord",

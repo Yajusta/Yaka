@@ -123,7 +123,7 @@ const LoginForm = () => {
                                                 🔄 {t('auth.demoModeEnabled')}
                                             </div>
                                             <div className="text-amber-700 text-sm mt-1">
-                                                {t('auth.demoCredentials')} : <strong>admin@yaka.local</strong><br />
+                                                {t('auth.email')} : <strong>admin@yaka.local</strong><br />
                                                 {t('auth.password')} : <strong>admin123</strong>
                                             </div>
                                         </div>
