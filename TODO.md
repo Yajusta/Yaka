@@ -13,11 +13,12 @@
 [x] Commentaires sur les tâches.
 [ ] Pièces jointes sur les tâches.
 [x] Multilangue.
-[ ] Mettre en avant quand une date arrive à échéance.
+[x] Mettre en avant quand une date arrive à échéance.
 
 ## Frontend
 
 [x] Interface compatible "touch" pour les mobiles.
+[x] Date d'échéance mise en avant en cas de dépassement.
 
 ## Backend
 

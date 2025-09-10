@@ -167,7 +167,9 @@ export const CardItem = ({
     const progress = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
 
     const totalComments = card.comments?.length || 0;
-    const recentComments = card.comments?.slice(-5).reverse() || []; // The 5 most recent
+    const recentComments = [...(card.comments || [])]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5); // The 5 most recent, sorted from newest to oldest
 
     return (
         <GlassmorphicCard
