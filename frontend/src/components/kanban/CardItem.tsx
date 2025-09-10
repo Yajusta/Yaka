@@ -2,7 +2,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { CalendarDays, Edit, Trash2, MoreHorizontal, Clock, MessageCircle } from 'lucide-react';
+import { CalendarDays, Edit, Trash2, MoreHorizontal, Clock, MessageSquare, AlertTriangle, AlertCircle } from 'lucide-react';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { PriorityChanger } from './PriorityChanger';
 import { AssigneeChanger } from './AssigneeChanger';
@@ -97,6 +97,28 @@ export const CardItem = ({
             return null;
         }
         return new Date(dateString).toLocaleDateString('fr-FR');
+    };
+
+    const getDueDateStatus = (dateString: string): 'overdue' | 'upcoming' | 'normal' => {
+        if (!dateString) {
+            return 'normal';
+        }
+        
+        const dueDate = new Date(dateString);
+        const today = new Date();
+        dueDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        
+        const diffTime = dueDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays <= 0) {
+            return 'overdue';
+        } else if (diffDays <= 7) {
+            return 'upcoming';
+        }
+        
+        return 'normal';
     };
 
     const formatCommentDate = (dateString: string): string => {
@@ -244,15 +266,36 @@ export const CardItem = ({
                         <div className="flex items-center space-x-2">
                             <PriorityChanger card={card} onPriorityChange={handlePriorityChange} />
 
-                            {card.date_echeance && (
-                                <div
-                                    className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
-                                    title={t('card.dueDate')}
-                                >
-                                    <CalendarDays className="h-3 w-3 mr-1" />
-                                    <span className="text-xs">{formatDate(card.date_echeance)}</span>
-                                </div>
-                            )}
+                            {card.date_echeance && (() => {
+                                const dueDateStatus = getDueDateStatus(card.date_echeance);
+                                const isOverdue = dueDateStatus === 'overdue';
+                                const isUpcoming = dueDateStatus === 'upcoming';
+                                
+                                const dateClasses = `flex items-center transition-colors relative ${
+                                    isOverdue 
+                                        ? 'text-red-800 hover:text-red-900 px-2 py-1 rounded-md border-2 border-red-400 overflow-hidden' 
+                                        : isUpcoming
+                                            ? 'text-orange-600 hover:text-orange-700 bg-orange-50/50 px-2 py-1 rounded-md border border-orange-200'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                }`;
+                                
+                                const Icon = isOverdue ? AlertCircle : isUpcoming ? AlertTriangle : CalendarDays;
+                                
+                                return (
+                                    <div
+                                        className={dateClasses}
+                                        title={t('card.dueDate')}
+                                    >
+                                        {isOverdue && (
+                                            <div className="absolute inset-0 bg-red-500/20 animate-pulse"></div>
+                                        )}
+                                        <div className="relative z-10 flex items-center">
+                                            <Icon className={`h-3 w-3 mr-1 ${isOverdue ? 'text-red-800' : isUpcoming ? 'text-orange-600' : 'text-muted-foreground'}`} />
+                                            <span className="text-xs font-medium">{formatDate(card.date_echeance)}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                             {totalItems > 0 && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -311,8 +354,9 @@ export const CardItem = ({
                             {totalComments > 0 && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <div className="flex items-center cursor-pointer" title={t('card.comments')}    >
-                                            <MessageCircle className="h-3 w-3 text-blue-500" />
+                                        <div className="flex items-center gap-1 cursor-pointer" title={t('card.comments')}>
+                                            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-xs text-muted-foreground">{totalComments}</span>
                                         </div>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="start" className="w-80 p-0 bg-background border border-border" sideOffset={5}>
