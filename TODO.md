@@ -12,7 +12,8 @@
 [x] Historique des changements de carte.
 [x] Commentaires sur les tâches.
 [ ] Pièces jointes sur les tâches.
-[ ] Multilangue.
+[x] Multilangue.
+[ ] Mettre en avant quand une date arrive à échéance.
 
 ## Frontend
 
