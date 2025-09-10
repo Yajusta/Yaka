@@ -24,6 +24,34 @@ from .utils.demo_mode import is_demo_mode
 from .utils.demo_reset import reset_database, setup_fresh_database
 
 
+# Créer les tables de la base de données si nécessaire
+def ensure_database_exists():
+    """Vérifie si la base de données existe et la crée si nécessaire."""
+    try:
+        import os
+        from sqlalchemy import inspect
+        
+        # Vérifier si le répertoire data existe
+        db_path = "./data"
+        if not os.path.exists(db_path):
+            print(f"Création du répertoire {db_path}...")
+            os.makedirs(db_path)
+        
+        # Vérifier si le fichier de base de données existe
+        db_file = f"{db_path}/yaka.db"
+        if not os.path.exists(db_file):
+            print(f"Création de la base de données {db_file}...")
+            # Créer les tables de base
+            Base.metadata.create_all(bind=engine)
+            print("Base de données créée avec succès")
+        else:
+            print("Base de données existante détectée")
+            
+    except Exception as e:
+        print(f"Erreur lors de la création de la base de données: {e}")
+        raise
+
+
 # Exécuter les migrations Alembic au démarrage si nécessaire
 def run_migrations():
     """Exécute les migrations Alembic uniquement si nécessaire."""
@@ -88,6 +116,10 @@ def _extracted_from_run_migrations_37(conn, text):
         print(f"Base de données à jour (version {current_version})")
 
 
+# S'assurer que la base de données existe avant les migrations
+ensure_database_exists()
+
+# Exécuter les migrations Alembic
 run_migrations()
 
 # Créer l'application FastAPI
