@@ -1,5 +1,10 @@
 # Changelog
 
+## 2025-09-10
+
+- [NEW] Interface multilingue (français / anglais).
+- [NEW] Commentaires sur les cartes.
+
 ## 2025-08-24
 
 - [NEW] Gestion de l'archivage / désarchivage.
