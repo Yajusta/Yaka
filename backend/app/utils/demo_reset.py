@@ -150,7 +150,6 @@ def reset_database():
         db.close()
 
 
-# TODO Rename this here and in `reset_database`
 def delete_all_data(db):
     # Supprimer toutes les données existantes
     print("Suppression des donnees existantes...")
@@ -199,13 +198,13 @@ def setup_fresh_database():
         # Base vide, initialiser les données de base
         initialize_default_data(db)
 
-        # Si on est en mode demo, ajouter les données de demo
-        if is_demo_mode():
-            print("Mode demo detecte, ajout des donnees de demo...")
-            create_demo_data(db)
-        else:
-            print("Mode demo non active, seulement les donnees de base ont ete creees")
-
+        # # Si on est en mode demo, ajouter les données de demo
+        # if is_demo_mode():
+        #     print("Mode demo detecte, ajout des donnees de demo...")
+        #     create_demo_data(db)
+        # else:
+        #     print("Mode demo non active, seulement les donnees de base ont ete creees")
+        create_demo_data(db)
         print("Base de donnees configuree avec succes!")
 
     except Exception as e:

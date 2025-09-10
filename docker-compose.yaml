@@ -39,8 +39,9 @@ services:
     ports:
       - "3000:80"
     environment:
-      - BASE_URL=http://localhost:8000
       - DEMO_MODE=${DEMO_MODE:-false}
+      - BASE_URL=${BASE_URL:-http://localhost:80}
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
     depends_on:
       backend:
         condition: service_healthy

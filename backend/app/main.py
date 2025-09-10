@@ -30,13 +30,13 @@ def ensure_database_exists():
     try:
         import os
         from sqlalchemy import inspect
-        
+
         # Vérifier si le répertoire data existe
         db_path = "./data"
         if not os.path.exists(db_path):
             print(f"Création du répertoire {db_path}...")
             os.makedirs(db_path)
-        
+
         # Vérifier si le fichier de base de données existe
         db_file = f"{db_path}/yaka.db"
         if not os.path.exists(db_file):
@@ -46,7 +46,7 @@ def ensure_database_exists():
             print("Base de données créée avec succès")
         else:
             print("Base de données existante détectée")
-            
+
     except Exception as e:
         print(f"Erreur lors de la création de la base de données: {e}")
         raise
@@ -85,7 +85,7 @@ def run_migrations():
         else:
             # Vérifier si on est à la dernière version
             with engine.connect() as conn:
-                _extracted_from_run_migrations_37(conn, text)
+                upgrade_if_needed(conn, text)
     except Exception as e:
         print(f"Erreur lors de la vérification des migrations: {e}")
         # En cas d'erreur, on essaie quand même d'exécuter les migrations
@@ -97,8 +97,7 @@ def run_migrations():
             print(f"Erreur lors de l'exécution des migrations: {e2}")
 
 
-# TODO Rename this here and in `run_migrations`
-def _extracted_from_run_migrations_37(conn, text):
+def upgrade_if_needed(conn, text):
     result = conn.execute(text("SELECT version_num FROM alembic_version"))
     current_version = result.scalar()
 
