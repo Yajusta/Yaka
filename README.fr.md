@@ -66,6 +66,14 @@ docker compose build
 docker compose up -d
 ```
 
+### 3. Mettre à jour une instance existante
+
+```bash
+docker compose down
+docker compose build
+docker compose up -d
+```
+
 TODO : Faire une image Docker publique qui ne nécessitera pas de cloner le projet.
 
 ## 📦 Installation et démarrage

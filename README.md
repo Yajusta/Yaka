@@ -65,6 +65,14 @@ docker compose build
 docker compose up -d
 ```
 
+### 3. Update an existing instance
+
+```bash
+docker compose down
+docker compose build
+docker compose up -d
+```
+
 TODO: Create a public Docker image that won't require cloning the project.
 
 ## 📦 Installation and startup
