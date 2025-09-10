@@ -23,11 +23,46 @@ from .database import SessionLocal
 from .utils.demo_mode import is_demo_mode
 from .utils.demo_reset import reset_database, setup_fresh_database
 
-# Exécuter les migrations Alembic au démarrage
+# Exécuter les migrations Alembic au démarrage si nécessaire
 def run_migrations():
-    """Exécute les migrations Alembic."""
-    alembic_cfg = Config("alembic.ini")
-    command.upgrade(alembic_cfg, "head")
+    """Exécute les migrations Alembic uniquement si nécessaire."""
+    try:
+        from sqlalchemy import inspect, text
+        
+        # Vérifier si la table alembic_version existe
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        
+        if 'alembic_version' not in tables:
+            print("Table alembic_version non trouvée, exécution des migrations...")
+            alembic_cfg = Config("alembic.ini")
+            command.upgrade(alembic_cfg, "head")
+        else:
+            # Vérifier si on est à la dernière version
+            with engine.connect() as conn:
+                result = conn.execute(text("SELECT version_num FROM alembic_version"))
+                current_version = result.scalar()
+                
+                # Obtenir la dernière version disponible
+                alembic_cfg = Config("alembic.ini")
+                from alembic.script import ScriptDirectory
+                script = ScriptDirectory.from_config(alembic_cfg)
+                latest_version = script.get_current_head()
+                
+                if current_version != latest_version:
+                    print(f"Migration nécessaire: {current_version} -> {latest_version}")
+                    command.upgrade(alembic_cfg, "head")
+                else:
+                    print(f"Base de données à jour (version {current_version})")
+    except Exception as e:
+        print(f"Erreur lors de la vérification des migrations: {e}")
+        # En cas d'erreur, on essaie quand même d'exécuter les migrations
+        try:
+            print("Tentative d'exécution des migrations...")
+            alembic_cfg = Config("alembic.ini")
+            command.upgrade(alembic_cfg, "head")
+        except Exception as e2:
+            print(f"Erreur lors de l'exécution des migrations: {e2}")
 
 run_migrations()
 
