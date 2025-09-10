@@ -177,7 +177,6 @@
         "historyBy": "by {{userName}}",
         "priorityUpdated": "Priority updated",
         "priorityUpdatedDescription": "The priority of card \"{{cardTitle}}\" is now \"{{priority}}\"."
-
     },
     "list": {
         "title": "Title",
@@ -301,13 +300,18 @@
         "resendInvitation": "Resend invitation",
         "modifyName": "Modify name",
         "cannotDeleteSelf": "You cannot delete yourself",
-        "editName": "Edit name for {email}",
+        "editName": "Edit name for {{email}}",
         "newDisplayName": "New display name",
         "availableInMinute": "(available in 1 minute)",
         "noPermission": "You don't have permission to view the user list.",
         "activeUser": "Active user",
         "invitationPending": "Invitation pending",
-        "member": "Member"
+        "member": "Member",
+        "roleUpdated": "Role updated successfully",
+        "updateRoleError": "Cannot update role",
+        "demoteToMember": "Demote to member",
+        "promoteToAdmin": "Promote to admin",
+        "cannotChangeOwnRole": "You cannot change your own role"
     },
     "priority": {
         "low": "Low",

@@ -127,6 +127,25 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
         }
     };
 
+    const handleChangeRole = async (userId: number, newRole: 'user' | 'admin') => {
+        try {
+            await userService.updateUser(userId, { role: newRole });
+            await refresh();
+            toast({
+                title: t('user.roleUpdated'),
+                variant: 'success'
+            });
+        } catch (e: any) {
+            console.error('Erreur update user role', e);
+            const errorMessage = e?.response?.data?.detail || t('user.updateRoleError');
+            toast({
+                title: t('common.error'),
+                description: errorMessage,
+                variant: 'destructive'
+            });
+        }
+    };
+
     const handleCancelEdit = () => {
         setEditingUser(null);
         setEditingDisplayName('');
@@ -265,6 +284,27 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                             >
                                                                 <User className="h-4 w-4" />
                                                                 {t('user.modifyName')}
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    if (u.id === currentUser?.id) return;
+                                                                    handleChangeRole(u.id, u.role === 'admin' ? 'user' : 'admin');
+                                                                }}
+                                                                className={`flex items-center gap-2 ${u.id === currentUser?.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <div className="flex items-center gap-2 w-full">
+                                                                            <Key className="h-4 w-4" />
+                                                                            {u.role === 'admin' ? t('user.demoteToMember') : t('user.promoteToAdmin')}
+                                                                        </div>
+                                                                    </TooltipTrigger>
+                                                                    {u.id === currentUser?.id && (
+                                                                        <TooltipContent>
+                                                                            <p>{t('user.cannotChangeOwnRole')}</p>
+                                                                        </TooltipContent>
+                                                                    )}
+                                                                </Tooltip>
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 variant="destructive"

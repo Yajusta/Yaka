@@ -4,6 +4,7 @@
 
 - [NEW] Interface multilingue (français / anglais).
 - [NEW] Commentaires sur les cartes.
+- [NEW] Possibilité de changer le rôle d'un utilisateur existant.
 
 ## 2025-08-24
 

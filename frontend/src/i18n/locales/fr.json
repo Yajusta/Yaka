@@ -177,7 +177,6 @@
         "historyBy": "par {{userName}}",
         "priorityUpdated": "Priorité mise à jour",
         "priorityUpdatedDescription": "La priorité de la carte \"{{cardTitle}}\" est maintenant \"{{priority}}\"."
-
     },
     "list": {
         "title": "Titre",
@@ -301,13 +300,18 @@
         "resendInvitation": "Renvoyer une invitation",
         "modifyName": "Modifier le nom",
         "cannotDeleteSelf": "Vous ne pouvez pas vous supprimer vous-même",
-        "editName": "Modifier le nom de {email}",
+        "editName": "Modifier le nom de {{email}}",
         "newDisplayName": "Nouveau nom affiché",
         "availableInMinute": "(disponible dans 1 minute)",
         "noPermission": "Vous n'avez pas la permission de voir la liste des utilisateurs.",
         "activeUser": "Utilisateur actif",
         "invitationPending": "Invitation en attente",
-        "member": "Membre"
+        "member": "Membre",
+        "roleUpdated": "Rôle mis à jour avec succès",
+        "updateRoleError": "Impossible de mettre à jour le rôle",
+        "demoteToMember": "Rétrograder en membre",
+        "promoteToAdmin": "Promouvoir en administrateur",
+        "cannotChangeOwnRole": "Vous ne pouvez pas changer votre propre rôle"
     },
     "priority": {
         "low": "Basse",
