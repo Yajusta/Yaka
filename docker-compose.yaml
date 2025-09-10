@@ -15,6 +15,7 @@ services:
       - SMTP_FROM=${SMTP_FROM:-no-reply@yaka.local}
       - INVITE_BASE_URL=${INVITE_BASE_URL:-http://localhost:8000/invite}
       - DEMO_MODE=${DEMO_MODE:-false}
+      - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-fr}
     volumes:
       - ./data/:/app/data/
     restart: unless-stopped
