@@ -26,6 +26,7 @@ class UserStatus(enum.Enum):
     INVITED = "invited"
     ACTIVE = "active"
     DISABLED = "disabled"
+    DELETED = "deleted"
 
 
 class User(Base):

@@ -1,5 +1,6 @@
 """Service pour la gestion des utilisateurs."""
 
+from asyncio import log
 import contextlib
 from sqlalchemy.orm import Session
 from typing import Optional, List
@@ -11,6 +12,7 @@ from sqlalchemy import and_
 import secrets
 import datetime
 from . import email as email_service
+from os import getenv
 
 # Note: email_service requires SMTP_* env vars to be set for invitations to be sent
 
@@ -22,17 +24,17 @@ def get_system_timezone_datetime():
 
 def get_user(db: Session, user_id: int) -> Optional[User]:
     """Récupérer un utilisateur par son ID."""
-    return db.query(User).filter(User.__table__.c.id == user_id).first()
+    return db.query(User).filter(and_(User.__table__.c.id == user_id, User.__table__.c.status != UserStatus.DELETED)).first()
 
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """Récupérer un utilisateur par son email."""
-    return db.query(User).filter(User.__table__.c.email == email).first()
+    return db.query(User).filter(and_(User.__table__.c.email == email, User.__table__.c.status != UserStatus.DELETED)).first()
 
 
 def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
     """Récupérer une liste d'utilisateurs."""
-    return db.query(User).offset(skip).limit(limit).all()
+    return db.query(User).filter(User.__table__.c.status != UserStatus.DELETED).offset(skip).limit(limit).all()
 
 
 def create_user(db: Session, user: UserCreate) -> User:
@@ -43,7 +45,7 @@ def create_user(db: Session, user: UserCreate) -> User:
         password_hash=hashed_password,
         display_name=user.display_name,
         role=user.role,
-        language=user.language or 'fr',
+        language=user.language or "fr",
         status=UserStatus.ACTIVE,
     )
     db.add(db_user)
@@ -61,7 +63,7 @@ def invite_user(db: Session, email: str, display_name: str | None, role: UserRol
         email=email,
         display_name=display_name,
         role=role,
-        language='fr',
+        language="fr",
         status=UserStatus.INVITED,
         invite_token=invite_token,
         invited_at=invited_at,
@@ -70,8 +72,10 @@ def invite_user(db: Session, email: str, display_name: str | None, role: UserRol
     db.commit()
     db.refresh(db_user)
 
-    with contextlib.suppress(Exception):
+    try:
         email_service.send_invitation(email=email, display_name=display_name, token=invite_token)
+    except Exception as e:
+        print(f"ERROR: Erreur lors de l'envoi de l'email d'invitation à {email}: {e}")
     return db_user
 
 
@@ -160,12 +164,12 @@ def get_user_by_any_token(db: Session, token: str) -> Optional[User]:
 
 
 def delete_user(db: Session, user_id: int) -> bool:
-    """Supprimer un utilisateur."""
+    """Supprimer un utilisateur (suppression logique)."""
     db_user = get_user(db, user_id)
     if not db_user:
         return False
 
-    db.delete(db_user)
+    db_user.status = UserStatus.DELETED
     db.commit()
     return True
 
@@ -180,7 +184,12 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
 
 def create_admin_user(db: Session) -> User:
     """Créer un utilisateur administrateur par défaut."""
+    default_lang = getenv("DEFAULT_LANGUAGE", "en")
     admin_data = UserCreate(
-        email="admin@yaka.local", password="admin123", display_name="Admin Système", role=UserRole.ADMIN
+        email="admin@yaka.local",
+        password="admin123",
+        display_name="Admin",
+        role=UserRole.ADMIN,
+        language=default_lang,
     )
     return create_user(db, admin_data)

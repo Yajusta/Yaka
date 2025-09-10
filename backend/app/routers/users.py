@@ -95,22 +95,19 @@ async def update_user(
 
 @router.put("/me/language", response_model=UserResponse)
 async def update_user_language(
-    payload: LanguageUpdate, 
-    db: Session = Depends(get_db), 
-    current_user: User = Depends(get_current_active_user)
+    payload: LanguageUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """Mettre à jour la langue de l'utilisateur connecté."""
-    if payload.language not in ['fr', 'en']:
+    if payload.language not in ["fr", "en"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Langue non supportée. Les langues supportées sont: fr, en"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Langue non supportée. Les langues supportées sont: fr, en"
         )
-    
+
     # Mettre à jour directement le champ language
     current_user.language = payload.language
     db.commit()
     db.refresh(current_user)
-    
+
     return current_user
 
 
@@ -133,7 +130,7 @@ async def resend_invitation(user_id: int, db: Session = Depends(get_db), current
         # Convertir invited_at en timezone-aware si nécessaire
         if db_user.invited_at.tzinfo is None:
             # Si invited_at est timezone-naive, l'assumer en UTC
-            invited_at_aware = db_user.invited_at.replace(tzinfo=timezone.utc)
+            invited_at_aware = db_user.invited_at.astimezone()
         else:
             invited_at_aware = db_user.invited_at
 
