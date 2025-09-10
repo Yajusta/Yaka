@@ -723,3 +723,69 @@
     transform: scale(1);
   }
 }
+
+/* Priority glow effects using ::before to avoid text blur */
+.priority-high,
+.priority-medium,
+.priority-low {
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.priority-high::before,
+.priority-medium::before,
+.priority-low::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* High priority glow (red) */
+.priority-high::before {
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4), 0 0 16px rgba(239, 68, 68, 0.2);
+}
+
+.priority-high:hover::before {
+  opacity: 1;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.6), 0 0 24px rgba(239, 68, 68, 0.3);
+}
+
+.priority-high:hover {
+  transform: translateY(-2px);
+}
+
+/* Medium priority glow (orange) */
+.priority-medium::before {
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.4), 0 0 16px rgba(14, 165, 233, 0.2);
+}
+
+.priority-medium:hover::before {
+  opacity: 1;
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.6), 0 0 24px rgba(14, 165, 233, 0.3);
+}
+
+.priority-medium:hover {
+  transform: translateY(-2px);
+}
+
+/* Low priority glow (gray) */
+.priority-low::before {
+  box-shadow: 0 0 8px rgba(156, 163, 175, 0.4), 0 0 16px rgba(156, 163, 175, 0.2);
+}
+
+.priority-low:hover::before {
+  opacity: 1;
+  box-shadow: 0 0 12px rgba(156, 163, 175, 0.6), 0 0 24px rgba(156, 163, 175, 0.3);
+}
+
+.priority-low:hover {
+  transform: translateY(-2px);
+}

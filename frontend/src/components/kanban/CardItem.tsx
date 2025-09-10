@@ -156,10 +156,11 @@ export const CardItem = ({
     // Apply CSS class to force hiding
     const hiddenClass = (isHidden || isActiveCard || isJustDropped) ? 'card-being-dragged' : '';
 
+    // Le glow est maintenant géré par CSS ::before pour éviter le flou du texte
     const priorityGlowClass = {
-        'high': 'shadow-[0_0_8px_rgba(239,68,68,0.4),0_0_16px_rgba(239,68,68,0.2)] hover:shadow-[0_0_12px_rgba(239,68,68,0.6),0_0_24px_rgba(239,68,68,0.3)]',
-        'medium': 'shadow-[0_0_8px_rgba(14,165,233,0.4),0_0_16px_rgba(14,165,233,0.2)] hover:shadow-[0_0_12px_rgba(14,165,233,0.6),0_0_24px_rgba(14,165,233,0.3)]',
-        'low': 'shadow-[0_0_8px_rgba(156,163,175,0.4),0_0_16px_rgba(156,163,175,0.2)] hover:shadow-[0_0_12px_rgba(156,163,175,0.6),0_0_24px_rgba(156,163,175,0.3)]'
+        'high': 'priority-high',
+        'medium': 'priority-medium', 
+        'low': 'priority-low'
     }[priorityKey];
 
     const totalItems = card.items?.length || 0;

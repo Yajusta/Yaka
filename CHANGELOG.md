@@ -5,6 +5,7 @@
 - [NEW] Interface multilingue (français / anglais).
 - [NEW] Commentaires sur les cartes.
 - [NEW] Possibilité de changer le rôle d'un utilisateur existant.
+- [NEW] Date d'échéance mise en avant quand elle est dépassée.
 
 ## 2025-08-24
 
