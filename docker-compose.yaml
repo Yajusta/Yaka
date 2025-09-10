@@ -13,7 +13,7 @@ services:
       - SMTP_PASS=${SMTP_PASS:-your_smtp_pass}
       - SMTP_SECURE=${SMTP_SECURE:-starttls}
       - SMTP_FROM=${SMTP_FROM:-no-reply@yaka.local}
-      - INVITE_BASE_URL=${INVITE_BASE_URL:-http://localhost:8000/invite}
+      - BASE_URL=${BASE_URL:-http://localhost:3000}
       - DEMO_MODE=${DEMO_MODE:-false}
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-fr}
     volumes:
@@ -40,7 +40,7 @@ services:
       - "3000:80"
     environment:
       - DEMO_MODE=${DEMO_MODE:-false}
-      - BASE_URL=${BASE_URL:-http://localhost:80}
+      - BASE_URL=${BASE_URL:-http://localhost:3000}
       - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
     depends_on:
       backend:
