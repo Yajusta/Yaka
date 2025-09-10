@@ -23,37 +23,41 @@ from .database import SessionLocal
 from .utils.demo_mode import is_demo_mode
 from .utils.demo_reset import reset_database, setup_fresh_database
 
+
 # Exécuter les migrations Alembic au démarrage si nécessaire
 def run_migrations():
     """Exécute les migrations Alembic uniquement si nécessaire."""
     try:
         from sqlalchemy import inspect, text
-        
+
         # Vérifier si la table alembic_version existe
         inspector = inspect(engine)
         tables = inspector.get_table_names()
-        
-        if 'alembic_version' not in tables:
-            print("Table alembic_version non trouvée, exécution des migrations...")
+
+        if "alembic_version" not in tables:
+            print("Table alembic_version non trouvée...")
+
+            # Vérifier si les tables principales existent déjà
+            main_tables = ["users", "cards", "lists", "labels"]
+            if existing_main_tables := [t for t in main_tables if t in tables]:
+                print(f"Tables existantes détectées: {existing_main_tables}")
+                print("Initialisation d'alembic_version à la version précédente...")
+
+                # Créer la table alembic_version et l'initialiser à la version avant le language
+                with engine.connect() as conn:
+                    conn.execute(text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)"))
+                    conn.execute(text("INSERT INTO alembic_version (version_num) VALUES ('756429e64d69')"))
+                    conn.commit()
+
+            else:
+                print("Base de données vide, exécution de toutes les migrations...")
+            # Maintenant exécuter les migrations manquantes
             alembic_cfg = Config("alembic.ini")
             command.upgrade(alembic_cfg, "head")
         else:
             # Vérifier si on est à la dernière version
             with engine.connect() as conn:
-                result = conn.execute(text("SELECT version_num FROM alembic_version"))
-                current_version = result.scalar()
-                
-                # Obtenir la dernière version disponible
-                alembic_cfg = Config("alembic.ini")
-                from alembic.script import ScriptDirectory
-                script = ScriptDirectory.from_config(alembic_cfg)
-                latest_version = script.get_current_head()
-                
-                if current_version != latest_version:
-                    print(f"Migration nécessaire: {current_version} -> {latest_version}")
-                    command.upgrade(alembic_cfg, "head")
-                else:
-                    print(f"Base de données à jour (version {current_version})")
+                _extracted_from_run_migrations_37(conn, text)
     except Exception as e:
         print(f"Erreur lors de la vérification des migrations: {e}")
         # En cas d'erreur, on essaie quand même d'exécuter les migrations
@@ -63,6 +67,26 @@ def run_migrations():
             command.upgrade(alembic_cfg, "head")
         except Exception as e2:
             print(f"Erreur lors de l'exécution des migrations: {e2}")
+
+
+# TODO Rename this here and in `run_migrations`
+def _extracted_from_run_migrations_37(conn, text):
+    result = conn.execute(text("SELECT version_num FROM alembic_version"))
+    current_version = result.scalar()
+
+    # Obtenir la dernière version disponible
+    alembic_cfg = Config("alembic.ini")
+    from alembic.script import ScriptDirectory
+
+    script = ScriptDirectory.from_config(alembic_cfg)
+    latest_version = script.get_current_head()
+
+    if current_version != latest_version:
+        print(f"Migration nécessaire: {current_version} -> {latest_version}")
+        command.upgrade(alembic_cfg, "head")
+    else:
+        print(f"Base de données à jour (version {current_version})")
+
 
 run_migrations()
 
