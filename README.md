@@ -1,96 +1,97 @@
-
 # YAKA - Yet Another Kanban App
+
+[FRANÇAIS](README.fr.md) - **ENGLISH**
 
 ![Logo](https://raw.githubusercontent.com/Yajusta/Yaka/refs/heads/main/frontend/public/yaka.ico)
 
-Une application web moderne et intuitive pour la gestion collaborative de tâches utilisant la méthodologie Kanban.
+A modern and intuitive web application for collaborative task management using the Kanban methodology.
 
-## 🖼️ Captures d'écran
+## 🖼️ Screenshots
 
 ![Board](./docs/screenshot-001.png)
 
 ![Card](./docs/screenshot-002.png)
 
-## 🖥️ Démo
+## 🖥️ Demo
 
-Pour voir à quoi ressemble cette application avant de l'installer, le plus simple est d'aller tester [la démo](https://yaka-demo.yajusta.fr/).
+To see what this application looks like before installing it, the easiest way is to try [the demo](https://yaka-demo.yajusta.fr/).
 
-Identifiant : `admin@yaka.local`
-Mot de passe : `admin123`
+Username: `admin@yaka.local`
+Password: `admin123`
 
-🗑️ La base est supprimée régulièrement.
-⚠️ L'environnement est public : ne mettez pas d'informations sensibles.
-L'envoie des emails d'invation est désactivé.
+🗑️ The database is regularly deleted.
+⚠️ The environment is public: do not put sensitive information.
+Email invitation sending is disabled.
 
-## ⚙️ Fonctionnalités
+## ⚙️ Features
 
-- **Tableau Kanban interactif**
-- **Drag & Drop** fluide pour déplacer les cartes
-- **Authentification sécurisée** avec JWT
-- **Cartes détaillées** avec titre, description, liste d'éléments, priorité, assigné, libellés, date d'échéance
-- **Recherche et filtres**
-- **Utilisateurs illimités**
-- **Gestion des rôles** (administrateur / membre)
-- **Gestion des colonnes** pour mettre autant de colonnes que nécessaire
-- **Gestion des libellés** colorés pour la catégorisation
-- **Historisation des évènements** pour suivre qui a fait quoi
-- **Gestion des archives** pour ne jamais rien perdre
+- **Interactive Kanban Board**
+- **Drag & Drop** for moving cards smoothly
+- **Secure Authentication** with JWT
+- **Detailed Cards** with title, description, checklist, priority, assignee, labels, due date, comments
+- **Search and filters**
+- **Unlimited Users**
+- **Role Management** (administrator / member)
+- **Column Management** to add as many columns as needed
+- **Colored Label Management** for categorization
+- **Event History** to track who did what
+- **Archive Management** to never lose anything
 
 ## 📝 Changelog
 
 [Changelog](CHANGELOG.md)
 
-## 🚀 Déploiement
+## 🚀 Deployment
 
-La méthode la plus simple pour utiliser Yaka sans se prendre la tête.
+The simplest method to use Yaka without hassle.
 
-### 1. Cloner le projet
+### 1. Clone the project
 
 ```bash
 git clone https://github.com/Yajusta/Yaka.git
 cd Yaka
 ```
 
-### 1. Modifier les variables d'environnement
+### 1. Modify environment variables
 
 ```bash
 cp .env.sample .env
 ```
 
-### 2. Déployer avec Docker
+### 2. Deploy with Docker
 
 ```bash
 docker compose build
 docker compose up -d
 ```
 
-TODO : Faire une image Docker publique qui ne nécessitera pas de cloner le projet.
+TODO: Create a public Docker image that won't require cloning the project.
 
-## 📦 Installation et démarrage
+## 📦 Installation and startup
 
-Si vous souhaitez le lancer à la main, c'est possible aussi.
+If you want to run it manually, that's possible too.
 
-### 📋 Prérequis
+### 📋 Prerequisites
 
 - [Python](https://www.python.org/downloads/) 3.12+ + [uv](https://docs.astral.sh/uv/)
-- [Node.js](https://nodejs.org/fr/download) 18+
-- [pnpm](https://pnpm.io/) (recommandé) ou [npm](https://www.npmjs.com/)
+- [Node.js](https://nodejs.org/download) 18+
+- [pnpm](https://pnpm.io/) (recommended) or [npm](https://www.npmjs.com/)
 
-### 1. Cloner le projet
+### 1. Clone the project
 
 ```bash
 git clone https://github.com/Yajusta/Yaka.git
 cd Yaka
 ```
 
-### 2. Configuration du serveur de mail
+### 2. Mail server configuration
 
-Copier / coller le fichier `.env.sample` en `.env` et remplir les paramètres de configuration de votre serveur SMTP/
+Copy/paste the `.env.sample` file to `.env` and fill in the configuration parameters for your SMTP server.
 
-Exemple :
+Example:
 
 ```txt
-# Paramètres pour l'envoi de mail
+# Parameters for email sending
 SMTP_HOST = "smtp.resend.com"
 SMTP_PORT = 587
 SMTP_USER = "resend"
@@ -99,17 +100,17 @@ SMTP_SECURE = "starttls"  # values: 'ssl'|'starttls'|'none'
 SMTP_FROM = "no-reply@domain.com"
 ```
 
-### 3. Démarrage du backend
+### 3. Start the backend
 
 ```bash
 cd backend
 uv run uvicorn app.main:app --reload
 ```
 
-Un environnement virtuel sera automatiquement créé avec toutes les dépendances nécessaires.
-Le backend sera accessible sur <http://localhost:8000>
+A virtual environment will be automatically created with all necessary dependencies.
+The backend will be accessible at <http://localhost:8000>
 
-### 4. Démarrage du frontend
+### 4. Start the frontend
 
 ```bash
 cd frontend
@@ -117,57 +118,58 @@ pnpm install
 pnpm run dev
 ```
 
-Le frontend sera accessible sur <http://localhost:5173>
+The frontend will be accessible at <http://localhost:5173>
 
-## 👤 Compte administrateur par défaut
+## 👤 Default administrator account
 
-Un compte administrateur est créé automatiquement lors de l'initialisation :
+An administrator account is automatically created during initialization:
 
-- **Email :** `admin@kyaka.local`
-- **Mot de passe :** `admin123`
+- **Email:** `admin@kyaka.local`
+- **Password:** `admin123`
 
-Une fois connecté, créez un nouvel administrateur avec votre email puis supprimez ce compte par défaut.
+Once connected, **create a new administrator** with your email then **delete this default account**.
 
 ## 📖 Documentation
 
-- [Guide technique du frontend](docs/frontend-technical-documentation.md) - Documentation complète du frontend
-- [Guide technique du backend](docs/backend-technical-documentation.md) - Documentation complète du backend
-- [Guide Utilisateur](docs/user-guide.md) - Manuel d'utilisation de l'application
+- [Frontend Technical Guide](docs/frontend-technical-documentation.md) - Complete frontend documentation
+- [Backend Technical Guide](docs/backend-technical-documentation.md) - Complete backend documentation
+- [User Guide](docs/user-guide.md) - Application user manual
 
-## 📄 Licence
+## 📄 License
 
-Ce projet est sous licence **Non-Commercial License** : vous pouvez utiliser et modifier l'application, mais sans en rendre son utilisation payante sans l'accord de l'auteur.
+This project is under **Non-Commercial License**: you can use and modify the application, but without making its use paid without the author's agreement.
 
 ## 🆘 Support
 
-Pour toute question ou problème :
+For any questions or problems:
 
-1. Consulter la [documentation](docs/)
-2. Vérifier les [issues existantes]([../../issues](https://github.com/Yajusta/Yaka/issues))
-3. Créer une nouvelle issue si nécessaire
+1. Consult the [documentation](docs/)
+2. Check [existing issues](https://github.com/Yajusta/Yaka/issues)
+3. Create a new issue if necessary
 
-## 🔄 Roadmap hypothétique
+## 🔄 Hypothetical Roadmap
 
-- [ ] Notifications en temps réel (websockets)
-- [ ] Commentaires sur les cartes
-- [ ] Pièces jointes
-- [ ] Rapports et analytics
-- [ ] API publique
-- [ ] Intégrations tierces (Slack, Teams, etc.)
+- [x] Multilingual interface
+- [ ] Real-time notifications (websockets)
+- [x] Card comments
+- [ ] Attachments
+- [ ] Reports and analytics
+- [ ] Public API
+- [ ] Third-party integrations (Slack, Teams, etc.)
 
 ## 🛠️ Technologies
 
 ### Backend
 
-- **FastAPI** - Framework web Python moderne et performant
-- **SQLAlchemy** - ORM pour la gestion de base de données
-- **SQLite** - Base de données embarquée
-- **JWT** - Authentification par tokens
-- **Pydantic** - Validation et sérialisation des données
+- **FastAPI** - Modern and performant Python web framework
+- **SQLAlchemy** - ORM for database management
+- **SQLite** - Embedded database
+- **JWT** - Token authentication
+- **Pydantic** - Data validation and serialization
 
 ### Frontend
 
-- **React** - Bibliothèque JavaScript pour l'interface utilisateur
-- **shadcn/ui** - Composants UI modernes et accessibles
-- **Tailwind CSS** - Framework CSS utility-first
-- **Vite** - Outil de build rapide
+- **React** - JavaScript library for user interface
+- **shadcn/ui** - Modern and accessible UI components
+- **Tailwind CSS** - Utility-first CSS framework
+- **Vite** - Fast build tool
