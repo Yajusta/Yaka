@@ -148,7 +148,6 @@ export const CardItem = ({
     // Apply CSS class to force hiding
     const hiddenClass = (isHidden || isActiveCard || isJustDropped) ? 'card-being-dragged' : '';
 
-    // Le glow est maintenant géré par CSS ::before pour éviter le flou du texte
     const priorityGlowClass = {
         'high': 'priority-high',
         'medium': 'priority-medium',

@@ -585,6 +585,7 @@
 
   /* Style pour le placeholder dans la même colonne */
   .placeholder-card {
+    -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
     background: rgba(59, 130, 246, 0.08);
     border: 2px dashed rgba(59, 130, 246, 0.4);
@@ -594,11 +595,22 @@
   .kanban-horizontal-scroll {
     /* stylelint-disable-next-line at-rule-no-unknown */
     @apply overflow-x-auto overflow-y-hidden;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
-    /* Improve scrolling performance */
-    -webkit-overflow-scrolling: touch;
+    /* Fallback avec WebKit pour les navigateurs modernes */
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    /* Smooth scrolling behavior */
+    scroll-behavior: smooth;
     scroll-snap-type: x proximity;
+  }
+
+  /* Appliquer scrollbar-width et scrollbar-color uniquement sur les navigateurs qui les supportent */
+  @supports (scrollbar-width: thin) {
+    .kanban-horizontal-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    }
   }
 
   .kanban-horizontal-scroll::-webkit-scrollbar {
@@ -619,11 +631,7 @@
     background-color: rgba(156, 163, 175, 0.7);
   }
 
-  /* Smooth scrolling behavior */
-  .kanban-horizontal-scroll {
-    scroll-behavior: smooth;
-  }
-
+  
   /* Ensure columns maintain proper spacing in horizontal layout */
   .kanban-lists-container {
     display: flex;
@@ -730,6 +738,22 @@
 .priority-low {
   position: relative;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 8px 24px 8px 8px;
+}
+
+/* Border colors for priority */
+.priority-high {
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+.priority-medium {
+  border-color: rgba(14, 165, 233, 0.6);
+}
+
+.priority-low {
+  border-color: rgba(156, 163, 175, 0.6);
 }
 
 .priority-high::before,
