@@ -9,14 +9,13 @@ import { Textarea } from '../ui/textarea.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog.tsx';
 import { Badge } from '../ui/badge.tsx';
-import { X, ArrowUp, ArrowDown, Minus, Trash2, GripVertical, Pencil } from 'lucide-react';
+import { X, ArrowUp, ArrowDown, Minus, Trash2, GripVertical } from 'lucide-react';
 import { CardPriority } from '../../types/index.ts';
 import { mapPriorityToBackend, mapPriorityFromBackend } from '../../lib/priority';
-import { cardService, labelService, cardItemsService, cardCommentsService } from '../../services/api.tsx';
+import { cardService, labelService, cardItemsService } from '../../services/api.tsx';
 import { useToast } from '../../hooks/use-toast.tsx';
-import { Card, Label as LabelType, CardComment } from '../../types/index.ts';
+import { Card, Label as LabelType } from '../../types/index.ts';
 import { useUsers } from '../../hooks/useUsers';
-import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 
 interface CardFormProps {
@@ -51,16 +50,11 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
         list_id: defaultListId ?? -1 // Utiliser -1 par défaut pour laisser le backend choisir la plus basse
     });
     const { toast } = useToast();
-    const { user: currentUser } = useAuth();
     const { users } = useUsers();
     const [labels, setLabels] = useState<LabelType[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [checklist, setChecklist] = useState<{ id?: number; texte: string; is_done: boolean; position: number }[]>([]);
     const [newItemText, setNewItemText] = useState<string>('');
-    const [comments, setComments] = useState<CardComment[]>([]);
-    const [newCommentText, setNewCommentText] = useState<string>('');
-    const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
-    const [editingCommentText, setEditingCommentText] = useState<string>('');
 
     const loadData = useCallback(async (): Promise<void> => {
         try {
@@ -93,8 +87,6 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                     try {
                         const items = await cardItemsService.getItems(card.id);
                         setChecklist(items.map(i => ({ id: i.id, texte: i.texte, is_done: i.is_done, position: i.position })));
-                        const cardComments = await cardCommentsService.getComments(card.id);
-                        setComments(cardComments);
                     } catch { /* ignore */ }
                 } else {
                     setFormData({
@@ -218,73 +210,6 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
         setChecklist(prev => prev.filter((_, i) => i !== index).map((it, i) => ({ ...it, position: i + 1 })));
     };
 
-    const addComment = async (): Promise<void> => {
-        const text = newCommentText.trim();
-        if (!text || !card) {
-            return;
-        }
-
-        try {
-            const newComment = await cardCommentsService.createComment(card.id, text);
-            setComments(prev => [newComment, ...prev]);
-            setNewCommentText('');
-            toast({ title: t('card.commentAdded'), variant: "success" });
-        } catch (error: any) {
-            toast({
-                title: t('common.error'),
-                description: error.response?.data?.detail || t('card.addCommentError'),
-                variant: "destructive"
-            });
-        }
-    };
-
-    const editComment = (commentId: number): void => {
-        const comment = comments.find(c => c.id === commentId);
-        if (comment) {
-            setEditingCommentId(commentId);
-            setEditingCommentText(comment.comment);
-        }
-    };
-
-    const saveCommentEdit = async (): Promise<void> => {
-        if (editingCommentId === null) {
-            return;
-        }
-
-        const text = editingCommentText.trim();
-        if (!text) {
-            return;
-        }
-
-        try {
-            const updatedComment = await cardCommentsService.updateComment(editingCommentId, text);
-            setComments(prev => prev.map(c => c.id === editingCommentId ? updatedComment : c));
-            setEditingCommentId(null);
-            setEditingCommentText('');
-            toast({ title: t('card.commentUpdated'), variant: "success" });
-        } catch (error: any) {
-            toast({
-                title: t('common.error'),
-                description: error.response?.data?.detail || t('card.updateCommentError'),
-                variant: "destructive"
-            });
-        }
-    };
-
-    const deleteComment = async (commentId: number): Promise<void> => {
-        try {
-            await cardCommentsService.deleteComment(commentId);
-            setComments(prev => prev.filter(c => c.id !== commentId));
-            toast({ title: t('card.commentDeleted'), variant: "success" });
-        } catch (error: any) {
-            toast({
-                title: t('common.error'),
-                description: error.response?.data?.detail || t('card.deleteCommentError'),
-                variant: "destructive"
-            });
-        }
-    };
-
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (!over || active.id === over.id) {
@@ -302,6 +227,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
     type DragRender = (args: { attributes: any; listeners: any }) => React.ReactNode;
     const SortableItem = ({ id, children }: { id: string | number; children: React.ReactNode | DragRender }) => {
         const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+        // Style inline nécessaire pour @dnd-kit - propriétés dynamiques qui ne peuvent être en CSS
         const style = {
             transform: CSS.Transform.toString(transform),
             transition,
@@ -388,6 +314,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                         className="h-4 w-4"
                                                         checked={item.is_done}
                                                         onChange={() => toggleChecklistItem(index)}
+                                                        title={t('card.toggleChecklistItem')}
                                                     />
                                                     <Input
                                                         value={item.texte}
@@ -417,103 +344,6 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                         </div>
                     </div>
 
-                    {/* Commentaires Section */}
-                    <div className="space-y-2">
-                        <Label>{t('card.comments')}</Label>
-                        <div className="space-y-2">
-                            <div className="flex gap-2">
-                                {editingCommentId ? (
-                                    <>
-                                        <Textarea
-                                            value={editingCommentText}
-                                            onChange={(e) => setEditingCommentText(e.target.value)}
-                                            placeholder={t('card.editCommentPlaceholder')}
-                                            className="flex-1"
-                                            rows={3}
-                                            maxLength={1000}
-                                        />
-                                        <div className="flex flex-col gap-2">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => { setEditingCommentId(null); setEditingCommentText(''); }}
-                                            >
-                                                {t('common.cancel')}
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="default"
-                                                onClick={saveCommentEdit}
-                                            >
-                                                {t('common.save')}
-                                            </Button>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Textarea
-                                            value={newCommentText}
-                                            onChange={(e) => setNewCommentText(e.target.value)}
-                                            placeholder={t('card.addCommentPlaceholder')}
-                                            className="flex-1"
-                                            rows={3}
-                                            maxLength={1000}
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={addComment}
-                                            disabled={!newCommentText.trim()}
-                                        >
-                                            {t('card.add')}
-                                        </Button>
-                                    </>
-                                )}
-                            </div>
-                            <div className="space-y-2 max-h-64 overflow-y-auto">
-                                {comments.map((comment) => (
-                                    <div key={comment.id} className="p-3 bg-muted rounded-md space-y-1">
-                                        <div className="flex justify-between items-start">
-                                            <div className="text-sm font-medium">
-                                                {comment.user?.display_name || t('user.unknownUser')}
-                                                <span className="text-muted-foreground ml-2">
-                                                    {new Date(comment.created_at).toLocaleString('fr-FR')}
-                                                </span>
-                                            </div>
-                                            {currentUser?.id === comment.user_id && !editingCommentId && (
-                                                <div className="flex gap-1">
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => editComment(comment.id)}
-                                                        title={t('common.edit')}
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => deleteComment(comment.id)}
-                                                        title={t('common.delete')}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <p className="text-sm whitespace-pre-wrap">{comment.comment}</p>
-                                    </div>
-                                ))}
-                                {comments.length === 0 && (
-                                    <div className="text-sm text-muted-foreground text-center py-4">
-                                        {t('card.noComments')}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
 
                     <div className="space-y-2">
                         <Label>{t('card.labels')}</Label>

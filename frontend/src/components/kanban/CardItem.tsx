@@ -12,6 +12,7 @@ import { Card } from '../../types/index';
 import { useAuth } from '../../hooks/useAuth';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CommentsForm } from '../cards/CommentsForm';
 
 interface CardItemProps {
     card: Card;
@@ -37,6 +38,7 @@ export const CardItem = ({
     const { user: currentUser } = useAuth();
     const { t } = useTranslation();
     const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [showCommentsModal, setShowCommentsModal] = useState(false);
 
     const {
         attributes,
@@ -103,32 +105,22 @@ export const CardItem = ({
         if (!dateString) {
             return 'normal';
         }
-        
+
         const dueDate = new Date(dateString);
         const today = new Date();
         dueDate.setHours(0, 0, 0, 0);
         today.setHours(0, 0, 0, 0);
-        
+
         const diffTime = dueDate.getTime() - today.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         if (diffDays <= 0) {
             return 'overdue';
         } else if (diffDays <= 7) {
             return 'upcoming';
         }
-        
-        return 'normal';
-    };
 
-    const formatCommentDate = (dateString: string): string => {
-        return new Date(dateString).toLocaleString('fr-FR', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return 'normal';
     };
 
     const handleEdit = (e: React.MouseEvent): void => {
@@ -159,7 +151,7 @@ export const CardItem = ({
     // Le glow est maintenant géré par CSS ::before pour éviter le flou du texte
     const priorityGlowClass = {
         'high': 'priority-high',
-        'medium': 'priority-medium', 
+        'medium': 'priority-medium',
         'low': 'priority-low'
     }[priorityKey];
 
@@ -168,9 +160,6 @@ export const CardItem = ({
     const progress = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;
 
     const totalComments = card.comments?.length || 0;
-    const recentComments = [...(card.comments || [])]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 5); // The 5 most recent, sorted from newest to oldest
 
     return (
         <GlassmorphicCard
@@ -273,17 +262,16 @@ export const CardItem = ({
                                 const dueDateStatus = getDueDateStatus(card.date_echeance);
                                 const isOverdue = dueDateStatus === 'overdue';
                                 const isUpcoming = dueDateStatus === 'upcoming';
-                                
-                                const dateClasses = `flex items-center transition-colors relative ${
-                                    isOverdue 
-                                        ? 'text-red-800 hover:text-red-900 px-2 py-1 rounded-md border-2 border-red-400 overflow-hidden' 
-                                        : isUpcoming
-                                            ? 'text-orange-600 hover:text-orange-700 bg-orange-50/50 px-2 py-1 rounded-md border border-orange-200'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                }`;
-                                
+
+                                const dateClasses = `flex items-center transition-colors relative ${isOverdue
+                                    ? 'text-red-800 hover:text-red-900 px-2 py-1 rounded-md border-2 border-red-400 overflow-hidden'
+                                    : isUpcoming
+                                        ? 'text-orange-600 hover:text-orange-700 bg-orange-50/50 px-2 py-1 rounded-md border border-orange-200'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                    }`;
+
                                 const Icon = isOverdue ? AlertCircle : isUpcoming ? AlertTriangle : CalendarDays;
-                                
+
                                 return (
                                     <div
                                         className={dateClasses}
@@ -354,44 +342,13 @@ export const CardItem = ({
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             )}
-                            {totalComments > 0 && (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <div className="flex items-center gap-1 cursor-pointer" title={t('card.comments')}>
-                                            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                                            <span className="text-xs text-muted-foreground">{totalComments}</span>
-                                        </div>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" className="w-80 p-0 bg-background border border-border" sideOffset={5}>
-                                        <div className="p-3 space-y-2">
-                                            {recentComments.length > 0 && (
-                                                <div className="space-y-2 max-h-64 overflow-y-auto">
-                                                    {recentComments.map((comment) => (
-                                                        <div key={comment.id} className="p-2 rounded-lg bg-muted/50 border border-border">
-                                                            <div className="flex items-center justify-between mb-1">
-                                                                <div className="font-medium text-sm text-foreground">
-                                                                    {comment.user?.display_name || t('user.unknownUser')}
-                                                                </div>
-                                                                <div className="text-xs text-muted-foreground">
-                                                                    {formatCommentDate(comment.created_at)}
-                                                                </div>
-                                                            </div>
-                                                            <div className="text-sm text-foreground leading-relaxed">
-                                                                {comment.comment}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {totalComments > recentComments.length && (
-                                                <div className="text-xs text-muted-foreground italic text-center py-1 border-t border-border">
-                                                    + {totalComments - recentComments.length} {t('card.olderComment', {count: totalComments - recentComments.length})}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
+                            <div className={`flex items-center gap-1 cursor-pointer transition-opacity duration-200 ${totalComments > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                }`} title={t('card.comments')} onClick={() => setShowCommentsModal(true)}>
+                                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                {totalComments > 0 && (
+                                    <span className="text-xs text-muted-foreground">{totalComments}</span>
+                                )}
+                            </div>
                         </div>
 
                         <div className={`flex items-center ml-auto ${card.assignee ? "opacity-100" : "opacity-0 group-hover:opacity-100 transition-opacity duration-200"} ${isCurrentUserAssigned ? 'bg-primary text-primary-foreground rounded-md px-2 py-1 -mx-2 -my-1 shadow-sm' : ''}`}>
@@ -406,6 +363,12 @@ export const CardItem = ({
                 onClose={() => setShowHistoryModal(false)}
                 cardId={card.id}
                 cardTitle={card.titre}
+            />
+
+            <CommentsForm
+                cardId={card.id}
+                isOpen={showCommentsModal}
+                onClose={() => setShowCommentsModal(false)}
             />
         </GlassmorphicCard>
     );
