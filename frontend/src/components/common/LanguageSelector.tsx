@@ -7,7 +7,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Globe } from 'lucide-react';
+import { Languages } from 'lucide-react';
 import { userService, authService } from '@/services/api';
 
 const LanguageSelector: React.FC = () => {
@@ -19,13 +19,13 @@ const LanguageSelector: React.FC = () => {
         try {
             // Change language in i18next
             await i18n.changeLanguage(lng);
-            
+
             // Check if user is authenticated
             if (authService.isAuthenticated()) {
                 try {
                     // Update language in database
                     await userService.updateLanguage(lng);
-                    
+
                     // Update user in localStorage
                     const currentUser = authService.getCurrentUserFromStorage();
                     if (currentUser) {
@@ -50,14 +50,14 @@ const LanguageSelector: React.FC = () => {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-9 w-9 p-0" 
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 w-9 p-0"
                     title={t('language.switchLanguage')}
                     disabled={isLoading}
                 >
-                    <Globe className="h-4 w-4" />
+                    <Languages className="h-4 w-4" />
                     <span className="sr-only">{t('language.switchLanguage')}</span>
                 </Button>
             </DropdownMenuTrigger>
