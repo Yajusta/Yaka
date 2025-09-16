@@ -1,18 +1,20 @@
 """Service pour la gestion des utilisateurs."""
 
-from asyncio import log
 import contextlib
+import datetime
+import secrets
+from asyncio import log
+from os import getenv
+from typing import List, Optional
+
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
-from typing import Optional, List
+from sqlalchemy.sql import func
+
 from ..models import User, UserRole, UserStatus
 from ..schemas import UserCreate, UserUpdate
 from ..utils.security import get_password_hash, verify_password
-from sqlalchemy.sql import func
-from sqlalchemy import and_
-import secrets
-import datetime
 from . import email as email_service
-from os import getenv
 
 # Note: email_service requires SMTP_* env vars to be set for invitations to be sent
 
@@ -24,12 +26,20 @@ def get_system_timezone_datetime():
 
 def get_user(db: Session, user_id: int) -> Optional[User]:
     """Récupérer un utilisateur par son ID."""
-    return db.query(User).filter(and_(User.__table__.c.id == user_id, User.__table__.c.status != UserStatus.DELETED)).first()
+    return (
+        db.query(User)
+        .filter(and_(User.__table__.c.id == user_id, User.__table__.c.status != UserStatus.DELETED))
+        .first()
+    )
 
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """Récupérer un utilisateur par son email."""
-    return db.query(User).filter(and_(User.__table__.c.email == email, User.__table__.c.status != UserStatus.DELETED)).first()
+    return (
+        db.query(User)
+        .filter(and_(User.__table__.c.email == email, User.__table__.c.status != UserStatus.DELETED))
+        .first()
+    )
 
 
 def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
@@ -85,14 +95,15 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[
     if not db_user:
         return None
 
-    update_data = user_update.dict(exclude_unset=True)
+    update_data = user_update.model_dump(exclude_unset=True)
 
     # Hacher le nouveau mot de passe si fourni
     if "password" in update_data:
         update_data["password_hash"] = get_password_hash(update_data.pop("password"))
 
     for field, value in update_data.items():
-        setattr(db_user, field, value)
+        if field not in User.PROTECTED_FIELDS:
+            setattr(db_user, field, value)
 
     db.commit()
     db.refresh(db_user)
@@ -177,7 +188,11 @@ def delete_user(db: Session, user_id: int) -> bool:
 def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     """Authentifier un utilisateur."""
     if user := get_user_by_email(db, email):
-        return user if verify_password(password, getattr(user, "password_hash")) else None
+        return (
+            user
+            if user.status == UserStatus.ACTIVE and verify_password(password, getattr(user, "password_hash"))
+            else None
+        )
     else:
         return None
 
@@ -185,10 +200,13 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
 def create_admin_user(db: Session) -> User:
     """Créer un utilisateur administrateur par défaut."""
     default_lang = getenv("DEFAULT_LANGUAGE", "en")
+    default_email = getenv("DEFAULT_ADMIN_EMAIL", "admin@yaka.local")
+    default_password = getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
+    default_display_name = getenv("DEFAULT_ADMIN_DISPLAY_NAME", "Admin")
     admin_data = UserCreate(
-        email="admin@yaka.local",
-        password="admin123",
-        display_name="Admin",
+        email=default_email,
+        password=default_password,
+        display_name=default_display_name,
         role=UserRole.ADMIN,
         language=default_lang,
     )

@@ -2,7 +2,7 @@
 
 from .user import User, UserRole, UserStatus
 from .label import Label
-from .card import Card, CardStatus, CardPriority, card_labels
+from .card import Card, CardPriority, card_labels
 from .card_item import CardItem
 from .card_comment import CardComment
 from .kanban_list import KanbanList
@@ -14,7 +14,6 @@ __all__ = [
     "UserRole",
     "Label",
     "Card",
-    "CardStatus",
     "CardPriority",
     "card_labels",
     "KanbanList",

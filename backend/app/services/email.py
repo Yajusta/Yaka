@@ -1,11 +1,15 @@
 """Service d'envoi d'emails via SMTP (configurable par variables d'environnement)."""
 
-from email.message import EmailMessage
-import smtplib
+import logging
 import os
-
+import smtplib
+from email.message import EmailMessage
 from pathlib import Path
+from venv import logger
+
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Charger le .env situé à la racine du dossier `backend`
 # Ce fichier est : backend/.env (on remonte de app/services -> parents[2])
@@ -24,34 +28,48 @@ SMTP_SECURE = os.getenv("SMTP_SECURE", "starttls").lower()  # values: 'ssl'|'sta
 FROM_ADDRESS = os.getenv("SMTP_FROM", "no-reply@kanban.local")
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 INVITE_BASE_URL = f"{BASE_URL}/invite"
+PASSWORD_RESET_BASE_URL = f"{BASE_URL}/invite"
 
 
 def send_mail(to: str, subject: str, html_body: str, plain_body: str = ""):
+    if not plain_body:
+        raise ValueError("plain_body must be provided to avoid unreadable plain text emails.")
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = FROM_ADDRESS
     msg["To"] = to
-    msg.set_content(plain_body or html_body, subtype="plain")
+    msg.set_content(plain_body, subtype="plain")
     msg.add_alternative(html_body, subtype="html")
 
-    if SMTP_SECURE == "ssl":
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
-            if SMTP_USER and SMTP_PASS:
-                server.login(SMTP_USER, SMTP_PASS)
-            server.send_message(msg)
-    else:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.ehlo()
-            if SMTP_SECURE == "starttls":
-                server.starttls()
+    try:
+        if SMTP_SECURE == "ssl":
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
+                if SMTP_USER and SMTP_PASS:
+                    server.login(SMTP_USER, SMTP_PASS)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
                 server.ehlo()
-            if SMTP_USER and SMTP_PASS:
-                server.login(SMTP_USER, SMTP_PASS)
-            server.send_message(msg)
+                if SMTP_SECURE == "starttls":
+                    server.starttls()
+                    server.ehlo()
+                if SMTP_USER and SMTP_PASS:
+                    server.login(SMTP_USER, SMTP_PASS)
+                server.send_message(msg)
+    except smtplib.SMTPException as e:
+        logger.error(f"Failed to connect to SMTP server: {e}")
+        raise e
+    except Exception as e:
+        logger.error(f"Unexpected error occurred while sending email: {e}")
+        raise e
+
+
+import urllib.parse
 
 
 def send_invitation(email: str, display_name: str | None, token: str):
-    link = f"{INVITE_BASE_URL}?token={token}"
+    encoded_token = urllib.parse.quote_plus(token)
+    link = f"{INVITE_BASE_URL}?token={encoded_token}"
     subject = "Invitation à rejoindre Yaka (Yet Another Kanban App)"
     html = f"<p>Bonjour {display_name or 'Utilisateur'},</p><p>Vous avez été invité à rejoindre Yaka (Yet Another Kanban App). Cliquez <a href=\"{link}\">ici</a> pour définir votre mot de passe et activer votre compte.</p><br/>Si le lien ne s'affiche pas correctement, copiez-collez-le dans votre navigateur : <br/>{link}"
     plain = f"Bonjour {display_name or 'Utilisateur'},\n\nVous avez été invité à rejoindre Yaka (Yet Another Kanban App). Visitez {link} pour définir votre mot de passe et activer votre compte."
@@ -59,7 +77,8 @@ def send_invitation(email: str, display_name: str | None, token: str):
 
 
 def send_password_reset(email: str, display_name: str | None, token: str):
-    link = f"{INVITE_BASE_URL}?token={token}&reset=true"
+    encoded_token = urllib.parse.quote_plus(token)
+    link = f"{PASSWORD_RESET_BASE_URL}?token={encoded_token}&reset=true"
     subject = "Réinitialisation de votre mot de passe Yaka (Yet Another Kanban App)"
     html = f"<p>Bonjour {display_name or 'Utilisateur'},</p><p>Vous avez demandé une réinitialisation de votre mot de passe. Cliquez <a href=\"{link}\">ici</a> pour définir un nouveau mot de passe.</p><p>Si le lien ne s'affiche pas correctement, copiez-collez-le dans votre navigateur : <br/>{link}</p><p>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>"
     plain = f"Bonjour {display_name or 'Utilisateur'},\n\nVous avez demandé une réinitialisation de votre mot de passe. Visitez {link} pour définir un nouveau mot de passe.\n\nSi vous n'avez pas demandé cette réinitialisation, ignorez cet email."

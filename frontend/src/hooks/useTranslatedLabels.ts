@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { CardPriority, CardStatus } from '../types';
+import { CardPriority } from '../types';
 
 export const useTranslatedLabels = () => {
     const { t } = useTranslation();
@@ -17,21 +17,7 @@ export const useTranslatedLabels = () => {
         }
     };
 
-    const getStatusLabel = (status: string): string => {
-        switch (status) {
-            case CardStatus.A_FAIRE:
-                return t('status.todo');
-            case CardStatus.EN_COURS:
-                return t('status.inProgress');
-            case CardStatus.TERMINE:
-                return t('status.done');
-            default:
-                return status;
-        }
-    };
-
     return {
-        getPriorityLabel,
-        getStatusLabel
+        getPriorityLabel
     };
 };

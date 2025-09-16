@@ -1,7 +1,10 @@
 """Service pour la gestion de l'historique des cartes."""
 
-from sqlalchemy.orm import Session, joinedload
 from typing import List
+
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, joinedload
+
 from ..models import CardHistory
 from ..schemas import CardHistoryCreate, CardHistoryResponse
 
@@ -16,8 +19,12 @@ def create_card_history_entry(db: Session, card_history: CardHistoryCreate) -> C
     )
 
     db.add(db_history_entry)
-    db.commit()
-    db.refresh(db_history_entry)
+    try:
+        db.commit()
+        db.refresh(db_history_entry)
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise
     return db_history_entry
 
 
@@ -36,6 +43,7 @@ def get_card_history_with_users(db: Session, card_id: int) -> List[CardHistory]:
     """Récupérer l'historique d'une carte avec les informations des utilisateurs."""
     return (
         db.query(CardHistory)
+        .options(joinedload(CardHistory.user))
         .filter(CardHistory.card_id == card_id)
         .order_by(CardHistory.created_at.desc())
         .all()

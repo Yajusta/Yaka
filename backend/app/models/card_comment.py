@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Optional
 import datetime
+from typing import Optional
 
-from sqlalchemy import Integer, String, DateTime, Boolean, ForeignKey, Text
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
 
@@ -36,6 +36,8 @@ class CardComment(Base):
     # Relations
     card: Mapped["Card"] = relationship("Card", back_populates="comments")
     user: Mapped["User"] = relationship("User", back_populates="card_comments")
+
+    PROTECTED_FIELDS: set[str] = {"id", "card_id", "user_id", "created_at"}
 
 
 from typing import TYPE_CHECKING

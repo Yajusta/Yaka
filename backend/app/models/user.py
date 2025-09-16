@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, TYPE_CHECKING
-import enum
 import datetime
+import enum
+from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Integer, String, DateTime, Enum
+from sqlalchemy import DateTime, Enum, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from ..database import Base
 
@@ -25,7 +25,7 @@ class UserStatus(enum.Enum):
 
     INVITED = "invited"
     ACTIVE = "active"
-    DISABLED = "disabled"
+    # DISABLED = "disabled"
     DELETED = "deleted"
 
 
@@ -40,7 +40,7 @@ class User(Base):
     display_name: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER, nullable=False)
     status: Mapped[UserStatus] = mapped_column(Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False)
-    language: Mapped[Optional[str]] = mapped_column(String(2), nullable=True, server_default='fr')
+    language: Mapped[Optional[str]] = mapped_column(String(2), nullable=True, server_default="fr")
     invite_token: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
     invited_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -61,9 +61,11 @@ class User(Base):
     card_comments: Mapped[List["CardComment"]] = relationship("CardComment", back_populates="user")
     card_actions: Mapped[List["CardHistory"]] = relationship("CardHistory", back_populates="user")
 
+    PROTECTED_FIELDS = {"id", "created_at"}
+
 
 if TYPE_CHECKING:
     from .card import Card
-    from .label import Label
     from .card_comment import CardComment
     from .card_history import CardHistory
+    from .label import Label

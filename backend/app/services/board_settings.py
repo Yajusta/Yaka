@@ -1,9 +1,13 @@
 """Service pour la gestion des paramètres du tableau."""
 
+from typing import List, Optional
+
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-from typing import Optional, List
+
 from ..models import BoardSettings
-from sqlalchemy.sql import func
+
+DEFAULT_BOARD_TITLE = "Yaka (Yet Another Kanban App)"
 
 
 def get_setting(db: Session, setting_key: str) -> Optional[BoardSettings]:
@@ -23,21 +27,28 @@ def create_or_update_setting(
     # Vérifier si le paramètre existe déjà
     existing_setting = get_setting(db, setting_key)
 
-    if existing_setting:
-        # Mettre à jour le paramètre existant
-        existing_setting.setting_value = setting_value
-        if description is not None:
-            existing_setting.description = description
-        db.commit()
-        db.refresh(existing_setting)
-        return existing_setting
-    else:
-        # Créer un nouveau paramètre
-        db_setting = BoardSettings(setting_key=setting_key, setting_value=setting_value, description=description)
-        db.add(db_setting)
-        db.commit()
-        db.refresh(db_setting)
-        return db_setting
+    try:
+        if existing_setting:
+            # Mettre à jour le paramètre existant
+            existing_setting.setting_value = setting_value
+            if description is not None:
+                existing_setting.description = description
+            return update_settings(db, existing_setting)
+        else:
+            # Créer un nouveau paramètre
+            db_setting = BoardSettings(setting_key=setting_key, setting_value=setting_value, description=description)
+            db.add(db_setting)
+            return update_settings(db, db_setting)
+    except SQLAlchemyError as e:
+        db.rollback()
+        # Optionally, you can log the error here or raise a custom exception
+        raise e
+
+
+def update_settings(db: Session, settings: BoardSettings) -> BoardSettings:
+    db.commit()
+    db.refresh(settings)
+    return settings
 
 
 def delete_setting(db: Session, setting_key: str) -> bool:
@@ -46,12 +57,16 @@ def delete_setting(db: Session, setting_key: str) -> bool:
     if not setting:
         return False
 
-    db.delete(setting)
-    db.commit()
-    return True
+    try:
+        db.delete(setting)
+        db.commit()
+        return True
+    except SQLAlchemyError:
+        db.rollback()
+        return False
 
 
-def get_board_title(db: Session, default: str = "Yaka (Yet Another Kanban App)") -> str:
+def get_board_title(db: Session, default: str = DEFAULT_BOARD_TITLE) -> str:
     """Récupérer le titre du tableau avec une valeur par défaut."""
     setting = get_setting(db, "board_title")
     return setting.setting_value if setting else default
@@ -65,12 +80,19 @@ def set_board_title(db: Session, title: str) -> BoardSettings:
 
 
 def initialize_default_settings(db: Session) -> None:
-    """Initialiser les paramètres par défaut si nécessaire."""
-    # Créer le titre par défaut si il n'existe pas
-    if not get_setting(db, "board_title"):
-        create_or_update_setting(
-            db,
-            setting_key="board_title",
-            setting_value="Yaka (Yet Another Kanban App)",
-            description="Titre affiché du tableau Kanban",
-        )
+    """Initialiser dynamiquement les paramètres par défaut si nécessaire."""
+    default_settings = [
+        {
+            "setting_key": "board_title",
+            "setting_value": DEFAULT_BOARD_TITLE,
+            "description": "Titre affiché du tableau Kanban",
+        },
+    ]
+    for setting in default_settings:
+        if not get_setting(db, setting["setting_key"]):
+            create_or_update_setting(
+                db,
+                setting_key=setting["setting_key"],
+                setting_value=setting["setting_value"],
+                description=setting["description"],
+            )

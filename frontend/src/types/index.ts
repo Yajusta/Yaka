@@ -174,13 +174,6 @@ export enum CardPriority {
     HIGH = 'high'
 }
 
-// Legacy CardStatus enum - kept for backward compatibility during transition
-export enum CardStatus {
-    A_FAIRE = 'a_faire',
-    EN_COURS = 'en_cours',
-    TERMINE = 'termine'
-}
-
 export const UserRole = {
     ADMIN: 'admin',
     USER: 'user'

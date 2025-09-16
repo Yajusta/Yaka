@@ -2,23 +2,23 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-import enum
 import datetime
+import enum
+from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Integer, String, Text, Date, DateTime, Boolean, ForeignKey, Enum, Table
+from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, Integer, String, Table, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from ..database import Base
 
-
-class CardStatus(enum.Enum):
-    """Énumération des statuts de carte."""
-
-    A_FAIRE = "a_faire"
-    EN_COURS = "en_cours"
-    TERMINE = "termine"
+if TYPE_CHECKING:
+    from .card_comment import CardComment
+    from .card_history import CardHistory
+    from .card_item import CardItem
+    from .kanban_list import KanbanList
+    from .label import Label
+    from .user import User
 
 
 class CardPriority(enum.Enum):
@@ -28,9 +28,6 @@ class CardPriority(enum.Enum):
     MEDIUM = "medium"
     HIGH = "high"
 
-
-# Table d'association pour la relation many-to-many entre Card et Label
-from sqlalchemy import Column
 
 card_labels = Table(
     "card_labels",
@@ -66,16 +63,11 @@ class Card(Base):
     )
     labels: Mapped[List["Label"]] = relationship("Label", secondary=card_labels, back_populates="cards")
     items: Mapped[List["CardItem"]] = relationship("CardItem", back_populates="card", cascade="all, delete-orphan")
-    comments: Mapped[List["CardComment"]] = relationship("CardComment", back_populates="card", cascade="all, delete-orphan")
-    history: Mapped[List["CardHistory"]] = relationship("CardHistory", back_populates="card", cascade="all, delete-orphan")
+    comments: Mapped[List["CardComment"]] = relationship(
+        "CardComment", back_populates="card", cascade="all, delete-orphan"
+    )
+    history: Mapped[List["CardHistory"]] = relationship(
+        "CardHistory", back_populates="card", cascade="all, delete-orphan"
+    )
 
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .user import User
-    from .label import Label
-    from .kanban_list import KanbanList
-    from .card_item import CardItem
-    from .card_comment import CardComment
-    from .card_history import CardHistory
+    PROTECTED_FIELDS: set[str] = {"id", "created_by", "created_at"}

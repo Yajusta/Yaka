@@ -1,17 +1,19 @@
 """Service pour la gestion des cartes."""
 
+from typing import List, Optional
+
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_, and_, func
-from typing import Optional, List
-from ..models import Card, Label, KanbanList, User, CardPriority, CardComment
+
+from ..models import Card, CardComment, CardPriority, KanbanList, Label, User
 from ..schemas import (
-    CardCreate,
-    CardUpdate,
-    CardListUpdate,
-    CardFilter,
-    CardMoveRequest,
     BulkCardMoveRequest,
+    CardCreate,
+    CardFilter,
     CardHistoryCreate,
+    CardListUpdate,
+    CardMoveRequest,
+    CardUpdate,
 )
 from . import card_history as card_history_service
 
@@ -57,14 +59,12 @@ def get_cards(db: Session, filters: CardFilter, skip: int = 0, limit: int = 100)
     # Trier par position dans la liste, puis par date de création
     query = query.order_by(Card.position, Card.created_at)
 
-    cards = query.options(
-        joinedload(Card.comments).joinedload(CardComment.user)
-    ).offset(skip).limit(limit).all()
-    
+    cards = query.options(joinedload(Card.comments).joinedload(CardComment.user)).offset(skip).limit(limit).all()
+
     # Filtrer les commentaires pour ne garder que les non supprimés
     for card in cards:
         card.comments = [comment for comment in card.comments if not comment.is_deleted]
-    
+
     return cards
 
 
@@ -79,8 +79,6 @@ def create_card(db: Session, card: CardCreate, created_by: int) -> Card:
     Comportement spécial: si ``card.list_id`` vaut -1, la carte sera automatiquement
     affectée à la liste valide ayant l'order le plus bas.
     """
-    from . import card_history as card_history_service
-    from ..schemas import CardHistoryCreate
 
     # Résoudre la liste cible
     target_list_id = card.list_id
@@ -142,7 +140,7 @@ def update_card(
     if not db_card:
         return None
 
-    update_data = card_update.dict(exclude_unset=True)
+    update_data = card_update.model_dump(exclude_unset=True)
 
     # Gérer les libellés séparément
     label_ids = update_data.pop("label_ids", None)
@@ -166,7 +164,8 @@ def update_card(
         old_values["assignee_id"] = db_card.assignee_id
 
     for field, value in update_data.items():
-        setattr(db_card, field, value)
+        if field not in Card.PROTECTED_FIELDS:
+            setattr(db_card, field, value)
 
     # Mettre à jour les libellés si fournis
     if label_ids is not None:
