@@ -8,11 +8,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
-
-
-def get_system_timezone_datetime():
-    """Retourne la date et heure actuelle dans le fuseau horaire du système."""
-    return datetime.datetime.now().astimezone()
+from .helpers import get_system_timezone_datetime
 
 
 class CardItem(Base):
@@ -31,7 +27,7 @@ class CardItem(Base):
         DateTime(timezone=True), default=get_system_timezone_datetime
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime(timezone=True), default=get_system_timezone_datetime
+        DateTime(timezone=True), default=get_system_timezone_datetime, onupdate=get_system_timezone_datetime
     )
 
     # Relations

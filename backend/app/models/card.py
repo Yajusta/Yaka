@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from ..database import Base
+from .helpers import get_system_timezone_datetime
 
 if TYPE_CHECKING:
     from .card_comment import CardComment
@@ -52,8 +53,12 @@ class Card(Base):
     assignee_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     is_archived: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime(timezone=True), default=get_system_timezone_datetime
+    )
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime(timezone=True), onupdate=get_system_timezone_datetime
+    )
 
     # Relations
     kanban_list: Mapped["KanbanList"] = relationship("KanbanList", back_populates="cards")
@@ -71,3 +76,7 @@ class Card(Base):
     )
 
     PROTECTED_FIELDS: set[str] = {"id", "created_by", "created_at"}
+
+    def __str__(self) -> str:
+        """Représentation de la carte."""
+        return f"<Card(id={self.id}, titre='{self.titre}')>"

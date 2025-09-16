@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Optional
 import datetime
+from typing import Optional
 
-from sqlalchemy import Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from ..database import Base
+from .helpers import get_system_timezone_datetime
 
 
 class CardHistory(Base):
@@ -22,7 +23,9 @@ class CardHistory(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     action: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime(timezone=True), default=get_system_timezone_datetime
+    )
 
     # Relations
     card: Mapped["Card"] = relationship("Card", back_populates="history")

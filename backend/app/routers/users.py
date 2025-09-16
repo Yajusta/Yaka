@@ -2,14 +2,16 @@
 
 import contextlib
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from ..database import get_db
-from ..schemas import UserCreate, UserUpdate, UserResponse, SetPasswordPayload, UserListItem, LanguageUpdate
-from ..services import user as user_service
-from ..utils.dependencies import require_admin, get_current_active_user
-from ..models import User, UserRole, UserStatus
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from ..database import get_db
+from ..models import User, UserRole, UserStatus
+from ..schemas import LanguageUpdate, SetPasswordPayload, UserCreate, UserListItem, UserResponse, UserUpdate
+from ..services import user as user_service
+from ..utils.dependencies import get_current_active_user, require_admin
 
 
 class InvitePayload(BaseModel):

@@ -9,11 +9,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
-
-
-def get_system_timezone_datetime():
-    """Retourne la date et heure actuelle dans le fuseau horaire du système."""
-    return datetime.datetime.now().astimezone()
+from .helpers import get_system_timezone_datetime
 
 
 class CardComment(Base):

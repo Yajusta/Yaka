@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
 import datetime
+from typing import List, Optional
 
-from sqlalchemy import Integer, String, DateTime
+from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from ..database import Base
+from .helpers import get_system_timezone_datetime
 
 
 class KanbanList(Base):
@@ -19,9 +20,13 @@ class KanbanList(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    order: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), default=get_system_timezone_datetime
+    )
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime(timezone=True), onupdate=get_system_timezone_datetime
+    )
 
     # Relations
     cards: Mapped[List["Card"]] = relationship("Card", back_populates="kanban_list")

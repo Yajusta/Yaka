@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from ..database import Base
+from .helpers import get_system_timezone_datetime
 
 
 class UserRole(enum.Enum):
@@ -43,8 +44,12 @@ class User(Base):
     language: Mapped[Optional[str]] = mapped_column(String(2), nullable=True, server_default="fr")
     invite_token: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
     invited_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime(timezone=True), default=get_system_timezone_datetime
+    )
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime(timezone=True), onupdate=get_system_timezone_datetime
+    )
 
     # Relations
     # relationship() returns instrumented lists at runtime; to keep static

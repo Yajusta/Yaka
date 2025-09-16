@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, TYPE_CHECKING
 import datetime
+from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Integer, String, DateTime, ForeignKey
+from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from ..database import Base
+from .helpers import get_system_timezone_datetime
 
 
 class Label(Base):
@@ -21,7 +22,9 @@ class Label(Base):
     nom: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     couleur: Mapped[str] = mapped_column(String, nullable=False)  # Code hexadécimal
     created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime(timezone=True), default=get_system_timezone_datetime
+    )
 
     # Relations
     creator: Mapped["User"] = relationship("User", back_populates="created_labels")
@@ -29,5 +32,5 @@ class Label(Base):
 
 
 if TYPE_CHECKING:
-    from .user import User
     from .card import Card
+    from .user import User
