@@ -1,10 +1,11 @@
 """Schémas Pydantic pour les utilisateurs."""
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from typing import Optional
 from datetime import datetime
-from ..models.user import UserRole
+from typing import Optional
 
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from ..models.user import UserRole
 
 
 def _validate_email(value: str | None) -> str | None:
@@ -18,6 +19,22 @@ def _validate_email(value: str | None) -> str | None:
     if not local_part or not domain or "." not in domain:
         raise ValueError("Adresse email invalide")
     return value.lower()
+
+
+def _validate_password_strength(value: str) -> str:
+    """Valide la complexité du mot de passe."""
+    if len(value) < 8:
+        raise ValueError("Le mot de passe doit contenir au moins 8 caractères")
+
+    # Vérifier la présence de différents types de caractères
+    has_upper = any(c.isupper() for c in value)
+    has_lower = any(c.islower() for c in value)
+    has_digit = any(c.isdigit() for c in value)
+
+    if not (has_upper and has_lower and has_digit):
+        raise ValueError("Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre")
+
+    return value
 
 
 class UserBase(BaseModel):
@@ -34,13 +51,19 @@ class UserBase(BaseModel):
 
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
     role: UserRole = UserRole.USER
-    language: Optional[str] = Field('fr', description="Langue préférée (fr, en, etc.)")
+    language: Optional[str] = Field("fr", description="Langue préférée (fr, en, etc.)")
 
 
 class UserCreate(UserBase):
     """Schéma pour la création d'un utilisateur."""
 
-    password: str
+    password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        """Valide la complexité du mot de passe."""
+        return _validate_password_strength(value)
 
 
 class UserUpdate(BaseModel):
@@ -56,7 +79,15 @@ class UserUpdate(BaseModel):
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
     role: Optional[UserRole] = None
     language: Optional[str] = Field(None, description="Langue préférée (fr, en, etc.)")
-    password: Optional[str] = None
+    password: Optional[str] = Field(None, min_length=8, max_length=128)
+
+    @field_validator("password")
+    @classmethod
+    def validate_optional_password_strength(cls, value: Optional[str]) -> Optional[str]:
+        """Valide la complexité du mot de passe si fourni."""
+        if value is None:
+            return None
+        return _validate_password_strength(value)
 
 
 class LanguageUpdate(BaseModel):
@@ -68,8 +99,14 @@ class LanguageUpdate(BaseModel):
 class SetPasswordPayload(BaseModel):
     """Schéma pour définir un mot de passe via un token d'invitation."""
 
-    token: str
-    password: str
+    token: str = Field(..., min_length=32, max_length=512)
+    password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        """Valide la complexité du mot de passe."""
+        return _validate_password_strength(value)
 
 
 class PasswordResetRequest(BaseModel):
@@ -83,7 +120,6 @@ class PasswordResetRequest(BaseModel):
         validated = _validate_email(value)
         assert validated is not None
         return validated
-
 
 
 class UserResponse(UserBase):
@@ -121,5 +157,4 @@ class UserLogin(BaseModel):
         assert validated is not None
         return validated
 
-    password: str
-
+    password: str = Field(..., min_length=1, max_length=32)

@@ -1,7 +1,6 @@
 """Integration tests for board settings endpoints using an isolated SQLite database."""
 
 import pytest
-
 from app.routers.auth import router as auth_router
 from app.routers.board_settings import router as board_settings_router
 from app.services.board_settings import DEFAULT_BOARD_TITLE
@@ -21,7 +20,7 @@ async def test_admin_can_update_board_title(async_client_factory, seed_admin_use
     seed_admin_user()
 
     async with async_client_factory(auth_router, board_settings_router) as client:
-        token = await login_user(client, "admin@yaka.local", "admin123")
+        token = await login_user(client, "admin@yaka.local", "Admin123")
         new_title = "Kanban equipe"
 
         update_response = await client.put(
@@ -67,7 +66,7 @@ async def test_admin_can_list_settings(async_client_factory, seed_admin_user, lo
     seed_admin_user()
 
     async with async_client_factory(auth_router, board_settings_router) as client:
-        token = await login_user(client, "admin@yaka.local", "admin123")
+        token = await login_user(client, "admin@yaka.local", "Admin123")
 
         response = await client.get(
             "/board-settings/",
@@ -77,4 +76,3 @@ async def test_admin_can_list_settings(async_client_factory, seed_admin_user, lo
     settings = response.json()
     assert isinstance(settings, list)
     assert any(setting["setting_key"] == "board_title" for setting in settings)
-

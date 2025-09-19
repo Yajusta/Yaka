@@ -1,7 +1,6 @@
 """Integration tests for the kanban lists router."""
 
 import pytest
-
 from app.routers.auth import router as auth_router
 from app.routers.lists import router as lists_router
 
@@ -14,7 +13,7 @@ async def test_admin_creates_lists_and_users_can_read(
     create_regular_user("reader@example.com", "reader123", display_name="Reader")
 
     async with async_client_factory(auth_router, lists_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
 
         backlog_response = await client.post(
             "/lists/",
@@ -53,7 +52,7 @@ async def test_admin_can_update_and_delete_lists(async_client_factory, seed_admi
     seed_admin_user()
 
     async with async_client_factory(auth_router, lists_router) as client:
-        token = await login_user(client, "admin@yaka.local", "admin123")
+        token = await login_user(client, "admin@yaka.local", "Admin123")
 
         backlog_response = await client.post(
             "/lists/",
@@ -82,7 +81,7 @@ async def test_admin_can_update_and_delete_lists(async_client_factory, seed_admi
         delete_response = await client.request(
             "DELETE",
             f"/lists/{backlog_data['id']}",
-            json={"target_list_id": progress_data['id']},
+            json={"target_list_id": progress_data["id"]},
             headers={"Authorization": f"Bearer {token}"},
         )
         assert delete_response.status_code == 200
@@ -102,7 +101,7 @@ async def test_admin_can_update_and_delete_lists(async_client_factory, seed_admi
 
         reorder_response = await client.post(
             "/lists/reorder",
-            json={"list_orders": {progress_data['id']: 1}},
+            json={"list_orders": {progress_data["id"]: 1}},
             headers={"Authorization": f"Bearer {token}"},
         )
         assert reorder_response.status_code == 200

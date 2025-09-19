@@ -17,7 +17,7 @@ A modern and intuitive web application for collaborative task management using t
 To see what this application looks like before installing it, the easiest way is to try [the demo](https://yaka-demo.yajusta.fr/).
 
 Username: `admin@yaka.local`
-Password: `admin123`
+Password: `Admin123`
 
 🗑️ The database is regularly deleted.
 ⚠️ The environment is public: do not put sensitive information.
@@ -135,7 +135,7 @@ The frontend will be accessible at <http://localhost:5173>
 An administrator account is automatically created during initialization:
 
 - **Email:** `admin@kyaka.local`
-- **Password:** `admin123`
+- **Password:** `Admin123`
 
 Once connected, **create a new administrator** with your email then **delete this default account**.
 

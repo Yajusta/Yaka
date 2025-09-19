@@ -1,10 +1,9 @@
 """Integration tests for the labels router."""
 
 import pytest
-
 from app.routers.auth import router as auth_router
-from app.routers.labels import router as labels_router
 from app.routers.cards import router as cards_router
+from app.routers.labels import router as labels_router
 
 
 @pytest.mark.asyncio
@@ -13,7 +12,7 @@ async def test_label_crud_permissions(async_client_factory, seed_admin_user, cre
     create_regular_user("labeluser@example.com", "label123", display_name="Label User")
 
     async with async_client_factory(auth_router, labels_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
         create_response = await client.post(
             "/labels/",
             json={"name": "Urgent", "color": "#ff0000"},
@@ -66,7 +65,6 @@ async def test_label_crud_permissions(async_client_factory, seed_admin_user, cre
     assert fetch_deleted.status_code == 404
 
 
-
 @pytest.mark.asyncio
 async def test_label_deletion_detaches_from_cards(
     async_client_factory,
@@ -80,7 +78,7 @@ async def test_label_deletion_detaches_from_cards(
     create_regular_user("labelowner@example.com", "LabelOwner123!", display_name="Owner")
 
     async with async_client_factory(auth_router, labels_router, cards_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
         label_response = await client.post(

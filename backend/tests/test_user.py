@@ -58,7 +58,7 @@ def sample_user_data():
     """Fixture pour fournir des données utilisateur de test."""
     return {
         "email": "test@example.com",
-        "password": "password123",
+        "password": "Password123",
         "display_name": "Test User",
         "role": UserRole.USER,
         "language": "fr",
@@ -82,7 +82,7 @@ def sample_users(db_session, sample_user_data):
     # Créer un administrateur
     admin_data = UserCreate(
         email="admin@example.com",
-        password="admin123",
+        password="Admin123",
         display_name="Admin User",
         role=UserRole.ADMIN,
         language="en",
@@ -253,7 +253,7 @@ class TestCreateUser:
         """Test de création d'un utilisateur sans spécifier la langue."""
         user_data = UserCreate(
             email="test2@example.com",
-            password="password123",
+            password="Password123",
             display_name="Test User 2",
             role=UserRole.USER,
         )
@@ -265,7 +265,7 @@ class TestCreateUser:
         """Test de création d'un utilisateur avec le rôle admin."""
         user_data = UserCreate(
             email="admin2@example.com",
-            password="admin123",
+            password="Admin123",
             display_name="Admin User 2",
             role=UserRole.ADMIN,
         )
@@ -277,7 +277,7 @@ class TestCreateUser:
         """Test de création d'un utilisateur avec un email déjà existant."""
         user_data = UserCreate(
             email=sample_users[0].email,
-            password="password123",
+            password="Password123",
             display_name="Duplicate User",
         )
 
@@ -289,7 +289,7 @@ class TestCreateUser:
         long_name = "A" * 32  # Exactement la limite de 32 caractères
         user_data = UserCreate(
             email="longname@example.com",
-            password="password123",
+            password="Password123",
             display_name=long_name,
         )
 
@@ -301,7 +301,7 @@ class TestCreateUser:
         with pytest.raises(Exception):
             UserCreate(
                 email="longname2@example.com",
-                password="password123",
+                password="Password123",
                 display_name="A" * 33,  # Un caractère de trop
             )
 
@@ -395,7 +395,7 @@ class TestUpdateUser:
         """Test de mise à jour du mot de passe."""
         user = sample_users[0]
         old_password_hash = user.password_hash
-        update_data = UserUpdate(password="newpassword123")
+        update_data = UserUpdate(password="NewPassword123")
 
         result = update_user(db_session, user.id, update_data)
 
@@ -498,7 +498,7 @@ class TestSetPasswordFromInvite:
     def test_set_password_from_invite_successfully(self, db_session, sample_users):
         """Test de définition de mot de passe depuis une invitation."""
         invited_user = sample_users[1]  # L'utilisateur invité
-        password = "new_password123"
+        password = "NewPassword123"
 
         result = set_password_from_invite(db_session, invited_user, password)
 
@@ -516,7 +516,7 @@ class TestSetPasswordFromInvite:
         """Test de définition de mot de passe pour un utilisateur actif."""
         active_user = sample_users[0]
         old_password_hash = active_user.password_hash
-        password = "reset_password123"
+        password = "ResetPassword123"
 
         result = set_password_from_invite(db_session, active_user, password)
 
@@ -708,15 +708,12 @@ class TestAuthenticateUser:
     def test_authenticate_user_successfully(self, db_session, sample_users):
         """Test d'authentification réussie."""
         user = sample_users[0]
-        result = authenticate_user(db_session, user.email, "password123")
+        result = authenticate_user(db_session, user.email, "Password123")
 
     def test_authenticate_user_case_insensitive_email(self, db_session, sample_users):
         """L'authentification doit ignorer la casse de l'email."""
         user = sample_users[0]
-        result = authenticate_user(db_session, user.email.upper(), "password123")
-
-        assert result is not None
-        assert result.id == user.id
+        result = authenticate_user(db_session, user.email.upper(), "Password123")
 
         assert result is not None
         assert result.id == user.id
@@ -725,13 +722,13 @@ class TestAuthenticateUser:
     def test_authenticate_user_wrong_password(self, db_session, sample_users):
         """Test d'authentification avec mauvais mot de passe."""
         user = sample_users[0]
-        result = authenticate_user(db_session, user.email, "wrong_password")
+        result = authenticate_user(db_session, user.email, "WrongPassword123")
 
         assert result is None
 
     def test_authenticate_user_nonexistent_email(self, db_session):
         """Test d'authentification avec email inexistant."""
-        result = authenticate_user(db_session, "nonexistent@example.com", "password123")
+        result = authenticate_user(db_session, "nonexistent@example.com", "Password123")
         assert result is None
 
     def test_authenticate_deleted_user(self, db_session, sample_users):
@@ -740,13 +737,13 @@ class TestAuthenticateUser:
         user.status = UserStatus.DELETED
         db_session.commit()
 
-        result = authenticate_user(db_session, user.email, "password123")
+        result = authenticate_user(db_session, user.email, "Password123")
         assert result is None
 
     def test_authenticate_invited_user(self, db_session, sample_users):
         """Test d'authentification d'un utilisateur invité (sans mot de passe)."""
         invited_user = sample_users[1]
-        result = authenticate_user(db_session, invited_user.email, "password123")
+        result = authenticate_user(db_session, invited_user.email, "Password123")
 
         assert result is None
 
@@ -759,7 +756,7 @@ class TestCreateAdminUser:
         {
             "DEFAULT_LANGUAGE": "en",
             "DEFAULT_ADMIN_EMAIL": "admin@test.com",
-            "DEFAULT_ADMIN_PASSWORD": "secure_password",
+            "DEFAULT_ADMIN_PASSWORD": "Secure_password1",
             "DEFAULT_ADMIN_DISPLAY_NAME": "Super Admin",
         },
     )
@@ -788,7 +785,7 @@ class TestCreateAdminUser:
         assert admin.language == "en"  # Valeur par défaut si non spécifiée
         assert admin.status == UserStatus.ACTIVE
         assert admin.password_hash is not None
-        assert admin.password_hash != "admin123"
+        assert admin.password_hash != "Admin123"
 
 
 class TestSecurityAndEdgeCases:
@@ -799,22 +796,24 @@ class TestSecurityAndEdgeCases:
         malicious_email = "test'; DROP TABLE users; --"
 
         with pytest.raises(ValidationError):
-            UserCreate(email=malicious_email, password="password123", display_name="SQL Injection Test")
+            UserCreate(email=malicious_email, password="Password123", display_name="SQL Injection Test")
 
     def test_xss_attempt_display_name(self, db_session):
         """Test de tentative XSS dans le nom d'affichage."""
         xss_name = "<script>alert('XSS')</script>"
 
-        user_data = UserCreate(email="xss@example.com", password="password123", display_name=xss_name)
-
+        # Les utilisateurs n'ont pas de validation XSS sur le display_name
+        # Le contenu est stocké tel quel (protection au niveau affichage)
+        user_data = UserCreate(email="xss@example.com", password="Password123", display_name=xss_name)
+        
         user = create_user(db_session, user_data)
-        assert user.display_name == xss_name
+        assert user.display_name == xss_name  # Stocké tel quel
 
     def test_special_characters_in_email(self, db_session):
         """Test avec des caractères spéciaux dans l'email."""
         special_email = "test+special@example.com"
 
-        user_data = UserCreate(email=special_email, password="password123", display_name="Special Email Test")
+        user_data = UserCreate(email=special_email, password="Password123", display_name="Special Email Test")
 
         user = create_user(db_session, user_data)
         assert user.email == special_email
@@ -823,7 +822,7 @@ class TestSecurityAndEdgeCases:
         """Test avec des caractères Unicode."""
         user_data = UserCreate(
             email="unicode@test.com",
-            password="password123",
+            password="Password123",
             display_name="Unicode: éèàç",  # Court pour respecter la limite de 32 caractères
             language="fr",
         )
@@ -831,20 +830,38 @@ class TestSecurityAndEdgeCases:
         user = create_user(db_session, user_data)
         assert user.display_name == "Unicode: éèàç"
 
-    def test_very_long_password(self, db_session):
-        """Test avec un mot de passe très long."""
-        long_password = "a" * 1000
+    def test_password_validation(self, db_session):
+        """Test de validation des mots de passe."""
+        # Mot de passe valide
+        valid_passwords = ["Password123", "MySecurePass1", "Test1234", "Abcdefg1"]
 
-        user_data = UserCreate(email="longpass@example.com", password=long_password, display_name="Long Password Test")
+        for password in valid_passwords:
+            user_data = UserCreate(
+                email=f"valid{password[:4]}@example.com", password=password, display_name="Valid User"
+            )
+            user = create_user(db_session, user_data)
+            assert user.password_hash is not None
 
-        user = create_user(db_session, user_data)
-        assert user.password_hash is not None
-        assert user.password_hash != long_password
+        # Mot de passe invalide - trop court
+        with pytest.raises(ValidationError):
+            UserCreate(email="short@example.com", password="Short1", display_name="Short Password")
+
+        # Mot de passe invalide - pas de majuscule
+        with pytest.raises(ValidationError):
+            UserCreate(email="noupper@example.com", password="password123", display_name="No Upper")
+
+        # Mot de passe invalide - pas de minuscule
+        with pytest.raises(ValidationError):
+            UserCreate(email="nolower@example.com", password="PASSWORD123", display_name="No Lower")
+
+        # Mot de passe invalide - pas de chiffre
+        with pytest.raises(ValidationError):
+            UserCreate(email="nodigit@example.com", password="Password", display_name="No Digit")
 
     def test_empty_strings(self, db_session):
         """Test avec des chaînes vides."""
         # Le display_name peut être vide (Optional)
-        user_data = UserCreate(email="empty@example.com", password="password123", display_name="")
+        user_data = UserCreate(email="empty@example.com", password="Password123", display_name="")
         assert user_data.display_name == ""
 
         # Test que le schéma permet effectivement les champs vides selon sa définition
@@ -853,11 +870,11 @@ class TestSecurityAndEdgeCases:
     def test_concurrent_user_creation(self, db_session):
         """Test de création concurrente d'utilisateurs."""
         user1_data = UserCreate(
-            email="concurrent1@example.com", password="password123", display_name="Concurrent User 1"
+            email="concurrent1@example.com", password="Password123", display_name="Concurrent User 1"
         )
 
         user2_data = UserCreate(
-            email="concurrent2@example.com", password="password123", display_name="Concurrent User 2"
+            email="concurrent2@example.com", password="Password123", display_name="Concurrent User 2"
         )
 
         # Créer deux utilisateurs
@@ -869,7 +886,7 @@ class TestSecurityAndEdgeCases:
 
     def test_password_hashing_consistency(self, db_session):
         """Test que le même mot de passe produit le même hash."""
-        password = "test_password_123"
+        password = "TestPassword123"
 
         user1_data = UserCreate(email="hash1@example.com", password=password, display_name="Hash Test 1")
 
@@ -911,7 +928,7 @@ class TestSecurityAndEdgeCases:
         """Test de gestion des erreurs de base de données."""
         # Simuler une erreur de base de données
         with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
-            user_data = UserCreate(email="error@example.com", password="password123", display_name="Error Test")
+            user_data = UserCreate(email="error@example.com", password="Password123", display_name="Error Test")
 
             with pytest.raises(SQLAlchemyError):
                 create_user(db_session, user_data)
@@ -919,7 +936,7 @@ class TestSecurityAndEdgeCases:
     def test_integrity_error_handling(self, db_session):
         """Test de gestion des erreurs d'intégrité."""
         # Créer un utilisateur
-        user_data = UserCreate(email="integrity@example.com", password="password123", display_name="Integrity Test")
+        user_data = UserCreate(email="integrity@example.com", password="Password123", display_name="Integrity Test")
         create_user(db_session, user_data)
 
         # Essayer de créer un autre utilisateur avec le même email

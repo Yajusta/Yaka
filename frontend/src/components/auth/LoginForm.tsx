@@ -1,16 +1,16 @@
-import { useState, FormEvent, useEffect } from 'react';
+import { AlertTriangle, Eye, Loader2, Trash } from 'lucide-react';
+import { FormEvent, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.tsx';
 import { authService, boardSettingsService } from '../../services/api.tsx';
-import { Button } from '../ui/button.tsx';
-import { Input } from '../ui/input.tsx';
-import { Label } from '../ui/label.tsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card.tsx';
-import { Alert, AlertDescription } from '../ui/alert.tsx';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog.tsx';
-import { Loader2, AlertTriangle, Eye, Trash } from 'lucide-react';
 import { Footer } from '../common/Footer.tsx';
 import LanguageSelector from '../common/LanguageSelector.tsx';
-import { useTranslation } from 'react-i18next';
+import { Alert, AlertDescription } from '../ui/alert.tsx';
+import { Button } from '../ui/button.tsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card.tsx';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog.tsx';
+import { Input } from '../ui/input.tsx';
+import { Label } from '../ui/label.tsx';
 
 // Déclaration pour les variables globales injectées par nginx
 declare global {
@@ -124,7 +124,7 @@ const LoginForm = () => {
                                             </div>
                                             <div className="text-amber-700 text-sm mt-1">
                                                 {t('auth.email')} : <strong>admin@yaka.local</strong><br />
-                                                {t('auth.password')} : <strong>admin123</strong>
+                                                {t('auth.password')} : <strong>Admin123</strong>
                                             </div>
                                         </div>
                                     </div>

@@ -5,6 +5,7 @@ import sys
 import os
 from unittest.mock import patch
 from sqlalchemy.exc import SQLAlchemyError
+from pydantic import ValidationError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -417,35 +418,34 @@ class TestSecurityAndEdgeCases:
     def test_sql_injection_attempt_in_name(self, db_session, sample_user):
         """Test de tentative d'injection SQL dans le nom."""
         malicious_name = "test'; DROP TABLE labels; --"
-        label_data = LabelCreate(name=malicious_name, color="#FF0000")
         
-        # Le nom doit être stocké tel quelle (pas d'exécution SQL)
-        label = create_label(db_session, label_data, sample_user.id)
-        assert label.name == malicious_name
+        # La validation Pydantic devrait bloquer les caractères dangereux
+        with pytest.raises(ValidationError):
+            LabelCreate(name=malicious_name, color="#FF0000")
 
     def test_sql_injection_attempt_in_color(self, db_session, sample_user):
         """Test de tentative d'injection SQL dans la color."""
         malicious_color = "#FF0000'; DROP TABLE labels; --"
-        label_data = LabelCreate(name="Test", color=malicious_color)
         
-        label = create_label(db_session, label_data, sample_user.id)
-        assert label.color == malicious_color
+        # La validation Pydantic devrait bloquer les formats invalides
+        with pytest.raises(ValidationError):
+            LabelCreate(name="Test", color=malicious_color)
 
     def test_xss_attempt_in_name(self, db_session, sample_user):
         """Test de tentative XSS dans le nom."""
         xss_name = "<script>alert('XSS')</script>"
-        label_data = LabelCreate(name=xss_name, color="#FF0000")
         
-        label = create_label(db_session, label_data, sample_user.id)
-        assert label.name == xss_name
+        # La validation Pydantic devrait bloquer les XSS
+        with pytest.raises(ValidationError):
+            LabelCreate(name=xss_name, color="#FF0000")
 
     def test_xss_attempt_in_color(self, db_session, sample_user):
         """Test de tentative XSS dans la color."""
         xss_color = "<script>alert('XSS')</script>"
-        label_data = LabelCreate(name="XSS Test", color=xss_color)
         
-        label = create_label(db_session, label_data, sample_user.id)
-        assert label.color == xss_color
+        # La validation Pydantic devrait bloquer les formats invalides
+        with pytest.raises(ValidationError):
+            LabelCreate(name="XSS Test", color=xss_color)
 
     def test_special_characters_in_name(self, db_session, sample_user):
         """Test avec des caractères spéciaux dans le nom."""
@@ -457,16 +457,14 @@ class TestSecurityAndEdgeCases:
 
     def test_special_characters_in_color(self, db_session, sample_user):
         """Test avec des caractères spéciaux dans la color."""
-        special_color = "#éèàçùñáéíóú"
-        label_data = LabelCreate(name="Special", color=special_color)
-        
-        label = create_label(db_session, label_data, sample_user.id)
-        assert label.color == special_color
+        # Les caractères non hexadécimaux devraient être rejetés
+        with pytest.raises(ValidationError):
+            LabelCreate(name="Special", color="#éèàçùñáéíóú")
 
     def test_unicode_characters(self, db_session, sample_user):
         """Test avec des caractères Unicode."""
         unicode_name = "🚀_测试_العربية"
-        unicode_color = "#🎯_测试"
+        unicode_color = "#FF5733"  # Couleur hexadécimale valide
         label_data = LabelCreate(name=unicode_name, color=unicode_color)
         
         label = create_label(db_session, label_data, sample_user.id)
@@ -475,31 +473,38 @@ class TestSecurityAndEdgeCases:
 
     def test_whitespace_handling(self, db_session, sample_user):
         """Test de gestion des espaces blancs."""
+        # Les espaces devraient être acceptés mais trimés
         whitespace_name = "  whitespace label  "
-        whitespace_color = "  #FF0000  "
-        label_data = LabelCreate(name=whitespace_name, color=whitespace_color)
+        label_data = LabelCreate(name=whitespace_name, color="#FF0000")
         
         label = create_label(db_session, label_data, sample_user.id)
-        assert label.name == whitespace_name
-        assert label.color == whitespace_color
+        assert label.name == "whitespace label"  # Devrait être trimé
 
     def test_empty_strings(self, db_session, sample_user):
         """Test avec des chaînes vides."""
-        # Le schéma Pydantic accepte les chaînes vides, donc on teste que le service les gère
-        label_data = LabelCreate(name="", color="#FF0000")
-        label = create_label(db_session, label_data, sample_user.id)
-        
-        assert label is not None
-        assert label.name == ""  # Le nom vide est accepté
-        assert label.color == "#FF0000"
+        # Le schéma Pydantic devrait rejeter les noms vides
+        with pytest.raises(ValidationError):
+            LabelCreate(name="", color="#FF0000")
 
-    def test_very_long_color_value(self, db_session, sample_user):
-        """Test avec une color très longue."""
-        long_color = "#" + "A" * 1000
-        label_data = LabelCreate(name="Long Color", color=long_color)
+    def test_invalid_color_format(self, db_session, sample_user):
+        """Test avec des formats de couleur invalides."""
+        invalid_colors = [
+            "FF0000",  # Manque le #
+            "#FF000",  # Trop court
+            "#FF00000",  # Trop long
+            "#ZZZZZZ",  # Caractères invalides
+            "red",  # Nom de couleur
+            "",  # Vide
+        ]
         
-        label = create_label(db_session, label_data, sample_user.id)
-        assert label.color == long_color
+        for invalid_color in invalid_colors:
+            with pytest.raises(ValidationError):
+                LabelCreate(name="Test", color=invalid_color)
+        
+        # Test de couleur valide
+        valid_label = LabelCreate(name="Valid", color="#FF5733")
+        label = create_label(db_session, valid_label, sample_user.id)
+        assert label.color == "#FF5733"
 
     def test_concurrent_operations(self, db_session, sample_user):
         """Test d'opérations concurrentes."""

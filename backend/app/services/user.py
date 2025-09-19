@@ -46,6 +46,7 @@ def get_user_by_email(db: Session, email: str | None) -> Optional[User]:
         .first()
     )
 
+
 def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
     """Récupérer une liste d'utilisateurs."""
     return db.query(User).filter(User.__table__.c.status != UserStatus.DELETED).offset(skip).limit(limit).all()
@@ -96,6 +97,7 @@ def invite_user(db: Session, email: str, display_name: str | None, role: UserRol
     except Exception as exc:
         print(f"ERROR: Erreur lors de l'envoi de l'email d'invitation a {normalized_email}: {exc}")
     return db_user
+
 
 def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[User]:
     """Mettre à jour un utilisateur."""
@@ -212,11 +214,12 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     else:
         return None
 
+
 def create_admin_user(db: Session) -> User:
     """Créer un utilisateur administrateur par défaut."""
     default_lang = getenv("DEFAULT_LANGUAGE", "en")
     default_email = getenv("DEFAULT_ADMIN_EMAIL", "admin@yaka.local").lower()
-    default_password = getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
+    default_password = getenv("DEFAULT_ADMIN_PASSWORD", "Admin123")
     default_display_name = getenv("DEFAULT_ADMIN_DISPLAY_NAME", "Admin")
     admin_data = UserCreate(
         email=default_email,

@@ -1,7 +1,6 @@
 """Integration tests for the users router."""
 
 import pytest
-
 from app.routers.auth import router as auth_router
 from app.routers.users import router as users_router
 
@@ -14,7 +13,7 @@ async def test_users_listing_hides_emails_for_non_admins(
     create_regular_user("member@example.com", "userpass123", display_name="Member")
 
     async with async_client_factory(auth_router, users_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
         admin_response = await client.get(
             "/users/",
             headers={"Authorization": f"Bearer {admin_token}"},
@@ -41,7 +40,7 @@ async def test_user_management_requires_admin(async_client_factory, seed_admin_u
     create_regular_user("observer@example.com", "observer123", display_name="Observer")
 
     async with async_client_factory(auth_router, users_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
         payload = {
             "email": "new.user@example.com",
             "password": "Password123!",
@@ -103,4 +102,3 @@ async def test_user_can_update_language(async_client_factory, seed_admin_user, c
             headers={"Authorization": f"Bearer {token}"},
         )
     assert invalid_response.status_code == 400
-

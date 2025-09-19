@@ -1,10 +1,10 @@
 """Integration tests for the cards router."""
 
 import pytest
-
 from app.routers.auth import router as auth_router
 from app.routers.cards import router as cards_router
 from app.routers.labels import router as labels_router
+
 
 @pytest.mark.asyncio
 async def test_card_lifecycle(
@@ -124,7 +124,7 @@ async def test_card_filters_bulk_move_and_archive(
     create_regular_user("assignee@example.com", "Assign123!", display_name="Assignee")
 
     async with async_client_factory(auth_router, labels_router, cards_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
         label_response = await client.post(
@@ -267,9 +267,6 @@ async def test_card_filters_bulk_move_and_archive(
         assert invalid_statut.status_code == 400
 
 
-
-
-
 @pytest.mark.asyncio
 async def test_legacy_statut_endpoint(
     async_client_factory,
@@ -346,7 +343,7 @@ async def test_card_update_assigns_and_labels(
     create_regular_user("teammate@example.com", "Mate123!", display_name="Teammate")
 
     async with async_client_factory(auth_router, labels_router, cards_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         label_response = await client.post(
             "/labels/",

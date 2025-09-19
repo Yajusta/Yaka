@@ -6,6 +6,7 @@ import os
 from unittest.mock import patch
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from pydantic import ValidationError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -373,22 +374,19 @@ class TestCreateComment:
 
     def test_create_comment_whitespace_content(self, db_session, sample_card, sample_user):
         """Test de création avec contenu qui n'est que des espaces."""
-        comment_data = CardCommentCreate(
-            card_id=sample_card.id,
-            comment="   "
-        )
-        
-        # Pydantic accepte les espaces (min_length=1), mais la logique métier pourrait les rejeter
-        # Pour ce test, nous vérifions simplement que le commentaire est créé
-        result = create_comment(db_session, comment_data, sample_user.id)
-        assert result.comment == "   "
+        # La validation Pydantic devrait rejeter les espaces seulement (trim() vide)
+        with pytest.raises(ValidationError):
+            CardCommentCreate(
+                card_id=sample_card.id,
+                comment="   "
+            )
 
     def test_create_comment_very_long_comment(self, db_session, sample_card, sample_user):
         """Test de création avec un commentaire très long."""
-        long_comment = "x" * 5000  # Dépasse la limite de 1000
+        long_comment = "x" * 1001  # Dépasse la limite de 1000
         
         # La validation Pydantic devrait empêcher cela
-        with pytest.raises(Exception):  # PydanticValidationError
+        with pytest.raises(ValidationError):
             CardCommentCreate(
                 card_id=sample_card.id,
                 comment=long_comment
@@ -690,14 +688,14 @@ class TestCardCommentIntegration:
 
     def test_edge_case_empty_comment(self, db_session, sample_card, sample_user):
         """Test avec commentaire vide (devrait échouer à cause de la validation Pydantic)."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             CardCommentCreate(card_id=sample_card.id, comment="")
 
     def test_edge_case_very_long_comment(self, db_session, sample_card, sample_user):
         """Test avec commentaire très long (devrait échouer à cause de la validation Pydantic)."""
         long_comment = "x" * 1001  # Dépasse la limite de 1000
         
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             CardCommentCreate(card_id=sample_card.id, comment=long_comment)
 
 
@@ -723,17 +721,14 @@ class TestCardCommentSecurity:
 
     def test_xss_prevention(self, db_session, sample_card, sample_user):
         """Test de prévention XSS."""
-        xss_text = "<script>alert('XSS')</script><img src='x' onerror='alert(1)'>"
+        xss_text = "<script>alert('XSS')</script>"
         
-        comment_data = CardCommentCreate(
-            card_id=sample_card.id,
-            comment=xss_text
-        )
-        
-        result = create_comment(db_session, comment_data, sample_user.id)
-        assert result.comment == xss_text  # Stocké tel quel
-        
-        # La protection XSS devrait être gérée au niveau du frontend/affichage
+        # La validation Pydantic devrait bloquer les tentatives XSS
+        with pytest.raises(ValidationError):
+            CardCommentCreate(
+                card_id=sample_card.id,
+                comment=xss_text
+            )
 
     def test_unauthorized_access(self, db_session, sample_comments, sample_user_2):
         """Test d'accès non autorisé aux commentaires d'autres utilisateurs."""
@@ -750,16 +745,25 @@ class TestCardCommentSecurity:
             delete_comment(db_session, comment.id, sample_user_2.id)
 
     def test_comment_content_sanitization_storage(self, db_session, sample_card, sample_user):
-        """Test que le contenu est stocké tel quel (sanitization au niveau affichage)."""
-        dangerous_content = "<script>alert('danger')</script> & <div>HTML content</div>"
+        """Test que le contenu dangereux est bloqué par la validation."""
+        dangerous_content = "<script>alert('danger')</script>"
         
+        # La validation Pydantic devrait bloquer le contenu dangereux
+        with pytest.raises(ValidationError):
+            CardCommentCreate(
+                card_id=sample_card.id,
+                comment=dangerous_content
+            )
+        
+        # Test avec contenu sûr
+        safe_content = "Commentaire safe avec & et <div>HTML safe</div>"
         comment_data = CardCommentCreate(
             card_id=sample_card.id,
-            comment=dangerous_content
+            comment=safe_content
         )
         
         result = create_comment(db_session, comment_data, sample_user.id)
-        assert result.comment == dangerous_content  # Stocké tel quel
+        assert result.comment == safe_content
 
     def test_special_characters_storage(self, db_session, sample_card, sample_user):
         """Test de stockage de caractères spéciaux."""

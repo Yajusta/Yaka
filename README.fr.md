@@ -18,7 +18,7 @@ Une application web moderne et intuitive pour la gestion collaborative de tâche
 Pour voir à quoi ressemble cette application avant de l'installer, le plus simple est d'aller tester [la démo](https://yaka-demo.yajusta.fr/).
 
 Identifiant : `admin@yaka.local`
-Mot de passe : `admin123`
+Mot de passe : `Admin123`
 
 🗑️ La base est supprimée régulièrement.
 ⚠️ L'environnement est public : ne mettez pas d'informations sensibles.
@@ -136,7 +136,7 @@ Le frontend sera accessible sur <http://localhost:5173>
 Un compte administrateur est créé automatiquement lors de l'initialisation :
 
 - **Email :** `admin@kyaka.local`
-- **Mot de passe :** `admin123`
+- **Mot de passe :** `Admin123`
 
 Une fois connecté, **créez un nouvel administrateur** avec votre email puis **supprimez ce compte par défaut**.
 

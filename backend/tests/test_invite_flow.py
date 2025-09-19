@@ -1,19 +1,20 @@
-import pytest
-import sys
 import os
+import sys
+
+import pytest
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 try:
-    from httpx import AsyncClient, ASGITransport
     from asgi_lifespan import LifespanManager
+    from httpx import ASGITransport, AsyncClient
 except Exception:
     pytest.skip("httpx or asgi_lifespan not installed in test environment", allow_module_level=True)
 
-from app.main import app
 from app.database import SessionLocal
-from app.services.user import get_user_by_email
+from app.main import app
 from app.services import email as email_service
+from app.services.user import get_user_by_email
 
 
 @pytest.mark.asyncio
@@ -38,7 +39,7 @@ async def test_invite_and_set_password(monkeypatch):
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             # Authenticate as default admin created on startup
             resp_login = await client.post(
-                "/auth/login", data={"username": "admin@yaka.local", "password": "admin123"}
+                "/auth/login", data={"username": "admin@yaka.local", "password": "Admin123"}
             )
             assert resp_login.status_code == 200
             token = resp_login.json().get("access_token")

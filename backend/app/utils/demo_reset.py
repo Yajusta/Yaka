@@ -34,7 +34,7 @@ def initialize_default_data(db_session=None):
         admin_user = get_user_by_email(db_session, "admin@yaka.local")
         if not admin_user:
             create_admin_user(db_session)
-            print("Utilisateur administrateur cree : admin@yaka.local / admin123")
+            print("Utilisateur administrateur cree : admin@yaka.local / Admin123")
 
         # Initialiser les paramètres par défaut
         initialize_default_settings(db_session)
