@@ -65,14 +65,7 @@ def verify_token(token: str, credentials_exception) -> TokenData:
             token,
             SECRET_KEY,
             algorithms=[ALGORITHM],
-            options={"verify_exp": False},
         )
-        exp = payload.get("exp")
-        if exp is not None:
-            exp_ts = int(exp)
-            expires_at = datetime.fromtimestamp(exp_ts, tz=timezone.utc)
-            if datetime.now(timezone.utc) > expires_at:
-                raise credentials_exception
         email: Optional[str] = payload.get("sub", None)
         if email is None:
             raise credentials_exception
