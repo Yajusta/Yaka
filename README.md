@@ -58,6 +58,8 @@ cd Yaka
 cp .env.sample .env
 ```
 
+And fill in the necessary environment variables.
+
 ### 2. Deploy with Docker
 
 ```bash
