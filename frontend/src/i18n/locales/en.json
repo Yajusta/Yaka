@@ -387,6 +387,10 @@
         "enterBoardTitle": "Enter board title",
         "titleUpdatedSuccess": "Title updated successfully!"
     },
+    "boardSettings": {
+        "loadError": "Error loading board title",
+        "updateError": "Error updating board title"
+    },
     "errors": {
         "networkError": "Network error",
         "serverError": "Server error",

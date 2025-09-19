@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { boardSettingsService } from '../services/api';
 
 export interface BoardSettings {
@@ -11,6 +12,7 @@ export interface BoardSettings {
 }
 
 export const useBoardSettings = () => {
+  const { t } = useTranslation();
   const [boardTitle, setBoardTitle] = useState<string>('Yaka (Yet Another Kanban App)');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export const useBoardSettings = () => {
       setBoardTitle(data.title);
     } catch (err) {
       console.error('Error fetching board title:', err);
-      setError('Failed to load board title');
+      setError(t('boardSettings.loadError'));
     } finally {
       setLoading(false);
     }
@@ -36,7 +38,7 @@ export const useBoardSettings = () => {
       return true;
     } catch (err: any) {
       console.error('Error updating board title:', err);
-      const errorMessage = err?.response?.data?.detail || 'Erreur lors de la mise à jour du titre';
+      const errorMessage = err?.response?.data?.detail || t('boardSettings.updateError');
       setError(errorMessage);
       return false;
     }

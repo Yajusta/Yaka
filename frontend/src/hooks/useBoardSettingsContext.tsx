@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { boardSettingsService } from '../services/api';
 import { useToast } from './use-toast';
 
@@ -25,6 +26,7 @@ interface BoardSettingsProviderProps {
 }
 
 export const BoardSettingsProvider = ({ children }: BoardSettingsProviderProps) => {
+  const { t } = useTranslation();
   const [boardTitle, setBoardTitle] = useState<string>('Yaka (Yet Another Kanban App)');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export const BoardSettingsProvider = ({ children }: BoardSettingsProviderProps) 
       const data = await boardSettingsService.getBoardTitle();
       setBoardTitle(data.title || 'Yaka (Yet Another Kanban App)');
     } catch (err) {
-      setError('Failed to load board title');
+      setError(t('boardSettings.loadError'));
       setBoardTitle('Yaka (Yet Another Kanban App)'); // Fallback en cas d'erreur
     } finally {
       setLoading(false);
@@ -53,18 +55,18 @@ export const BoardSettingsProvider = ({ children }: BoardSettingsProviderProps) 
 
       // Afficher un toast de succès
       toast({
-        title: 'Le titre du tableau a été modifié avec succès.',
+        title: t('settings.titleUpdatedSuccess'),
         variant: 'success'
       });
 
       return true;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.detail || 'Erreur lors de la mise à jour du titre';
+      const errorMessage = err?.response?.data?.detail || t('boardSettings.updateError');
       setError(errorMessage);
 
       // Afficher un toast d'erreur
       toast({
-        title: 'Erreur',
+        title: t('common.error'),
         description: errorMessage,
         variant: 'destructive',
       });
