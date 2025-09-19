@@ -171,7 +171,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
 
         # Content Security Policy (CSP)
-        if os.getenv("ENVIRONMENT") == "production":
+        if os.getenv("ENVIRONMENT", "production").lower() == "production":
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
