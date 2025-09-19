@@ -6,6 +6,7 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -773,11 +774,8 @@ class TestSecurityAndEdgeCases:
         """Test de tentative d'injection SQL dans l'email."""
         malicious_email = "test'; DROP TABLE users; --"
 
-        user_data = UserCreate(email=malicious_email, password="password123", display_name="SQL Injection Test")
-
-        # L'email devrait être stocké tel quel (pas d'exécution SQL)
-        user = create_user(db_session, user_data)
-        assert user.email == malicious_email
+        with pytest.raises(ValidationError):
+            UserCreate(email=malicious_email, password="password123", display_name="SQL Injection Test")
 
     def test_xss_attempt_display_name(self, db_session):
         """Test de tentative XSS dans le nom d'affichage."""

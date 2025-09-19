@@ -1,12 +1,14 @@
 """Schémas Pydantic pour les cartes."""
 
-from pydantic import BaseModel, Field, validator
-from typing import Optional, List
-from datetime import datetime, date
+from datetime import date, datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 from ..models.card import CardPriority
-from .label import LabelResponse
-from .card_item import CardItemResponse
 from .card_comment import CardCommentResponse
+from .card_item import CardItemResponse
+from .label import LabelResponse
 from .user import UserResponse
 
 
@@ -25,9 +27,11 @@ class CardCreate(CardBase):
 
     list_id: int = Field(..., description="ID de la liste Kanban")
     position: Optional[int] = Field(
-        None, ge=0, description="Position dans la liste (optionnel, ajouté à la fin si non spécifié)"
+        None,
+        ge=0,
+        description="Position dans la liste (optionnel, ajouté à la fin si non spécifié)",
     )
-    label_ids: Optional[List[int]] = Field([], description="Liste des IDs des étiquettes")
+    label_ids: List[int] = Field(default_factory=list, description="Liste des IDs des étiquettes")
 
 
 class CardUpdate(BaseModel):
@@ -52,6 +56,8 @@ class CardListUpdate(BaseModel):
 class CardResponse(CardBase):
     """Schéma de réponse pour les cartes."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     list_id: int
     position: int
@@ -59,14 +65,11 @@ class CardResponse(CardBase):
     is_archived: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
-    labels: List[LabelResponse] = []
+    labels: List[LabelResponse] = Field(default_factory=list)
     creator: Optional[UserResponse] = None
     assignee: Optional[UserResponse] = None
-    items: List[CardItemResponse] = []
-    comments: List[CardCommentResponse] = []
-
-    class Config:
-        from_attributes = True
+    items: List[CardItemResponse] = Field(default_factory=list)
+    comments: List[CardCommentResponse] = Field(default_factory=list)
 
 
 class CardFilter(BaseModel):
@@ -87,13 +90,6 @@ class CardMoveRequest(BaseModel):
     target_list_id: int = Field(..., description="ID de la liste de destination")
     position: Optional[int] = Field(None, ge=0, description="Position dans la liste de destination")
 
-    @validator("target_list_id")
-    def validate_move_request(cls, v, values):
-        """Valide la demande de déplacement."""
-        # Permettre le déplacement dans la même liste si une position est spécifiée
-        # Cela permet la réorganisation des cartes dans une même colonne
-        return v
-
 
 class BulkCardMoveRequest(BaseModel):
     """Schéma pour le déplacement en masse de cartes."""
@@ -101,13 +97,14 @@ class BulkCardMoveRequest(BaseModel):
     card_ids: List[int] = Field(..., description="Liste des IDs des cartes à déplacer")
     target_list_id: int = Field(..., description="ID de la liste de destination")
 
-    @validator("card_ids")
-    def validate_card_ids(cls, v):
+    @field_validator("card_ids")
+    @classmethod
+    def validate_card_ids(cls, value: List[int]) -> List[int]:
         """Valide que la liste des IDs de cartes n'est pas vide et ne contient pas de doublons."""
-        if not v:
+        if not value:
             raise ValueError("Au moins une carte doit être fournie")
 
-        if len(v) != len(set(v)):
+        if len(value) != len(set(value)):
             raise ValueError("Les IDs de cartes doivent être uniques")
 
-        return v
+        return value

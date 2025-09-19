@@ -1,15 +1,36 @@
 """Schémas Pydantic pour les utilisateurs."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional
 from datetime import datetime
 from ..models.user import UserRole
+
+
+
+def _validate_email(value: str | None) -> str | None:
+    """Valide une adresse email basique sans dépendance externe."""
+    if value is None:
+        return None
+    if "@" not in value or value.count("@") != 1:
+        raise ValueError("Adresse email invalide")
+    local_part, domain = value.split("@", 1)
+    if not local_part or not domain or "." not in domain:
+        raise ValueError("Adresse email invalide")
+    return value
 
 
 class UserBase(BaseModel):
     """Schéma de base pour les utilisateurs."""
 
     email: str
+
+    @field_validator("email")
+    @classmethod
+    def _ensure_valid_email(cls, value: str) -> str:
+        validated = _validate_email(value)
+        assert validated is not None
+        return validated
+
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
     role: UserRole = UserRole.USER
     language: Optional[str] = Field('fr', description="Langue préférée (fr, en, etc.)")
@@ -25,6 +46,12 @@ class UserUpdate(BaseModel):
     """Schéma pour la mise à jour d'un utilisateur."""
 
     email: Optional[str] = None
+
+    @field_validator("email")
+    @classmethod
+    def _ensure_valid_optional_email(cls, value: str | None) -> str | None:
+        return _validate_email(value)
+
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
     role: Optional[UserRole] = None
     language: Optional[str] = Field(None, description="Langue préférée (fr, en, etc.)")
@@ -49,6 +76,14 @@ class PasswordResetRequest(BaseModel):
 
     email: str
 
+    @field_validator("email")
+    @classmethod
+    def _ensure_valid_email(cls, value: str) -> str:
+        validated = _validate_email(value)
+        assert validated is not None
+        return validated
+
+
 
 class UserResponse(UserBase):
     """Schéma de réponse pour les utilisateurs."""
@@ -57,8 +92,7 @@ class UserResponse(UserBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserListItem(BaseModel):
@@ -71,12 +105,20 @@ class UserListItem(BaseModel):
     # email est optionnel ici : les non-admins recevront une liste sans email
     email: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserLogin(BaseModel):
     """Schéma pour la connexion utilisateur."""
 
     email: str
+
+    @field_validator("email")
+    @classmethod
+    def _ensure_valid_email(cls, value: str) -> str:
+        validated = _validate_email(value)
+        assert validated is not None
+        return validated
+
     password: str
+
