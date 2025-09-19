@@ -56,11 +56,29 @@ async def read_users(
 @router.post("/", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Créer un nouvel utilisateur (Admin uniquement)."""
-    if db_user := user_service.get_user_by_email(db, email=user.email):
+    if user is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Un utilisateur avec cet email existe déjà"
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Données invalides pour la création de l'utilisateur"
         )
-    return user_service.create_user(db=db, user=user)
+    try:
+        if user_service.get_user_by_email(db, email=user.email):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Un utilisateur avec cet email existe déjà"
+            )
+        return user_service.create_user(db=db, user=user)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc)
+        ) from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur interne lors de la création de l'utilisateur"
+        ) from exc
 
 
 @router.post("/invite", response_model=UserResponse)
@@ -68,11 +86,31 @@ async def invite_user(
     payload: InvitePayload, db: Session = Depends(get_db), current_user: User = Depends(require_admin)
 ):
     """Inviter un utilisateur par email (Admin uniquement)."""
-    if existing := user_service.get_user_by_email(db, email=payload.email):
+    if payload is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Un utilisateur avec cet email existe déjà"
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Données invalides pour l'invitation"
         )
-    return user_service.invite_user(db=db, email=payload.email, display_name=payload.display_name, role=payload.role)
+    try:
+        if user_service.get_user_by_email(db, email=payload.email):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Un utilisateur avec cet email existe déjà"
+            )
+        return user_service.invite_user(
+            db=db, email=payload.email, display_name=payload.display_name, role=payload.role
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc)
+        ) from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur interne lors de l'invitation de l'utilisateur"
+        ) from exc
 
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -89,7 +127,25 @@ async def update_user(
     user_id: int, user_update: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)
 ):
     """Mettre à jour un utilisateur (Admin uniquement)."""
-    db_user = user_service.update_user(db, user_id=user_id, user_update=user_update)
+    if user_update is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Données invalides pour la mise à jour de l'utilisateur"
+        )
+    try:
+        db_user = user_service.update_user(db, user_id=user_id, user_update=user_update)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc)
+        ) from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur interne lors de la mise à jour de l'utilisateur"
+        ) from exc
     if db_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
     return db_user
@@ -170,11 +226,23 @@ async def delete_user(user_id: int, db: Session = Depends(get_db), current_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Vous ne pouvez pas supprimer votre propre compte"
         )
-
-    if success := user_service.delete_user(db, user_id=user_id):
+    try:
+        success = user_service.delete_user(db, user_id=user_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc)
+        ) from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur interne lors de la suppression de l'utilisateur"
+        ) from exc
+    if success:
         return {"message": "Utilisateur supprimé avec succès"}
-    else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
 
 
 @router.post("/set-password")
