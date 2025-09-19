@@ -32,8 +32,8 @@ export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssign
             onAssigneeChange(updatedCard);
             toast({
                 title: newAssigneeId
-                    ? t('card.cardAssignedTo', { cardTitle: card.titre, userName: users.find(u => u.id === newAssigneeId)?.display_name || t('user.unknownUser') })
-                    : t('card.cardUnassignedTo', { cardTitle: card.titre }),
+                    ? t('card.cardAssignedTo', { cardTitle: card.title, userName: users.find(u => u.id === newAssigneeId)?.display_name || t('user.unknownUser') })
+                    : t('card.cardUnassignedTo', { cardTitle: card.title }),
                 variant: "success",
             });
         } catch (error) {

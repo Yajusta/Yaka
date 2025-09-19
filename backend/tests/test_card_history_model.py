@@ -64,7 +64,7 @@ def sample_kanban_list(db_session):
 def sample_card(db_session, sample_kanban_list, sample_user):
     """Fixture pour créer une carte de test."""
     card = Card(
-        titre="Test Card",
+        title="Test Card",
         list_id=sample_kanban_list.id,
         created_by=sample_user.id,
     )
@@ -394,7 +394,7 @@ class TestCardHistoryModel:
         assert deleted_entry is None
 
     def test_card_history_string_fields_validation(self, db_session, sample_card, sample_user):
-        """Test des validations des champs texte."""
+        """Test des validations des champs text."""
         # Test avec action longue
         long_action = "a" * 100
         
@@ -483,7 +483,7 @@ Avec des caractères spéciaux: éèàç"""
         # Créer une carte et un utilisateur pour le test
         user = User(email="nulltest@example.com", display_name="Null Test", role=UserRole.USER, status=UserStatus.ACTIVE)
         kanban_list = KanbanList(name="Null Test List", order=1)
-        card = Card(titre="Null Test Card", list_id=1, created_by=1)
+        card = Card(title="Null Test Card", list_id=1, created_by=1)
         
         db_session.add(user)
         db_session.add(kanban_list)
@@ -907,7 +907,7 @@ Avec des caractères spéciaux: éèàç"""
 
     def test_card_history_search_functionality(self, db_session, sample_card, sample_user):
         """Test de la fonctionnalité de recherche dans l'historique."""
-        # Créer des entrées avec du texte spécifique
+        # Créer des entrées avec du text spécifique
         search_entries = [
             ("created", "Initial card creation"),
             ("updated", "Updated card title and description"),

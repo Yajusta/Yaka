@@ -60,17 +60,17 @@ class TestCardPositionFix:
         """Test que les nouvelles cartes reçoivent des positions correctes."""
         # Créer 3 cartes
         card1 = create_card(db_session, CardCreate(
-            titre="Carte 1", 
+            title="Carte 1", 
             list_id=test_list.id
         ), test_user.id)
         
         card2 = create_card(db_session, CardCreate(
-            titre="Carte 2", 
+            title="Carte 2", 
             list_id=test_list.id
         ), test_user.id)
         
         card3 = create_card(db_session, CardCreate(
-            titre="Carte 3", 
+            title="Carte 3", 
             list_id=test_list.id
         ), test_user.id)
         
@@ -82,25 +82,25 @@ class TestCardPositionFix:
     def test_cards_are_retrieved_in_position_order(self, db_session, test_user, test_list):
         """Test que les cartes sont récupérées dans l'ordre de position."""
         # Créer 3 cartes
-        create_card(db_session, CardCreate(titre="Carte A", list_id=test_list.id), test_user.id)
-        create_card(db_session, CardCreate(titre="Carte B", list_id=test_list.id), test_user.id)
-        create_card(db_session, CardCreate(titre="Carte C", list_id=test_list.id), test_user.id)
+        create_card(db_session, CardCreate(title="Carte A", list_id=test_list.id), test_user.id)
+        create_card(db_session, CardCreate(title="Carte B", list_id=test_list.id), test_user.id)
+        create_card(db_session, CardCreate(title="Carte C", list_id=test_list.id), test_user.id)
         
         # Récupérer les cartes
         cards = get_cards(db_session, CardFilter(list_id=test_list.id))
         
         # Vérifier l'ordre
         assert len(cards) == 3
-        assert cards[0].titre == "Carte A" and cards[0].position == 1
-        assert cards[1].titre == "Carte B" and cards[1].position == 2
-        assert cards[2].titre == "Carte C" and cards[2].position == 3
+        assert cards[0].title == "Carte A" and cards[0].position == 1
+        assert cards[1].title == "Carte B" and cards[1].position == 2
+        assert cards[2].title == "Carte C" and cards[2].position == 3
 
     def test_move_card_to_first_position_same_list(self, db_session, test_user, test_list):
         """Test déplacer une carte en première position dans la même liste."""
         # Créer 3 cartes
-        card1 = create_card(db_session, CardCreate(titre="Carte 1", list_id=test_list.id), test_user.id)
-        card2 = create_card(db_session, CardCreate(titre="Carte 2", list_id=test_list.id), test_user.id)
-        card3 = create_card(db_session, CardCreate(titre="Carte 3", list_id=test_list.id), test_user.id)
+        card1 = create_card(db_session, CardCreate(title="Carte 1", list_id=test_list.id), test_user.id)
+        card2 = create_card(db_session, CardCreate(title="Carte 2", list_id=test_list.id), test_user.id)
+        card3 = create_card(db_session, CardCreate(title="Carte 3", list_id=test_list.id), test_user.id)
         
         # Déplacer la carte 3 en première position
         move_card(db_session, card3.id, CardMoveRequest(

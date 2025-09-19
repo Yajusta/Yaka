@@ -62,7 +62,7 @@ def test_user(db_session):
 def test_card(db_session):
     """Fixture pour créer une carte de test."""
     card = Card(
-        titre="Test Card",
+        title="Test Card",
         description="Test description",
         list_id=1,
         created_by=1,

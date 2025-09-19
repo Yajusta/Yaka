@@ -15,10 +15,10 @@ from .user import UserResponse
 class CardBase(BaseModel):
     """Schéma de base pour les cartes."""
 
-    titre: str = Field(..., min_length=1, max_length=200, description="Titre de la carte")
+    title: str = Field(..., min_length=1, max_length=200, description="Titre de la carte")
     description: Optional[str] = Field(None, description="Description de la carte")
-    date_echeance: Optional[date] = Field(None, description="Date d'échéance de la carte")
-    priorite: CardPriority = Field(CardPriority.MEDIUM, description="Priorité de la carte")
+    due_date: Optional[date] = Field(None, description="Date d'échéance de la carte")
+    priority: CardPriority = Field(CardPriority.MEDIUM, description="Priorité de la carte")
     assignee_id: Optional[int] = Field(None, description="ID de l'utilisateur assigné")
 
 
@@ -37,10 +37,10 @@ class CardCreate(CardBase):
 class CardUpdate(BaseModel):
     """Schéma pour la mise à jour d'une carte."""
 
-    titre: Optional[str] = Field(None, min_length=1, max_length=200, description="Titre de la carte")
+    title: Optional[str] = Field(None, min_length=1, max_length=200, description="Titre de la carte")
     description: Optional[str] = Field(None, description="Description de la carte")
-    date_echeance: Optional[date] = Field(None, description="Date d'échéance de la carte")
-    priorite: Optional[CardPriority] = Field(None, description="Priorité de la carte")
+    due_date: Optional[date] = Field(None, description="Date d'échéance de la carte")
+    priority: Optional[CardPriority] = Field(None, description="Priorité de la carte")
     list_id: Optional[int] = Field(None, description="ID de la liste Kanban")
     position: Optional[int] = Field(None, ge=0, description="Position dans la liste")
     assignee_id: Optional[int] = Field(None, description="ID de l'utilisateur assigné")
@@ -77,7 +77,7 @@ class CardFilter(BaseModel):
 
     list_id: Optional[int] = Field(None, description="ID de la liste Kanban")
     assignee_id: Optional[int] = Field(None, description="ID de l'utilisateur assigné")
-    priorite: Optional[CardPriority] = Field(None, description="Priorité de la carte")
+    priority: Optional[CardPriority] = Field(None, description="Priorité de la carte")
     label_id: Optional[int] = Field(None, description="ID de l'étiquette")
     search: Optional[str] = Field(None, description="Terme de recherche")
     include_archived: bool = Field(False, description="Inclure les cartes archivées")

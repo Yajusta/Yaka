@@ -33,4 +33,4 @@
 
 [ ] Synchro par websocket.
 [ ] Refacto + nettoyer le code.
-[ ] Mettre tous les champs de la base en anglais.
+[x] Mettre tous les champs de la base en anglais.

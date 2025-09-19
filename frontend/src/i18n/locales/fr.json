@@ -176,7 +176,8 @@
         "noHistoryAvailable": "Aucun historique disponible pour cette carte",
         "historyBy": "par {{userName}}",
         "priorityUpdated": "Priorité mise à jour",
-        "priorityUpdatedDescription": "La priorité de la carte \"{{cardTitle}}\" est maintenant \"{{priority}}\"."
+        "priorityUpdatedDescription": "La priorité de la carte \"{{cardTitle}}\" est maintenant \"{{priority}}\".",
+        "toggleChecklistItem": "Cocher / décocher l'élément"
     },
     "list": {
         "title": "Titre",

@@ -47,11 +47,11 @@ const mockLists = [
 const mockCards = [
   {
     id: 1,
-    titre: 'Test Card 1',
+    title: 'Test Card 1',
     description: 'Description 1',
     list_id: 1,
-    priorite: 'haute',
-    date_echeance: null,
+    priority: 'high',
+    due_date: null,
     assignee_id: 1,
     created_by: 1,
     is_archived: false,
@@ -60,11 +60,11 @@ const mockCards = [
   },
   {
     id: 2,
-    titre: 'Test Card 2', 
+    title: 'Test Card 2', 
     description: 'Description 2',
     list_id: 2,
-    priorite: 'moyenne',
-    date_echeance: null,
+    priority: 'medium',
+    due_date: null,
     assignee_id: 1,
     created_by: 1,
     is_archived: false,
@@ -273,11 +273,11 @@ describe('Frontend Component Integration', () => {
     
     const cardProps = {
       id: 1,
-      titre: 'Test Card',
+      title: 'Test Card',
       description: 'Test Description',
       list_id: 1,
-      priorite: 'haute' as const,
-      date_echeance: null,
+      priority: 'high' as const,
+      due_date: null,
       assignee_id: 1,
       created_by: 1,
       is_archived: false,
@@ -291,7 +291,7 @@ describe('Frontend Component Integration', () => {
     expect(listProps).toHaveProperty('order')
     
     expect(cardProps).toHaveProperty('id')
-    expect(cardProps).toHaveProperty('titre')
+    expect(cardProps).toHaveProperty('title')
     expect(cardProps).toHaveProperty('list_id')
     
     // Validate data relationships
@@ -310,11 +310,11 @@ describe('Frontend Component Integration', () => {
     
     const cardResponse = {
       id: 1,
-      titre: 'Test Card',
+      title: 'Test Card',
       description: 'Test Description',
       list_id: 1,
-      priorite: 'haute',
-      date_echeance: null,
+      priority: 'high',
+      due_date: null,
       assignee_id: 1,
       created_by: 1,
       is_archived: false,
@@ -329,8 +329,8 @@ describe('Frontend Component Integration', () => {
     expect(typeof listResponse.created_at).toBe('string')
     
     expect(typeof cardResponse.id).toBe('number')
-    expect(typeof cardResponse.titre).toBe('string')
+    expect(typeof cardResponse.title).toBe('string')
     expect(typeof cardResponse.list_id).toBe('number')
-    expect(['haute', 'moyenne', 'basse']).toContain(cardResponse.priorite)
+    expect(['high', 'medium', 'low']).toContain(cardResponse.priority)
   })
 })

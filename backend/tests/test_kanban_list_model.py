@@ -233,7 +233,7 @@ class TestKanbanListModel:
         assert deleted_list is None
 
     def test_kanban_list_string_fields_validation(self, db_session):
-        """Test des validations des champs texte."""
+        """Test des validations des champs text."""
         # Test avec nom à la limite de la longueur
         max_length_name = "x" * 100  # Longueur maximale selon le modèle
         
@@ -514,7 +514,7 @@ class TestKanbanListModel:
 
     def test_kanban_list_database_constraints(self, db_session):
         """Test des contraintes de base de données."""
-        # Test que name ne peut pas être NULL
+        # Test que nom ne peut pas être NULL
         kanban_list = KanbanList(
             name=None,  # Devrait échouer
             order=1,

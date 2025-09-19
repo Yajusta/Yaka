@@ -22,8 +22,7 @@ async def read_labels(
     current_user: User = Depends(get_current_active_user),
 ):
     """Récupérer la liste des libellés."""
-    labels = label_service.get_labels(db, skip=skip, limit=limit)
-    return labels
+    return label_service.get_labels(db, skip=skip, limit=limit)
 
 
 @router.post("/", response_model=LabelResponse)
@@ -34,7 +33,7 @@ async def create_label(label: LabelCreate, db: Session = Depends(get_db), curren
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Données invalides pour la création du libellé"
         )
     try:
-        db_label = label_service.get_label_by_name(db, nom=label.nom)
+        db_label = label_service.get_label_by_name(db, name=label.name)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     if db_label:

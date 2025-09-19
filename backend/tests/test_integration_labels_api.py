@@ -16,16 +16,16 @@ async def test_label_crud_permissions(async_client_factory, seed_admin_user, cre
         admin_token = await login_user(client, "admin@yaka.local", "admin123")
         create_response = await client.post(
             "/labels/",
-            json={"nom": "Urgent", "couleur": "#ff0000"},
+            json={"name": "Urgent", "color": "#ff0000"},
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert create_response.status_code == 200
         label_payload = create_response.json()
-        assert label_payload["nom"] == "Urgent"
+        assert label_payload["name"] == "Urgent"
 
         duplicate_response = await client.post(
             "/labels/",
-            json={"nom": "Urgent", "couleur": "#00ff00"},
+            json={"name": "Urgent", "color": "#00ff00"},
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert duplicate_response.status_code == 400
@@ -33,7 +33,7 @@ async def test_label_crud_permissions(async_client_factory, seed_admin_user, cre
         user_token = await login_user(client, "labeluser@example.com", "label123")
         forbidden_response = await client.post(
             "/labels/",
-            json={"nom": "ShouldFail", "couleur": "#123456"},
+            json={"name": "ShouldFail", "color": "#123456"},
             headers={"Authorization": f"Bearer {user_token}"},
         )
         assert forbidden_response.status_code == 403
@@ -43,15 +43,15 @@ async def test_label_crud_permissions(async_client_factory, seed_admin_user, cre
             headers={"Authorization": f"Bearer {user_token}"},
         )
         assert list_response.status_code == 200
-        assert any(label["nom"] == "Urgent" for label in list_response.json())
+        assert any(label["name"] == "Urgent" for label in list_response.json())
 
         update_response = await client.put(
             f"/labels/{label_payload['id']}",
-            json={"nom": "Important", "couleur": "#ffaa00"},
+            json={"name": "Important", "color": "#ffaa00"},
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert update_response.status_code == 200
-        assert update_response.json()["nom"] == "Important"
+        assert update_response.json()["name"] == "Important"
 
         delete_response = await client.delete(
             f"/labels/{label_payload['id']}",
@@ -85,7 +85,7 @@ async def test_label_deletion_detaches_from_cards(
 
         label_response = await client.post(
             "/labels/",
-            json={"nom": "TempLabel", "couleur": "#00ffcc"},
+            json={"name": "TempLabel", "color": "#00ffcc"},
             headers=admin_headers,
         )
         assert label_response.status_code == 200
@@ -97,10 +97,10 @@ async def test_label_deletion_detaches_from_cards(
         card_response = await client.post(
             "/cards/",
             json={
-                "titre": "Card With Label",
+                "title": "Card With Label",
                 "description": "Should lose label on delete",
                 "list_id": list_id,
-                "priorite": "medium",
+                "priority": "medium",
                 "label_ids": [label_id],
             },
             headers=owner_headers,

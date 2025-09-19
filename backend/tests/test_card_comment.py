@@ -87,9 +87,9 @@ def sample_kanban_list(db_session):
 def sample_card(db_session, sample_kanban_list, sample_user):
     """Fixture pour créer une carte de test."""
     card = Card(
-        titre="Test Card",
+        title="Test Card",
         description="Test Description",
-        priorite=CardPriority.MEDIUM,
+        priority=CardPriority.MEDIUM,
         list_id=sample_kanban_list.id,
         created_by=sample_user.id,
     )
@@ -208,16 +208,16 @@ class TestGetCommentsForCard:
         """Test de récupération de commentaires pour plusieurs cartes différentes."""
         # Créer deux cartes
         card1 = Card(
-            titre="Card 1",
+            title="Card 1",
             description="Description 1",
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             list_id=sample_kanban_list.id,
             created_by=sample_user.id,
         )
         card2 = Card(
-            titre="Card 2",
+            title="Card 2",
             description="Description 2",
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             list_id=sample_kanban_list.id,
             created_by=sample_user.id,
         )
@@ -412,7 +412,7 @@ class TestUpdateComment:
 
     def test_update_comment_nonexistent(self, db_session, sample_user):
         """Test de mise à jour d'un commentaire inexistant."""
-        comment_update = CardCommentUpdate(comment="Nouveau texte")
+        comment_update = CardCommentUpdate(comment="Nouveau text")
         
         with pytest.raises(ValueError, match="Commentaire introuvable"):
             update_comment(db_session, 99999, comment_update, sample_user.id)
@@ -465,7 +465,7 @@ class TestUpdateComment:
         assert result.user_id == comment.user_id
 
     def test_update_comment_unicode_text(self, db_session, sample_comments, sample_user):
-        """Test de mise à jour avec texte Unicode."""
+        """Test de mise à jour avec text Unicode."""
         comment = sample_comments[0]
         unicode_text = "Commentaire mis à jour avec caractères spéciaux: éèàçù 🚀 中文"
         
@@ -713,7 +713,7 @@ class TestCardCommentSecurity:
             comment=malicious_text
         )
         
-        # La création devrait fonctionner (le texte est stocké littéralement)
+        # La création devrait fonctionner (le text est stocké littéralement)
         result = create_comment(db_session, comment_data, sample_user.id)
         assert result.comment == malicious_text
         

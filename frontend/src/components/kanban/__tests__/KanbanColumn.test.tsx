@@ -29,7 +29,7 @@ vi.mock('@dnd-kit/core', () => ({
 vi.mock('../KanbanCard', () => ({
   KanbanCard: ({ card }: any) => (
     <div data-testid={`card-${card.id}`} data-card-id={card.id}>
-      {card.titre}
+      {card.title}
     </div>
   )
 }))
@@ -82,9 +82,9 @@ describe('KanbanColumn', () => {
 
   it('renders multiple cards in correct order', () => {
     const multipleCards = [
-      { ...mockCards[0], id: 1, titre: 'First Card' },
-      { ...mockCards[0], id: 2, titre: 'Second Card' },
-      { ...mockCards[0], id: 3, titre: 'Third Card' }
+      { ...mockCards[0], id: 1, title: 'First Card' },
+      { ...mockCards[0], id: 2, title: 'Second Card' },
+      { ...mockCards[0], id: 3, title: 'Third Card' }
     ]
 
     const propsWithMultipleCards = {
@@ -174,9 +174,9 @@ describe('KanbanColumn', () => {
   it('filters cards correctly for the list', () => {
     // Cards from different lists
     const mixedCards = [
-      { ...mockCards[0], id: 1, list_id: 1, titre: 'Card for List 1' },
-      { ...mockCards[0], id: 2, list_id: 2, titre: 'Card for List 2' },
-      { ...mockCards[0], id: 3, list_id: 1, titre: 'Another Card for List 1' }
+      { ...mockCards[0], id: 1, list_id: 1, title: 'Card for List 1' },
+      { ...mockCards[0], id: 2, list_id: 2, title: 'Card for List 2' },
+      { ...mockCards[0], id: 3, list_id: 1, title: 'Another Card for List 1' }
     ]
 
     const propsWithMixedCards = {
@@ -210,8 +210,8 @@ describe('KanbanColumn', () => {
 
   it('maintains proper spacing between cards', () => {
     const multipleCards = [
-      { ...mockCards[0], id: 1, titre: 'Card 1' },
-      { ...mockCards[0], id: 2, titre: 'Card 2' }
+      { ...mockCards[0], id: 1, title: 'Card 1' },
+      { ...mockCards[0], id: 2, title: 'Card 2' }
     ]
 
     const propsWithMultipleCards = {

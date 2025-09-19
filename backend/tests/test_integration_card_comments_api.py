@@ -25,10 +25,10 @@ async def test_card_comments_crud(
         card_response = await client.post(
             "/cards/",
             json={
-                "titre": "Comment Card",
+                "title": "Comment Card",
                 "description": "Track discussion",
                 "list_id": list_id,
-                "priorite": "medium",
+                "priority": "medium",
             },
             headers={"Authorization": f"Bearer {token}"},
         )

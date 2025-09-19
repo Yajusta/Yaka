@@ -17,8 +17,8 @@ interface LabelManagerProps {
 }
 
 interface FormData {
-    nom: string;
-    couleur: string;
+    name: string;
+    color: string;
 }
 
 const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
@@ -28,8 +28,8 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
     const [editingLabel, setEditingLabel] = useState<LabelType | null>(null);
     const [showForm, setShowForm] = useState<boolean>(false);
     const [formData, setFormData] = useState<FormData>({
-        nom: '',
-        couleur: '#3B82F6'
+        name: '',
+        color: '#3B82F6'
     });
     const { toast } = useToast();
 
@@ -73,7 +73,7 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
             }
             setShowForm(false);
             setEditingLabel(null);
-            setFormData({ nom: '', couleur: '#3B82F6' });
+            setFormData({ name: '', color: '#3B82F6' });
             loadLabels();
         } catch (error: any) {
             toast({
@@ -87,8 +87,8 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
     const handleEdit = (label: LabelType): void => {
         setEditingLabel(label);
         setFormData({
-            nom: label.nom,
-            couleur: label.couleur
+            name: label.name,
+            color: label.color
         });
         setShowForm(true);
     };
@@ -116,14 +116,14 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
 
     const handleCreate = (): void => {
         setEditingLabel(null);
-        setFormData({ nom: '', couleur: '#3B82F6' });
+        setFormData({ name: '', color: '#3B82F6' });
         setShowForm(true);
     };
 
     const handleCloseForm = (): void => {
         setShowForm(false);
         setEditingLabel(null);
-        setFormData({ nom: '', couleur: '#3B82F6' });
+        setFormData({ name: '', color: '#3B82F6' });
     };
 
     return (
@@ -153,33 +153,33 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
                             <CardContent>
                                 <form onSubmit={handleSubmit} className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="nom">{t('label.name')}</Label>
+                                        <Label htmlFor="name">{t('label.name')}</Label>
                                         <Input
-                                            id="nom"
-                                            value={formData.nom}
-                                            onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                                            id="name"
+                                            value={formData.name}
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             placeholder={t('label.name')}
                                             maxLength={32}
                                             required
                                         />
                                         <p className="text-xs text-gray-500">
-                                            {formData.nom.length}/32 {t('common.charactersMax')}
+                                            {formData.name.length}/32 {t('common.charactersMax')}
                                         </p>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="couleur">{t('label.color')}</Label>
+                                        <Label htmlFor="color">{t('label.color')}</Label>
                                         <div className="flex items-center space-x-2">
                                             <Input
-                                                id="couleur"
+                                                id="color"
                                                 type="color"
-                                                value={formData.couleur}
-                                                onChange={(e) => setFormData({ ...formData, couleur: e.target.value })}
+                                                value={formData.color}
+                                                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                                                 className="w-16 h-10 p-1"
                                             />
                                             <Input
-                                                value={formData.couleur}
-                                                onChange={(e) => setFormData({ ...formData, couleur: e.target.value })}
+                                                value={formData.color}
+                                                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                                                 placeholder="#3B82F6"
                                                 className="flex-1"
                                             />
@@ -213,19 +213,19 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
                                             <div className="flex items-center space-x-3">
                                                 <div
                                                     className="w-4 h-4 rounded-full"
-                                                    style={{ backgroundColor: label.couleur }}
+                                                    style={{ backgroundColor: label.color }}
                                                 />
                                                 <Badge
                                                     key={label.id}
                                                     variant="outline"
                                                     className="text-xs px-2 py-0.5 font-medium border-opacity-50"
                                                     style={{
-                                                        backgroundColor: label.couleur + '15',
-                                                        borderColor: label.couleur + '40',
-                                                        color: label.couleur
+                                                        backgroundColor: label.color + '15',
+                                                        borderColor: label.color + '40',
+                                                        color: label.color
                                                     }}
                                                 >
-                                                    {label.nom}
+                                                    {label.name}
                                                 </Badge>
                                             </div>
 

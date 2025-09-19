@@ -229,17 +229,17 @@ class TestGetBoardTitle:
     """Tests pour la fonction get_board_title."""
 
     def test_get_board_title_existing(self, db_session, sample_settings):
-        """Test de récupération du titre du tableau quand il existe."""
+        """Test de récupération du title du tableau quand il existe."""
         title = get_board_title(db_session)
         assert title == "Custom Board Title"
 
     def test_get_board_title_default(self, db_session):
-        """Test de récupération du titre du tableau par défaut."""
+        """Test de récupération du title du tableau par défaut."""
         title = get_board_title(db_session)
         assert title == DEFAULT_BOARD_TITLE
 
     def test_get_board_title_custom_default(self, db_session):
-        """Test de récupération du titre du tableau avec un défaut personnalisé."""
+        """Test de récupération du title du tableau avec un défaut personnalisé."""
         title = get_board_title(db_session, "Custom Default Title")
         assert title == "Custom Default Title"
 
@@ -248,29 +248,29 @@ class TestSetBoardTitle:
     """Tests pour la fonction set_board_title."""
 
     def test_set_board_title_new(self, db_session):
-        """Test de définition d'un nouveau titre de tableau."""
+        """Test de définition d'un nouveau title de tableau."""
         setting = set_board_title(db_session, "New Board Title")
 
         assert setting.setting_key == "board_title"
         assert setting.setting_value == "New Board Title"
         assert setting.description == "Titre affiché du tableau Kanban"
 
-        # Vérifier que le titre est bien récupéré
+        # Vérifier que le title est bien récupéré
         title = get_board_title(db_session)
         assert title == "New Board Title"
 
     def test_set_board_title_update(self, db_session, sample_settings):
-        """Test de mise à jour du titre de tableau existant."""
+        """Test de mise à jour du title de tableau existant."""
         setting = set_board_title(db_session, "Updated Board Title")
 
         assert setting.setting_value == "Updated Board Title"
 
-        # Vérifier que le titre est bien mis à jour
+        # Vérifier que le title est bien mis à jour
         title = get_board_title(db_session)
         assert title == "Updated Board Title"
 
     def test_set_board_title_empty(self, db_session):
-        """Test de définition d'un titre de tableau vide."""
+        """Test de définition d'un title de tableau vide."""
         setting = set_board_title(db_session, "")
 
         assert setting.setting_value == ""
@@ -279,7 +279,7 @@ class TestSetBoardTitle:
         assert title == ""
 
     def test_set_board_title_long_title(self, db_session):
-        """Test de définition d'un titre de tableau très long."""
+        """Test de définition d'un title de tableau très long."""
         long_title = "A" * 1000
         setting = set_board_title(db_session, long_title)
 
@@ -313,7 +313,7 @@ class TestInitializeDefaultSettings:
 
         initialize_default_settings(db_session)
 
-        # Vérifier que le titre existant n'a pas été écrasé
+        # Vérifier que le title existant n'a pas été écrasé
         title_setting = get_setting(db_session, "board_title")
         assert title_setting is not None
         assert title_setting.setting_value == original_value

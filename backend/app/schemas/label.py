@@ -7,8 +7,8 @@ from datetime import datetime
 
 class LabelBase(BaseModel):
     """Schéma de base pour les libellés."""
-    nom: str = Field(..., max_length=32, description="Nom du libellé (32 caractères max)")
-    couleur: str  # Code hexadécimal
+    name: str = Field(..., max_length=32, description="Nom du libellé (32 caractères max)")
+    color: str  # Code hexadécimal
 
 
 class LabelCreate(LabelBase):
@@ -18,8 +18,8 @@ class LabelCreate(LabelBase):
 
 class LabelUpdate(BaseModel):
     """Schéma pour la mise à jour d'un libellé."""
-    nom: Optional[str] = Field(None, max_length=32, description="Nom du libellé (32 caractères max)")
-    couleur: Optional[str] = None
+    name: Optional[str] = Field(None, max_length=32, description="Nom du libellé (32 caractères max)")
+    color: Optional[str] = None
 
 
 class LabelResponse(LabelBase):

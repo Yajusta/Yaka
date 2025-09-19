@@ -25,10 +25,10 @@ async def test_card_items_crud(
         card_response = await client.post(
             "/cards/",
             json={
-                "titre": "Checklist Card",
+                "title": "Checklist Card",
                 "description": "Needs tasks",
                 "list_id": list_id,
-                "priorite": "medium",
+                "priority": "medium",
             },
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -37,13 +37,13 @@ async def test_card_items_crud(
 
         create_item_response = await client.post(
             "/card-items/",
-            json={"card_id": card_id, "texte": "First task", "is_done": False},
+            json={"card_id": card_id, "text": "First task", "is_done": False},
             headers={"Authorization": f"Bearer {token}"},
         )
         assert create_item_response.status_code == 200
         item_payload = create_item_response.json()
         item_id = item_payload["id"]
-        assert item_payload["texte"] == "First task"
+        assert item_payload["text"] == "First task"
 
         list_response = await client.get(
             f"/card-items/card/{card_id}",

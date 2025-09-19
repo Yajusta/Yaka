@@ -20,7 +20,7 @@ class CardItem(Base):
     card_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("cards.id", ondelete="CASCADE"), index=True, nullable=False
     )
-    texte: Mapped[str] = mapped_column(String(500), nullable=False)
+    text: Mapped[str] = mapped_column(String(500), nullable=False)
     is_done: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(

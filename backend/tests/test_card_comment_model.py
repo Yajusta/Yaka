@@ -65,7 +65,7 @@ def sample_kanban_list(db_session):
 def sample_card(db_session, sample_kanban_list, sample_user):
     """Fixture pour créer une carte de test."""
     card = Card(
-        titre="Test Card",
+        title="Test Card",
         list_id=sample_kanban_list.id,
         created_by=sample_user.id,
     )
@@ -384,7 +384,7 @@ class TestCardCommentModel:
 
     def test_card_comment_query_by_text(self, db_session, sample_card, sample_user):
         """Test de recherche textuelle dans les commentaires."""
-        # Créer des commentaires avec du texte spécifique
+        # Créer des commentaires avec du text spécifique
         comments = [
             CardComment(card_id=sample_card.id, user_id=sample_user.id, comment="Hello World"),
             CardComment(card_id=sample_card.id, user_id=sample_user.id, comment="Hello Python"),
@@ -497,7 +497,7 @@ class TestCardCommentModel:
         assert comment not in active_comments
 
     def test_card_comment_string_fields_validation(self, db_session, sample_card, sample_user):
-        """Test des validations des champs texte."""
+        """Test des validations des champs text."""
         # Test avec commentaire long
         long_comment = "x" * 1000  # Longueur maximale raisonnable
 
@@ -581,7 +581,7 @@ class TestCardCommentModel:
         assert comment.comment == "   "
 
     def test_card_comment_multiline_text(self, db_session, sample_card, sample_user):
-        """Test avec du texte multiligne."""
+        """Test avec du text multiligne."""
         multiline_text = """This is a multiline comment.
 Line 2
 Line 3

@@ -60,7 +60,7 @@ def test_item(db_session):
     """Fixture pour créer un élément de carte de test."""
     item = CardItem(
         card_id=1,
-        texte="Test Item",
+        text="Test Item",
         is_done=False,
         position=0,
         created_at=datetime.utcnow(),
@@ -82,7 +82,7 @@ class TestCardItemsRouter:
                 CardItemResponse(
                     id=1,
                     card_id=1,
-                    texte="Test Item",
+                    text="Test Item",
                     is_done=False,
                     position=0,
                     created_at=datetime.utcnow(),
@@ -101,7 +101,7 @@ class TestCardItemsRouter:
                     result = asyncio.run(list_items(1, mock_db.return_value.__enter__.return_value, test_user))
                     
                     assert len(result) == 1
-                    assert result[0].texte == "Test Item"
+                    assert result[0].text == "Test Item"
                     assert result[0].is_done is False
 
     def test_list_items_empty(self, test_user):
@@ -124,7 +124,7 @@ class TestCardItemsRouter:
         """Test de création d'un élément avec succès."""
         item_data = CardItemCreate(
             card_id=1,
-            texte="New Item",
+            text="New Item",
             is_done=False,
             position=0
         )
@@ -132,7 +132,7 @@ class TestCardItemsRouter:
         mock_item = CardItemResponse(
             id=1,
             card_id=1,
-            texte="New Item",
+            text="New Item",
             is_done=False,
             position=0,
             created_at=datetime.utcnow(),
@@ -151,7 +151,7 @@ class TestCardItemsRouter:
                     
                     result = asyncio.run(create_item(item_data, mock_db.return_value.__enter__.return_value, test_user))
                     
-                    assert result.texte == "New Item"
+                    assert result.text == "New Item"
                     assert result.card_id == 1
                     assert result.is_done is False
 
@@ -159,7 +159,7 @@ class TestCardItemsRouter:
         """Test de création d'un élément avec un ID de carte invalide."""
         item_data = CardItemCreate(
             card_id=-1,
-            texte="New Item",
+            text="New Item",
             is_done=False,
             position=0
         )
@@ -181,12 +181,12 @@ class TestCardItemsRouter:
                     assert exc_info.value.detail == "Card not found"
 
     def test_create_item_empty_title(self, test_user):
-        """Test de création d'un élément avec un titre vide - validation Pydantic."""
+        """Test de création d'un élément avec un title vide - validation Pydantic."""
         # Test de validation au niveau du schéma Pydantic
         with pytest.raises(Exception) as exc_info:
             CardItemCreate(
                 card_id=1,
-                texte="",
+                text="",
                 is_done=False,
                 position=0
             )
@@ -201,7 +201,7 @@ class TestCardItemsRouter:
         """Test de création d'un élément avec une erreur du service."""
         item_data = CardItemCreate(
             card_id=1,
-            texte="New Item",
+            text="New Item",
             is_done=False,
             position=0
         )
@@ -224,12 +224,12 @@ class TestCardItemsRouter:
 
     def test_update_item_success(self, test_user):
         """Test de mise à jour d'un élément avec succès."""
-        update_data = CardItemUpdate(texte="Updated Item", is_done=True)
+        update_data = CardItemUpdate(text="Updated Item", is_done=True)
         
         mock_item = CardItemResponse(
             id=1,
             card_id=1,
-            texte="Updated Item",
+            text="Updated Item",
             is_done=True,
             position=0,
             created_at=datetime.utcnow(),
@@ -248,12 +248,12 @@ class TestCardItemsRouter:
                     
                     result = asyncio.run(update_item(1, update_data, mock_db.return_value.__enter__.return_value, test_user))
                     
-                    assert result.texte == "Updated Item"
+                    assert result.text == "Updated Item"
                     assert result.is_done is True
 
     def test_update_item_not_found(self, test_user):
         """Test de mise à jour d'un élément qui n'existe pas."""
-        update_data = CardItemUpdate(texte="Updated Item", is_done=True)
+        update_data = CardItemUpdate(text="Updated Item", is_done=True)
         
         with patch('app.services.card_item.update_item') as mock_update:
             mock_update.return_value = None
@@ -272,17 +272,17 @@ class TestCardItemsRouter:
                     assert exc_info.value.detail == "Élément non trouvé"
 
     def test_update_item_empty_title(self, test_user):
-        """Test de mise à jour d'un élément avec un titre vide - validation Pydantic."""
+        """Test de mise à jour d'un élément avec un title vide - validation Pydantic."""
         # Test de validation au niveau du schéma Pydantic
         with pytest.raises(Exception) as exc_info:
-            CardItemUpdate(texte="", is_done=True)
+            CardItemUpdate(text="", is_done=True)
         
         # Vérifier que c'est une erreur de validation Pydantic
         assert "String should have at least 1 character" in str(exc_info.value)
 
     def test_update_item_service_error(self, test_user):
         """Test de mise à jour d'un élément avec une erreur du service."""
-        update_data = CardItemUpdate(texte="Updated Item", is_done=True)
+        update_data = CardItemUpdate(text="Updated Item", is_done=True)
         
         with patch('app.services.card_item.update_item') as mock_update:
             mock_update.side_effect = ValueError("Permission denied")
@@ -366,7 +366,7 @@ class TestCardItemsRouter:
         mock_item = CardItemResponse(
             id=1,
             card_id=1,
-            texte="Test Item",
+            text="Test Item",
             is_done=True,
             position=0,
             created_at=datetime.utcnow(),
@@ -394,7 +394,7 @@ class TestCardItemsRouter:
             CardItemResponse(
                 id=1,
                 card_id=1,
-                texte="Item 1",
+                text="Item 1",
                 is_done=False,
                 position=0,
                 created_at=datetime.utcnow(),
@@ -403,7 +403,7 @@ class TestCardItemsRouter:
             CardItemResponse(
                 id=2,
                 card_id=1,
-                texte="Item 2",
+                text="Item 2",
                 is_done=False,
                 position=1,
                 created_at=datetime.utcnow(),

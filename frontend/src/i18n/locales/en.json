@@ -176,7 +176,8 @@
         "noHistoryAvailable": "No history available for this card",
         "historyBy": "by {{userName}}",
         "priorityUpdated": "Priority updated",
-        "priorityUpdatedDescription": "The priority of card \"{{cardTitle}}\" is now \"{{priority}}\"."
+        "priorityUpdatedDescription": "The priority of card \"{{cardTitle}}\" is now \"{{priority}}\".",
+        "toggleChecklistItem": "Toggle checklist item"
     },
     "list": {
         "title": "Title",

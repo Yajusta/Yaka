@@ -48,10 +48,10 @@ def sample_kanban_lists():
 def sample_cards():
     """Données de test pour les cartes."""
     return [
-        Card(id=1, titre="Carte 1", list_id=1, position=1, is_archived=False, created_by=1),
-        Card(id=2, titre="Carte 2", list_id=1, position=2, is_archived=False, created_by=1),
-        Card(id=3, titre="Carte 3", list_id=2, position=1, is_archived=True, created_by=1),
-        Card(id=4, titre="Carte 4", list_id=2, position=2, is_archived=False, created_by=1),
+        Card(id=1, title="Carte 1", list_id=1, position=1, is_archived=False, created_by=1),
+        Card(id=2, title="Carte 2", list_id=1, position=2, is_archived=False, created_by=1),
+        Card(id=3, title="Carte 3", list_id=2, position=1, is_archived=True, created_by=1),
+        Card(id=4, title="Carte 4", list_id=2, position=2, is_archived=False, created_by=1),
     ]
 
 

@@ -21,12 +21,12 @@ export const PriorityChanger: React.FC<PriorityChangerProps> = ({ card, onPriori
     const { getPriorityLabel } = useTranslatedLabels();
 
     const handlePriorityChange = async (newPriority: 'low' | 'medium' | 'high') => {
-        if (newPriority === card.priorite) {
+        if (newPriority === card.priority) {
             return;
         }
 
         const updatePayload: UpdateCardData = {
-            priorite: newPriority,
+            priority: newPriority,
         };
 
         try {
@@ -34,7 +34,7 @@ export const PriorityChanger: React.FC<PriorityChangerProps> = ({ card, onPriori
             onPriorityChange(updatedCard);
             toast({
                 title: t('card.priorityUpdated'),
-                description: t('card.priorityUpdatedDescription', { cardTitle: card.titre, priority: getPriorityLabel(newPriority) }),
+                description: t('card.priorityUpdatedDescription', { cardTitle: card.title, priority: getPriorityLabel(newPriority) }),
                 variant: "success",
             });
         } catch (error) {
@@ -50,7 +50,7 @@ export const PriorityChanger: React.FC<PriorityChangerProps> = ({ card, onPriori
     return (
         <DropdownMenu>
             <DropdownMenuTrigger>
-                <PriorityBadge priority={card.priorite} />
+                <PriorityBadge priority={card.priority} />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 {priorities.map((p) => {

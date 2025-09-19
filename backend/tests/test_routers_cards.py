@@ -93,12 +93,12 @@ def test_user(db_session):
 def test_card(db_session):
     """Fixture pour créer une carte de test."""
     card = Card(
-        titre="Test Card",
+        title="Test Card",
         description="Test description",
         list_id=1,
         created_by=1,
         position=0,
-        priorite=CardPriority.MEDIUM,
+        priority=CardPriority.MEDIUM,
         is_archived=False,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
@@ -118,11 +118,11 @@ class TestCardsRouter:
             mock_cards = [
                 CardResponse(
                     id=1,
-                    titre="Test Card",
+                    title="Test Card",
                     description="Test description",
                     list_id=1,
                     position=0,
-                    priorite=CardPriority.MEDIUM,
+                    priority=CardPriority.MEDIUM,
                     is_archived=False,
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
@@ -146,7 +146,7 @@ class TestCardsRouter:
                             list_id=1,
                             statut=None,
                             assignee_id=None,
-                            priorite=None,
+                            priority=None,
                             label_id=None,
                             search=None,
                             include_archived=False,
@@ -156,7 +156,7 @@ class TestCardsRouter:
                     )
 
                     assert len(result) == 1
-                    assert result[0].titre == "Test Card"
+                    assert result[0].title == "Test Card"
 
     def test_list_cards_with_filters(self, test_user):
         """Test de récupération des cartes avec filtres."""
@@ -164,11 +164,11 @@ class TestCardsRouter:
             mock_cards = [
                 CardResponse(
                     id=1,
-                    titre="High Priority Card",
+                    title="High Priority Card",
                     description="Important task",
                     list_id=1,
                     position=0,
-                    priorite=CardPriority.HIGH,
+                    priority=CardPriority.HIGH,
                     is_archived=False,
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
@@ -191,7 +191,7 @@ class TestCardsRouter:
                             skip=0,
                             limit=10,
                             search="High",
-                            priorite=CardPriority.HIGH,
+                            priority=CardPriority.HIGH,
                             assignee_id=None,
                             label_id=None,
                             include_archived=False,
@@ -202,7 +202,7 @@ class TestCardsRouter:
                     )
 
                     assert len(result) == 1
-                    assert result[0].priorite == CardPriority.HIGH
+                    assert result[0].priority == CardPriority.HIGH
 
     def test_list_archived_cards_success(self, test_user):
         """Test de récupération des cartes archivées avec succès."""
@@ -210,11 +210,11 @@ class TestCardsRouter:
             mock_cards = [
                 CardResponse(
                     id=1,
-                    titre="Archived Card",
+                    title="Archived Card",
                     description="Old task",
                     list_id=1,
                     position=0,
-                    priorite=CardPriority.LOW,
+                    priority=CardPriority.LOW,
                     is_archived=True,
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
@@ -243,16 +243,16 @@ class TestCardsRouter:
     def test_create_card_success(self, test_user):
         """Test de création d'une carte avec succès."""
         card_data = CardCreate(
-            titre="New Card", description="New description", list_id=1, priorite=CardPriority.MEDIUM
+            title="New Card", description="New description", list_id=1, priority=CardPriority.MEDIUM
         )
 
         mock_card = CardResponse(
             id=1,
-            titre="New Card",
+            title="New Card",
             description="New description",
             list_id=1,
             position=0,
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             is_archived=False,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
@@ -277,15 +277,15 @@ class TestCardsRouter:
                             create_card(card_data, mock_db.return_value.__enter__.return_value, test_user)
                         )
 
-                        assert result.titre == "New Card"
+                        assert result.title == "New Card"
                         assert result.description == "New description"
-                        assert result.priorite == CardPriority.MEDIUM
+                        assert result.priority == CardPriority.MEDIUM
 
     def test_create_card_invalid_data(self, test_user):
         """Test de création d'une carte avec des données invalides."""
         # Créer un objet CardCreate valide
         card_data = CardCreate(
-            titre="Test Card", description="Test description", list_id=1, priorite=CardPriority.MEDIUM
+            title="Test Card", description="Test description", list_id=1, priority=CardPriority.MEDIUM
         )
 
         with patch("app.services.card.create_card") as mock_create:
@@ -306,13 +306,13 @@ class TestCardsRouter:
                     assert exc_info.value.detail == "Liste non trouvée"
 
     def test_create_card_empty_title(self, test_user):
-        """Test de validation Pydantic pour un titre vide."""
+        """Test de validation Pydantic pour un title vide."""
         # Tester que Pydantic rejette les données invalides
         with pytest.raises(Exception) as exc_info:
-            CardCreate(titre="", description="New description", list_id=1, priorite=CardPriority.MEDIUM)
+            CardCreate(title="", description="New description", list_id=1, priority=CardPriority.MEDIUM)
 
         # Vérifier que c'est bien une erreur de validation Pydantic
-        assert "titre" in str(exc_info.value)
+        assert "title" in str(exc_info.value)
         assert "String should have at least 1 character" in str(exc_info.value)
 
     def test_get_card_success(self, test_user, test_card):
@@ -320,11 +320,11 @@ class TestCardsRouter:
         with patch("app.services.card.get_card") as mock_get_card:
             mock_card = CardResponse(
                 id=1,
-                titre="Test Card",
+                title="Test Card",
                 description="Test description",
                 list_id=1,
                 position=0,
-                priorite=CardPriority.MEDIUM,
+                priority=CardPriority.MEDIUM,
                 is_archived=False,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
@@ -342,7 +342,7 @@ class TestCardsRouter:
 
                     result = asyncio.run(read_card(1, mock_db.return_value.__enter__.return_value, test_user))
 
-                    assert result.titre == "Test Card"
+                    assert result.title == "Test Card"
                     assert result.id == 1
 
     def test_get_card_not_found(self, test_user):
@@ -365,15 +365,15 @@ class TestCardsRouter:
 
     def test_update_card_success(self, test_user):
         """Test de mise à jour d'une carte avec succès."""
-        update_data = CardUpdate(titre="Updated Card", description="Updated description", priorite=CardPriority.HIGH)
+        update_data = CardUpdate(title="Updated Card", description="Updated description", priority=CardPriority.HIGH)
 
         mock_card = CardResponse(
             id=1,
-            titre="Updated Card",
+            title="Updated Card",
             description="Updated description",
             list_id=1,
             position=0,
-            priorite=CardPriority.HIGH,
+            priority=CardPriority.HIGH,
             is_archived=False,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
@@ -398,12 +398,12 @@ class TestCardsRouter:
                             update_card(1, update_data, mock_db.return_value.__enter__.return_value, test_user)
                         )
 
-                        assert result.titre == "Updated Card"
-                        assert result.priorite == CardPriority.HIGH
+                        assert result.title == "Updated Card"
+                        assert result.priority == CardPriority.HIGH
 
     def test_update_card_not_found(self, test_user):
         """Test de mise à jour d'une carte qui n'existe pas."""
-        update_data = CardUpdate(titre="Updated Card")
+        update_data = CardUpdate(title="Updated Card")
 
         with patch("app.services.card.update_card") as mock_update:
             mock_update.return_value = None
@@ -427,11 +427,11 @@ class TestCardsRouter:
         """Test d'archivage d'une carte avec succès."""
         mock_card = CardResponse(
             id=1,
-            titre="Test Card",
+            title="Test Card",
             description="Test description",
             list_id=1,
             position=0,
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             is_archived=True,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
@@ -478,11 +478,11 @@ class TestCardsRouter:
         """Test de désarchivage d'une carte avec succès."""
         mock_card = CardResponse(
             id=1,
-            titre="Test Card",
+            title="Test Card",
             description="Test description",
             list_id=1,
             position=0,
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             is_archived=False,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
@@ -513,11 +513,11 @@ class TestCardsRouter:
 
         mock_card = CardResponse(
             id=1,
-            titre="Test Card",
+            title="Test Card",
             description="Test description",
             list_id=2,
             position=0,
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             is_archived=False,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
@@ -551,11 +551,11 @@ class TestCardsRouter:
         mock_cards = [
             CardResponse(
                 id=1,
-                titre="Card 1",
+                title="Card 1",
                 description="Description 1",
                 list_id=2,
                 position=0,
-                priorite=CardPriority.MEDIUM,
+                priority=CardPriority.MEDIUM,
                 is_archived=False,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
@@ -687,7 +687,7 @@ class TestCardsRouter:
                                 skip=0,
                                 limit=10,
                                 search=None,
-                                priorite=None,
+                                priority=None,
                                 assignee_id=None,
                                 label_id=None,
                                 include_archived=False,

@@ -105,17 +105,17 @@ def create_demo_data(db_session):
     _ = create_list(db_session, done_list_data)
 
     # Créer l'étiquette "Important" avec couleur rouge
-    label_data = LabelCreate(nom=label_name, couleur="#940000")
+    label_data = LabelCreate(name=label_name, color="#940000")
     important_label = create_label(db_session, label_data, admin_user.id)
 
     # Créer la tâche de configuration dans la liste "A faire"/"To Do"
     card_data = CardCreate(
-        titre=card_title,
+        title=card_title,
         description=card_description,
-        date_echeance=None,
+        due_date=None,
         list_id=todo_list.id,
         position=1,
-        priorite=CardPriority.HIGH,
+        priority=CardPriority.HIGH,
         assignee_id=admin_user.id,
         label_ids=[important_label.id],
     )
@@ -124,7 +124,7 @@ def create_demo_data(db_session):
     # Ajouter les éléments de checklist à la tâche
     for i, item_text in enumerate(checklist_items):
         is_done = i == 0
-        item_data = CardItemCreate(card_id=config_card.id, texte=item_text, is_done=is_done, position=i + 1)
+        item_data = CardItemCreate(card_id=config_card.id, text=item_text, is_done=is_done, position=i + 1)
         create_card_item(db_session, item_data)
 
     print("Donnees de demo creees avec succes!")

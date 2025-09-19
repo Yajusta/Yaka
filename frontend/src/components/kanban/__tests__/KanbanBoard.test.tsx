@@ -274,9 +274,9 @@ describe('KanbanBoard', () => {
   it('preserves card order within lists', async () => {
     // Mock multiple cards in the same list
     const cardsInSameList = [
-      { ...mockCards[0], id: 1, titre: 'Card A', list_id: 1 },
-      { ...mockCards[0], id: 2, titre: 'Card B', list_id: 1 },
-      { ...mockCards[0], id: 3, titre: 'Card C', list_id: 1 }
+      { ...mockCards[0], id: 1, title: 'Card A', list_id: 1 },
+      { ...mockCards[0], id: 2, title: 'Card B', list_id: 1 },
+      { ...mockCards[0], id: 3, title: 'Card C', list_id: 1 }
     ]
 
     vi.mocked(cardsApi.cardsApi.getCards).mockResolvedValue(cardsInSameList)

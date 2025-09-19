@@ -25,10 +25,10 @@ async def test_card_lifecycle(
         create_response = await client.post(
             "/cards/",
             json={
-                "titre": "Sample Card",
+                "title": "Sample Card",
                 "description": "Created via API",
                 "list_id": list_id,
-                "priorite": "medium",
+                "priority": "medium",
             },
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -49,7 +49,7 @@ async def test_card_lifecycle(
             headers={"Authorization": f"Bearer {token}"},
         )
         assert detail_response.status_code == 200
-        assert detail_response.json()["titre"] == "Sample Card"
+        assert detail_response.json()["title"] == "Sample Card"
 
         update_response = await client.put(
             f"/cards/{card_id}",
@@ -129,7 +129,7 @@ async def test_card_filters_bulk_move_and_archive(
 
         label_response = await client.post(
             "/labels/",
-            json={"nom": "Prioritaire", "couleur": "#ff8800"},
+            json={"name": "Prioritaire", "color": "#ff8800"},
             headers=admin_headers,
         )
         assert label_response.status_code == 200
@@ -150,10 +150,10 @@ async def test_card_filters_bulk_move_and_archive(
         card_alpha = await client.post(
             "/cards/",
             json={
-                "titre": "Alpha Task",
+                "title": "Alpha Task",
                 "description": "Needs review",
                 "list_id": list_a,
-                "priorite": "medium",
+                "priority": "medium",
                 "label_ids": [label_id],
                 "assignee_id": assignee_id,
             },
@@ -166,10 +166,10 @@ async def test_card_filters_bulk_move_and_archive(
         card_beta = await client.post(
             "/cards/",
             json={
-                "titre": "Beta Task",
+                "title": "Beta Task",
                 "description": "Contains beta keyword",
                 "list_id": list_a,
-                "priorite": "low",
+                "priority": "low",
             },
             headers=user_headers,
         )
@@ -291,10 +291,10 @@ async def test_legacy_statut_endpoint(
         create_response = await client.post(
             "/cards/",
             json={
-                "titre": "Legacy Card",
+                "title": "Legacy Card",
                 "description": "Will move via status endpoint",
                 "list_id": list_a,
-                "priorite": "medium",
+                "priority": "medium",
             },
             headers=headers,
         )
@@ -350,7 +350,7 @@ async def test_card_update_assigns_and_labels(
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         label_response = await client.post(
             "/labels/",
-            json={"nom": "Bug", "couleur": "#ff0000"},
+            json={"name": "Bug", "color": "#ff0000"},
             headers=admin_headers,
         )
         assert label_response.status_code == 200
@@ -368,10 +368,10 @@ async def test_card_update_assigns_and_labels(
         create_response = await client.post(
             "/cards/",
             json={
-                "titre": "Assignment Card",
+                "title": "Assignment Card",
                 "description": "Needs labels and assignee",
                 "list_id": list_id,
-                "priorite": "medium",
+                "priority": "medium",
             },
             headers=owner_headers,
         )

@@ -22,14 +22,14 @@ export interface KanbanList {
 
 export interface Card {
     id: number;
-    titre: string;
+    title: string;
     description: string;
-    priorite: string;
+    priority: string;
     assignee_id: number | null;
     label_id: number | null;
     colonne: string;
     list_id: number;
-    date_echeance?: string;
+    due_date?: string;
     assignee?: User;
     labels?: Label[];
     kanban_list?: KanbanList;
@@ -41,8 +41,8 @@ export interface Card {
 
 export interface Label {
     id: number;
-    nom: string;
-    couleur: string;
+    name: string;
+    color: string;
     created_at: string;
     updated_at: string;
 }
@@ -52,7 +52,7 @@ export interface Label {
 export interface Filters {
     search?: string;
     assignee_id?: number | null;
-    priorite?: string | null;
+    priority?: string | null;
     label_id?: number | null;
 }
 
@@ -80,10 +80,10 @@ export interface LoginCredentials {
 }
 
 export interface CreateCardData {
-    titre: string;
+    title: string;
     // description can be null when not provided
     description: string | null;
-    priorite: string;
+    priority: string;
     assignee_id?: number | null;
     // Support multiple labels on create to match backend schema
     label_ids?: number[];
@@ -91,16 +91,16 @@ export interface CreateCardData {
     colonne?: string;
     // list_id is required for new list-based system
     list_id: number;
-    // date_echeance can be omitted or null
-    date_echeance?: string | null;
+    // due_date can be omitted or null
+    due_date?: string | null;
 }
 
 // UpdateCardData is a partial CreateCardData; the id is provided via the route (not required in the body)
 export interface UpdateCardData extends Partial<CreateCardData> { }
 
 export interface CreateLabelData {
-    nom: string;
-    couleur: string;
+    name: string;
+    color: string;
 }
 
 export interface UpdateLabelData extends Partial<CreateLabelData> {
@@ -110,7 +110,7 @@ export interface UpdateLabelData extends Partial<CreateLabelData> {
 export interface CardChecklistItem {
     id: number;
     card_id: number;
-    texte: string;
+    text: string;
     is_done: boolean;
     position: number;
     created_at: string;

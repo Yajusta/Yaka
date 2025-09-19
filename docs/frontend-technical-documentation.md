@@ -658,13 +658,13 @@ interface KanbanList {
 
 interface Card {
     id: number;
-    titre: string;
+    title: string;
     description: string;
-    priorite: string;
+    priority: string;
     assignee_id: number | null;
     list_id: number;  // Remplace 'statut'
     position: number; // Nouvelle propriété pour l'ordre
-    date_echeance?: string;
+    due_date?: string;
     assignee?: User;
     labels?: Label[];
     kanban_list?: KanbanList;
@@ -674,8 +674,8 @@ interface Card {
 
 interface Label {
     id: number;
-    nom: string;
-    couleur: string;
+    name: string;
+    color: string;
     created_at: string;
     updated_at: string;
 }

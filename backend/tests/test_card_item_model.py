@@ -65,7 +65,7 @@ def sample_kanban_list(db_session):
 def sample_card(db_session, sample_kanban_list, sample_user):
     """Fixture pour créer une carte de test."""
     card = Card(
-        titre="Test Card",
+        title="Test Card",
         list_id=sample_kanban_list.id,
         created_by=sample_user.id,
     )
@@ -81,19 +81,19 @@ def sample_items(db_session, sample_card):
     items = [
         CardItem(
             card_id=sample_card.id,
-            texte="First item",
+            text="First item",
             is_done=False,
             position=1,
         ),
         CardItem(
             card_id=sample_card.id,
-            texte="Second item",
+            text="Second item",
             is_done=True,
             position=2,
         ),
         CardItem(
             card_id=sample_card.id,
-            texte="Third item",
+            text="Third item",
             is_done=False,
             position=3,
         ),
@@ -110,7 +110,7 @@ def sample_items(db_session, sample_card):
 
 
 class TestGetSystemTimezoneDatetimeForCardItem:
-    """Tests pour la fonction get_system_timezone_datetime dans le contexte CardItem."""
+    """Tests pour la fonction get_system_timezone_datetime dans le context CardItem."""
 
     def test_get_system_timezone_datetime(self):
         """Test de récupération de la date et heure actuelle."""
@@ -143,7 +143,7 @@ class TestCardItemModel:
         # Vérifier que tous les attributs existent
         assert hasattr(item, "id")
         assert hasattr(item, "card_id")
-        assert hasattr(item, "texte")
+        assert hasattr(item, "text")
         assert hasattr(item, "is_done")
         assert hasattr(item, "position")
         assert hasattr(item, "created_at")
@@ -165,7 +165,7 @@ class TestCardItemModel:
 
         item = CardItem(
             card_id=sample_card.id,
-            texte="Test item",
+            text="Test item",
             is_done=False,
             position=1,
         )
@@ -178,7 +178,7 @@ class TestCardItemModel:
 
         assert item.id is not None
         assert item.card_id == sample_card.id
-        assert item.texte == "Test item"
+        assert item.text == "Test item"
         assert item.is_done is False
         assert item.position == 1
         assert item.created_at is not None
@@ -192,7 +192,7 @@ class TestCardItemModel:
         """Test de création avec les champs minimum requis."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="Minimal item",
+            text="Minimal item",
         )
 
         db_session.add(item)
@@ -201,7 +201,7 @@ class TestCardItemModel:
 
         assert item.id is not None
         assert item.card_id == sample_card.id
-        assert item.texte == "Minimal item"
+        assert item.text == "Minimal item"
         assert item.is_done is False  # Valeur par défaut
         assert item.position == 0  # Valeur par défaut
         assert item.created_at is not None
@@ -211,7 +211,7 @@ class TestCardItemModel:
         """Test de création d'un élément terminé."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="Completed item",
+            text="Completed item",
             is_done=True,
             position=5,
         )
@@ -229,7 +229,7 @@ class TestCardItemModel:
 
         item = CardItem(
             card_id=sample_card.id,
-            texte="Timestamp test",
+            text="Timestamp test",
         )
 
         db_session.add(item)
@@ -245,7 +245,7 @@ class TestCardItemModel:
         """Test que le timestamp updated_at est mis à jour lors de la modification."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="Original item",
+            text="Original item",
             is_done=False,
         )
 
@@ -261,7 +261,7 @@ class TestCardItemModel:
         time.sleep(0.01)
 
         # Mettre à jour l'élément
-        item.texte = "Updated item"
+        item.text = "Updated item"
         item.is_done = True
         db_session.commit()
         db_session.refresh(item)
@@ -277,7 +277,7 @@ class TestCardItemModel:
         """Test de mise à jour d'un élément."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="Original item",
+            text="Original item",
             is_done=False,
             position=1,
         )
@@ -288,7 +288,7 @@ class TestCardItemModel:
         original_created_at = item.created_at
 
         # Mettre à jour plusieurs champs
-        item.texte = "Updated item"
+        item.text = "Updated item"
         item.is_done = True
         item.position = 5
 
@@ -296,7 +296,7 @@ class TestCardItemModel:
         db_session.refresh(item)
 
         # Vérifier les mises à jour
-        assert item.texte == "Updated item"
+        assert item.text == "Updated item"
         assert item.is_done is True
         assert item.position == 5
         assert item.created_at == original_created_at  # Ne devrait pas changer
@@ -308,7 +308,7 @@ class TestCardItemModel:
         for i in range(3):
             item = CardItem(
                 card_id=sample_card.id,
-                texte=f"Item {i}",
+                text=f"Item {i}",
                 position=i,
             )
             db_session.add(item)
@@ -327,7 +327,7 @@ class TestCardItemModel:
         for i in range(3):
             item = CardItem(
                 card_id=sample_card.id,
-                texte=f"Item {i}",
+                text=f"Item {i}",
                 is_done=(i % 2 == 0),  # Alterné
                 position=i,
             )
@@ -348,11 +348,11 @@ class TestCardItemModel:
 
     def test_card_item_query_by_text(self, db_session, sample_card):
         """Test de recherche textuelle."""
-        # Créer des éléments avec du texte spécifique
+        # Créer des éléments avec du text spécifique
         items = [
-            CardItem(card_id=sample_card.id, texte="Important task", position=1),
-            CardItem(card_id=sample_card.id, texte="Urgent item", position=2),
-            CardItem(card_id=sample_card.id, texte="Regular task", position=3),
+            CardItem(card_id=sample_card.id, text="Important task", position=1),
+            CardItem(card_id=sample_card.id, text="Urgent item", position=2),
+            CardItem(card_id=sample_card.id, text="Regular task", position=3),
         ]
 
         for item in items:
@@ -361,10 +361,10 @@ class TestCardItemModel:
         db_session.commit()
 
         # Rechercher les éléments contenant "task"
-        task_items = db_session.query(CardItem).filter(CardItem.texte.like("%task%")).all()
+        task_items = db_session.query(CardItem).filter(CardItem.text.like("%task%")).all()
 
         assert len(task_items) == 2
-        assert all("task" in item.texte for item in task_items)
+        assert all("task" in item.text for item in task_items)
 
     def test_card_item_order_by_position(self, db_session, sample_card):
         """Test de tri par position."""
@@ -375,10 +375,10 @@ class TestCardItemModel:
             ("Second", 2),
         ]
 
-        for texte, position in items_data:
+        for text, position in items_data:
             item = CardItem(
                 card_id=sample_card.id,
-                texte=texte,
+                text=text,
                 position=position,
             )
             db_session.add(item)
@@ -390,7 +390,7 @@ class TestCardItemModel:
 
         # Vérifier qu'ils sont dans le bon ordre
         expected_order = ["First", "Second", "Third"]
-        actual_order = [item.texte for item in sorted_items]
+        actual_order = [item.text for item in sorted_items]
         assert actual_order == expected_order
 
     def test_card_item_delete(self, db_session, sample_items):
@@ -406,71 +406,71 @@ class TestCardItemModel:
         assert deleted_item is None
 
     def test_card_item_string_fields_validation(self, db_session, sample_card):
-        """Test des validations des champs texte."""
-        # Test avec texte à la limite de la longueur
+        """Test des validations des champs text."""
+        # Test avec text à la limite de la longueur
         max_length_text = "x" * 500  # Longueur maximale selon le modèle
 
         item = CardItem(
             card_id=sample_card.id,
-            texte=max_length_text,
+            text=max_length_text,
         )
 
         db_session.add(item)
         db_session.commit()
 
-        assert item.texte == max_length_text
-        assert len(item.texte) == 500
+        assert item.text == max_length_text
+        assert len(item.text) == 500
 
     def test_card_item_special_characters(self, db_session, sample_card):
         """Test avec des caractères spéciaux."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="Élément spécial: éèàçù 🚀 中文",
+            text="Élément spécial: éèàçù 🚀 中文",
         )
 
         db_session.add(item)
         db_session.commit()
 
-        assert item.texte == "Élément spécial: éèàçù 🚀 中文"
+        assert item.text == "Élément spécial: éèàçù 🚀 中文"
 
     def test_card_item_unicode_emojis(self, db_session, sample_card):
         """Test avec des emojis Unicode."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="Emoji Task 🎯🚀✨ ✅",
+            text="Emoji Task 🎯🚀✨ ✅",
         )
 
         db_session.add(item)
         db_session.commit()
 
-        assert item.texte == "Emoji Task 🎯🚀✨ ✅"
+        assert item.text == "Emoji Task 🎯🚀✨ ✅"
 
     def test_card_item_empty_text(self, db_session, sample_card):
-        """Test avec un texte vide."""
+        """Test avec un text vide."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="",
+            text="",
         )
 
         db_session.add(item)
         db_session.commit()
 
-        assert item.texte == ""
+        assert item.text == ""
 
     def test_card_item_whitespace_only(self, db_session, sample_card):
-        """Test avec un texte ne contenant que des espaces."""
+        """Test avec un text ne contenant que des espaces."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="   ",
+            text="   ",
         )
 
         db_session.add(item)
         db_session.commit()
 
-        assert item.texte == "   "
+        assert item.text == "   "
 
     def test_card_item_multiline_text(self, db_session, sample_card):
-        """Test avec du texte multiligne."""
+        """Test avec du text multiligne."""
         multiline_text = """Ceci est une tâche multiligne.
 Sous-tâche 1
 Sous-tâche 2
@@ -478,13 +478,13 @@ Notes supplémentaires"""
 
         item = CardItem(
             card_id=sample_card.id,
-            texte=multiline_text,
+            text=multiline_text,
         )
 
         db_session.add(item)
         db_session.commit()
 
-        assert item.texte == multiline_text
+        assert item.text == multiline_text
 
     def test_card_item_position_management(self, db_session, sample_card):
         """Test de gestion des positions."""
@@ -494,7 +494,7 @@ Notes supplémentaires"""
         for i, pos in enumerate(positions):
             item = CardItem(
                 card_id=sample_card.id,
-                texte=f"Position test {i}",
+                text=f"Position test {i}",
                 position=pos,
             )
             db_session.add(item)
@@ -512,7 +512,7 @@ Notes supplémentaires"""
         """Test avec des positions négatives."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="Negative position test",
+            text="Negative position test",
             position=-5,
         )
 
@@ -525,7 +525,7 @@ Notes supplémentaires"""
         """Test avec position zéro."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="Zero position test",
+            text="Zero position test",
             position=0,
         )
 
@@ -538,7 +538,7 @@ Notes supplémentaires"""
         """Test avec des positions très grandes."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="Large position test",
+            text="Large position test",
             position=999999,
         )
 
@@ -551,7 +551,7 @@ Notes supplémentaires"""
         """Test de basculement du statut terminé."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="Toggle test",
+            text="Toggle test",
             is_done=False,
         )
 
@@ -577,7 +577,7 @@ Notes supplémentaires"""
         # Essayer de créer un élément avec un card_id invalide
         item = CardItem(
             card_id=99999,  # N'existe pas
-            texte="Invalid card test",
+            text="Invalid card test",
         )
 
         db_session.add(item)
@@ -600,7 +600,7 @@ Notes supplémentaires"""
         # Créer un élément
         item = CardItem(
             card_id=sample_card.id,
-            texte="Cascade test",
+            text="Cascade test",
         )
 
         db_session.add(item)
@@ -623,7 +623,7 @@ Notes supplémentaires"""
         for i in range(10):
             item = CardItem(
                 card_id=sample_card.id,
-                texte=f"Batch item {i}",
+                text=f"Batch item {i}",
                 position=i,
             )
             items.append(item)
@@ -632,7 +632,7 @@ Notes supplémentaires"""
         db_session.commit()
 
         # Vérifier que tous ont été créés
-        count = db_session.query(CardItem).filter(CardItem.texte.like("Batch item %")).count()
+        count = db_session.query(CardItem).filter(CardItem.text.like("Batch item %")).count()
         assert count == 10
 
     def test_card_item_bulk_update(self, db_session, sample_card):
@@ -641,7 +641,7 @@ Notes supplémentaires"""
         for i in range(5):
             item = CardItem(
                 card_id=sample_card.id,
-                texte=f"Original item {i}",
+                text=f"Original item {i}",
                 is_done=False,
                 position=i,
             )
@@ -669,10 +669,10 @@ Notes supplémentaires"""
             ("Completed item", True, 4),
         ]
 
-        for texte, is_done, position in items_data:
+        for text, is_done, position in items_data:
             item = CardItem(
                 card_id=sample_card.id,
-                texte=texte,
+                text=text,
                 is_done=is_done,
                 position=position,
             )
@@ -684,11 +684,11 @@ Notes supplémentaires"""
         from sqlalchemy import and_
 
         completed_tasks = (
-            db_session.query(CardItem).filter(and_(CardItem.is_done == True, CardItem.texte.like("%task%"))).all()
+            db_session.query(CardItem).filter(and_(CardItem.is_done == True, CardItem.text.like("%task%"))).all()
         )
 
         assert len(completed_tasks) == 1
-        assert completed_tasks[0].texte == "Important task"
+        assert completed_tasks[0].text == "Important task"
 
     def test_card_item_pagination(self, db_session, sample_card):
         """Test de pagination des résultats."""
@@ -696,7 +696,7 @@ Notes supplémentaires"""
         for i in range(20):
             item = CardItem(
                 card_id=sample_card.id,
-                texte=f"Pagination item {i}",
+                text=f"Pagination item {i}",
                 position=i,
             )
             db_session.add(item)
@@ -717,7 +717,7 @@ Notes supplémentaires"""
         for i in range(5):
             item = CardItem(
                 card_id=sample_card.id,
-                texte=f"Active item {i}",
+                text=f"Active item {i}",
                 is_done=False,
                 position=i,
             )
@@ -726,7 +726,7 @@ Notes supplémentaires"""
         for i in range(3):
             item = CardItem(
                 card_id=sample_card.id,
-                texte=f"Completed item {i}",
+                text=f"Completed item {i}",
                 is_done=True,
                 position=i + 10,
             )
@@ -748,7 +748,7 @@ Notes supplémentaires"""
         with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
             item = CardItem(
                 card_id=sample_card.id,
-                texte="Error test",
+                text="Error test",
             )
 
             db_session.add(item)
@@ -759,7 +759,7 @@ Notes supplémentaires"""
         """Test de la représentation textuelle de l'objet."""
         item = CardItem(
             card_id=sample_card.id,
-            texte="Representation test",
+            text="Representation test",
         )
 
         db_session.add(item)
@@ -773,13 +773,13 @@ Notes supplémentaires"""
         """Test de l'égalité entre objets."""
         item1 = CardItem(
             card_id=sample_card.id,
-            texte="Equality test 1",
+            text="Equality test 1",
             position=1,
         )
 
         item2 = CardItem(
             card_id=sample_card.id,
-            texte="Equality test 2",
+            text="Equality test 2",
             position=2,
         )
 
@@ -801,7 +801,7 @@ Notes supplémentaires"""
             status=UserStatus.ACTIVE,
         )
         kanban_list = KanbanList(name="Constraint Test List", order=1)
-        card = Card(titre="Constraint Test Card", list_id=1, created_by=1)
+        card = Card(title="Constraint Test Card", list_id=1, created_by=1)
 
         db_session.add(user)
         db_session.add(kanban_list)
@@ -811,7 +811,7 @@ Notes supplémentaires"""
         # Test que card_id ne peut pas être NULL
         item = CardItem(
             card_id=None,  # Devrait échouer
-            texte="Test",
+            text="Test",
         )
 
         db_session.add(item)
@@ -820,10 +820,10 @@ Notes supplémentaires"""
 
         db_session.rollback()
 
-        # Test que texte ne peut pas être NULL
+        # Test que text ne peut pas être NULL
         item = CardItem(
             card_id=card.id,
-            texte=None,  # Devrait échouer
+            text=None,  # Devrait échouer
         )
 
         db_session.add(item)
@@ -831,20 +831,20 @@ Notes supplémentaires"""
             db_session.commit()
 
     def test_card_item_text_length_constraint(self, db_session, sample_card):
-        """Test de la contrainte de longueur du texte."""
-        # Le modèle limite le texte à 500 caractères
+        """Test de la contrainte de longueur du text."""
+        # Le modèle limite le text à 500 caractères
         exact_length_text = "x" * 500
 
         item = CardItem(
             card_id=sample_card.id,
-            texte=exact_length_text,
+            text=exact_length_text,
         )
 
         db_session.add(item)
         db_session.commit()
 
-        assert len(item.texte) == 500
-        assert item.texte == exact_length_text
+        assert len(item.text) == 500
+        assert item.text == exact_length_text
 
     def test_card_item_progress_tracking(self, db_session, sample_card):
         """Test du suivi de progression."""
@@ -855,7 +855,7 @@ Notes supplémentaires"""
         for i in range(total_items):
             item = CardItem(
                 card_id=sample_card.id,
-                texte=f"Task {i+1}",
+                text=f"Task {i+1}",
                 is_done=(i < completed_items),
                 position=i,
             )
@@ -881,7 +881,7 @@ Notes supplémentaires"""
         for i in range(3):
             item = CardItem(
                 card_id=sample_card.id,
-                texte=f"Original {i}",
+                text=f"Original {i}",
                 position=i * 10,  # 0, 10, 20
             )
             db_session.add(item)
@@ -902,7 +902,7 @@ Notes supplémentaires"""
         )
 
         expected_texts = ["Original 2", "Original 0", "Original 1"]
-        actual_texts = [item.texte for item in reordered_items]
+        actual_texts = [item.text for item in reordered_items]
 
         assert actual_texts == expected_texts
 
@@ -917,10 +917,10 @@ Notes supplémentaires"""
             ("Tester et déployer", False),
         ]
 
-        for texte, is_done in checklist_items:
+        for text, is_done in checklist_items:
             item = CardItem(
                 card_id=sample_card.id,
-                texte=texte,
+                text=text,
                 is_done=is_done,
                 position=len(checklist_items),
             )
@@ -935,9 +935,9 @@ Notes supplémentaires"""
 
         assert len(all_checklist_items) == len(checklist_items)
 
-        # Vérifier que les textes correspondent
-        actual_texts = [item.texte for item in all_checklist_items]
-        expected_texts = [texte for texte, _ in checklist_items]
+        # Vérifier que les texts correspondent
+        actual_texts = [item.text for item in all_checklist_items]
+        expected_texts = [text for text, _ in checklist_items]
         assert actual_texts == expected_texts
 
     def test_card_item_data_types(self, db_session, sample_card):
@@ -953,10 +953,10 @@ Notes supplémentaires"""
             ("numbers_and_text", "Task 123: Do something"),
         ]
 
-        for suffix, texte in test_items:
+        for suffix, text in test_items:
             item = CardItem(
                 card_id=sample_card.id,
-                texte=texte,
+                text=text,
             )
             db_session.add(item)
 

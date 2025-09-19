@@ -164,7 +164,7 @@ class TestBoardSettingsRouter:
                 assert exc_info.value.detail == "Accès réservé aux administrateurs"
 
     def test_get_board_title_public_access(self):
-        """Test de récupération du titre du tableau (accès public)."""
+        """Test de récupération du title du tableau (accès public)."""
         with patch("app.routers.board_settings.board_settings_service.get_board_title") as mock_get_title:
             mock_get_title.return_value = "Mon Tableau Kanban"
 
@@ -177,7 +177,7 @@ class TestBoardSettingsRouter:
                 assert result["title"] == "Mon Tableau Kanban"
 
     def test_update_board_title_as_admin(self, admin_user):
-        """Test de mise à jour du titre du tableau en tant qu'admin."""
+        """Test de mise à jour du title du tableau en tant qu'admin."""
         with patch("app.routers.board_settings.board_settings_service.set_board_title") as mock_set_title:
             mock_setting = BoardSettingsResponse(
                 id=2,
@@ -207,7 +207,7 @@ class TestBoardSettingsRouter:
                     assert result.setting_value == "Nouveau Titre"
 
     def test_update_board_title_as_user_forbidden(self, regular_user):
-        """Test de tentative de mise à jour du titre en tant qu'utilisateur régulier."""
+        """Test de tentative de mise à jour du title en tant qu'utilisateur régulier."""
         with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
             mock_current_user.return_value = regular_user
 
@@ -388,7 +388,7 @@ class TestBoardSettingsRouter:
         assert exc_info.value.detail == "Accès réservé aux administrateurs"
 
     def test_update_board_title_with_empty_title(self, admin_user):
-        """Test de mise à jour du titre avec une chaîne vide."""
+        """Test de mise à jour du title avec une chaîne vide."""
         with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
             mock_current_user.return_value = admin_user
 

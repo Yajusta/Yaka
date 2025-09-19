@@ -27,7 +27,7 @@ import './index.css';
 interface Filters {
     search: string;
     assignee_id: number | null;
-    priorite: string | null;
+    priority: string | null;
     label_id: number | null;
 }
 
@@ -48,7 +48,7 @@ const KanbanApp = () => {
     const [filters, setFilters] = useState<Filters>({
         search: '',
         assignee_id: null,
-        priorite: null,
+        priority: null,
         label_id: null
     });
     const [showCardForm, setShowCardForm] = useState<boolean>(false);
@@ -110,7 +110,7 @@ const KanbanApp = () => {
         if (filters.search) {
             const searchTerm = normalizeText(filters.search);
             filtered = filtered.filter(card =>
-                normalizeText(card.titre).includes(searchTerm) ||
+                normalizeText(card.title).includes(searchTerm) ||
                 (card.description && normalizeText(card.description).includes(searchTerm))
             );
         }
@@ -121,8 +121,8 @@ const KanbanApp = () => {
         }
 
         // Priority filter
-        if (filters.priorite) {
-            filtered = filtered.filter(card => card.priorite === filters.priorite);
+        if (filters.priority) {
+            filtered = filtered.filter(card => card.priority === filters.priority);
         }
 
         // Label filter
