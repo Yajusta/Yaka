@@ -1,25 +1,18 @@
 """Application FastAPI principale pour l'application Kanban."""
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from .database import engine, Base
-from .models import User, Label, Card, KanbanList, BoardSettings
 from alembic import command
 from alembic.config import Config
-from .routers import (
-    auth_router,
-    users_router,
-    labels_router,
-    cards_router,
-    lists_router,
-    board_settings_router,
-)
-from .routers.card_items import router as card_items_router
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from .database import Base, SessionLocal, engine
+from .models import BoardSettings, Card, KanbanList, Label, User
+from .routers import auth_router, board_settings_router, cards_router, labels_router, lists_router, users_router
 from .routers.card_comments import router as card_comments_router
-from .services.user import create_admin_user, get_user_by_email
+from .routers.card_items import router as card_items_router
 from .services.board_settings import initialize_default_settings
-from .services.email import FROM_ADDRESS, SMTP_USER, SMTP_HOST
-from .database import SessionLocal
+from .services.email import FROM_ADDRESS, SMTP_HOST, SMTP_USER
+from .services.user import create_admin_user, get_user_by_email
 from .utils.demo_mode import is_demo_mode
 from .utils.demo_reset import reset_database, setup_fresh_database
 
@@ -29,6 +22,7 @@ def ensure_database_exists():
     """Vérifie si la base de données existe et la crée si nécessaire."""
     try:
         import os
+
         from sqlalchemy import inspect
 
         # Vérifier si le répertoire data existe
@@ -130,11 +124,17 @@ app = FastAPI(
 )
 
 # Configuration CORS pour permettre les requêtes depuis le frontend
+import os
+
+# En développement, autoriser localhost; en production, utiliser les variables d'environnement
+frontend_url = os.getenv("BASE_URL", "http://localhost:5173")
+allowed_origins = [frontend_url]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En production, spécifier les domaines autorisés
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 
