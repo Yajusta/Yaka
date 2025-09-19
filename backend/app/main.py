@@ -4,6 +4,8 @@ from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from .database import Base, SessionLocal, engine
 from .models import BoardSettings, Card, KanbanList, Label, User
@@ -137,6 +139,58 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Force HTTPS en production
+if os.getenv("ENVIRONMENT", "production").lower() == "production":
+    app.add_middleware(HTTPSRedirectMiddleware)
+
+# Trusted Host middleware pour prévenir les attaques Host Header
+base_url = os.getenv("BASE_URL", "http://localhost:5173")
+# Extraire le domaine de BASE_URL (enlever http:// ou https://)
+domain = base_url.replace("http://", "").replace("https://", "").split(":")[0]
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["localhost", "127.0.0.1", domain],
+)
+
+# Ajouter les headers de sécurité via middleware personnalisé
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+
+        # Security headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+
+        # Content Security Policy (CSP)
+        if os.getenv("ENVIRONMENT") == "production":
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                "style-src 'self' 'unsafe-inline'; "
+                "img-src 'self' data: https:; "
+                "font-src 'self'; "
+                "connect-src 'self'; "
+                "frame-ancestors 'none'; "
+                "form-action 'self';"
+            )
+
+        # HSTS en production HTTPS uniquement
+        if os.getenv("ENVIRONMENT") == "production":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Inclure les routeurs
 app.include_router(auth_router)
