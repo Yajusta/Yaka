@@ -1,20 +1,21 @@
 """Script de réinitialisation de la base de données pour le mode démo."""
 
 import os
-from app.database import engine, Base
-from app.models import User, Label, Card, KanbanList, BoardSettings, CardItem
-from app.services.user import create_admin_user, get_user_by_email
-from app.services.board_settings import initialize_default_settings
-from app.utils.demo_mode import is_demo_mode
-from app.services.kanban_list import create_list
-from app.services.label import create_label
-from app.services.card import create_card
-from app.services.card_item import create_item as create_card_item
-from app.schemas.kanban_list import KanbanListCreate
-from app.schemas.label import LabelCreate
+
+from app.database import Base, engine
+from app.models import BoardSettings, Card, CardComment, CardHistory, CardItem, KanbanList, Label, User
+from app.models.card import CardPriority
 from app.schemas.card import CardCreate
 from app.schemas.card_item import CardItemCreate
-from app.models.card import CardPriority
+from app.schemas.kanban_list import KanbanListCreate
+from app.schemas.label import LabelCreate
+from app.services.board_settings import initialize_default_settings
+from app.services.card import create_card
+from app.services.card_item import create_item as create_card_item
+from app.services.kanban_list import create_list
+from app.services.label import create_label
+from app.services.user import create_admin_user, get_user_by_email
+from app.utils.demo_mode import is_demo_mode
 from sqlalchemy.orm import sessionmaker
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -156,6 +157,12 @@ def delete_all_data(db):
 
     # Supprimer d'abord les éléments de checklist
     db.query(CardItem).delete()
+
+    # Supprimer les commentaires sur les cartes
+    db.query(CardComment).delete()
+
+    # Supprimer l'historique des cartes
+    db.query(CardHistory).delete()
 
     # Supprimer les relations many-to-many entre cartes et étiquettes
     from app.database import engine
