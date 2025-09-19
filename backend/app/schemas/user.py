@@ -11,12 +11,13 @@ def _validate_email(value: str | None) -> str | None:
     """Valide une adresse email basique sans dépendance externe."""
     if value is None:
         return None
+    value = value.strip()
     if "@" not in value or value.count("@") != 1:
         raise ValueError("Adresse email invalide")
     local_part, domain = value.split("@", 1)
     if not local_part or not domain or "." not in domain:
         raise ValueError("Adresse email invalide")
-    return value
+    return value.lower()
 
 
 class UserBase(BaseModel):

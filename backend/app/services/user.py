@@ -33,14 +33,18 @@ def get_user(db: Session, user_id: int) -> Optional[User]:
     )
 
 
-def get_user_by_email(db: Session, email: str) -> Optional[User]:
-    """Récupérer un utilisateur par son email."""
+def get_user_by_email(db: Session, email: str | None) -> Optional[User]:
+    """Recuperer un utilisateur par son email (insensible a la casse)."""
+    if email is None:
+        return None
+    normalized_email = email.strip().lower()
     return (
         db.query(User)
-        .filter(and_(User.__table__.c.email == email, User.__table__.c.status != UserStatus.DELETED))
+        .filter(
+            and_(func.lower(User.__table__.c.email) == normalized_email, User.__table__.c.status != UserStatus.DELETED)
+        )
         .first()
     )
-
 
 def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
     """Récupérer une liste d'utilisateurs."""
@@ -51,7 +55,7 @@ def create_user(db: Session, user: UserCreate) -> User:
     """Créer un nouvel utilisateur traditionnel (mot de passe fourni)."""
     hashed_password = get_password_hash(user.password)
     db_user = User(
-        email=user.email,
+        email=user.email.lower(),
         password_hash=hashed_password,
         display_name=user.display_name,
         role=user.role,
@@ -65,12 +69,17 @@ def create_user(db: Session, user: UserCreate) -> User:
 
 
 def invite_user(db: Session, email: str, display_name: str | None, role: UserRole) -> User:
-    """Créer un utilisateur en tant qu'invité et envoyer un email d'invitation."""
+    """Creer un utilisateur en tant qu'invite et envoyer un email d'invitation."""
     invite_token = secrets.token_urlsafe(32)
     invited_at = get_system_timezone_datetime()
+    normalized_email = email.strip().lower()
+
+    existing_user = get_user_by_email(db, normalized_email)
+    if existing_user and existing_user.status != UserStatus.DELETED:
+        raise ValueError("Un utilisateur avec cet email existe deja")
 
     db_user = User(
-        email=email,
+        email=normalized_email,
         display_name=display_name,
         role=role,
         language="fr",
@@ -83,11 +92,10 @@ def invite_user(db: Session, email: str, display_name: str | None, role: UserRol
     db.refresh(db_user)
 
     try:
-        email_service.send_invitation(email=email, display_name=display_name, token=invite_token)
-    except Exception as e:
-        print(f"ERROR: Erreur lors de l'envoi de l'email d'invitation à {email}: {e}")
+        email_service.send_invitation(email=normalized_email, display_name=display_name, token=invite_token)
+    except Exception as exc:
+        print(f"ERROR: Erreur lors de l'envoi de l'email d'invitation a {normalized_email}: {exc}")
     return db_user
-
 
 def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[User]:
     """Mettre à jour un utilisateur."""
@@ -96,6 +104,13 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[
         return None
 
     update_data = user_update.model_dump(exclude_unset=True)
+
+    if "email" in update_data and update_data["email"] is not None:
+        normalized_email = update_data["email"].strip().lower()
+        update_data["email"] = normalized_email
+        existing_user = get_user_by_email(db, normalized_email)
+        if existing_user and existing_user.id != user_id:
+            raise ValueError("Un utilisateur avec cet email existe deja")
 
     # Hacher le nouveau mot de passe si fourni
     if "password" in update_data:
@@ -187,7 +202,8 @@ def delete_user(db: Session, user_id: int) -> bool:
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     """Authentifier un utilisateur."""
-    if user := get_user_by_email(db, email):
+    normalized_email = email.strip().lower()
+    if user := get_user_by_email(db, normalized_email):
         return (
             user
             if user.status == UserStatus.ACTIVE and verify_password(password, getattr(user, "password_hash"))
@@ -196,11 +212,10 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     else:
         return None
 
-
 def create_admin_user(db: Session) -> User:
     """Créer un utilisateur administrateur par défaut."""
     default_lang = getenv("DEFAULT_LANGUAGE", "en")
-    default_email = getenv("DEFAULT_ADMIN_EMAIL", "admin@yaka.local")
+    default_email = getenv("DEFAULT_ADMIN_EMAIL", "admin@yaka.local").lower()
     default_password = getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
     default_display_name = getenv("DEFAULT_ADMIN_DISPLAY_NAME", "Admin")
     admin_data = UserCreate(

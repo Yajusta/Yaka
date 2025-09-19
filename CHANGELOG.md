@@ -1,5 +1,12 @@
 # Changelog
 
+## 2025-09-19
+
+- [SECU] Configuration du token JWT en variable d'environnement.
+- [FIX] Possibilité de créer des utilisateurs avec un email déjà utilisé (mais sur un utilisateur supprimé).
+- [FIX] Nettoyage des commentaires dans la démo.
+- [TESTS] Ajout de tests unitaires.
+
 ## 2025-09-10
 
 - [NEW] Interface multilingue (français / anglais).

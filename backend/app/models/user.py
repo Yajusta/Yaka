@@ -6,7 +6,7 @@ import datetime
 import enum
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import DateTime, Enum, Integer, String
+from sqlalchemy import DateTime, Enum, Integer, String, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -36,7 +36,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(String, index=True, nullable=False)
     password_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     display_name: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER, nullable=False)
@@ -49,6 +49,16 @@ class User(Base):
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime(timezone=True), onupdate=get_system_timezone_datetime
+    )
+
+    __table_args__ = (
+        Index(
+            "ux_users_email_not_deleted",
+            "email",
+            unique=True,
+            sqlite_where=text("status != 'DELETED'"),
+            postgresql_where=text("status != 'DELETED'"),
+        ),
     )
 
     # Relations

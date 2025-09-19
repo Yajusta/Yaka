@@ -166,9 +166,17 @@ class TestGetUserByEmail:
         user = sample_users[0]
         result = get_user_by_email(db_session, user.email.upper())
 
-        # Note: La fonction actuelle est sensible à la casse
-        # Ce test vérifie le comportement actuel
-        assert result is None
+        assert result is not None
+        assert result.id == user.id
+        assert result.email == user.email
+
+    def test_get_user_by_email_trims_whitespace(self, db_session, sample_users):
+        """Les espaces superflus autour de l'adresse ne doivent pas affecter la recherche."""
+        user = sample_users[0]
+        result = get_user_by_email(db_session, f"  {user.email}  ")
+
+        assert result is not None
+        assert result.id == user.id
 
     def test_get_deleted_user_by_email(self, db_session, sample_users):
         """Test de récupération d'un utilisateur supprimé par email."""
@@ -224,6 +232,14 @@ class TestCreateUser:
         user_data = UserCreate(**sample_user_data)
         user = create_user(db_session, user_data)
 
+    def test_create_user_normalizes_email(self, db_session, sample_user_data):
+        """L'adresse email doit être stockée en minuscules."""
+        payload = sample_user_data.copy()
+        payload["email"] = "MixedCaseUser@Example.Com"
+        user_data = UserCreate(**payload)
+        user = create_user(db_session, user_data)
+
+        assert user.email == "mixedcaseuser@example.com"
         assert user.id is not None
         assert user.email == user_data.email
         assert user.display_name == user_data.display_name
@@ -295,9 +311,8 @@ class TestInviteUser:
 
     def test_invite_user_successfully(self, db_session, mock_email_service):
         """Test d'invitation réussie d'un utilisateur."""
-        user = invite_user(
-            db_session, email="newinvite@example.com", display_name="New Invited User", role=UserRole.USER
-        )
+        mixed_email = "NewInvite@Example.Com"
+        user = invite_user(db_session, email=mixed_email, display_name="New Invited User", role=UserRole.USER)
 
         assert user.id is not None
         assert user.email == "newinvite@example.com"
@@ -308,8 +323,9 @@ class TestInviteUser:
         assert user.invited_at is not None
         assert user.password_hash is None
 
-        # Vérifier que l'email d'invitation a été envoyé
         mock_email_service.send_invitation.assert_called_once()
+        _, sent_args = mock_email_service.send_invitation.call_args
+        assert sent_args["email"] == "newinvite@example.com"
 
     def test_invite_user_without_display_name(self, db_session, mock_email_service):
         """Test d'invitation d'un utilisateur sans nom d'affichage."""
@@ -328,9 +344,10 @@ class TestInviteUser:
         mock_email_service.send_invitation.assert_called_once()
 
     def test_invite_user_duplicate_email(self, db_session, sample_users):
-        """Test d'invitation d'un utilisateur avec un email déjà existant."""
-        with pytest.raises(Exception):
-            invite_user(db_session, email=sample_users[0].email, display_name="Duplicate Invite", role=UserRole.USER)
+        """Test d'invitation d'un utilisateur avec un email déjà existant (insensible à la casse)."""
+        existing_email = sample_users[0].email.upper()
+        with pytest.raises(ValueError):
+            invite_user(db_session, email=existing_email, display_name="Duplicate Invite", role=UserRole.USER)
 
     def test_invite_user_email_sending_failure(self, db_session, mock_email_service):
         """Test d'échec d'envoi d'email lors de l'invitation."""
@@ -354,14 +371,13 @@ class TestUpdateUser:
     def test_update_user_email(self, db_session, sample_users):
         """Test de mise à jour de l'email d'un utilisateur."""
         user = sample_users[0]
-        update_data = UserUpdate(email="newemail@example.com")
+        update_data = UserUpdate(email="NewEmail@Example.com")
 
         result = update_user(db_session, user.id, update_data)
 
         assert result is not None
         assert result.email == "newemail@example.com"
 
-        # Vérifier que l'utilisateur est bien mis à jour dans la base
         db_user = get_user(db_session, user.id)
         assert db_user.email == "newemail@example.com"
 
@@ -693,6 +709,14 @@ class TestAuthenticateUser:
         """Test d'authentification réussie."""
         user = sample_users[0]
         result = authenticate_user(db_session, user.email, "password123")
+
+    def test_authenticate_user_case_insensitive_email(self, db_session, sample_users):
+        """L'authentification doit ignorer la casse de l'email."""
+        user = sample_users[0]
+        result = authenticate_user(db_session, user.email.upper(), "password123")
+
+        assert result is not None
+        assert result.id == user.id
 
         assert result is not None
         assert result.id == user.id

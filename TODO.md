@@ -5,6 +5,7 @@
 [ ] Déplacement horizontal quand il y a un scroll.
 [x] Prendre en compte le fuseau horaire.
 [x] Affichage d'une tache sur un écran de téléphone déborde en hauteur.
+[x] Pouvoir recréer un utilisateur qui a été supprimé.
 
 ## Features
 
@@ -14,6 +15,7 @@
 [ ] Pièces jointes sur les tâches.
 [x] Multilangue.
 [x] Mettre en avant quand une date arrive à échéance.
+[ ] Définir l'utilisateur par défaut dans les variables d'environnement.
 
 ## Frontend
 
