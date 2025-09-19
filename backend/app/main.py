@@ -48,6 +48,7 @@ def ensure_database_exists():
             latest_version = script.get_current_head()
 
             from sqlalchemy import text
+
             with engine.connect() as conn:
                 conn.execute(text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)"))
                 conn.execute(text(f"INSERT INTO alembic_version (version_num) VALUES ('{latest_version}')"))
@@ -154,9 +155,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Force HTTPS en production
-if os.getenv("ENVIRONMENT", "production").lower() == "production":
-    app.add_middleware(HTTPSRedirectMiddleware)
 
 # Trusted Host middleware pour prévenir les attaques Host Header
 base_url = os.getenv("BASE_URL", "http://localhost:5173")
