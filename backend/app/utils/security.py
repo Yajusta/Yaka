@@ -1,13 +1,18 @@
 """Security utilities for authentication and authorisation."""
 
-import bcrypt
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+
+import bcrypt
+from dotenv import load_dotenv
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
+load_dotenv()
+
 # JWT configuration
-SECRET_KEY = "votre_cle_secrete_tres_securisee_ici"  # to change in production
+SECRET_KEY = os.getenv("JWT_SECRET", "your_jwt_secret_key_here")  # to change in production
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 

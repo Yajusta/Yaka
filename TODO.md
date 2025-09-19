@@ -23,8 +23,7 @@
 
 ## Backend
 
-[ ] **HIGH** Rendre la clé JWT paramétrable
-[ ] Dans update_user, un utilisateur peut changer son email sans validation
+[x] **HIGH** Rendre la clé JWT paramétrable
 [ ] Rate limiting sur l'authentification.
 [ ] Tokens d'invitation/réinitialisation sans expiration
 [ ] Ajouter un niveau d'utilisateur "read only".
