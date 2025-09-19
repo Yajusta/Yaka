@@ -44,10 +44,10 @@ class Card(Base):
     __tablename__ = "cards"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    titre: Mapped[str] = mapped_column(String, nullable=False)
+    title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    date_echeance: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True)
-    priorite: Mapped[CardPriority] = mapped_column(Enum(CardPriority), default=CardPriority.MEDIUM, nullable=False)
+    due_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True)
+    priority: Mapped[CardPriority] = mapped_column(Enum(CardPriority), default=CardPriority.MEDIUM, nullable=False)
     list_id: Mapped[int] = mapped_column(Integer, ForeignKey("kanban_lists.id"), nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     assignee_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
@@ -79,4 +79,4 @@ class Card(Base):
 
     def __str__(self) -> str:
         """Représentation de la carte."""
-        return f"<Card(id={self.id}, titre='{self.titre}')>"
+        return f"<Card(id={self.id}, title='{self.title}')>"

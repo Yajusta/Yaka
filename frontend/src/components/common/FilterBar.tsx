@@ -17,14 +17,14 @@ interface User {
 
 interface Label {
     id: number;
-    nom: string;
-    couleur: string;
+    name: string;
+    color: string;
 }
 
 interface Filters {
     search: string;
     assignee_id: number | null;
-    priorite: string | null;
+    priority: string | null;
     label_id: number | null;
 }
 
@@ -109,17 +109,17 @@ export const FilterBar = ({
         onFiltersChange({
             search: '',
             assignee_id: null,
-            priorite: null,
+            priority: null,
             label_id: null
         });
     };
 
     const hasActiveFilters = (): boolean => {
-        return !!(filters.search || filters.assignee_id || filters.priorite || filters.label_id);
+        return !!(filters.search || filters.assignee_id || filters.priority || filters.label_id);
     };
 
     const getActiveFilterCount = (): number => {
-        return [filters.assignee_id, filters.priorite, filters.label_id].filter(Boolean).length;
+        return [filters.assignee_id, filters.priority, filters.label_id].filter(Boolean).length;
     };
 
     const getSelectedUser = (): User | undefined => {
@@ -212,9 +212,9 @@ export const FilterBar = ({
                                                 <div className="flex items-center">
                                                     <div
                                                         className="w-3 h-3 rounded-full mr-2 border border-border/50"
-                                                        style={{ backgroundColor: label.couleur }}
+                                                        style={{ backgroundColor: label.color }}
                                                     />
-                                                    {label.nom}
+                                                    {label.name}
                                                 </div>
                                             </SelectItem>
                                         ))}
@@ -226,8 +226,8 @@ export const FilterBar = ({
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-foreground">{t('card.priority')}</label>
                                 <Select
-                                    value={filters.priorite || ''}
-                                    onValueChange={(value) => handleFilterChange('priorite', value)}
+                                    value={filters.priority || ''}
+                                    onValueChange={(value) => handleFilterChange('priority', value)}
                                 >
                                     <SelectTrigger className="bg-background/50 border-border/50">
                                         <SelectValue placeholder={t('filter.allPriorities')} />
@@ -279,18 +279,18 @@ export const FilterBar = ({
                                     />
                                 </Badge>
                             )}
-                            {filters.priorite && (
+                            {filters.priority && (
                                 <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                                    {t('card.priority')}: {filters.priorite === 'low' ? t('priority.low') : filters.priorite === 'medium' ? t('priority.medium') : filters.priorite === 'high' ? t('priority.high') : filters.priorite}
+                                    {t('card.priority')}: {filters.priority === 'low' ? t('priority.low') : filters.priority === 'medium' ? t('priority.medium') : filters.priority === 'high' ? t('priority.high') : filters.priority}
                                     <X
                                         className="h-3 w-3 ml-1 cursor-pointer hover:text-primary/80"
-                                        onClick={() => handleFilterChange('priorite', null)}
+                                        onClick={() => handleFilterChange('priority', null)}
                                     />
                                 </Badge>
                             )}
                             {getSelectedLabel() && (
                                 <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                                    {t('card.labels')}: {getSelectedLabel()?.nom}
+                                    {t('card.labels')}: {getSelectedLabel()?.name}
                                     <X
                                         className="h-3 w-3 ml-1 cursor-pointer hover:text-primary/80"
                                         onClick={() => handleFilterChange('label_id', null)}

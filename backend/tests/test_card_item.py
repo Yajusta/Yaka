@@ -60,9 +60,9 @@ def sample_kanban_list(db_session):
 def sample_card(db_session, sample_kanban_list, sample_user):
     """Fixture pour créer une carte de test."""
     card = Card(
-        titre="Test Card",
+        title="Test Card",
         description="Test Description",
-        priorite=CardPriority.MEDIUM,
+        priority=CardPriority.MEDIUM,
         list_id=sample_kanban_list.id,
         created_by=sample_user.id,
     )
@@ -76,9 +76,9 @@ def sample_card(db_session, sample_kanban_list, sample_user):
 def sample_card_items(db_session, sample_card):
     """Fixture pour créer des éléments de carte de test."""
     items = [
-        CardItem(card_id=sample_card.id, texte="Item 1", is_done=False, position=1),
-        CardItem(card_id=sample_card.id, texte="Item 2", is_done=True, position=2),
-        CardItem(card_id=sample_card.id, texte="Item 3", is_done=False, position=3),
+        CardItem(card_id=sample_card.id, text="Item 1", is_done=False, position=1),
+        CardItem(card_id=sample_card.id, text="Item 2", is_done=True, position=2),
+        CardItem(card_id=sample_card.id, text="Item 3", is_done=False, position=3),
     ]
 
     for item in items:
@@ -103,9 +103,9 @@ class TestGetItemsForCard:
         assert items[0].position == 1
         assert items[1].position == 2
         assert items[2].position == 3
-        assert items[0].texte == "Item 1"
-        assert items[1].texte == "Item 2"
-        assert items[2].texte == "Item 3"
+        assert items[0].text == "Item 1"
+        assert items[1].text == "Item 2"
+        assert items[2].text == "Item 3"
 
     def test_get_items_empty(self, db_session, sample_card):
         """Test de récupération d'une carte sans éléments."""
@@ -128,8 +128,8 @@ class TestGetItemsForCard:
             (sample_card.id, "Item 2", True, 2),
         ]
 
-        for card_id, texte, is_done, position in items_data:
-            item = CardItem(card_id=card_id, texte=texte, is_done=is_done, position=position)
+        for card_id, text, is_done, position in items_data:
+            item = CardItem(card_id=card_id, text=text, is_done=is_done, position=position)
             db_session.add(item)
 
         db_session.commit()
@@ -140,24 +140,24 @@ class TestGetItemsForCard:
         assert items[0].position == 1
         assert items[1].position == 2
         assert items[2].position == 3
-        assert items[0].texte == "Item 1"
-        assert items[1].texte == "Item 2"
-        assert items[2].texte == "Item 3"
+        assert items[0].text == "Item 1"
+        assert items[1].text == "Item 2"
+        assert items[2].text == "Item 3"
 
     def test_get_items_multiple_cards(self, db_session, sample_user, sample_kanban_list):
         """Test de récupération d'éléments pour plusieurs cartes différentes."""
         # Créer deux cartes
         card1 = Card(
-            titre="Card 1",
+            title="Card 1",
             description="Description 1",
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             list_id=sample_kanban_list.id,
             created_by=sample_user.id,
         )
         card2 = Card(
-            titre="Card 2",
+            title="Card 2",
             description="Description 2",
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             list_id=sample_kanban_list.id,
             created_by=sample_user.id,
         )
@@ -168,8 +168,8 @@ class TestGetItemsForCard:
         db_session.refresh(card2)
 
         # Ajouter des éléments à chaque carte
-        item1 = CardItem(card_id=card1.id, texte="Card 1 Item", position=1)
-        item2 = CardItem(card_id=card2.id, texte="Card 2 Item", position=1)
+        item1 = CardItem(card_id=card1.id, text="Card 1 Item", position=1)
+        item2 = CardItem(card_id=card2.id, text="Card 2 Item", position=1)
         db_session.add(item1)
         db_session.add(item2)
         db_session.commit()
@@ -180,8 +180,8 @@ class TestGetItemsForCard:
 
         assert len(items1) == 1
         assert len(items2) == 1
-        assert items1[0].texte == "Card 1 Item"
-        assert items2[0].texte == "Card 2 Item"
+        assert items1[0].text == "Card 1 Item"
+        assert items2[0].text == "Card 2 Item"
 
 
 class TestCreateItem:
@@ -190,13 +190,13 @@ class TestCreateItem:
     def test_create_item_success(self, db_session, sample_card):
         """Test de création réussie d'un élément."""
         # Utiliser une position explicite pour éviter les problèmes avec SQLite
-        item_data = CardItemCreate(card_id=sample_card.id, texte="Nouvel élément", is_done=False, position=1)
+        item_data = CardItemCreate(card_id=sample_card.id, text="Nouvel élément", is_done=False, position=1)
 
         result = create_item(db_session, item_data)
 
         assert result.id is not None
         assert result.card_id == sample_card.id
-        assert result.texte == "Nouvel élément"
+        assert result.text == "Nouvel élément"
         assert result.is_done is False
         assert result.position == 1
         assert result.created_at is not None
@@ -204,7 +204,7 @@ class TestCreateItem:
 
     def test_create_item_with_position(self, db_session, sample_card):
         """Test de création d'un élément avec une position spécifique."""
-        item_data = CardItemCreate(card_id=sample_card.id, texte="Élément avec position", is_done=True, position=5)
+        item_data = CardItemCreate(card_id=sample_card.id, text="Élément avec position", is_done=True, position=5)
 
         result = create_item(db_session, item_data)
 
@@ -213,7 +213,7 @@ class TestCreateItem:
 
     def test_create_item_nonexistent_card(self, db_session):
         """Test de création d'un élément pour une carte inexistante."""
-        item_data = CardItemCreate(card_id=99999, texte="Élément carte inexistante", is_done=False)
+        item_data = CardItemCreate(card_id=99999, text="Élément carte inexistante", is_done=False)
 
         with pytest.raises(ValueError, match="Carte introuvable"):
             create_item(db_session, item_data)
@@ -222,7 +222,7 @@ class TestCreateItem:
         """Test que les positions existantes sont décalées."""
         initial_items = get_items_for_card(db_session, sample_card.id)
 
-        item_data = CardItemCreate(card_id=sample_card.id, texte="Élément inséré", position=2)
+        item_data = CardItemCreate(card_id=sample_card.id, text="Élément inséré", position=2)
 
         new_item = create_item(db_session, item_data)
         updated_items = get_items_for_card(db_session, sample_card.id)
@@ -237,7 +237,7 @@ class TestCreateItem:
         """Test de gestion des erreurs d'intégrité avec réessais."""
         # Note: Le retry ne s'applique que lorsque position=None (auto-position)
         # Pour ce test, nous simulons le cas où position=None
-        item_data = CardItemCreate(card_id=sample_card.id, texte="Élément test", position=None)
+        item_data = CardItemCreate(card_id=sample_card.id, text="Élément test", position=None)
 
         # Simuler une erreur d'intégrité sur la première tentative
         with patch.object(db_session, "execute"):  # Éviter l'erreur SQLite
@@ -257,7 +257,7 @@ class TestCreateItem:
     def test_create_item_max_retries_exceeded(self, db_session, sample_card):
         """Test d'échec après nombre maximum de tentatives."""
         # Note: Le retry ne s'applique que lorsque position=None (auto-position)
-        item_data = CardItemCreate(card_id=sample_card.id, texte="Élément test", position=None)
+        item_data = CardItemCreate(card_id=sample_card.id, text="Élément test", position=None)
 
         # Simuler des erreurs d'intégrité répétées
         with patch.object(db_session, "execute"):  # Éviter l'erreur SQLite
@@ -272,25 +272,25 @@ class TestCreateItem:
     def test_create_item_unicode_content(self, db_session, sample_card):
         """Test de création avec contenu Unicode."""
         item_data = CardItemCreate(
-            card_id=sample_card.id, texte="Élément avec caractères spéciaux: éèàçù 🚀 中文", is_done=False, position=1
+            card_id=sample_card.id, text="Élément avec caractères spéciaux: éèàçù 🚀 中文", is_done=False, position=1
         )
 
         result = create_item(db_session, item_data)
 
-        assert result.texte == "Élément avec caractères spéciaux: éèàçù 🚀 中文"
+        assert result.text == "Élément avec caractères spéciaux: éèàçù 🚀 中文"
 
     def test_create_item_max_text_length(self, db_session, sample_card):
-        """Test de création avec texte de longueur maximale."""
+        """Test de création avec text de longueur maximale."""
         max_text = "x" * 500
-        item_data = CardItemCreate(card_id=sample_card.id, texte=max_text, is_done=False, position=1)
+        item_data = CardItemCreate(card_id=sample_card.id, text=max_text, is_done=False, position=1)
 
         result = create_item(db_session, item_data)
 
-        assert result.texte == max_text
+        assert result.text == max_text
 
     def test_create_item_serializable_isolation(self, db_session, sample_card):
         """Test que le niveau d'isolation SERIALIZABLE est utilisé pour l'auto-position."""
-        item_data = CardItemCreate(card_id=sample_card.id, texte="Test isolation", position=None)
+        item_data = CardItemCreate(card_id=sample_card.id, text="Test isolation", position=None)
 
         # Note: SQLite ne supporte pas SET TRANSACTION ISOLATION LEVEL SERIALIZABLE
         # Ce test vérifie simplement que la fonction essaie de l'utiliser
@@ -302,7 +302,7 @@ class TestCreateItem:
 
     def test_create_item_position_zero(self, db_session, sample_card):
         """Test de création avec position 0."""
-        item_data = CardItemCreate(card_id=sample_card.id, texte="Élément position 0", is_done=False, position=0)
+        item_data = CardItemCreate(card_id=sample_card.id, text="Élément position 0", is_done=False, position=0)
 
         result = create_item(db_session, item_data)
 
@@ -311,12 +311,12 @@ class TestCreateItem:
     def test_create_item_existing_items_shift(self, db_session, sample_card):
         """Test de décalage des éléments existants."""
         # Créer un élément existant à la position 1
-        existing_item = CardItem(card_id=sample_card.id, texte="Existant", position=1)
+        existing_item = CardItem(card_id=sample_card.id, text="Existant", position=1)
         db_session.add(existing_item)
         db_session.commit()
 
         # Insérer un nouvel élément à la position 1
-        item_data = CardItemCreate(card_id=sample_card.id, texte="Nouveau", position=1)
+        item_data = CardItemCreate(card_id=sample_card.id, text="Nouveau", position=1)
 
         new_item = create_item(db_session, item_data)
 
@@ -332,18 +332,18 @@ class TestUpdateItem:
     def test_update_item_success(self, db_session, sample_card_items):
         """Test de mise à jour réussie d'un élément."""
         item = sample_card_items[0]
-        item_update = CardItemUpdate(texte="Texte mis à jour", is_done=True)
+        item_update = CardItemUpdate(text="Texte mis à jour", is_done=True)
 
         result = update_item(db_session, item.id, item_update)
 
         assert result is not None
-        assert result.texte == "Texte mis à jour"
+        assert result.text == "Texte mis à jour"
         assert result.is_done is True
         assert result.position == item.position
 
     def test_update_item_nonexistent(self, db_session):
         """Test de mise à jour d'un élément inexistant."""
-        item_update = CardItemUpdate(texte="Nouveau texte")
+        item_update = CardItemUpdate(text="Nouveau text")
 
         result = update_item(db_session, 99999, item_update)
 
@@ -384,7 +384,7 @@ class TestUpdateItem:
         original_id = item.id
         original_created_at = item.created_at
 
-        item_update = CardItemUpdate(texte="Test")
+        item_update = CardItemUpdate(text="Test")
 
         with patch.object(CardItem, "PROTECTED_FIELDS", {"id", "created_at"}):
             result = update_item(db_session, item.id, item_update)
@@ -395,14 +395,14 @@ class TestUpdateItem:
     def test_update_item_partial_update(self, db_session, sample_card_items):
         """Test de mise à jour partielle (seulement certains champs)."""
         item = sample_card_items[0]
-        original_texte = item.texte
+        original_text = item.text
         original_is_done = item.is_done
 
-        item_update = CardItemUpdate(texte="Texte modifié")
+        item_update = CardItemUpdate(text="Texte modifié")
 
         result = update_item(db_session, item.id, item_update)
 
-        assert result.texte == "Texte modifié"
+        assert result.text == "Texte modifié"
         assert result.is_done == original_is_done  # Non modifié
         assert result.position == item.position
 
@@ -413,20 +413,20 @@ class TestUpdateItem:
 
         result = update_item(db_session, item.id, item_update)
 
-        assert result.texte == item.texte
+        assert result.text == item.text
         assert result.is_done == item.is_done
         assert result.position == item.position
 
     def test_update_item_unicode_text(self, db_session, sample_card_items):
-        """Test de mise à jour avec texte Unicode."""
+        """Test de mise à jour avec text Unicode."""
         item = sample_card_items[0]
         unicode_text = "Texte avec caractères spéciaux: éèàçù 🚀 中文"
 
-        item_update = CardItemUpdate(texte=unicode_text)
+        item_update = CardItemUpdate(text=unicode_text)
 
         result = update_item(db_session, item.id, item_update)
 
-        assert result.texte == unicode_text
+        assert result.text == unicode_text
 
     def test_update_item_same_position(self, db_session, sample_card_items):
         """Test de mise à jour avec la même position."""
@@ -527,7 +527,7 @@ class TestDeleteItem:
     def test_delete_item_single_item(self, db_session, sample_card):
         """Test de suppression du seul élément d'une carte."""
         # Créer un seul élément
-        item = CardItem(card_id=sample_card.id, texte="Seul élément", position=1)
+        item = CardItem(card_id=sample_card.id, text="Seul élément", position=1)
         db_session.add(item)
         db_session.commit()
         db_session.refresh(item)
@@ -552,15 +552,15 @@ class TestCardItemIntegration:
     def test_create_update_delete_flow(self, db_session, sample_card):
         """Test du flux complet CRUD."""
         # Créer
-        item_data = CardItemCreate(card_id=sample_card.id, texte="Élément de test", is_done=False, position=1)
+        item_data = CardItemCreate(card_id=sample_card.id, text="Élément de test", is_done=False, position=1)
         created_item = create_item(db_session, item_data)
 
         # Mettre à jour
-        update_data = CardItemUpdate(texte="Texte modifié", is_done=True)
+        update_data = CardItemUpdate(text="Texte modifié", is_done=True)
         updated_item = update_item(db_session, created_item.id, update_data)
 
         assert updated_item is not None
-        assert updated_item.texte == "Texte modifié"
+        assert updated_item.text == "Texte modifié"
         assert updated_item.is_done is True
 
         # Supprimer
@@ -574,7 +574,7 @@ class TestCardItemIntegration:
     def test_multiple_items_position_management(self, db_session, sample_card):
         """Test de gestion de positions avec plusieurs éléments."""
         # Créer plusieurs éléments
-        items_data = [CardItemCreate(card_id=sample_card.id, texte=f"Item {i}", position=i) for i in range(1, 6)]
+        items_data = [CardItemCreate(card_id=sample_card.id, text=f"Item {i}", position=i) for i in range(1, 6)]
 
         created_items = []
         for item_data in items_data:
@@ -608,7 +608,7 @@ class TestCardItemIntegration:
         # Créer plusieurs éléments séquentiellement
         items = []
         for i in range(5):
-            item_data = CardItemCreate(card_id=sample_card.id, texte=f"Item {i}", position=i + 1)
+            item_data = CardItemCreate(card_id=sample_card.id, text=f"Item {i}", position=i + 1)
             item = create_item(db_session, item_data)
             items.append(item)
 
@@ -624,15 +624,15 @@ class TestCardItemIntegration:
             assert updated_item.is_done == (i % 2 == 0)
 
     def test_edge_case_empty_text(self, db_session, sample_card):
-        """Test avec texte vide (devrait échouer à cause de la validation Pydantic)."""
-        # Ce test vérifie que la validation Pydantic empêche les textes vides
+        """Test avec text vide (devrait échouer à cause de la validation Pydantic)."""
+        # Ce test vérifie que la validation Pydantic empêche les texts vides
         with pytest.raises(ValueError):
-            CardItemCreate(card_id=sample_card.id, texte="", is_done=False)
+            CardItemCreate(card_id=sample_card.id, text="", is_done=False)
 
     def test_edge_case_negative_position(self, db_session, sample_card):
         """Test avec position négative (devrait échouer à cause de la validation Pydantic)."""
         with pytest.raises(ValueError):
-            CardItemCreate(card_id=sample_card.id, texte="Test", position=-1)
+            CardItemCreate(card_id=sample_card.id, text="Test", position=-1)
 
 
 class TestCardItemSecurity:
@@ -642,11 +642,11 @@ class TestCardItemSecurity:
         """Test de prévention d'injection SQL."""
         malicious_text = "'; DROP TABLE card_items; --"
 
-        item_data = CardItemCreate(card_id=sample_card.id, texte=malicious_text, is_done=False, position=1)
+        item_data = CardItemCreate(card_id=sample_card.id, text=malicious_text, is_done=False, position=1)
 
-        # La création devrait fonctionner (le texte est stocké littéralement)
+        # La création devrait fonctionner (le text est stocké littéralement)
         result = create_item(db_session, item_data)
-        assert result.texte == malicious_text
+        assert result.text == malicious_text
 
         # Vérifier que la table n'a pas été supprimée
         items = get_items_for_card(db_session, sample_card.id)
@@ -656,21 +656,21 @@ class TestCardItemSecurity:
         """Test de prévention XSS."""
         xss_text = "<script>alert('XSS')</script><img src='x' onerror='alert(1)'>"
 
-        item_data = CardItemCreate(card_id=sample_card.id, texte=xss_text, is_done=False, position=1)
+        item_data = CardItemCreate(card_id=sample_card.id, text=xss_text, is_done=False, position=1)
 
         result = create_item(db_session, item_data)
-        assert result.texte == xss_text  # Stocké tel quel
+        assert result.text == xss_text  # Stocké tel quel
 
         # La protection XSS devrait être gérée au niveau du frontend/affichage
 
     def test_unauthorized_card_access(self, db_session, sample_card):
         """Test d'accès non autorisé à une carte (logique métier)."""
         # Ce test vérifie que seuls les éléments de la carte spécifiée sont affectés
-        item_data = CardItemCreate(card_id=sample_card.id, texte="Item sécurisé", position=1)
+        item_data = CardItemCreate(card_id=sample_card.id, text="Item sécurisé", position=1)
         created_item = create_item(db_session, item_data)
 
         # Tenter de mettre à jour avec un card_id différent dans les données
-        update_data = CardItemUpdate(texte="Tentative de modification")
+        update_data = CardItemUpdate(text="Tentative de modification")
 
         # La mise à jour ne devrait pas permettre de changer le card_id
         updated_item = update_item(db_session, created_item.id, update_data)

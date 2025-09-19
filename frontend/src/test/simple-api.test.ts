@@ -43,11 +43,11 @@ describe('Simple API Tests', () => {
   it('should validate card data structure', () => {
     const card = {
       id: 1,
-      titre: 'Test Card',
+      title: 'Test Card',
       description: 'Test Description',
       list_id: 1,
-      priorite: 'moyenne',
-      date_echeance: null,
+      priority: 'medium',
+      due_date: null,
       assignee_id: 1,
       created_by: 1,
       is_archived: false,
@@ -56,9 +56,9 @@ describe('Simple API Tests', () => {
     }
 
     expect(card).toHaveProperty('id')
-    expect(card).toHaveProperty('titre')
+    expect(card).toHaveProperty('title')
     expect(card).toHaveProperty('list_id')
-    expect(card.titre).toBe('Test Card')
+    expect(card.title).toBe('Test Card')
     expect(card.list_id).toBe(1)
   })
 

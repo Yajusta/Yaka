@@ -61,9 +61,9 @@ def sample_kanban_list(db_session):
 def sample_card(db_session, sample_kanban_list, sample_user):
     """Fixture pour créer une carte de test."""
     card = Card(
-        titre="Test Card",
+        title="Test Card",
         description="Test Description",
-        priorite=CardPriority.MEDIUM,
+        priority=CardPriority.MEDIUM,
         list_id=sample_kanban_list.id,
         created_by=sample_user.id,
     )
@@ -276,16 +276,16 @@ class TestGetCardHistory:
         """Test de récupération d'historique pour plusieurs cartes différentes."""
         # Créer deux cartes
         card1 = Card(
-            titre="Card 1",
+            title="Card 1",
             description="Description 1",
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             list_id=sample_kanban_list.id,
             created_by=sample_user.id,
         )
         card2 = Card(
-            titre="Card 2",
+            title="Card 2",
             description="Description 2",
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             list_id=sample_kanban_list.id,
             created_by=sample_user.id,
         )

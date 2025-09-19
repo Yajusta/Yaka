@@ -82,8 +82,8 @@ def regular_user(db_session):
 def test_label(db_session):
     """Fixture pour créer un libellé de test."""
     label = Label(
-        nom="Bug",
-        couleur="#FF0000",
+        name="Bug",
+        color="#FF0000",
         description="Problème à corriger",
         created_by=1,
         created_at=datetime.utcnow(),
@@ -104,8 +104,8 @@ class TestLabelsRouter:
             mock_labels = [
                 LabelResponse(
                     id=1,
-                    nom="Bug",
-                    couleur="#FF0000",
+                    name="Bug",
+                    color="#FF0000",
                     description="Problème à corriger",
                     created_by=1,
                     created_at=datetime.utcnow(),
@@ -124,7 +124,7 @@ class TestLabelsRouter:
                     result = asyncio.run(read_labels(0, 100, mock_db.return_value.__enter__.return_value, admin_user))
 
                     assert len(result) == 1
-                    assert result[0].nom == "Bug"
+                    assert result[0].name == "Bug"
 
     def test_list_labels_success_regular_user(self, regular_user):
         """Test de récupération des libellés par un utilisateur régulier avec succès."""
@@ -132,8 +132,8 @@ class TestLabelsRouter:
             mock_labels = [
                 LabelResponse(
                     id=1,
-                    nom="Feature",
-                    couleur="#00FF00",
+                    name="Feature",
+                    color="#00FF00",
                     description="Nouvelle fonctionnalité",
                     created_by=1,
                     created_at=datetime.utcnow(),
@@ -154,7 +154,7 @@ class TestLabelsRouter:
                     )
 
                     assert len(result) == 1
-                    assert result[0].nom == "Feature"
+                    assert result[0].name == "Feature"
 
     def test_list_labels_empty(self, admin_user):
         """Test de récupération des libellés quand il n'y en a aucun."""
@@ -174,12 +174,12 @@ class TestLabelsRouter:
 
     def test_create_label_success_admin(self, admin_user):
         """Test de création d'un libellé par un admin avec succès."""
-        label_data = LabelCreate(nom="Urgent", couleur="#FF0000", description="Priorité haute")
+        label_data = LabelCreate(name="Urgent", color="#FF0000", description="Priorité haute")
 
         mock_label = LabelResponse(
             id=1,
-            nom="Urgent",
-            couleur="#FF0000",
+            name="Urgent",
+            color="#FF0000",
             description="Priorité haute",
             created_by=1,
             created_at=datetime.utcnow(),
@@ -203,12 +203,12 @@ class TestLabelsRouter:
                             create_label_route(label_data, mock_db.return_value.__enter__.return_value, admin_user)
                         )
 
-                    assert result.nom == "Urgent"
-                    assert result.couleur == "#FF0000"
+                    assert result.name == "Urgent"
+                    assert result.color == "#FF0000"
 
     def test_create_label_permission_denied(self, regular_user):
         """Test de création d'un libellé par un utilisateur régulier (devrait échouer)."""
-        label_data = LabelCreate(nom="Urgent", couleur="#FF0000", description="Priorité haute")
+        label_data = LabelCreate(name="Urgent", color="#FF0000", description="Priorité haute")
 
         with patch("app.routers.labels.require_admin") as mock_require_admin:
             mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
@@ -245,7 +245,7 @@ class TestLabelsRouter:
 
     def test_create_label_empty_name(self, admin_user):
         """Test de création d'un libellé avec un nom vide."""
-        label_data = LabelCreate(nom="", couleur="#FF0000", description="Priorité haute")
+        label_data = LabelCreate(name="", color="#FF0000", description="Priorité haute")
 
         with patch("app.routers.labels.require_admin") as mock_require_admin:
             mock_require_admin.return_value = admin_user
@@ -273,7 +273,7 @@ class TestLabelsRouter:
 
     def test_create_label_duplicate_name(self, admin_user):
         """Test de création d'un libellé avec un nom dupliqué."""
-        label_data = LabelCreate(nom="Bug", couleur="#FF0000", description="Problème à corriger")
+        label_data = LabelCreate(name="Bug", color="#FF0000", description="Problème à corriger")
 
         with patch("app.routers.labels.get_current_active_user") as mock_current_user:
             mock_current_user.return_value = admin_user
@@ -295,12 +295,12 @@ class TestLabelsRouter:
 
     def test_update_label_success_admin(self, admin_user):
         """Test de mise à jour d'un libellé par un admin avec succès."""
-        update_data = LabelUpdate(nom="Updated Bug", couleur="#FFFF00", description="Problème critique")
+        update_data = LabelUpdate(name="Updated Bug", color="#FFFF00", description="Problème critique")
 
         mock_label = LabelResponse(
             id=1,
-            nom="Updated Bug",
-            couleur="#FFFF00",
+            name="Updated Bug",
+            color="#FFFF00",
             description="Problème critique",
             created_by=1,
             created_at=datetime.utcnow(),
@@ -321,12 +321,12 @@ class TestLabelsRouter:
                         update_label_route(1, update_data, mock_db.return_value.__enter__.return_value, admin_user)
                     )
 
-                    assert result.nom == "Updated Bug"
-                    assert result.couleur == "#FFFF00"
+                    assert result.name == "Updated Bug"
+                    assert result.color == "#FFFF00"
 
     def test_update_label_permission_denied(self, regular_user):
         """Test de mise à jour d'un libellé par un utilisateur régulier (devrait échouer)."""
-        update_data = LabelUpdate(nom="Updated Bug", couleur="#FFFF00", description="Problème critique")
+        update_data = LabelUpdate(name="Updated Bug", color="#FFFF00", description="Problème critique")
 
         with patch("app.routers.labels.require_admin") as mock_require_admin:
             mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
@@ -347,7 +347,7 @@ class TestLabelsRouter:
 
     def test_update_label_not_found(self, admin_user):
         """Test de mise à jour d'un libellé qui n'existe pas."""
-        update_data = LabelUpdate(nom="Updated Bug")
+        update_data = LabelUpdate(name="Updated Bug")
 
         with patch("app.routers.labels.label_service.update_label") as mock_update:
             mock_update.return_value = None
@@ -439,8 +439,8 @@ class TestLabelsRouter:
                 assert exc_info.value.status_code == 422
 
     def test_invalid_color_format(self, admin_user):
-        """Test avec un format de couleur invalide."""
-        label_data = LabelCreate(nom="Test Label", couleur="invalid_color", description="Test description")
+        """Test avec un format de color invalide."""
+        label_data = LabelCreate(name="Test Label", color="invalid_color", description="Test description")
 
         with patch("app.routers.labels.require_admin") as mock_require_admin:
             mock_require_admin.return_value = admin_user
@@ -450,7 +450,7 @@ class TestLabelsRouter:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
                 with patch("app.routers.labels.label_service.get_label_by_name") as mock_get_by_name:
-                    mock_get_by_name.side_effect = ValueError("Format de couleur invalide")
+                    mock_get_by_name.side_effect = ValueError("Format de color invalide")
 
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
@@ -458,7 +458,7 @@ class TestLabelsRouter:
                         )
 
                     assert exc_info.value.status_code == 400
-                    assert exc_info.value.detail == "Format de couleur invalide"
+                    assert exc_info.value.detail == "Format de color invalide"
 
     def test_service_error_handling(self, admin_user):
         """Test de gestion des erreurs de service."""

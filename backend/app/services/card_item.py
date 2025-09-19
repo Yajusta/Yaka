@@ -40,7 +40,7 @@ def create_item(db: Session, item: CardItemCreate) -> CardItem:
 
             db_item = CardItem(
                 card_id=item.card_id,
-                texte=item.texte,
+                text=item.text,
                 is_done=item.is_done,
                 position=position,
             )

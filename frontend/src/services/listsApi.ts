@@ -250,7 +250,7 @@ export const listsApi = {
                 
                 // Notifier le progrès avant de déplacer la carte
                 if (onProgress) {
-                    onProgress(i, cards.length, card.titre);
+                    onProgress(i, cards.length, card.title);
                 }
 
                 // Déplacer la carte à la fin de la liste cible

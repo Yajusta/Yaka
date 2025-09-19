@@ -340,15 +340,15 @@ export const cardItemsService = {
         const response = await api.get<CardChecklistItem[]>(`/card-items/card/${cardId}`);
         return response.data;
     },
-    async createItem(cardId: number, texte: string, position?: number, is_done: boolean = false): Promise<CardChecklistItem> {
-        const payload: any = { card_id: cardId, texte, is_done };
+    async createItem(cardId: number, text: string, position?: number, is_done: boolean = false): Promise<CardChecklistItem> {
+        const payload: any = { card_id: cardId, text, is_done };
         if (typeof position === 'number') {
             payload.position = position;
         }
         const response = await api.post<CardChecklistItem>('/card-items/', payload);
         return response.data;
     },
-    async updateItem(itemId: number, data: Partial<Pick<CardChecklistItem, 'texte' | 'is_done' | 'position'>>): Promise<CardChecklistItem> {
+    async updateItem(itemId: number, data: Partial<Pick<CardChecklistItem, 'text' | 'is_done' | 'position'>>): Promise<CardChecklistItem> {
         const response = await api.put<CardChecklistItem>(`/card-items/${itemId}`, data);
         return response.data;
     },

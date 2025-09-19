@@ -29,7 +29,7 @@ async def read_cards(
     list_id: int = Query(None, description="Filtrer par liste Kanban"),
     statut: str = Query(None, description="Filtrer par statut (compatibilité)"),
     assignee_id: int = Query(None, description="Filtrer par utilisateur assigné"),
-    priorite: CardPriority = Query(None, description="Filtrer par priorité"),
+    priority: CardPriority = Query(None, description="Filtrer par priorité"),
     label_id: int = Query(None, description="Filtrer par libellé"),
     search: str = Query(None, description="Recherche textuelle"),
     include_archived: bool = Query(False, description="Inclure les cartes archivées"),
@@ -51,7 +51,7 @@ async def read_cards(
     filters = CardFilter(
         list_id=effective_list_id,
         assignee_id=assignee_id,
-        priorite=priorite,
+        priority=priority,
         label_id=label_id,
         search=search,
         include_archived=include_archived,

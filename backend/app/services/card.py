@@ -44,8 +44,8 @@ def get_cards(db: Session, filters: CardFilter, skip: int = 0, limit: int = 100)
         query = query.filter(Card.assignee_id == filters.assignee_id)
 
     # Filtrer par priorité
-    if filters.priorite:
-        query = query.filter(Card.priorite == filters.priorite)
+    if filters.priority:
+        query = query.filter(Card.priority == filters.priority)
 
     # Filtrer par libellé
     if filters.label_id:
@@ -54,7 +54,7 @@ def get_cards(db: Session, filters: CardFilter, skip: int = 0, limit: int = 100)
     # Recherche textuelle
     if filters.search:
         search_term = f"%{filters.search}%"
-        query = query.filter(or_(Card.titre.ilike(search_term), Card.description.ilike(search_term)))
+        query = query.filter(or_(Card.title.ilike(search_term), Card.description.ilike(search_term)))
 
     # Trier par position dans la liste, puis par date de création
     query = query.order_by(Card.position, Card.created_at)
@@ -100,10 +100,10 @@ def create_card(db: Session, card: CardCreate, created_by: int) -> Card:
         position = (max_position or 0) + 1
 
     db_card = Card(
-        titre=card.titre,
+        title=card.title,
         description=card.description,
-        date_echeance=card.date_echeance,
-        priorite=card.priorite,
+        due_date=card.due_date,
+        priority=card.priority,
         list_id=target_list_id,
         position=position,
         assignee_id=card.assignee_id,
@@ -122,7 +122,7 @@ def create_card(db: Session, card: CardCreate, created_by: int) -> Card:
     # Créer une entrée d'historique pour la création de la carte
     try:
         history_entry = CardHistoryCreate(
-            card_id=db_card.id, user_id=created_by, action="create", description=f"Carte « {db_card.titre} » créée"
+            card_id=db_card.id, user_id=created_by, action="create", description=f"Carte « {db_card.title} » créée"
         )
         card_history_service.create_card_history_entry(db, history_entry)
     except Exception as e:
@@ -154,12 +154,12 @@ def update_card(
             raise ValueError("Aucune liste valide n'est disponible pour mettre à jour la carte")
     # Stocker les valeurs avant modification pour l'historique
     old_values = {}
-    if "titre" in update_data:
-        old_values["titre"] = db_card.titre
+    if "title" in update_data:
+        old_values["title"] = db_card.title
     if "description" in update_data:
         old_values["description"] = db_card.description
-    if "priorite" in update_data:
-        old_values["priorite"] = db_card.priorite
+    if "priority" in update_data:
+        old_values["priority"] = db_card.priority
     if "assignee_id" in update_data:
         old_values["assignee_id"] = db_card.assignee_id
 
@@ -179,14 +179,14 @@ def update_card(
     if updated_by:
         try:
             # Priorité changée
-            if "priorite" in old_values and old_values["priorite"] != db_card.priorite:
+            if "priority" in old_values and old_values["priority"] != db_card.priority:
                 priority_labels = {
                     CardPriority.LOW: "faible",
                     CardPriority.MEDIUM: "moyenne",
                     CardPriority.HIGH: "élevée",
                 }
-                old_priority_label = priority_labels.get(old_values["priorite"], str(old_values["priorite"]))
-                new_priority_label = priority_labels.get(db_card.priorite, str(db_card.priorite))
+                old_priority_label = priority_labels.get(old_values["priority"], str(old_values["priority"]))
+                new_priority_label = priority_labels.get(db_card.priority, str(db_card.priority))
                 history_entry = CardHistoryCreate(
                     card_id=db_card.id,
                     user_id=updated_by,
@@ -199,12 +199,12 @@ def update_card(
             if "assignee_id" in old_values and old_values["assignee_id"] != db_card.assignee_id:
                 _assignee_changed(old_values, db, db_card, updated_by)
 
-            if other_changes := [key for key in old_values if key not in ["priorite", "assignee_id"]]:
+            if other_changes := [key for key in old_values if key not in ["priority", "assignee_id"]]:
                 history_entry = CardHistoryCreate(
                     card_id=db_card.id,
                     user_id=updated_by,
                     action="update",
-                    description=f"Carte « {db_card.titre} » modifiée",
+                    description=f"Carte « {db_card.title} » modifiée",
                 )
                 card_history_service.create_card_history_entry(db, history_entry)
 
@@ -275,7 +275,7 @@ def archive_card(db: Session, card_id: int, archived_by: Optional[int] = None) -
                 card_id=db_card.id,
                 user_id=archived_by,
                 action="archive",
-                description=f"Carte « {db_card.titre} » archivée",
+                description=f"Carte « {db_card.title} » archivée",
             )
             card_history_service.create_card_history_entry(db, history_entry)
         except Exception as e:
@@ -301,7 +301,7 @@ def unarchive_card(db: Session, card_id: int, unarchived_by: Optional[int] = Non
                 card_id=db_card.id,
                 user_id=unarchived_by,
                 action="unarchive",
-                description=f"Carte « {db_card.titre} » restaurée",
+                description=f"Carte « {db_card.title} » restaurée",
             )
             card_history_service.create_card_history_entry(db, history_entry)
         except Exception as e:
@@ -381,7 +381,7 @@ def move_card(
                 card_id=db_card.id,
                 user_id=moved_by,
                 action="move",
-                description=f"Carte « {db_card.titre} » déplacée de « {old_list_name} » à « {new_list_name} »",
+                description=f"Carte « {db_card.title} » déplacée de « {old_list_name} » à « {new_list_name} »",
             )
             card_history_service.create_card_history_entry(db, history_entry)
         except Exception as e:

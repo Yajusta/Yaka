@@ -28,10 +28,10 @@ interface CardFormProps {
 }
 
 interface FormData {
-    titre: string;
+    title: string;
     description: string;
-    date_echeance: string;
-    priorite: string;
+    due_date: string;
+    priority: string;
     assignee_id: number | null;
     label_ids: number[];
     list_id: number;
@@ -40,11 +40,11 @@ interface FormData {
 const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: CardFormProps) => {
     const { t } = useTranslation();
     const [formData, setFormData] = useState<FormData>({
-        titre: '',
+        title: '',
         description: '',
-        date_echeance: '',
+        due_date: '',
         // use internal english keys by default
-        priorite: 'medium',
+        priority: 'medium',
         assignee_id: null,
         label_ids: [],
         list_id: defaultListId ?? -1 // Utiliser -1 par défaut pour laisser le backend choisir la plus basse
@@ -53,7 +53,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
     const { users } = useUsers();
     const [labels, setLabels] = useState<LabelType[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
-    const [checklist, setChecklist] = useState<{ id?: number; texte: string; is_done: boolean; position: number }[]>([]);
+    const [checklist, setChecklist] = useState<{ id?: number; text: string; is_done: boolean; position: number }[]>([]);
     const [newItemText, setNewItemText] = useState<string>('');
 
     const loadData = useCallback(async (): Promise<void> => {
@@ -75,10 +75,10 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                 await loadData();
                 if (card) {
                     setFormData({
-                        titre: card.titre || '',
+                        title: card.title || '',
                         description: card.description || '',
-                        date_echeance: card.date_echeance || '',
-                        priorite: mapPriorityFromBackend(card.priorite || ''),
+                        due_date: card.due_date || '',
+                        priority: mapPriorityFromBackend(card.priority || ''),
                         assignee_id: card.assignee_id ?? null,
                         label_ids: card.labels?.map(l => l.id) || [],
                         list_id: card.list_id
@@ -86,14 +86,14 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                     // Load existing items for edit
                     try {
                         const items = await cardItemsService.getItems(card.id);
-                        setChecklist(items.map(i => ({ id: i.id, texte: i.texte, is_done: i.is_done, position: i.position })));
+                        setChecklist(items.map(i => ({ id: i.id, text: i.text, is_done: i.is_done, position: i.position })));
                     } catch { /* ignore */ }
                 } else {
                     setFormData({
-                        titre: '',
+                        title: '',
                         description: '',
-                        date_echeance: '',
-                        priorite: CardPriority.MEDIUM,
+                        due_date: '',
+                        priority: CardPriority.MEDIUM,
                         assignee_id: null,
                         label_ids: [],
                         list_id: defaultListId ?? -1 // Utiliser -1 par défaut
@@ -113,10 +113,10 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             // Sanitize payload to match backend schema types (priority mapping delegated to shared util)
 
             const basePayload = {
-                titre: formData.titre,
+                title: formData.title,
                 description: formData.description?.trim() === '' ? null : formData.description,
-                date_echeance: formData.date_echeance && formData.date_echeance !== '' ? formData.date_echeance : null,
-                priorite: mapPriorityToBackend(formData.priorite),
+                due_date: formData.due_date && formData.due_date !== '' ? formData.due_date : null,
+                priority: mapPriorityToBackend(formData.priority),
                 assignee_id: typeof formData.assignee_id === 'number' ? formData.assignee_id : null,
                 list_id: formData.list_id
             };
@@ -146,13 +146,13 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                 // For simplicity, we will upsert items sequentially
                 for (let idx = 0; idx < checklist.length; idx++) {
                     const item = checklist[idx];
-                    if (!item.texte || item.texte.trim() === '') {
+                    if (!item.text || item.text.trim() === '') {
                         continue;
                     }
                     if (item.id) {
-                        await cardItemsService.updateItem(item.id, { texte: item.texte, is_done: item.is_done, position: idx + 1 });
+                        await cardItemsService.updateItem(item.id, { text: item.text, is_done: item.is_done, position: idx + 1 });
                     } else {
-                        await cardItemsService.createItem(savedCard.id, item.texte, idx + 1, item.is_done);
+                        await cardItemsService.createItem(savedCard.id, item.text, idx + 1, item.is_done);
                     }
                 }
                 // Fetch latest to include IDs
@@ -189,7 +189,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
         if (!text) {
             return;
         }
-        setChecklist(prev => [...prev, { texte: text, is_done: false, position: prev.length + 1 }]);
+        setChecklist(prev => [...prev, { text: text, is_done: false, position: prev.length + 1 }]);
         setNewItemText('');
     };
 
@@ -197,9 +197,9 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
         setChecklist(prev => prev.map((it, i) => i === index ? { ...it, is_done: !it.is_done } : it));
     };
 
-    const updateChecklistItemText = (index: number, texte: string): void => {
-        const limited = texte.slice(0, 64);
-        setChecklist(prev => prev.map((it, i) => i === index ? { ...it, texte: limited } : it));
+    const updateChecklistItemText = (index: number, text: string): void => {
+        const limited = text.slice(0, 64);
+        setChecklist(prev => prev.map((it, i) => i === index ? { ...it, text: limited } : it));
     };
 
     const deleteChecklistItem = async (index: number): Promise<void> => {
@@ -272,11 +272,11 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
 
                 <form onSubmit={handleSubmit} className="space-y-3">
                     <div className="space-y-2">
-                        <Label htmlFor="titre">{t('card.title')} *</Label>
+                        <Label htmlFor="title">{t('card.title')} *</Label>
                         <Input
-                            id="titre"
-                            value={formData.titre}
-                            onChange={(e) => setFormData(prev => ({ ...prev, titre: e.target.value }))}
+                            id="title"
+                            value={formData.title}
+                            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                             required
                         />
                     </div>
@@ -317,7 +317,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                         title={t('card.toggleChecklistItem')}
                                                     />
                                                     <Input
-                                                        value={item.texte}
+                                                        value={item.text}
                                                         onChange={(e) => updateChecklistItemText(index, e.target.value)}
                                                         className={item.is_done ? 'line-through text-muted-foreground' : ''}
                                                         maxLength={64}
@@ -354,12 +354,12 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                     variant={formData.label_ids.includes(label.id) ? "default" : "outline"}
                                     className="cursor-pointer"
                                     style={{
-                                        backgroundColor: formData.label_ids.includes(label.id) ? label.couleur : 'transparent',
-                                        borderColor: label.couleur
+                                        backgroundColor: formData.label_ids.includes(label.id) ? label.color : 'transparent',
+                                        borderColor: label.color
                                     }}
                                     onClick={() => handleLabelToggle(label.id)}
                                 >
-                                    {label.nom}
+                                    {label.name}
                                     {formData.label_ids.includes(label.id) && (
                                         <X className="h-3 w-3 ml-1" />
                                     )}
@@ -370,10 +370,10 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
 
                     <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-2">
-                            <Label htmlFor="priorite">{t('card.priority')}</Label>
+                            <Label htmlFor="priority">{t('card.priority')}</Label>
                             <Select
-                                value={formData.priorite}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, priorite: value }))}
+                                value={formData.priority}
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
                             >
                                 <SelectTrigger>
                                     <SelectValue />
@@ -402,12 +402,12 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="date_echeance">{t('card.dueDate')}</Label>
+                            <Label htmlFor="due_date">{t('card.dueDate')}</Label>
                             <Input
-                                id="date_echeance"
+                                id="due_date"
                                 type="date"
-                                value={formData.date_echeance}
-                                onChange={(e) => setFormData(prev => ({ ...prev, date_echeance: e.target.value }))}
+                                value={formData.due_date}
+                                onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
                             />
                         </div>
 

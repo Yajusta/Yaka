@@ -19,8 +19,8 @@ class Label(Base):
     __tablename__ = "labels"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    nom: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
-    couleur: Mapped[str] = mapped_column(String, nullable=False)  # Code hexadécimal
+    name: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
+    color: Mapped[str] = mapped_column(String, nullable=False)  # Code hexadécimal
     created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime(timezone=True), default=get_system_timezone_datetime

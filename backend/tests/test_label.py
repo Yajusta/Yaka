@@ -61,9 +61,9 @@ def sample_user(db_session):
 def sample_labels(db_session, sample_user):
     """Fixture pour créer des libellés d'exemple."""
     labels = [
-        Label(nom="Urgent", couleur="#FF0000", created_by=sample_user.id),
-        Label(nom="Important", couleur="#FFA500", created_by=sample_user.id),
-        Label(nom="Faible priorité", couleur="#00FF00", created_by=sample_user.id),
+        Label(name="Urgent", color="#FF0000", created_by=sample_user.id),
+        Label(name="Important", color="#FFA500", created_by=sample_user.id),
+        Label(name="Faible priorité", color="#00FF00", created_by=sample_user.id),
     ]
 
     for label in labels:
@@ -84,8 +84,8 @@ class TestGetLabel:
         label = get_label(db_session, sample_labels[0].id)
         assert label is not None
         assert label.id == sample_labels[0].id
-        assert label.nom == "Urgent"
-        assert label.couleur == "#FF0000"
+        assert label.name == "Urgent"
+        assert label.color == "#FF0000"
         assert label.created_by == sample_labels[0].created_by
 
     def test_get_nonexistent_label(self, db_session):
@@ -111,7 +111,7 @@ class TestGetLabels:
         """Test de récupération de tous les libellés."""
         labels = get_labels(db_session)
         assert len(labels) == 3
-        noms = [label.nom for label in labels]
+        noms = [label.name for label in labels]
         assert "Urgent" in noms
         assert "Important" in noms
         assert "Faible priorité" in noms
@@ -150,8 +150,8 @@ class TestGetLabelByName:
         """Test de récupération d'un libellé existant par nom."""
         label = get_label_by_name(db_session, "Urgent")
         assert label is not None
-        assert label.nom == "Urgent"
-        assert label.couleur == "#FF0000"
+        assert label.name == "Urgent"
+        assert label.color == "#FF0000"
 
     def test_get_nonexistent_label_by_name(self, db_session):
         """Test de récupération d'un libellé qui n'existe pas par nom."""
@@ -170,13 +170,13 @@ class TestGetLabelByName:
 
     def test_get_label_by_name_with_special_characters(self, db_session, sample_user):
         """Test de récupération d'un libellé avec caractères spéciaux."""
-        special_label = Label(nom="Test Spécial", couleur="#123456", created_by=sample_user.id)
+        special_label = Label(name="Test Spécial", color="#123456", created_by=sample_user.id)
         db_session.add(special_label)
         db_session.commit()
         
         label = get_label_by_name(db_session, "Test Spécial")
         assert label is not None
-        assert label.nom == "Test Spécial"
+        assert label.name == "Test Spécial"
 
 
 class TestCreateLabel:
@@ -184,12 +184,12 @@ class TestCreateLabel:
 
     def test_create_label_successfully(self, db_session, sample_user):
         """Test de création réussie d'un libellé."""
-        label_data = LabelCreate(nom="Nouveau libellé", couleur="#FF00FF")
+        label_data = LabelCreate(name="Nouveau libellé", color="#FF00FF")
         label = create_label(db_session, label_data, sample_user.id)
 
         assert label.id is not None
-        assert label.nom == "Nouveau libellé"
-        assert label.couleur == "#FF00FF"
+        assert label.name == "Nouveau libellé"
+        assert label.color == "#FF00FF"
         assert label.created_by == sample_user.id
         assert label.created_at is not None
 
@@ -206,51 +206,51 @@ class TestCreateLabel:
         db_session.commit()
         db_session.refresh(other_user)
 
-        label_data = LabelCreate(nom="Autre libellé", couleur="#00FFFF")
+        label_data = LabelCreate(name="Autre libellé", color="#00FFFF")
         label = create_label(db_session, label_data, other_user.id)
 
         assert label.created_by == other_user.id
 
     def test_create_label_with_minimal_data(self, db_session, sample_user):
         """Test de création d'un libellé avec données minimales."""
-        label_data = LabelCreate(nom="Simple", couleur="#000000")
+        label_data = LabelCreate(name="Simple", color="#000000")
         label = create_label(db_session, label_data, sample_user.id)
 
-        assert label.nom == "Simple"
-        assert label.couleur == "#000000"
+        assert label.name == "Simple"
+        assert label.color == "#000000"
 
     def test_create_label_duplicate_name(self, db_session, sample_labels, sample_user):
-        """Test de création d'un libellé avec nom en double."""
-        label_data = LabelCreate(nom="Urgent", couleur="#FF0000")
+        """Test de création d'un libellé avec name en double."""
+        label_data = LabelCreate(name="Urgent", color="#FF0000")
         
         with pytest.raises(SQLAlchemyError):
             create_label(db_session, label_data, sample_user.id)
 
     def test_create_label_with_long_name(self, db_session, sample_user):
-        """Test de création d'un libellé avec nom long (32 caractères)."""
+        """Test de création d'un libellé avec name long (32 caractères)."""
         long_name = "A" * 32  # Longueur maximale autorisée
-        label_data = LabelCreate(nom=long_name, couleur="#FF0000")
+        label_data = LabelCreate(name=long_name, color="#FF0000")
         label = create_label(db_session, label_data, sample_user.id)
 
-        assert label.nom == long_name
+        assert label.name == long_name
 
     def test_create_label_with_unicode_name(self, db_session, sample_user):
-        """Test de création d'un libellé avec nom unicode."""
-        label_data = LabelCreate(nom="测试标签", couleur="#FF0000")
+        """Test de création d'un libellé avec name unicode."""
+        label_data = LabelCreate(name="测试标签", color="#FF0000")
         label = create_label(db_session, label_data, sample_user.id)
 
-        assert label.nom == "测试标签"
+        assert label.name == "测试标签"
 
     def test_create_label_with_emoji_in_name(self, db_session, sample_user):
         """Test de création d'un libellé avec emoji dans le nom."""
-        label_data = LabelCreate(nom="🚀 Urgent", couleur="#FF0000")
+        label_data = LabelCreate(name="🚀 Urgent", color="#FF0000")
         label = create_label(db_session, label_data, sample_user.id)
 
-        assert label.nom == "🚀 Urgent"
+        assert label.name == "🚀 Urgent"
 
     def test_create_label_invalid_user_id(self, db_session):
         """Test de création d'un libellé avec ID utilisateur invalide."""
-        label_data = LabelCreate(nom="Test", couleur="#FF0000")
+        label_data = LabelCreate(name="Test", color="#FF0000")
         
         # Devrait quand même créer le libellé même si l'utilisateur n'existe pas
         # car la contrainte est au niveau de la base de données
@@ -259,13 +259,13 @@ class TestCreateLabel:
 
     def test_create_label_with_zero_user_id(self, db_session):
         """Test de création d'un libellé avec ID utilisateur 0."""
-        label_data = LabelCreate(nom="Test", couleur="#FF0000")
+        label_data = LabelCreate(name="Test", color="#FF0000")
         label = create_label(db_session, label_data, 0)
         assert label.created_by == 0
 
     def test_create_label_with_negative_user_id(self, db_session):
         """Test de création d'un libellé avec ID utilisateur négatif."""
-        label_data = LabelCreate(nom="Test", couleur="#FF0000")
+        label_data = LabelCreate(name="Test", color="#FF0000")
         label = create_label(db_session, label_data, -1)
         assert label.created_by == -1
 
@@ -276,39 +276,39 @@ class TestUpdateLabel:
     def test_update_label_name(self, db_session, sample_labels):
         """Test de mise à jour du nom d'un libellé."""
         label_id = sample_labels[0].id
-        update_data = LabelUpdate(nom="Nouveau nom")
+        update_data = LabelUpdate(name="Nouveau name")
         
         label = update_label(db_session, label_id, update_data)
         
         assert label is not None
-        assert label.nom == "Nouveau nom"
-        assert label.couleur == sample_labels[0].couleur  # La couleur ne change pas
+        assert label.name == "Nouveau name"
+        assert label.color == sample_labels[0].color  # La color ne change pas
 
     def test_update_label_color(self, db_session, sample_labels):
-        """Test de mise à jour de la couleur d'un libellé."""
+        """Test de mise à jour de la color d'un libellé."""
         label_id = sample_labels[0].id
-        update_data = LabelUpdate(couleur="#123456")
+        update_data = LabelUpdate(color="#123456")
         
         label = update_label(db_session, label_id, update_data)
         
         assert label is not None
-        assert label.couleur == "#123456"
-        assert label.nom == sample_labels[0].nom  # Le nom ne change pas
+        assert label.color == "#123456"
+        assert label.name == sample_labels[0].name  # Le nom ne change pas
 
     def test_update_label_both_fields(self, db_session, sample_labels):
         """Test de mise à jour des deux champs d'un libellé."""
         label_id = sample_labels[0].id
-        update_data = LabelUpdate(nom="Complètement nouveau", couleur="#ABCDEF")
+        update_data = LabelUpdate(name="Complètement nouveau", color="#ABCDEF")
         
         label = update_label(db_session, label_id, update_data)
         
         assert label is not None
-        assert label.nom == "Complètement nouveau"
-        assert label.couleur == "#ABCDEF"
+        assert label.name == "Complètement nouveau"
+        assert label.color == "#ABCDEF"
 
     def test_update_nonexistent_label(self, db_session):
         """Test de mise à jour d'un libellé qui n'existe pas."""
-        update_data = LabelUpdate(nom="Test")
+        update_data = LabelUpdate(name="Test")
         label = update_label(db_session, 999, update_data)
         assert label is None
 
@@ -321,40 +321,40 @@ class TestUpdateLabel:
         label = update_label(db_session, label_id, update_data)
         
         assert label is not None
-        assert label.nom == original_label.nom
-        assert label.couleur == original_label.couleur
+        assert label.name == original_label.name
+        assert label.color == original_label.color
 
     def test_update_label_with_same_values(self, db_session, sample_labels):
         """Test de mise à jour d'un libellé avec les mêmes valeurs."""
         label_id = sample_labels[0].id
-        update_data = LabelUpdate(nom=sample_labels[0].nom, couleur=sample_labels[0].couleur)
+        update_data = LabelUpdate(name=sample_labels[0].name, color=sample_labels[0].color)
         
         label = update_label(db_session, label_id, update_data)
         
         assert label is not None
-        assert label.nom == sample_labels[0].nom
-        assert label.couleur == sample_labels[0].couleur
+        assert label.name == sample_labels[0].name
+        assert label.color == sample_labels[0].color
 
     def test_update_label_with_unicode(self, db_session, sample_labels):
         """Test de mise à jour d'un libellé avec caractères unicode."""
         label_id = sample_labels[0].id
-        update_data = LabelUpdate(nom="测试", couleur="#测试")
+        update_data = LabelUpdate(name="测试", color="#测试")
         
         label = update_label(db_session, label_id, update_data)
         
         assert label is not None
-        assert label.nom == "测试"
-        assert label.couleur == "#测试"
+        assert label.name == "测试"
+        assert label.color == "#测试"
 
     def test_update_label_with_emoji(self, db_session, sample_labels):
         """Test de mise à jour d'un libellé avec emoji."""
         label_id = sample_labels[0].id
-        update_data = LabelUpdate(nom="🚀 Urgent", couleur="#FF0000")
+        update_data = LabelUpdate(name="🚀 Urgent", color="#FF0000")
         
         label = update_label(db_session, label_id, update_data)
         
         assert label is not None
-        assert label.nom == "🚀 Urgent"
+        assert label.name == "🚀 Urgent"
 
 
 class TestDeleteLabel:
@@ -397,7 +397,7 @@ class TestDeleteLabel:
     def test_delete_last_label(self, db_session, sample_user):
         """Test de suppression du dernier libellé."""
         # Créer un seul libellé
-        single_label = Label(nom="Seul", couleur="#FF0000", created_by=sample_user.id)
+        single_label = Label(name="Seul", color="#FF0000", created_by=sample_user.id)
         db_session.add(single_label)
         db_session.commit()
         db_session.refresh(single_label)
@@ -417,108 +417,108 @@ class TestSecurityAndEdgeCases:
     def test_sql_injection_attempt_in_name(self, db_session, sample_user):
         """Test de tentative d'injection SQL dans le nom."""
         malicious_name = "test'; DROP TABLE labels; --"
-        label_data = LabelCreate(nom=malicious_name, couleur="#FF0000")
+        label_data = LabelCreate(name=malicious_name, color="#FF0000")
         
         # Le nom doit être stocké tel quelle (pas d'exécution SQL)
         label = create_label(db_session, label_data, sample_user.id)
-        assert label.nom == malicious_name
+        assert label.name == malicious_name
 
     def test_sql_injection_attempt_in_color(self, db_session, sample_user):
-        """Test de tentative d'injection SQL dans la couleur."""
+        """Test de tentative d'injection SQL dans la color."""
         malicious_color = "#FF0000'; DROP TABLE labels; --"
-        label_data = LabelCreate(nom="Test", couleur=malicious_color)
+        label_data = LabelCreate(name="Test", color=malicious_color)
         
         label = create_label(db_session, label_data, sample_user.id)
-        assert label.couleur == malicious_color
+        assert label.color == malicious_color
 
     def test_xss_attempt_in_name(self, db_session, sample_user):
         """Test de tentative XSS dans le nom."""
         xss_name = "<script>alert('XSS')</script>"
-        label_data = LabelCreate(nom=xss_name, couleur="#FF0000")
+        label_data = LabelCreate(name=xss_name, color="#FF0000")
         
         label = create_label(db_session, label_data, sample_user.id)
-        assert label.nom == xss_name
+        assert label.name == xss_name
 
     def test_xss_attempt_in_color(self, db_session, sample_user):
-        """Test de tentative XSS dans la couleur."""
+        """Test de tentative XSS dans la color."""
         xss_color = "<script>alert('XSS')</script>"
-        label_data = LabelCreate(nom="XSS Test", couleur=xss_color)
+        label_data = LabelCreate(name="XSS Test", color=xss_color)
         
         label = create_label(db_session, label_data, sample_user.id)
-        assert label.couleur == xss_color
+        assert label.color == xss_color
 
     def test_special_characters_in_name(self, db_session, sample_user):
         """Test avec des caractères spéciaux dans le nom."""
         special_name = "éèàçùñáéíóú_中文_العربية"
-        label_data = LabelCreate(nom=special_name, couleur="#FF0000")
+        label_data = LabelCreate(name=special_name, color="#FF0000")
         
         label = create_label(db_session, label_data, sample_user.id)
-        assert label.nom == special_name
+        assert label.name == special_name
 
     def test_special_characters_in_color(self, db_session, sample_user):
-        """Test avec des caractères spéciaux dans la couleur."""
+        """Test avec des caractères spéciaux dans la color."""
         special_color = "#éèàçùñáéíóú"
-        label_data = LabelCreate(nom="Special", couleur=special_color)
+        label_data = LabelCreate(name="Special", color=special_color)
         
         label = create_label(db_session, label_data, sample_user.id)
-        assert label.couleur == special_color
+        assert label.color == special_color
 
     def test_unicode_characters(self, db_session, sample_user):
         """Test avec des caractères Unicode."""
         unicode_name = "🚀_测试_العربية"
         unicode_color = "#🎯_测试"
-        label_data = LabelCreate(nom=unicode_name, couleur=unicode_color)
+        label_data = LabelCreate(name=unicode_name, color=unicode_color)
         
         label = create_label(db_session, label_data, sample_user.id)
-        assert label.nom == unicode_name
-        assert label.couleur == unicode_color
+        assert label.name == unicode_name
+        assert label.color == unicode_color
 
     def test_whitespace_handling(self, db_session, sample_user):
         """Test de gestion des espaces blancs."""
         whitespace_name = "  whitespace label  "
         whitespace_color = "  #FF0000  "
-        label_data = LabelCreate(nom=whitespace_name, couleur=whitespace_color)
+        label_data = LabelCreate(name=whitespace_name, color=whitespace_color)
         
         label = create_label(db_session, label_data, sample_user.id)
-        assert label.nom == whitespace_name
-        assert label.couleur == whitespace_color
+        assert label.name == whitespace_name
+        assert label.color == whitespace_color
 
     def test_empty_strings(self, db_session, sample_user):
         """Test avec des chaînes vides."""
         # Le schéma Pydantic accepte les chaînes vides, donc on teste que le service les gère
-        label_data = LabelCreate(nom="", couleur="#FF0000")
+        label_data = LabelCreate(name="", color="#FF0000")
         label = create_label(db_session, label_data, sample_user.id)
         
         assert label is not None
-        assert label.nom == ""  # Le nom vide est accepté
-        assert label.couleur == "#FF0000"
+        assert label.name == ""  # Le nom vide est accepté
+        assert label.color == "#FF0000"
 
     def test_very_long_color_value(self, db_session, sample_user):
-        """Test avec une couleur très longue."""
+        """Test avec une color très longue."""
         long_color = "#" + "A" * 1000
-        label_data = LabelCreate(nom="Long Color", couleur=long_color)
+        label_data = LabelCreate(name="Long Color", color=long_color)
         
         label = create_label(db_session, label_data, sample_user.id)
-        assert label.couleur == long_color
+        assert label.color == long_color
 
     def test_concurrent_operations(self, db_session, sample_user):
         """Test d'opérations concurrentes."""
         # Créer un libellé
-        label_data1 = LabelCreate(nom="Original", couleur="#FF0000")
+        label_data1 = LabelCreate(name="Original", color="#FF0000")
         label1 = create_label(db_session, label_data1, sample_user.id)
         
         # Le mettre à jour
-        update_data = LabelUpdate(nom="Updated", couleur="#00FF00")
+        update_data = LabelUpdate(name="Updated", color="#00FF00")
         label2 = update_label(db_session, label1.id, update_data)
         
         # Vérifier que les opérations sont séquentielles
         assert label2.id == label1.id
-        assert label2.nom == "Updated"
-        assert label2.couleur == "#00FF00"
+        assert label2.name == "Updated"
+        assert label2.color == "#00FF00"
 
     def test_database_transaction_rollback_on_error(self, db_session, sample_user):
         """Test de rollback de transaction en cas d'erreur."""
-        label_data = LabelCreate(nom="Test Transaction", couleur="#FF0000")
+        label_data = LabelCreate(name="Test Transaction", color="#FF0000")
         
         # Simuler une erreur pendant la création
         with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):

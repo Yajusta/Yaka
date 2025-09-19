@@ -76,7 +76,7 @@ export const CardItem = ({
         return 'low';
     };
 
-    const priorityKey = normalizePriority(card.priorite);
+    const priorityKey = normalizePriority(card.priority);
 
     const draggingClasses = isDragging || isDraggableActive
         ? `ring-2 ${priorityKey === 'high' ? 'ring-destructive' : priorityKey === 'medium' ? 'ring-sky-600' : 'ring-gray-400'} shadow-xl scale-[1.02] z-50`
@@ -175,7 +175,7 @@ export const CardItem = ({
                     {/* Header with title and actions */}
                     <div className="flex items-start justify-between gap-2">
                         <h3 className="font-semibold text-sm leading-tight flex-1 text-foreground">
-                            {card.titre}
+                            {card.title}
                         </h3>
                         <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             <Button
@@ -241,12 +241,12 @@ export const CardItem = ({
                                     variant="outline"
                                     className="text-xs px-2 py-0.5 font-medium border-opacity-50"
                                     style={{
-                                        backgroundColor: label.couleur + '15',
-                                        borderColor: label.couleur + '40',
-                                        color: label.couleur
+                                        backgroundColor: label.color + '15',
+                                        borderColor: label.color + '40',
+                                        color: label.color
                                     }}
                                 >
-                                    {label.nom}
+                                    {label.name}
                                 </Badge>
                             ))}
                         </div>
@@ -257,8 +257,8 @@ export const CardItem = ({
                         <div className="flex items-center space-x-2">
                             <PriorityChanger card={card} onPriorityChange={handlePriorityChange} />
 
-                            {card.date_echeance && (() => {
-                                const dueDateStatus = getDueDateStatus(card.date_echeance);
+                            {card.due_date && (() => {
+                                const dueDateStatus = getDueDateStatus(card.due_date);
                                 const isOverdue = dueDateStatus === 'overdue';
                                 const isUpcoming = dueDateStatus === 'upcoming';
 
@@ -281,7 +281,7 @@ export const CardItem = ({
                                         )}
                                         <div className="relative z-10 flex items-center">
                                             <Icon className={`h-3 w-3 mr-1 ${isOverdue ? 'text-red-800' : isUpcoming ? 'text-orange-600' : 'text-muted-foreground'}`} />
-                                            <span className="text-xs font-medium">{formatDate(card.date_echeance)}</span>
+                                            <span className="text-xs font-medium">{formatDate(card.due_date)}</span>
                                         </div>
                                     </div>
                                 );
@@ -332,7 +332,7 @@ export const CardItem = ({
                                                             )}
                                                         </div>
                                                         <span className={`text-sm ${item.is_done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
-                                                            {item.texte}
+                                                            {item.text}
                                                         </span>
                                                     </div>
                                                 ))}
@@ -361,7 +361,7 @@ export const CardItem = ({
                 isOpen={showHistoryModal}
                 onClose={() => setShowHistoryModal(false)}
                 cardId={card.id}
-                cardTitle={card.titre}
+                cardTitle={card.title}
             />
 
             <CommentsForm

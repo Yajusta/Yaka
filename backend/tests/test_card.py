@@ -113,9 +113,9 @@ def sample_kanban_lists(db_session):
 def sample_labels(db_session, sample_user):
     """Fixture pour créer des étiquettes de test."""
     labels = [
-        Label(nom="Bug", couleur="#FF0000", created_by=sample_user.id),
-        Label(nom="Feature", couleur="#00FF00", created_by=sample_user.id),
-        Label(nom="Enhancement", couleur="#0000FF", created_by=sample_user.id),
+        Label(name="Bug", color="#FF0000", created_by=sample_user.id),
+        Label(name="Feature", color="#00FF00", created_by=sample_user.id),
+        Label(name="Enhancement", color="#0000FF", created_by=sample_user.id),
     ]
     
     for label in labels:
@@ -133,9 +133,9 @@ def sample_cards(db_session, sample_kanban_lists, sample_user, sample_labels):
     """Fixture pour créer des cartes de test."""
     cards = [
         Card(
-            titre="Card 1",
+            title="Card 1",
             description="Description 1",
-            priorite=CardPriority.HIGH,
+            priority=CardPriority.HIGH,
             list_id=sample_kanban_lists[0].id,
             position=1,
             created_by=sample_user.id,
@@ -143,9 +143,9 @@ def sample_cards(db_session, sample_kanban_lists, sample_user, sample_labels):
             is_archived=False,
         ),
         Card(
-            titre="Card 2",
+            title="Card 2",
             description="Description 2",
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             list_id=sample_kanban_lists[0].id,
             position=2,
             created_by=sample_user.id,
@@ -153,9 +153,9 @@ def sample_cards(db_session, sample_kanban_lists, sample_user, sample_labels):
             is_archived=False,
         ),
         Card(
-            titre="Card 3",
+            title="Card 3",
             description="Description 3",
-            priorite=CardPriority.LOW,
+            priority=CardPriority.LOW,
             list_id=sample_kanban_lists[1].id,
             position=1,
             created_by=sample_user.id,
@@ -189,7 +189,7 @@ class TestGetCard:
         
         assert result is not None
         assert result.id == card.id
-        assert result.titre == card.titre
+        assert result.title == card.title
         assert result.description == card.description
         assert len(result.comments) == 0  # Pas de commentaires créés
 
@@ -263,11 +263,11 @@ class TestGetCards:
 
     def test_get_cards_by_priority(self, db_session, sample_cards):
         """Test de récupération des cartes par priorité."""
-        filters = CardFilter(priorite=CardPriority.HIGH)
+        filters = CardFilter(priority=CardPriority.HIGH)
         cards = get_cards(db_session, filters)
         
         assert len(cards) == 1
-        assert cards[0].priorite == CardPriority.HIGH
+        assert cards[0].priority == CardPriority.HIGH
 
     def test_get_cards_by_label(self, db_session, sample_cards, sample_labels):
         """Test de récupération des cartes par étiquette."""
@@ -286,12 +286,12 @@ class TestGetCards:
         assert "Description 1" in cards[0].description
 
     def test_get_cards_search_title(self, db_session, sample_cards):
-        """Test de recherche textuelle dans le titre."""
+        """Test de recherche textuelle dans le title."""
         filters = CardFilter(search="Card 2")
         cards = get_cards(db_session, filters)
         
         assert len(cards) == 1
-        assert cards[0].titre == "Card 2"
+        assert cards[0].title == "Card 2"
 
     def test_get_cards_pagination(self, db_session, sample_cards):
         """Test de pagination des résultats."""
@@ -312,9 +312,9 @@ class TestGetCards:
             ("Card C", sample_kanban_lists[0].id, 2),
         ]
         
-        for titre, list_id, position in cards_data:
+        for title, list_id, position in cards_data:
             card = Card(
-                titre=titre,
+                title=title,
                 list_id=list_id,
                 position=position,
                 created_by=sample_user.id,
@@ -336,7 +336,7 @@ class TestGetCards:
         filters = CardFilter(
             list_id=sample_cards[0].list_id,
             assignee_id=sample_user.id,
-            priorite=CardPriority.HIGH,
+            priority=CardPriority.HIGH,
         )
         cards = get_cards(db_session, filters)
         
@@ -360,7 +360,7 @@ class TestGetArchivedCards:
         # Créer plusieurs cartes archivées
         for i in range(5):
             card = Card(
-                titre=f"Archived Card {i}",
+                title=f"Archived Card {i}",
                 list_id=sample_kanban_lists[0].id,
                 position=i + 1,
                 created_by=sample_user.id,
@@ -383,10 +383,10 @@ class TestCreateCard:
     def test_create_card_success(self, db_session, sample_kanban_lists, sample_user, sample_labels):
         """Test de création réussie d'une carte."""
         card_data = CardCreate(
-            titre="New Card",
+            title="New Card",
             description="New Description",
             list_id=sample_kanban_lists[0].id,
-            priorite=CardPriority.MEDIUM,
+            priority=CardPriority.MEDIUM,
             assignee_id=sample_user.id,
             label_ids=[sample_labels[0].id, sample_labels[1].id],
         )
@@ -394,10 +394,10 @@ class TestCreateCard:
         result = create_card(db_session, card_data, sample_user.id)
         
         assert result.id is not None
-        assert result.titre == "New Card"
+        assert result.title == "New Card"
         assert result.description == "New Description"
         assert result.list_id == sample_kanban_lists[0].id
-        assert result.priorite == CardPriority.MEDIUM
+        assert result.priority == CardPriority.MEDIUM
         assert result.assignee_id == sample_user.id
         assert result.created_by == sample_user.id
         assert result.is_archived is False
@@ -408,7 +408,7 @@ class TestCreateCard:
     def test_create_card_with_position(self, db_session, sample_kanban_lists, sample_user):
         """Test de création d'une carte avec position spécifique."""
         card_data = CardCreate(
-            titre="Positioned Card",
+            title="Positioned Card",
             list_id=sample_kanban_lists[0].id,
             position=1,
         )
@@ -427,7 +427,7 @@ class TestCreateCard:
     def test_create_card_auto_list_id_minus_1(self, db_session, sample_kanban_lists, sample_user):
         """Test de création avec list_id=-1 (auto-affectation à la première liste)."""
         card_data = CardCreate(
-            titre="Auto-list Card",
+            title="Auto-list Card",
             list_id=-1,  # Devrait être automatiquement assigné à la première liste
         )
         
@@ -438,7 +438,7 @@ class TestCreateCard:
     def test_create_card_no_available_lists(self, db_session, sample_user):
         """Test de création quand aucune liste n'est disponible."""
         card_data = CardCreate(
-            titre="No List Card",
+            title="No List Card",
             list_id=-1,
         )
         
@@ -448,7 +448,7 @@ class TestCreateCard:
     def test_create_card_nonexistent_list(self, db_session, sample_user):
         """Test de création avec une liste inexistante."""
         card_data = CardCreate(
-            titre="Invalid List Card",
+            title="Invalid List Card",
             list_id=99999,
         )
         
@@ -462,7 +462,7 @@ class TestCreateCard:
     def test_create_card_nonexistent_labels(self, db_session, sample_kanban_lists, sample_user):
         """Test de création avec des étiquettes inexistantes."""
         card_data = CardCreate(
-            titre="Invalid Labels Card",
+            title="Invalid Labels Card",
             list_id=sample_kanban_lists[0].id,
             label_ids=[99999, 99998],
         )
@@ -474,38 +474,38 @@ class TestCreateCard:
     def test_create_card_unicode_content(self, db_session, sample_kanban_lists, sample_user):
         """Test de création avec contenu Unicode."""
         card_data = CardCreate(
-            titre="Carte avec caractères spéciaux: éèàçù 🚀 中文",
+            title="Carte avec caractères spéciaux: éèàçù 🚀 中文",
             description="Description spéciale",
             list_id=sample_kanban_lists[0].id,
         )
         
         result = create_card(db_session, card_data, sample_user.id)
         
-        assert result.titre == "Carte avec caractères spéciaux: éèàçù 🚀 中文"
+        assert result.title == "Carte avec caractères spéciaux: éèàçù 🚀 中文"
         assert result.description == "Description spéciale"
 
     def test_create_card_max_title_length(self, db_session, sample_kanban_lists, sample_user):
-        """Test de création avec titre de longueur maximale."""
+        """Test de création avec title de longueur maximale."""
         max_title = "x" * 200
         card_data = CardCreate(
-            titre=max_title,
+            title=max_title,
             list_id=sample_kanban_lists[0].id,
         )
         
         result = create_card(db_session, card_data, sample_user.id)
-        assert result.titre == max_title
+        assert result.title == max_title
 
     def test_create_card_with_due_date(self, db_session, sample_kanban_lists, sample_user):
         """Test de création avec date d'échéance."""
         due_date = date.today() + timedelta(days=7)
         card_data = CardCreate(
-            titre="Due Date Card",
+            title="Due Date Card",
             list_id=sample_kanban_lists[0].id,
-            date_echeance=due_date,
+            due_date=due_date,
         )
         
         result = create_card(db_session, card_data, sample_user.id)
-        assert result.date_echeance == due_date
+        assert result.due_date == due_date
 
 
 class TestUpdateCard:
@@ -515,9 +515,9 @@ class TestUpdateCard:
         """Test de mise à jour réussie d'une carte."""
         card = sample_cards[0]
         update_data = CardUpdate(
-            titre="Updated Card",
+            title="Updated Card",
             description="Updated Description",
-            priorite=CardPriority.LOW,
+            priority=CardPriority.LOW,
             assignee_id=create_sample_user_2(db_session).id,
             label_ids=[sample_labels[2].id],
         )
@@ -525,16 +525,16 @@ class TestUpdateCard:
         result = update_card(db_session, card.id, update_data, sample_user.id)
         
         assert result is not None
-        assert result.titre == "Updated Card"
+        assert result.title == "Updated Card"
         assert result.description == "Updated Description"
-        assert result.priorite == CardPriority.LOW
+        assert result.priority == CardPriority.LOW
         assert result.assignee_id == create_sample_user_2(db_session).id
         assert len(result.labels) == 1
         assert result.labels[0].id == sample_labels[2].id
 
     def test_update_card_nonexistent(self, db_session, sample_user):
         """Test de mise à jour d'une carte inexistante."""
-        update_data = CardUpdate(titre="Updated")
+        update_data = CardUpdate(title="Updated")
         
         result = update_card(db_session, 99999, update_data, sample_user.id)
         
@@ -544,15 +544,15 @@ class TestUpdateCard:
         """Test de mise à jour partielle (seulement certains champs)."""
         card = sample_cards[0]
         original_description = card.description
-        original_priorite = card.priorite
+        original_priority = card.priority
         
-        update_data = CardUpdate(titre="Partial Update")
+        update_data = CardUpdate(title="Partial Update")
         
         result = update_card(db_session, card.id, update_data, sample_user.id)
         
-        assert result.titre == "Partial Update"
+        assert result.title == "Partial Update"
         assert result.description == original_description
-        assert result.priorite == original_priorite
+        assert result.priority == original_priority
 
     def test_update_card_list_id_minus_1(self, db_session, sample_cards, sample_user):
         """Test de mise à jour avec list_id=-1."""
@@ -581,7 +581,7 @@ class TestUpdateCard:
         original_created_by = card.created_by
         original_created_at = card.created_at
         
-        update_data = CardUpdate(titre="Test")
+        update_data = CardUpdate(title="Test")
         
         result = update_card(db_session, card.id, update_data, sample_user.id)
         
@@ -594,11 +594,11 @@ class TestUpdateCard:
         card = sample_cards[0]
         unicode_title = "Titre mis à jour avec caractères spéciaux: éèàçù 🚀 中文"
         
-        update_data = CardUpdate(titre=unicode_title)
+        update_data = CardUpdate(title=unicode_title)
         
         result = update_card(db_session, card.id, update_data, sample_user.id)
         
-        assert result.titre == unicode_title
+        assert result.title == unicode_title
 
 
 class TestUpdateCardList:
@@ -891,7 +891,7 @@ class TestCardIntegration:
         """Test du flux complet CRUD."""
         # Créer
         card_data = CardCreate(
-            titre="Test Card",
+            title="Test Card",
             list_id=sample_kanban_lists[0].id,
             label_ids=[sample_labels[0].id],
         )
@@ -899,14 +899,14 @@ class TestCardIntegration:
         
         # Mettre à jour
         update_data = CardUpdate(
-            titre="Updated Test Card",
-            priorite=CardPriority.HIGH,
+            title="Updated Test Card",
+            priority=CardPriority.HIGH,
         )
         updated_card = update_card(db_session, created_card.id, update_data, sample_user.id)
         
         assert updated_card is not None
-        assert updated_card.titre == "Updated Test Card"
-        assert updated_card.priorite == CardPriority.HIGH
+        assert updated_card.title == "Updated Test Card"
+        assert updated_card.priority == CardPriority.HIGH
         
         # Archiver
         archived_card = archive_card(db_session, created_card.id, sample_user.id)
@@ -923,9 +923,9 @@ class TestCardIntegration:
     def test_card_movement_between_lists(self, db_session, sample_kanban_lists, sample_user):
         """Test de mouvement de cartes entre différentes listes."""
         # Créer des cartes dans différentes listes
-        card1_data = CardCreate(titre="Card 1", list_id=sample_kanban_lists[0].id)
-        card2_data = CardCreate(titre="Card 2", list_id=sample_kanban_lists[0].id)
-        card3_data = CardCreate(titre="Card 3", list_id=sample_kanban_lists[1].id)
+        card1_data = CardCreate(title="Card 1", list_id=sample_kanban_lists[0].id)
+        card2_data = CardCreate(title="Card 2", list_id=sample_kanban_lists[0].id)
+        card3_data = CardCreate(title="Card 3", list_id=sample_kanban_lists[1].id)
         
         card1 = create_card(db_session, card1_data, sample_user.id)
         create_card(db_session, card2_data, sample_user.id)
@@ -953,7 +953,7 @@ class TestCardIntegration:
         cards = []
         for i in range(5):
             card_data = CardCreate(
-                titre=f"Concurrent Card {i}",
+                title=f"Concurrent Card {i}",
                 list_id=sample_kanban_lists[0].id,
             )
             card = create_card(db_session, card_data, sample_user.id)
@@ -967,22 +967,22 @@ class TestCardIntegration:
         assert len(set(positions)) == len(positions)  # Positions uniques
 
     def test_edge_case_empty_title(self, db_session, sample_kanban_lists, sample_user):
-        """Test avec titre vide (devrait échouer à cause de la validation Pydantic)."""
+        """Test avec title vide (devrait échouer à cause de la validation Pydantic)."""
         with pytest.raises(ValueError):
-            CardCreate(titre="", list_id=sample_kanban_lists[0].id)
+            CardCreate(title="", list_id=sample_kanban_lists[0].id)
 
     def test_edge_case_very_long_title(self, db_session, sample_kanban_lists, sample_user):
-        """Test avec titre très long (devrait échouer à cause de la validation Pydantic)."""
+        """Test avec title très long (devrait échouer à cause de la validation Pydantic)."""
         long_title = "x" * 201  # Dépasse la limite de 200
         
         with pytest.raises(ValueError):
-            CardCreate(titre=long_title, list_id=sample_kanban_lists[0].id)
+            CardCreate(title=long_title, list_id=sample_kanban_lists[0].id)
 
     def test_card_labels_management(self, db_session, sample_kanban_lists, sample_user, sample_labels):
         """Test de gestion des étiquettes sur les cartes."""
         # Créer une carte avec des étiquettes
         card_data = CardCreate(
-            titre="Labels Test",
+            title="Labels Test",
             list_id=sample_kanban_lists[0].id,
             label_ids=[sample_labels[0].id, sample_labels[1].id],
         )
@@ -1012,13 +1012,13 @@ class TestCardSecurity:
         malicious_title = "'; DROP TABLE cards; --"
         
         card_data = CardCreate(
-            titre=malicious_title,
+            title=malicious_title,
             list_id=sample_kanban_lists[0].id,
         )
         
-        # La création devrait fonctionner (le titre est stocké littéralement)
+        # La création devrait fonctionner (le title est stocké littéralement)
         result = create_card(db_session, card_data, sample_user.id)
-        assert result.titre == malicious_title
+        assert result.title == malicious_title
         
         # Vérifier que la table n'a pas été supprimée
         cards = get_cards(db_session, CardFilter())
@@ -1029,12 +1029,12 @@ class TestCardSecurity:
         xss_title = "<script>alert('XSS')</script><img src='x' onerror='alert(1)'>"
         
         card_data = CardCreate(
-            titre=xss_title,
+            title=xss_title,
             list_id=sample_kanban_lists[0].id,
         )
         
         result = create_card(db_session, card_data, sample_user.id)
-        assert result.titre == xss_title  # Stocké tel quel
+        assert result.title == xss_title  # Stocké tel quel
         
         # La protection XSS devrait être gérée au niveau du frontend/affichage
 
@@ -1059,7 +1059,7 @@ class TestCardSecurity:
         assert retrieved_card is not None
         
         # Test de mise à jour sans user_id (devrait fonctionner)
-        update_data = CardUpdate(titre="Test Update")
+        update_data = CardUpdate(title="Test Update")
         updated_card = update_card(db_session, card.id, update_data)
         assert updated_card is not None
 
@@ -1068,13 +1068,13 @@ class TestCardSecurity:
         dangerous_content = "<script>alert('danger')</script> & <div>HTML content</div>"
         
         card_data = CardCreate(
-            titre=dangerous_content,
+            title=dangerous_content,
             description=dangerous_content,
             list_id=sample_kanban_lists[0].id,
         )
         
         result = create_card(db_session, card_data, sample_user.id)
-        assert result.titre == dangerous_content
+        assert result.title == dangerous_content
         assert result.description == dangerous_content
 
     def test_special_characters_storage(self, db_session, sample_kanban_lists, sample_user):
@@ -1082,11 +1082,11 @@ class TestCardSecurity:
         special_chars = "éèàçù€£¥©®™•§¶†‡°…‰™œŒšžŠŸŒ"
         
         card_data = CardCreate(
-            titre=special_chars,
+            title=special_chars,
             description=special_chars,
             list_id=sample_kanban_lists[0].id,
         )
         
         result = create_card(db_session, card_data, sample_user.id)
-        assert result.titre == special_chars
+        assert result.title == special_chars
         assert result.description == special_chars

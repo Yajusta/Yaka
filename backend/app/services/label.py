@@ -18,14 +18,14 @@ def get_labels(db: Session, skip: int = 0, limit: int = 100) -> List[Label]:
     return db.query(Label).offset(skip).limit(limit).all()
 
 
-def get_label_by_name(db: Session, nom: str) -> Optional[Label]:
+def get_label_by_name(db: Session, name: str) -> Optional[Label]:
     """Récupérer un libellé par son nom."""
-    return db.query(Label).filter(Label.nom == nom).first()
+    return db.query(Label).filter(Label.name == name).first()
 
 
 def create_label(db: Session, label: LabelCreate, created_by: int) -> Label:
     """Créer un nouveau libellé."""
-    db_label = Label(nom=label.nom, couleur=label.couleur, created_by=created_by)
+    db_label = Label(name=label.name, color=label.color, created_by=created_by)
     db.add(db_label)
     db.commit()
     db.refresh(db_label)

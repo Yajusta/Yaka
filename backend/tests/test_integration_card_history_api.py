@@ -30,10 +30,10 @@ async def test_card_history_endpoints(
         card_response = await client.post(
             "/cards/",
             json={
-                "titre": "History Card",
+                "title": "History Card",
                 "description": "Track history",
                 "list_id": list_id,
-                "priorite": "medium",
+                "priority": "medium",
             },
             headers={"Authorization": f"Bearer {token}"},
         )

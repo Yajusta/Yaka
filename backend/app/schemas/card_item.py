@@ -6,7 +6,7 @@ from datetime import datetime
 
 
 class CardItemBase(BaseModel):
-    texte: str = Field(..., min_length=1, max_length=500, description="Texte de l'élément")
+    text: str = Field(..., min_length=1, max_length=500, description="Texte de l'élément")
     is_done: bool = Field(False, description="Statut de l'élément")
 
 
@@ -16,7 +16,7 @@ class CardItemCreate(CardItemBase):
 
 
 class CardItemUpdate(BaseModel):
-    texte: Optional[str] = Field(None, min_length=1, max_length=500)
+    text: Optional[str] = Field(None, min_length=1, max_length=500)
     is_done: Optional[bool] = None
     position: Optional[int] = Field(None, ge=0)
 

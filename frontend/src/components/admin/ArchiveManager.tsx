@@ -84,7 +84,7 @@ export const ArchiveManager = ({
             toast({
                 title: t('archive.cardRestored'),
                 description: t('archive.cardRestoredDescription', { 
-                    cardTitle: card.titre, 
+                    cardTitle: card.title, 
                     listName: targetList.name 
                 }),
                 variant: "success"
@@ -154,7 +154,7 @@ export const ArchiveManager = ({
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="font-semibold text-sm leading-tight mb-2">
-                                                    {card.titre}
+                                                    {card.title}
                                                 </h3>
 
                                                 {card.description && (
@@ -185,12 +185,12 @@ export const ArchiveManager = ({
                                                                 variant="outline"
                                                                 className="text-xs px-2 py-0.5"
                                                                 style={{
-                                                                    backgroundColor: label.couleur + '15',
-                                                                    borderColor: label.couleur + '40',
-                                                                    color: label.couleur
+                                                                    backgroundColor: label.color + '15',
+                                                                    borderColor: label.color + '40',
+                                                                    color: label.color
                                                                 }}
                                                             >
-                                                                {label.nom}
+                                                                {label.name}
                                                             </Badge>
                                                         ))}
                                                         {card.labels.length > 3 && (

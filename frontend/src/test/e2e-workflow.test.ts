@@ -158,22 +158,22 @@ describe('End-to-End Workflow Tests', () => {
     // Step 2: Create initial project cards
     const projectCards = [
       {
-        titre: 'Setup project structure',
+        title: 'Setup project structure',
         description: 'Create basic project folders and files',
         list_id: 1, // A faire
-        priorite: 'haute'
+        priority: 'high'
       },
       {
-        titre: 'Design database schema',
+        title: 'Design database schema',
         description: 'Plan the database structure',
         list_id: 1, // A faire
-        priorite: 'haute'
+        priority: 'high'
       },
       {
-        titre: 'Implement authentication',
+        title: 'Implement authentication',
         description: 'Add user login and registration',
         list_id: 1, // A faire
-        priorite: 'moyenne'
+        priority: 'medium'
       }
     ]
     
@@ -250,17 +250,17 @@ describe('End-to-End Workflow Tests', () => {
     // Step 3: Remove old lists by migrating cards
     // First create some cards in old lists
     const oldCard1 = await appState.createCard({
-      titre: 'Old task 1',
+      title: 'Old task 1',
       description: 'Task in old system',
       list_id: 1, // A faire
-      priorite: 'moyenne'
+      priority: 'medium'
     })
     
     const oldCard2 = await appState.createCard({
-      titre: 'Old task 2', 
+      title: 'Old task 2', 
       description: 'Another old task',
       list_id: 2, // En cours
-      priorite: 'haute'
+      priority: 'high'
     })
     
     // Migrate cards and delete old lists
@@ -281,10 +281,10 @@ describe('End-to-End Workflow Tests', () => {
     
     // Step 5: Test new workflow with a complete task lifecycle
     const newTask = await appState.createCard({
-      titre: 'New feature task',
+      title: 'New feature task',
       description: 'Implement new feature',
       list_id: backlogList.id,
-      priorite: 'alta'
+      priority: 'alta'
     })
     
     // Move through complete workflow
@@ -304,10 +304,10 @@ describe('End-to-End Workflow Tests', () => {
     await appState.initializeWithDefaultLists()
     
     const testCard = await appState.createCard({
-      titre: 'Test card',
+      title: 'Test card',
       description: 'For error testing',
       list_id: 1,
-      priorite: 'moyenne'
+      priority: 'medium'
     })
     
     // Step 2: Simulate API errors and recovery
@@ -359,13 +359,13 @@ describe('End-to-End Workflow Tests', () => {
     
     // Step 2: Simulate multiple users working simultaneously
     const user1Cards = [
-      await appState.createCard({ titre: 'User 1 Task 1', description: 'Task 1', list_id: 1, priorite: 'haute' }),
-      await appState.createCard({ titre: 'User 1 Task 2', description: 'Task 2', list_id: 1, priorite: 'moyenne' })
+      await appState.createCard({ title: 'User 1 Task 1', description: 'Task 1', list_id: 1, priority: 'high' }),
+      await appState.createCard({ title: 'User 1 Task 2', description: 'Task 2', list_id: 1, priority: 'medium' })
     ]
     
     const user2Cards = [
-      await appState.createCard({ titre: 'User 2 Task 1', description: 'Task 1', list_id: 1, priorite: 'basse' }),
-      await appState.createCard({ titre: 'User 2 Task 2', description: 'Task 2', list_id: 2, priorite: 'haute' })
+      await appState.createCard({ title: 'User 2 Task 1', description: 'Task 1', list_id: 1, priority: 'low' }),
+      await appState.createCard({ title: 'User 2 Task 2', description: 'Task 2', list_id: 2, priority: 'high' })
     ]
     
     // Step 3: Simulate concurrent operations
@@ -410,10 +410,10 @@ describe('End-to-End Workflow Tests', () => {
     for (let i = 0; i < 100; i++) {
       const listId = (i % 20) + 1 // Distribute across all lists
       const card = await appState.createCard({
-        titre: `Card ${i + 1}`,
+        title: `Card ${i + 1}`,
         description: `Description for card ${i + 1}`,
         list_id: listId,
-        priorite: ['haute', 'moyenne', 'basse'][i % 3]
+        priority: ['high', 'medium', 'low'][i % 3]
       })
       manyCards.push(card)
     }
