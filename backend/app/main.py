@@ -39,7 +39,21 @@ def ensure_database_exists():
             print(f"Création de la base de données {db_file}...")
             # Créer les tables de base
             Base.metadata.create_all(bind=engine)
-            print("Base de données créée avec succès")
+
+            # Initialiser la table alembic_version avec la dernière version
+            from alembic.script import ScriptDirectory
+
+            alembic_cfg = Config("alembic.ini")
+            script = ScriptDirectory.from_config(alembic_cfg)
+            latest_version = script.get_current_head()
+
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                conn.execute(text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)"))
+                conn.execute(text(f"INSERT INTO alembic_version (version_num) VALUES ('{latest_version}')"))
+                conn.commit()
+
+            print(f"Base de données créée avec succès (version alembic: {latest_version})")
         else:
             print("Base de données existante détectée")
 
@@ -172,6 +186,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # Content Security Policy (CSP)
         if os.getenv("ENVIRONMENT", "production").lower() == "production":
+            # Permettre les ressources Cloudflare et connexions externes
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
@@ -184,7 +199,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             )
 
         # HSTS en production HTTPS uniquement
-        if os.getenv("ENVIRONMENT") == "production":
+        if os.getenv("ENVIRONMENT", "production").lower() == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
 
         return response
