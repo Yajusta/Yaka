@@ -1,4 +1,4 @@
-import { AlertTriangle, Eye, Loader2, Trash } from 'lucide-react';
+import { AlertTriangle, Copy, Eye, Loader2, Trash, Zap } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.tsx';
@@ -86,6 +86,19 @@ const LoginForm = () => {
         }
     };
 
+    const copyToClipboard = async (text: string): Promise<void> => {
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (error) {
+            console.error('Failed to copy to clipboard:', error);
+        }
+    };
+
+    const fillDemoCredentials = (): void => {
+        setEmail('admin@yaka.local');
+        setPassword('Admin123');
+    };
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             {/* Language selector en haut à droite */}
@@ -118,17 +131,46 @@ const LoginForm = () => {
                                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
                                     <div className="flex items-start gap-2">
                                         <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                                        <div>
+                                        <div className="flex-1">
                                             <div className="text-amber-800 text-sm font-medium">
                                                 🔄 {t('auth.demoModeEnabled')}
                                             </div>
                                             <div className="text-amber-700 text-sm mt-1">
-                                                {t('auth.email')} : <strong>admin@yaka.local</strong><br />
+                                                {t('auth.email')} : <strong>admin@yaka.local</strong>
+                                                <button
+                                                    onClick={() => copyToClipboard('admin@yaka.local')}
+                                                    className="ml-2 p-1 hover:bg-amber-200 rounded transition-colors"
+                                                    title={t('auth.copyEmail')}
+                                                >
+                                                    <Copy className="h-3 w-3 text-amber-600" />
+                                                </button>
+                                                <br />
                                                 {t('auth.password')} : <strong>Admin123</strong>
+                                                <button
+                                                    onClick={() => copyToClipboard('Admin123')}
+                                                    className="ml-2 p-1 hover:bg-amber-200 rounded transition-colors"
+                                                    title={t('auth.copyPassword')}
+                                                >
+                                                    <Copy className="h-3 w-3 text-amber-600" />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Bouton remplir automatiquement - centré dans toute la section */}
+                                    <div className="mt-3 pt-3 border-t border-amber-200 flex justify-center">
+                                        <Button
+                                            onClick={fillDemoCredentials}
+                                            variant="outline"
+                                            size="sm"
+                                            className="bg-amber-100 border-amber-300 text-amber-800 hover:bg-amber-200 hover:border-amber-400"
+                                        >
+                                            <Zap className="h-4 w-4 mr-2" />
+                                            {t('auth.fillDemoCredentials')}
+                                        </Button>
+                                    </div>
                                 </div>
+
 
                                 {/* Avertissement base de données */}
                                 <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-md">

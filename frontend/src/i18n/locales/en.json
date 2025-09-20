@@ -66,7 +66,10 @@
         "resetPasswordSuccess": "Password reset email sent successfully",
         "resetPasswordError": "Error resetting password",
         "emailPlaceholder": "Enter your email",
-        "sendResetLink": "Send reset link"
+        "sendResetLink": "Send reset link",
+        "copyEmail": "Copy email",
+        "copyPassword": "Copy password",
+        "fillDemoCredentials": "Fill automatically"
     },
     "navigation": {
         "dashboard": "Dashboard",
