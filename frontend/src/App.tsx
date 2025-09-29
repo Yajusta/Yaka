@@ -1,28 +1,28 @@
-import { useState, useEffect, useMemo } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AuthProvider, useAuth } from './hooks/useAuth.tsx';
-import { useTheme } from './hooks/useTheme.tsx';
-import { useToast } from './hooks/use-toast.tsx';
-import { BoardSettingsProvider } from './hooks/useBoardSettingsContext';
-import { UsersProvider, useUsers } from './hooks/useUsers';
-import { useUserLanguage } from './hooks/useUserLanguage';
-import { Toaster } from './components/ui/sonner';
-import LoginForm from './components/auth/LoginForm.tsx';
-import InvitePage from './components/auth/InvitePage.tsx';
-import { Header } from './components/common/Header.tsx';
-import { Footer } from './components/common/Footer.tsx';
-import UsersManager from './components/common/UsersManager';
-import { FilterBar } from './components/common/FilterBar.tsx';
-import { KanbanBoard } from './components/kanban/KanbanBoard.tsx';
-import CardForm from './components/cards/CardForm.tsx';
-import LabelManager from './components/common/LabelManager.tsx';
+import { Route, BrowserRouter as Router, Routes, useLocation } from 'react-router-dom';
+import { toast as sonnerToast } from 'sonner';
 import { ListManager } from './components/admin';
 import { InterfaceDialog } from './components/admin/InterfaceDialog';
-import { cardService, labelService } from './services/api.tsx';
-import { Card, Label } from './types/index.ts';
-import { toast as sonnerToast } from 'sonner';
+import InvitePage from './components/auth/InvitePage.tsx';
+import LoginForm from './components/auth/LoginForm.tsx';
+import CardForm from './components/cards/CardForm.tsx';
+import { FilterBar } from './components/common/FilterBar.tsx';
+import { Footer } from './components/common/Footer.tsx';
+import { Header } from './components/common/Header.tsx';
+import LabelManager from './components/common/LabelManager.tsx';
+import UsersManager from './components/common/UsersManager';
+import { KanbanBoard } from './components/kanban/KanbanBoard.tsx';
+import { Toaster } from './components/ui/sonner';
+import { useToast } from './hooks/use-toast.tsx';
+import { AuthProvider, useAuth } from './hooks/useAuth.tsx';
+import { BoardSettingsProvider } from './hooks/useBoardSettingsContext';
+import { useTheme } from './hooks/useTheme.tsx';
+import { useUserLanguage } from './hooks/useUserLanguage';
+import { UsersProvider, useUsers } from './hooks/useUsers';
 import './index.css';
+import { cardService, labelService } from './services/api.tsx';
+import { Card, Label, UserRole, UserRoleValue } from './types/index.ts';
 
 interface Filters {
     search: string;
@@ -39,6 +39,39 @@ const KanbanApp = () => {
     const { user, loading, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const { toast } = useToast();
+
+    const userRole = user?.role as UserRoleValue | undefined;
+    const currentUserId = user?.id ?? null;
+
+    const isAdminRole = userRole === UserRole.ADMIN;
+    const isStandardUserRole = userRole === UserRole.USER;
+    const isAssignedOnlyRole = userRole === UserRole.ASSIGNED_ONLY;
+    const isReadOnlyRole = userRole === UserRole.READ_ONLY;
+    const isCommentsOnlyRole = userRole === UserRole.COMMENTS_ONLY;
+
+    const canManageAllCards = isAdminRole || isStandardUserRole;
+    const canCreateCards = canManageAllCards || isAssignedOnlyRole;
+
+    const canEditCard = (targetCard: Card | null | undefined): boolean => {
+        if (!targetCard || !user) {
+            return false;
+        }
+        if (canManageAllCards) {
+            return true;
+        }
+        if (isAssignedOnlyRole) {
+            return targetCard.assignee_id === currentUserId;
+        }
+        return false;
+    };
+
+
+    const notifyPermissionDenied = () => {
+        toast({
+            title: t('card.permissionDenied'),
+            variant: 'destructive'
+        });
+    };
 
     const [allCards, setAllCards] = useState<Card[]>([]);
     const [cards, setCards] = useState<Card[]>([]);
@@ -148,17 +181,24 @@ const KanbanApp = () => {
     }, [user]);
 
     const handleCreateCard = (listId?: number): void => {
-        setEditingCard(null);
-        setShowCardForm(true);
-        // Si un listId est fourni, on peut le passer au formulaire
-        if (listId) {
-            setEditingCard(null); // Assurer que c'est bien une nouvelle carte
+        if (!canCreateCards) {
+            notifyPermissionDenied();
+            return;
         }
+        setEditingCard(null);
+        setDefaultListIdForNewCard(listId ?? null);
+        setShowCardForm(true);
     };
 
     const handleCardUpdate = (updatedCard: Card, action: 'edit' | 'update' = 'edit'): void => {
         if (action === 'edit') {
+            // Allow opening card for viewing even if user can't edit it
+            if (!canEditCard(updatedCard) && !user) {
+                notifyPermissionDenied();
+                return;
+            }
             setEditingCard(updatedCard);
+            setDefaultListIdForNewCard(null);
             setShowCardForm(true);
         } else {
             setAllCards(prev => {
@@ -176,28 +216,28 @@ const KanbanApp = () => {
     };
 
     const handleCardDelete = async (cardId: number): Promise<void> => {
+        const cardToDelete = allCards.find(card => card.id === cardId);
+        if (!cardToDelete || !canEditCard(cardToDelete)) {
+            notifyPermissionDenied();
+            return;
+        }
+
         try {
-            // Sauvegarder la carte avant suppression pour pouvoir la restaurer
-            const cardToDelete = allCards.find(card => card.id === cardId);
             await cardService.archiveCard(cardId);
             setAllCards(prev => prev.filter(card => card.id !== cardId));
 
             // Importer Sonner pour utiliser les actions
-            // const { toast: sonnerToast } = await import('sonner');
-
             sonnerToast.success(t('app.cardArchived'), {
                 description: t('app.cardArchivedDescription'),
                 action: {
                     label: t('app.undo'),
                     onClick: async () => {
                         try {
-                            if (cardToDelete) {
-                                await cardService.unarchiveCard(cardId);
-                                setAllCards(prev => [...prev, cardToDelete]);
-                                sonnerToast.success(t('app.cardRestored'), {
-                                    description: t('app.cardRestoredDescription')
-                                });
-                            }
+                            await cardService.unarchiveCard(cardId);
+                            setAllCards(prev => [...prev, cardToDelete]);
+                            sonnerToast.success(t('app.cardRestored'), {
+                                description: t('app.cardRestoredDescription')
+                            });
                         } catch (restoreError: any) {
                             console.error('Erreur lors de la restauration:', restoreError);
                             sonnerToast.error(t('app.restoreError'), {
@@ -218,12 +258,19 @@ const KanbanApp = () => {
         }
     };
 
+
     const handleCardMove = async (cardId: number, newListId: number, position?: number): Promise<void> => {
         try {
             // Find the current card to get its current list_id
             const currentCard = allCards.find(card => card.id === cardId);
             if (!currentCard) {
                 console.error('Card not found:', cardId);
+                return;
+            }
+
+            if (!canEditCard(currentCard)) {
+                notifyPermissionDenied();
+                await loadCards();
                 return;
             }
 
@@ -346,7 +393,7 @@ const KanbanApp = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
         );
-    }
+    };
 
     if (!user) {
         return <LoginForm />;
@@ -370,6 +417,7 @@ const KanbanApp = () => {
                     filters={filters}
                     onFiltersChange={setFilters}
                     onCreateCard={handleCreateCard}
+                    canCreateCard={canCreateCards}
                     users={users}
                     labels={labels}
                     localSearchValue={filters.search || ''}
@@ -381,12 +429,7 @@ const KanbanApp = () => {
                     onCardUpdate={handleCardUpdate}
                     onCardDelete={handleCardDelete}
                     onCardMove={handleCardMove}
-                    onCreateCard={(listId) => {
-                        // Créer une nouvelle carte dans la liste spécifiée
-                        setDefaultListIdForNewCard(listId);
-                        setEditingCard(null);
-                        setShowCardForm(true);
-                    }}
+                    onCreateCard={canCreateCards ? (listId) => handleCreateCard(listId) : undefined}
                     refreshTrigger={listsRefreshTrigger}
                     isAnyModalOpen={isAnyModalOpen}
                 />

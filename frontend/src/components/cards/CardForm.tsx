@@ -1,22 +1,22 @@
-import { useState, useEffect, useCallback, FormEvent } from 'react';
-import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { closestCenter, DndContext, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ArrowDown, ArrowUp, GripVertical, Minus, Trash2, X } from 'lucide-react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useToast } from '../../hooks/use-toast.tsx';
+import { useAuth } from '../../hooks/useAuth';
+import { useUsers } from '../../hooks/useUsers';
+import { mapPriorityFromBackend, mapPriorityToBackend } from '../../lib/priority';
+import { cardItemsService, cardService, labelService } from '../../services/api.tsx';
+import { Card, CardPriority, Label as LabelType, UserRole, UserRoleValue } from '../../types/index.ts';
+import { Badge } from '../ui/badge.tsx';
 import { Button } from '../ui/button.tsx';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog.tsx';
 import { Input } from '../ui/input.tsx';
 import { Label } from '../ui/label.tsx';
-import { Textarea } from '../ui/textarea.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select.tsx';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog.tsx';
-import { Badge } from '../ui/badge.tsx';
-import { X, ArrowUp, ArrowDown, Minus, Trash2, GripVertical } from 'lucide-react';
-import { CardPriority } from '../../types/index.ts';
-import { mapPriorityToBackend, mapPriorityFromBackend } from '../../lib/priority';
-import { cardService, labelService, cardItemsService } from '../../services/api.tsx';
-import { useToast } from '../../hooks/use-toast.tsx';
-import { Card, Label as LabelType } from '../../types/index.ts';
-import { useUsers } from '../../hooks/useUsers';
-import { useTranslation } from 'react-i18next';
+import { Textarea } from '../ui/textarea.tsx';
 
 interface CardFormProps {
     card: Card | null;
@@ -51,10 +51,29 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
     });
     const { toast } = useToast();
     const { users } = useUsers();
+    const { user: currentUser } = useAuth();
+    const currentUserId = currentUser?.id ?? null;
+    const userRole = currentUser?.role as UserRoleValue | undefined;
+    const isAssignedOnlyRole = userRole === UserRole.ASSIGNED_ONLY;
+    const canManageAllCards = userRole === UserRole.ADMIN || userRole === UserRole.USER;
+    const isEditing = Boolean(card);
+    const canCreateCard = canManageAllCards || isAssignedOnlyRole;
+    const canEditCard = isEditing ? (canManageAllCards || (isAssignedOnlyRole && card?.assignee_id === currentUserId)) : canCreateCard;
+    const shouldEnforceSelfAssignment = !isEditing && isAssignedOnlyRole;
+
+    // Determine if we're in view-only mode
+    const isViewOnly = isEditing && !canEditCard;
+
     const [labels, setLabels] = useState<LabelType[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [checklist, setChecklist] = useState<{ id?: number; text: string; is_done: boolean; position: number }[]>([]);
     const [newItemText, setNewItemText] = useState<string>('');
+
+    useEffect(() => {
+        if (isOpen && !canEditCard && !isEditing) {
+            onClose();
+        }
+    }, [isOpen, canEditCard, isEditing, onClose]);
 
     const loadData = useCallback(async (): Promise<void> => {
         try {
@@ -94,7 +113,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                         description: '',
                         due_date: '',
                         priority: CardPriority.MEDIUM,
-                        assignee_id: null,
+                        assignee_id: isAssignedOnlyRole ? currentUserId ?? null : null,
                         label_ids: [],
                         list_id: defaultListId ?? -1 // Utiliser -1 par défaut
                     });
@@ -107,6 +126,19 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
+
+        if (!canEditCard) {
+            return;
+        }
+
+        if (shouldEnforceSelfAssignment && (typeof formData.assignee_id !== 'number' || formData.assignee_id !== currentUserId)) {
+            toast({
+                title: t('card.selfAssignmentRequired'),
+                variant: 'destructive'
+            });
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -121,17 +153,14 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                 list_id: formData.list_id
             };
 
-            // Build payloads to match the updated CreateCardData / UpdateCardData types.
             const labelIds = Array.isArray(formData.label_ids) ? formData.label_ids.map(Number) : [];
             const createPayload = {
                 ...basePayload,
-                // include label_ids only if present
                 ...(labelIds.length > 0 ? { label_ids: labelIds } : {})
             };
 
             const updatePayload = {
                 ...basePayload,
-                // for updates the route contains the id; body shouldn't include it
                 ...(labelIds.length > 0 ? { label_ids: labelIds } : {})
             };
 
@@ -141,9 +170,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             } else {
                 savedCard = await cardService.createCard(createPayload);
             }
-            // Sync checklist changes: create/update/delete as needed
             try {
-                // For simplicity, we will upsert items sequentially
                 for (let idx = 0; idx < checklist.length; idx++) {
                     const item = checklist[idx];
                     if (!item.text || item.text.trim() === '') {
@@ -155,7 +182,6 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                         await cardItemsService.createItem(savedCard.id, item.text, idx + 1, item.is_done);
                     }
                 }
-                // Fetch latest to include IDs
                 const latest = await cardItemsService.getItems(savedCard.id);
                 savedCard.items = latest as any;
             } catch { /* ignore checklist errors to not block card save */ }
@@ -163,12 +189,12 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             onClose();
             toast({
                 title: card ? t('card.updateSuccess') : t('card.createSuccess'),
-                variant: "success"
+                variant: 'success'
             });
         } catch (error: any) {
             toast({
                 title: error.response?.data?.detail || t('card.saveError'),
-                variant: "destructive"
+                variant: 'destructive'
             });
         } finally {
             setLoading(false);
@@ -242,7 +268,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
     };
 
     const handleDelete = async (): Promise<void> => {
-        if (!card || !onDelete) {
+        if (!card || !onDelete || !canEditCard) {
             return;
         }
 
@@ -263,10 +289,10 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             <DialogContent className="max-h-screen overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
-                        {card ? t('card.editCard') : t('card.newCard')}
+                        {isViewOnly ? t('card.viewCard') : (card ? t('card.editCard') : t('card.newCard'))}
                     </DialogTitle>
                     <DialogDescription>
-                        {card ? t('card.editCardDescription') : t('card.newCardDescription')}
+                        {isViewOnly ? t('card.viewCardDescription') : (card ? t('card.editCardDescription') : t('card.newCardDescription'))}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -278,6 +304,8 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                             value={formData.title}
                             onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                             required
+                            readOnly={isViewOnly}
+                            disabled={isViewOnly}
                         />
                     </div>
 
@@ -288,6 +316,8 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                             value={formData.description}
                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                             rows={3}
+                            readOnly={isViewOnly}
+                            disabled={isViewOnly}
                         />
                     </div>
 
@@ -306,6 +336,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                         title={t('card.move')}
                                                         {...attributes}
                                                         {...listeners}
+                                                        style={{ display: isViewOnly ? 'none' : 'flex' }}
                                                     >
                                                         <GripVertical className="h-4 w-4" />
                                                     </div>
@@ -315,14 +346,24 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                         checked={item.is_done}
                                                         onChange={() => toggleChecklistItem(index)}
                                                         title={t('card.toggleChecklistItem')}
+                                                        disabled={isViewOnly}
                                                     />
                                                     <Input
                                                         value={item.text}
                                                         onChange={(e) => updateChecklistItemText(index, e.target.value)}
                                                         className={item.is_done ? 'line-through text-muted-foreground' : ''}
                                                         maxLength={64}
+                                                        readOnly={isViewOnly}
+                                                        disabled={isViewOnly}
                                                     />
-                                                    <Button type="button" variant="ghost" size="icon" onClick={() => deleteChecklistItem(index)} title={t('card.archive')}>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => deleteChecklistItem(index)}
+                                                        title={t('card.archive')}
+                                                        style={{ display: isViewOnly ? 'none' : 'flex' }}
+                                                    >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
@@ -331,16 +372,18 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                     ))}
                                 </SortableContext>
                             </DndContext>
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    placeholder={t('card.addChecklistItem')}
-                                    value={newItemText}
-                                    onChange={(e) => setNewItemText(e.target.value)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(); } }}
-                                    maxLength={64}
-                                />
-                                <Button type="button" variant="secondary" onClick={addChecklistItem}>{t('card.add')}</Button>
-                            </div>
+                            {!isViewOnly && (
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        placeholder={t('card.addChecklistItem')}
+                                        value={newItemText}
+                                        onChange={(e) => setNewItemText(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(); } }}
+                                        maxLength={64}
+                                    />
+                                    <Button type="button" variant="secondary" onClick={addChecklistItem}>{t('card.add')}</Button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -352,15 +395,15 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                 <Badge
                                     key={label.id}
                                     variant={formData.label_ids.includes(label.id) ? "default" : "outline"}
-                                    className="cursor-pointer"
+                                    className={isViewOnly ? "cursor-default" : "cursor-pointer"}
                                     style={{
                                         backgroundColor: formData.label_ids.includes(label.id) ? label.color : 'transparent',
                                         borderColor: label.color
                                     }}
-                                    onClick={() => handleLabelToggle(label.id)}
+                                    onClick={isViewOnly ? undefined : () => handleLabelToggle(label.id)}
                                 >
                                     {label.name}
-                                    {formData.label_ids.includes(label.id) && (
+                                    {formData.label_ids.includes(label.id) && !isViewOnly && (
                                         <X className="h-3 w-3 ml-1" />
                                     )}
                                 </Badge>
@@ -374,6 +417,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                             <Select
                                 value={formData.priority}
                                 onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
+                                disabled={isViewOnly}
                             >
                                 <SelectTrigger>
                                     <SelectValue />
@@ -408,6 +452,8 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                 type="date"
                                 value={formData.due_date}
                                 onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
+                                readOnly={isViewOnly}
+                                disabled={isViewOnly}
                             />
                         </div>
 
@@ -419,6 +465,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                     ...prev,
                                     assignee_id: value === 'none' ? null : parseInt(value)
                                 }))}
+                                disabled={isViewOnly}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder={t('card.selectUser')} />
@@ -437,13 +484,13 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
 
                     <DialogFooter className="flex justify-between items-center">
                         <div className="flex-1">
-                            {card && onDelete && (
+                            {card && onDelete && !isViewOnly && (
                                 <Button
                                     type="button"
                                     variant="destructive"
                                     size="sm"
                                     onClick={handleDelete}
-                                    className="flex items-center gap-2"
+                                    disabled={loading}
                                 >
                                     <Trash2 className="h-4 w-4" />
                                     {t('card.archiveCard')}
@@ -451,12 +498,20 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                             )}
                         </div>
                         <div className="flex gap-2 ml-auto">
-                            <Button type="button" variant="outline" onClick={onClose}>
-                                {t('common.cancel')}
-                            </Button>
-                            <Button type="submit" disabled={loading}>
-                                {loading ? t('common.saving') : (card ? t('common.update') : t('common.create'))}
-                            </Button>
+                            {isViewOnly ? (
+                                <Button type="button" variant="outline" onClick={onClose}>
+                                    {t('common.close')}
+                                </Button>
+                            ) : (
+                                <>
+                                    <Button type="button" variant="outline" onClick={onClose}>
+                                        {t('common.cancel')}
+                                    </Button>
+                                    <Button type="submit" disabled={loading}>
+                                        {loading ? t('common.saving') : (card ? t('common.update') : t('common.create'))}
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </DialogFooter>
                 </form>

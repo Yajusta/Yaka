@@ -6,7 +6,7 @@ import datetime
 import enum
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import DateTime, Enum, Integer, String, Index, text
+from sqlalchemy import DateTime, Enum, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -19,6 +19,9 @@ class UserRole(enum.Enum):
 
     ADMIN = "admin"
     USER = "user"
+    READ_ONLY = "read_only"
+    COMMENTS_ONLY = "comments_only"
+    ASSIGNED_ONLY = "assigned_only"
 
 
 class UserStatus(enum.Enum):

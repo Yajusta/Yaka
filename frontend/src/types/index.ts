@@ -1,12 +1,12 @@
+import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import React from 'react';
-import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 export interface User {
     id: number;
     username?: string;
     email: string;
     display_name?: string;
-    role?: string;
+    role?: UserRoleValue;
     language?: string;
     created_at: string;
     updated_at?: string;
@@ -176,8 +176,13 @@ export enum CardPriority {
 
 export const UserRole = {
     ADMIN: 'admin',
-    USER: 'user'
+    USER: 'user',
+    READ_ONLY: 'read_only',
+    COMMENTS_ONLY: 'comments_only',
+    ASSIGNED_ONLY: 'assigned_only'
 } as const;
+
+export type UserRoleValue = (typeof UserRole)[keyof typeof UserRole];
 
 // Legacy function - kept for backward compatibility during transition
 // This function is now moved to useTranslatedLabels hook for proper i18n support

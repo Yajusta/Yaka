@@ -50,11 +50,12 @@ class TestModelImports:
 
         assert UserRole.ADMIN.value == "admin"
         assert UserRole.USER.value == "user"
+        assert UserRole.READ_ONLY.value == "read_only"
+        assert UserRole.COMMENTS_ONLY.value == "comments_only"
+        assert UserRole.ASSIGNED_ONLY.value == "assigned_only"
 
-        # Vérifier que toutes les valeurs sont présentes
-        role_values = [role.value for role in UserRole]
-        assert "admin" in role_values
-        assert "user" in role_values
+        expected_values = {"admin", "user", "read_only", "comments_only", "assigned_only"}
+        assert {role.value for role in UserRole} == expected_values
 
     def test_user_status_enum_values(self):
         """Test les valeurs de l'énumération UserStatus."""
@@ -353,7 +354,7 @@ class TestModelImports:
         from app.models import CardPriority, UserRole, UserStatus
 
         # Vérifier que les énumérations peuvent être itérées
-        assert len(list(UserRole)) == 2
+        assert len(list(UserRole)) == 5
         assert len(list(UserStatus)) == 3
         assert len(list(CardPriority)) == 3
 

@@ -85,9 +85,7 @@ class UserUpdate(BaseModel):
     @classmethod
     def validate_optional_password_strength(cls, value: Optional[str]) -> Optional[str]:
         """Valide la complexité du mot de passe si fourni."""
-        if value is None:
-            return None
-        return _validate_password_strength(value)
+        return None if value is None else _validate_password_strength(value)
 
 
 class LanguageUpdate(BaseModel):

@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { MoreHorizontal, Trash2, User, Key, Check, Mail, RefreshCw } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { userService } from '../../services/api';
+import { Check, Key, Mail, MoreHorizontal, RefreshCw, Trash2, User } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../hooks/use-toast.tsx';
 import { useAuth } from '../../hooks/useAuth';
-import { useUsers, AppUser } from '../../hooks/useUsers';
-import { useTranslation } from 'react-i18next';
+import { AppUser, useUsers } from '../../hooks/useUsers';
+import { userService } from '../../services/api';
+import { UserRole, UserRoleValue } from '../../types';
+import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type UserItem = AppUser;
 
@@ -20,13 +21,31 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
     const { users, loading, forbidden, refresh } = useUsers();
     const [email, setEmail] = useState('');
     const [displayName, setDisplayName] = useState('');
-    const [role, setRole] = useState<'user' | 'admin'>('user');
+    const [role, setRole] = useState<UserRoleValue>(UserRole.USER);
     const [editingUser, setEditingUser] = useState<UserItem | null>(null);
     const [editingDisplayName, setEditingDisplayName] = useState('');
 
+    const roleOptions = useMemo(() => ([
+        { value: UserRole.USER, label: t('role.user') },
+        { value: UserRole.ADMIN, label: t('role.admin') },
+        { value: UserRole.READ_ONLY, label: t('role.read_only') },
+        { value: UserRole.COMMENTS_ONLY, label: t('role.comments_only') },
+        { value: UserRole.ASSIGNED_ONLY, label: t('role.assigned_only') },
+    ]), [t]);
+
+    const roleLabelMap = useMemo(() => new Map(roleOptions.map(option => [option.value, option.label])), [roleOptions]);
+
+    const getRoleLabel = (value?: string | null): string => {
+        if (!value) {
+            return t('role.user');
+        }
+        return roleLabelMap.get(value as UserRoleValue) || t('role.user');
+    };
+
+
     useEffect(() => {
         if (isOpen) {
-          refresh();
+            refresh();
         }
     }, [isOpen]);
 
@@ -49,6 +68,7 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
             await userService.inviteUser({ email, display_name: displayName, role });
             setEmail('');
             setDisplayName('');
+            setRole(UserRole.USER);
             await refresh();
             toast({
                 title: t('user.invitationSent'),
@@ -104,7 +124,7 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
 
     const handleSaveDisplayName = async () => {
         if (!editingUser || !editingDisplayName.trim()) {
-          return;
+            return;
         }
 
         try {
@@ -127,7 +147,14 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
         }
     };
 
-    const handleChangeRole = async (userId: number, newRole: 'user' | 'admin') => {
+    const handleChangeRole = async (userId: number, newRole: UserRoleValue) => {
+        if (userId === currentUser?.id) {
+            return;
+        }
+        const targetUser = users.find((existing) => existing.id === userId);
+        if (targetUser?.role === newRole) {
+            return;
+        }
         try {
             await userService.updateUser(userId, { role: newRole });
             await refresh();
@@ -153,7 +180,7 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
 
     const canResendInvitation = (invitedAt?: string): boolean => {
         if (!invitedAt) {
-          return true;
+            return true;
         }
         const invitedTime = new Date(invitedAt);
         const now = new Date();
@@ -206,7 +233,7 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                             )}
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            <p>{u.role === 'admin' ? t('role.admin') : t('user.member')}</p>
+                                                            <p>{getRoleLabel(u.role)}</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </div>
@@ -224,10 +251,10 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                             <p>{(() => {
                                                                 const status = u.status?.toLowerCase();
                                                                 if (status === 'active') {
-                                                                  return t('user.activeUser');
+                                                                    return t('user.activeUser');
                                                                 }
                                                                 if (status === 'invited') {
-                                                                  return t('user.invitationPending');
+                                                                    return t('user.invitationPending');
                                                                 }
                                                                 return t('user.activeUser');
                                                             })()}</p>
@@ -285,19 +312,16 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                                 <User className="h-4 w-4" />
                                                                 {t('user.modifyName')}
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() => {
-                                                                    if (u.id === currentUser?.id) return;
-                                                                    handleChangeRole(u.id, u.role === 'admin' ? 'user' : 'admin');
-                                                                }}
-                                                                className={`flex items-center gap-2 ${u.id === currentUser?.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                            >
+                                                            <DropdownMenuSub>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <div className="flex items-center gap-2 w-full">
+                                                                        <DropdownMenuSubTrigger
+                                                                            disabled={u.id === currentUser?.id}
+                                                                            className={`flex items-center gap-2 ${u.id === currentUser?.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                        >
                                                                             <Key className="h-4 w-4" />
-                                                                            {u.role === 'admin' ? t('user.demoteToMember') : t('user.promoteToAdmin')}
-                                                                        </div>
+                                                                            <span className="flex-1">{t('user.changeRole')}</span>
+                                                                        </DropdownMenuSubTrigger>
                                                                     </TooltipTrigger>
                                                                     {u.id === currentUser?.id && (
                                                                         <TooltipContent>
@@ -305,7 +329,20 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                                         </TooltipContent>
                                                                     )}
                                                                 </Tooltip>
-                                                            </DropdownMenuItem>
+                                                                <DropdownMenuSubContent className="w-48">
+                                                                    {roleOptions.map((option) => (
+                                                                        <DropdownMenuItem
+                                                                            key={option.value}
+                                                                            onClick={() => handleChangeRole(u.id, option.value)}
+                                                                            disabled={u.id === currentUser?.id || u.role === option.value}
+                                                                            className="flex items-center gap-2"
+                                                                        >
+                                                                            <span>{option.label}</span>
+                                                                            {u.role === option.value && <Check className="ml-auto h-3.5 w-3.5 text-primary" />}
+                                                                        </DropdownMenuItem>
+                                                                    ))}
+                                                                </DropdownMenuSubContent>
+                                                            </DropdownMenuSub>
                                                             <DropdownMenuItem
                                                                 variant="destructive"
                                                                 onClick={() => {
@@ -368,9 +405,16 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                     {displayName.length}/32 {t('common.charactersMax')}
                                 </p>
                             </div>
-                            <select value={role} onChange={(e) => setRole((e.target as HTMLSelectElement).value as any)} className="input">
-                                <option value="user">{t('user.member')}</option>
-                                <option value="admin">{t('role.admin')}</option>
+                            <select
+                                value={role}
+                                onChange={(e) => setRole((e.target as HTMLSelectElement).value as UserRoleValue)}
+                                className="input"
+                            >
+                                {roleOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
                             </select>
                             <div className="flex items-center space-x-2">
                                 <Button onClick={handleInvite} disabled={!isFormValid}>{t('user.inviteUser')}</Button>

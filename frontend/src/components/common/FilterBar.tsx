@@ -34,6 +34,7 @@ interface FilterBarProps {
     onCreateCard: () => void;
     users: User[];
     labels: Label[];
+    canCreateCard?: boolean;
     localSearchValue?: string;
     onLocalSearchChange?: (value: string) => void;
 }
@@ -44,6 +45,7 @@ export const FilterBar = ({
     onCreateCard,
     users,
     labels,
+    canCreateCard = true,
     localSearchValue = '',
 }: FilterBarProps) => {
     const { t } = useTranslation();
@@ -183,10 +185,12 @@ export const FilterBar = ({
                     </div>
 
                     {/* Create card button */}
-                    <Button onClick={onCreateCard} className="bg-primary hover:bg-primary/90 shadow-sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        {t('card.newCard')}
-                    </Button>
+                    {canCreateCard && (
+                        <Button onClick={onCreateCard} className="bg-primary hover:bg-primary/90 shadow-sm">
+                            <Plus className="h-4 w-4 mr-2" />
+                            {t('card.newCard')}
+                        </Button>
+                    )}
                 </div>
 
                 {/* Advanced filters */}

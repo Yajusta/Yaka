@@ -90,7 +90,9 @@
         "checklistProgress": "Progression de la checklist",
         "olderComment": "commentaire plus ancien |||| commentaires plus anciens",
         "editCardDescription": "Modifier les informations de la carte",
+        "detailsDescription": "Consulter les informations de la carte",
         "newCardDescription": "Remplissez les détails pour créer une nouvelle carte",
+        "viewCardDescription": "Consulter les détails de la carte",
         "assignee": "Assigné à",
         "priority": "Priorité",
         "labels": "Étiquettes",
@@ -103,6 +105,8 @@
         "history": "Historique",
         "newCard": "Nouvelle carte",
         "editCard": "Modifier la carte",
+        "viewCard": "Consulter la carte",
+        "detailsTitle": "Détails de la carte",
         "deleteCard": "Supprimer la carte",
         "archiveCard": "Archiver la carte",
         "restoreCard": "Restaurer la carte",
@@ -157,6 +161,9 @@
         "updateCommentError": "Erreur lors de la modification du commentaire",
         "deleteCommentError": "Erreur lors de la suppression du commentaire",
         "commentUpdated": "Commentaire mis à jour",
+        "permissionDenied": "Vous n'avez pas l'autorisation d'effectuer cette action.",
+        "selfAssignmentRequired": "Vous devez vous assigner à la carte pour pouvoir la créer.",
+        "commentsReadOnlyNotice": "Vous pouvez consulter les commentaires, mais pas en ajouter ni les modifier.",
         "commentDeleted": "Commentaire supprimé",
         "createSuccess": "Carte créée avec succès",
         "updateSuccess": "Carte mise à jour avec succès",
@@ -334,6 +341,9 @@
     "role": {
         "admin": "Administrateur",
         "user": "Utilisateur",
+        "read_only": "Lecture seule",
+        "comments_only": "Commentaires uniquement",
+        "assigned_only": "Assigné uniquement",
         "guest": "Invité"
     },
     "filter": {

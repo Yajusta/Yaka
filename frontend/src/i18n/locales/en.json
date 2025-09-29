@@ -90,7 +90,9 @@
         "checklistProgress": "Checklist progress",
         "olderComment": "older comment |||| older comments",
         "editCardDescription": "Edit card information",
+        "detailsDescription": "Review the card information",
         "newCardDescription": "Fill in the details to create a new card",
+        "viewCardDescription": "View card details",
         "assignee": "Assignee",
         "priority": "Priority",
         "labels": "Labels",
@@ -103,6 +105,8 @@
         "history": "History",
         "newCard": "New card",
         "editCard": "Edit card",
+        "viewCard": "View card",
+        "detailsTitle": "Card details",
         "deleteCard": "Delete card",
         "archiveCard": "Archive card",
         "restoreCard": "Restore card",
@@ -157,6 +161,9 @@
         "updateCommentError": "Error updating comment",
         "deleteCommentError": "Error deleting comment",
         "commentUpdated": "Comment updated",
+        "permissionDenied": "You do not have permission to perform this action.",
+        "selfAssignmentRequired": "Assign the card to yourself before creating it.",
+        "commentsReadOnlyNotice": "You can view comments but cannot add or edit them.",
         "commentDeleted": "Comment deleted",
         "createSuccess": "Card created successfully",
         "updateSuccess": "Card updated successfully",
@@ -334,6 +341,9 @@
     "role": {
         "admin": "Administrator",
         "user": "User",
+        "read_only": "Read only",
+        "comments_only": "Comments only",
+        "assigned_only": "Assigned only",
         "guest": "Guest"
     },
     "filter": {
