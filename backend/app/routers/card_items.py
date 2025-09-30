@@ -1,4 +1,4 @@
-"""Routeur pour la gestion des éléments de checklist des cartes."""
+"""Router for managing card checklist items."""
 
 from typing import List
 
@@ -32,10 +32,10 @@ async def list_items(
 async def create_item(
     item: CardItemCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
-    """Créer un nouvel item de checklist."""
+    """Create a new checklist item."""
     card = card_service.get_card(db, card_id=item.card_id)
     if card is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Card not found")
 
     ensure_can_create_card_item(current_user, card)
 
@@ -52,23 +52,23 @@ async def update_item(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Mettre à jour un item de checklist.
+    """Update a checklist item.
 
-    Si seul le champ 'completed' est modifié, cela constitue un 'toggle'.
-    Sinon, c'est une modification complète.
+    If only the 'is_done' field is modified, it's a toggle.
+    Otherwise, it's a full modification.
     """
     existing_item = db.query(CardItem).filter(CardItem.id == item_id).first()
     if not existing_item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Élément non trouvé")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
     card = card_service.get_card(db, card_id=existing_item.card_id)
     if card is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Card not found")
 
-    # Si seul 'completed' change, c'est un toggle (CONTRIBUTOR+)
-    # Sinon, c'est une modification (EDITOR+)
+    # If only 'is_done' changes, it's a toggle (CONTRIBUTOR+)
+    # Otherwise, it's a modification (EDITOR+)
     update_dict = item.model_dump(exclude_unset=True)
-    if set(update_dict.keys()) == {"completed"}:
+    if set(update_dict.keys()) == {"is_done"}:
         ensure_can_toggle_card_item(current_user, card)
     else:
         ensure_can_modify_card_item(current_user, card)
@@ -76,25 +76,25 @@ async def update_item(
     if db_item := card_item_service.update_item(db, item_id, item):
         return db_item
     else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Élément non trouvé")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
 
 @router.delete("/{item_id}")
 async def delete_item(
     item_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
-    """Supprimer un item de checklist."""
+    """Delete a checklist item."""
     existing_item = db.query(CardItem).filter(CardItem.id == item_id).first()
     if not existing_item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Élément non trouvé")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
     card = card_service.get_card(db, card_id=existing_item.card_id)
     if card is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Card not found")
 
     ensure_can_delete_card_item(current_user, card)
 
     if ok := card_item_service.delete_item(db, item_id):
-        return {"message": "Élément supprimé"}
+        return {"message": "Item deleted"}
     else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Élément non trouvé")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")

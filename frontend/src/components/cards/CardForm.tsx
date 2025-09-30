@@ -6,10 +6,11 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../hooks/use-toast.tsx';
 import { useAuth } from '../../hooks/useAuth';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useUsers } from '../../hooks/useUsers';
 import { mapPriorityFromBackend, mapPriorityToBackend } from '../../lib/priority';
 import { cardItemsService, cardService, labelService } from '../../services/api.tsx';
-import { Card, CardPriority, Label as LabelType, UserRole, UserRoleValue } from '../../types/index.ts';
+import { Card, CardPriority, Label as LabelType } from '../../types/index.ts';
 import { Badge } from '../ui/badge.tsx';
 import { Button } from '../ui/button.tsx';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog.tsx';
@@ -53,13 +54,22 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
     const { users } = useUsers();
     const { user: currentUser } = useAuth();
     const currentUserId = currentUser?.id ?? null;
-    const userRole = currentUser?.role as UserRoleValue | undefined;
-    const isAssignedOnlyRole = userRole === UserRole.ASSIGNED_ONLY;
-    const canManageAllCards = userRole === UserRole.ADMIN || userRole === UserRole.USER;
+    const permissions = usePermissions(currentUser);
     const isEditing = Boolean(card);
-    const canCreateCard = canManageAllCards || isAssignedOnlyRole;
-    const canEditCard = isEditing ? (canManageAllCards || (isAssignedOnlyRole && card?.assignee_id === currentUserId)) : canCreateCard;
-    const shouldEnforceSelfAssignment = !isEditing && isAssignedOnlyRole;
+    const canCreateCard = permissions.canCreateCard;
+
+    // For editing, check if user can modify content OR metadata (not just checklist items)
+    const canEditCardContent = isEditing ? permissions.canModifyCardContent(card!) : canCreateCard;
+    const canEditCardMetadata = isEditing ? permissions.canModifyCardMetadata(card!) : canCreateCard;
+    const canEditCard = canEditCardContent || canEditCardMetadata;
+    const canDeleteCard = permissions.canDeleteCard;
+
+    // Check if user can toggle checklist items (CONTRIBUTOR can do this)
+    const canToggleChecklistItems = isEditing ? permissions.canToggleCardItem(card!) : canCreateCard;
+
+    // For EDITOR role, enforce self-assignment on creation
+    const isEditorRole = permissions.isEditorOrAbove && !permissions.isSupervisorOrAbove;
+    const shouldEnforceSelfAssignment = !isEditing && isEditorRole;
 
     // Determine if we're in view-only mode
     const isViewOnly = isEditing && !canEditCard;
@@ -113,7 +123,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                         description: '',
                         due_date: '',
                         priority: CardPriority.MEDIUM,
-                        assignee_id: isAssignedOnlyRole ? currentUserId ?? null : null,
+                        assignee_id: shouldEnforceSelfAssignment ? currentUserId ?? null : null,
                         label_ids: [],
                         list_id: defaultListId ?? -1 // Utiliser -1 par défaut
                     });
@@ -219,8 +229,29 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
         setNewItemText('');
     };
 
-    const toggleChecklistItem = (index: number): void => {
-        setChecklist(prev => prev.map((it, i) => i === index ? { ...it, is_done: !it.is_done } : it));
+    const toggleChecklistItem = async (index: number): Promise<void> => {
+        const item = checklist[index];
+
+        // If the item has an ID and card exists, update it via API immediately (for CONTRIBUTOR)
+        if (item?.id && card?.id) {
+            try {
+                const updated = await cardItemsService.updateItem(item.id, { is_done: !item.is_done });
+                setChecklist(prev => prev.map((it, i) => i === index ? { ...it, is_done: updated.is_done } : it));
+                // Also update the parent card's items in memory (without closing the form)
+                if (card.items) {
+                    card.items = card.items.map(it => it.id === item.id ? { ...it, is_done: updated.is_done } : it);
+                }
+            } catch (error: any) {
+                toast({
+                    title: t('common.error'),
+                    description: error.response?.data?.detail || t('card.updateChecklistItemError'),
+                    variant: 'destructive'
+                });
+            }
+        } else {
+            // For new items not yet saved, just update local state
+            setChecklist(prev => prev.map((it, i) => i === index ? { ...it, is_done: !it.is_done } : it));
+        }
     };
 
     const updateChecklistItemText = (index: number, text: string): void => {
@@ -268,7 +299,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
     };
 
     const handleDelete = async (): Promise<void> => {
-        if (!card || !onDelete || !canEditCard) {
+        if (!card || !onDelete || !canDeleteCard) {
             return;
         }
 
@@ -346,7 +377,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                         checked={item.is_done}
                                                         onChange={() => toggleChecklistItem(index)}
                                                         title={t('card.toggleChecklistItem')}
-                                                        disabled={isViewOnly}
+                                                        disabled={isViewOnly && !canToggleChecklistItems}
                                                     />
                                                     <Input
                                                         value={item.text}
@@ -484,7 +515,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
 
                     <DialogFooter className="flex justify-between items-center">
                         <div className="flex-1">
-                            {card && onDelete && !isViewOnly && (
+                            {card && onDelete && !isViewOnly && canDeleteCard && (
                                 <Button
                                     type="button"
                                     variant="destructive"

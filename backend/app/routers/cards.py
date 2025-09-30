@@ -26,6 +26,8 @@ from ..utils.permissions import (
     ensure_can_create_card,
     ensure_can_delete_card,
     ensure_can_modify_card,
+    ensure_can_modify_card_content,
+    ensure_can_modify_card_metadata,
     ensure_can_move_card,
 )
 
@@ -120,7 +122,28 @@ async def update_card(
 ):
     """Mettre à jour une carte."""
     card = _get_card_or_404(db, card_id)
-    ensure_can_modify_card(current_user, card)
+
+    # Check permissions based on what's being modified
+    update_data = card_update.model_dump(exclude_unset=True)
+
+    # Content fields (title, description)
+    content_fields = {"title", "description"}
+    if any(field in update_data for field in content_fields):
+        ensure_can_modify_card_content(current_user, card)
+
+    # Metadata fields (due_date, priority, assignee_id, label_ids)
+    metadata_fields = {"due_date", "priority", "assignee_id", "label_ids"}
+    if any(field in update_data for field in metadata_fields):
+        ensure_can_modify_card_metadata(current_user, card)
+
+    # If list_id is being changed, check move permission
+    if "list_id" in update_data:
+        ensure_can_move_card(current_user, card)
+
+    # If nothing specific was checked, ensure basic modify permission
+    if not any(field in update_data for field in content_fields | metadata_fields | {"list_id"}):
+        ensure_can_modify_card(current_user, card)
+
     db_card = card_service.update_card(db, card_id=card_id, card_update=card_update, updated_by=current_user.id)
     if db_card is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")

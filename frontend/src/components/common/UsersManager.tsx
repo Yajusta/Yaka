@@ -1,4 +1,4 @@
-import { Check, Key, Mail, MoreHorizontal, RefreshCw, Trash2, User } from 'lucide-react';
+import { Check, Eye, Key, Mail, MessageSquare, MoreHorizontal, PenTool, RefreshCw, Shield, Trash2, User, Users, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../hooks/use-toast.tsx';
@@ -24,6 +24,7 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
     const [role, setRole] = useState<UserRoleValue>(UserRole.VISITOR);
     const [editingUser, setEditingUser] = useState<UserItem | null>(null);
     const [editingDisplayName, setEditingDisplayName] = useState('');
+    const [showAddUserForm, setShowAddUserForm] = useState(false);
 
     const roleOptions = useMemo(() => ([
         { value: UserRole.VISITOR, label: t('role.visitor') },
@@ -41,6 +42,56 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
             return t('role.visitor');
         }
         return roleLabelMap.get(value as UserRoleValue) || t('role.visitor');
+    };
+
+    const getRoleIcon = (role: UserRoleValue) => {
+        switch (role) {
+            case UserRole.ADMIN:
+                return Key;
+            case UserRole.SUPERVISOR:
+                return Shield;
+            case UserRole.EDITOR:
+                return PenTool;
+            case UserRole.CONTRIBUTOR:
+                return Users;
+            case UserRole.COMMENTER:
+                return MessageSquare;
+            case UserRole.VISITOR:
+                return Eye;
+            default:
+                return User;
+        }
+    };
+
+    const getRolePermissions = (role: UserRoleValue) => {
+        const permissions = {
+            view: true,
+            comment: false,
+            selfAssign: false,
+            checkItems: false,
+            moveOwn: false,
+            createTask: false,
+            modifyOwn: false,
+            modifyAll: false,
+            delete: false,
+            admin: false
+        };
+
+        switch (role) {
+            case UserRole.ADMIN:
+                return { ...permissions, comment: true, selfAssign: true, checkItems: true, moveOwn: true, createTask: true, modifyOwn: true, modifyAll: true, delete: true, admin: true };
+            case UserRole.SUPERVISOR:
+                return { ...permissions, comment: true, selfAssign: true, checkItems: true, moveOwn: true, createTask: true, modifyOwn: true, modifyAll: true, delete: true };
+            case UserRole.EDITOR:
+                return { ...permissions, comment: true, selfAssign: true, checkItems: true, moveOwn: true, createTask: true, modifyOwn: true };
+            case UserRole.CONTRIBUTOR:
+                return { ...permissions, comment: true, selfAssign: true, checkItems: true, moveOwn: true };
+            case UserRole.COMMENTER:
+                return { ...permissions, comment: true };
+            case UserRole.VISITOR:
+            default:
+                return permissions;
+        }
     };
 
 
@@ -70,6 +121,7 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
             setEmail('');
             setDisplayName('');
             setRole(UserRole.VISITOR);
+            setShowAddUserForm(false);
             await refresh();
             toast({
                 title: t('user.invitationSent'),
@@ -84,6 +136,14 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                 variant: 'destructive'
             });
         }
+    };
+
+    const handleCancelAddUser = () => {
+        setEmail('');
+        setDisplayName('');
+        setRole(UserRole.VISITOR);
+        setError(null);
+        setShowAddUserForm(false);
     };
 
     const handleDelete = async (id: number) => {
@@ -331,17 +391,60 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                                     )}
                                                                 </Tooltip>
                                                                 <DropdownMenuSubContent className="w-48">
-                                                                    {roleOptions.map((option) => (
-                                                                        <DropdownMenuItem
-                                                                            key={option.value}
-                                                                            onClick={() => handleChangeRole(u.id, option.value)}
-                                                                            disabled={u.id === currentUser?.id || u.role === option.value}
-                                                                            className="flex items-center gap-2"
-                                                                        >
-                                                                            <span>{option.label}</span>
-                                                                            {u.role === option.value && <Check className="ml-auto h-3.5 w-3.5 text-primary" />}
-                                                                        </DropdownMenuItem>
-                                                                    ))}
+                                                                    {roleOptions.map((option) => {
+                                                                        const IconComponent = getRoleIcon(option.value);
+                                                                        const perms = getRolePermissions(option.value);
+                                                                        return (
+                                                                            <Tooltip key={option.value}>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <div>
+                                                                                        <DropdownMenuItem
+                                                                                            onClick={() => handleChangeRole(u.id, option.value)}
+                                                                                            disabled={u.id === currentUser?.id || u.role === option.value}
+                                                                                            className="flex items-center gap-2"
+                                                                                        >
+                                                                                            <IconComponent className="h-3.5 w-3.5" />
+                                                                                            <span>{option.label}</span>
+                                                                                            {u.role === option.value && <Check className="ml-auto h-3.5 w-3.5 text-primary" />}
+                                                                                        </DropdownMenuItem>
+                                                                                    </div>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent side="right" className="p-3 bg-popover border-border">
+                                                                                    <div className="grid grid-cols-[auto_auto] gap-x-3 gap-y-1 text-xs">
+                                                                                        <span className="text-muted-foreground">View:</span>
+                                                                                        <span>{perms.view ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+
+                                                                                        <span className="text-muted-foreground">Comment:</span>
+                                                                                        <span>{perms.comment ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+
+                                                                                        <span className="text-muted-foreground">Self-Assign:</span>
+                                                                                        <span>{perms.selfAssign ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+
+                                                                                        <span className="text-muted-foreground">Check Items:</span>
+                                                                                        <span>{perms.checkItems ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+
+                                                                                        <span className="text-muted-foreground">Move Own:</span>
+                                                                                        <span>{perms.moveOwn ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+
+                                                                                        <span className="text-muted-foreground">Create Task:</span>
+                                                                                        <span>{perms.createTask ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+
+                                                                                        <span className="text-muted-foreground">Modify Own:</span>
+                                                                                        <span>{perms.modifyOwn ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+
+                                                                                        <span className="text-muted-foreground">Modify All:</span>
+                                                                                        <span>{perms.modifyAll ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+
+                                                                                        <span className="text-muted-foreground">Delete:</span>
+                                                                                        <span>{perms.delete ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+
+                                                                                        <span className="text-muted-foreground">Admin:</span>
+                                                                                        <span>{perms.admin ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+                                                                                    </div>
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
+                                                                        );
+                                                                    })}
                                                                 </DropdownMenuSubContent>
                                                             </DropdownMenuSub>
                                                             <DropdownMenuItem
@@ -377,52 +480,72 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                         )}
                     </div>
 
-                    <div>
-                        <h3 className="font-medium text-sm">{t('user.addNewUser')}</h3>
-                        <div className="grid gap-2 mt-2">
-                            <div className="space-y-1">
-                                <Label htmlFor="email" className="text-sm font-medium">
-                                    {t('user.email')} <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    id="email"
-                                    value={email}
-                                    onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
-                                    placeholder={t('user.email')}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="displayName" className="text-sm font-medium">
-                                    {t('user.name')} <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    id="displayName"
-                                    value={displayName}
-                                    onChange={(e) => setDisplayName((e.target as HTMLInputElement).value)}
-                                    placeholder={t('user.name')}
-                                    maxLength={32}
-                                />
-                                <p className="text-xs text-gray-500">
-                                    {displayName.length}/32 {t('common.charactersMax')}
-                                </p>
-                            </div>
-                            <select
-                                value={role}
-                                onChange={(e) => setRole((e.target as HTMLSelectElement).value as UserRoleValue)}
-                                className="input"
-                            >
-                                {roleOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                            <div className="flex items-center space-x-2">
-                                <Button onClick={handleInvite} disabled={!isFormValid}>{t('user.inviteUser')}</Button>
+                    {/* Add User Button or Form */}
+                    {!showAddUserForm ? (
+                        <div className="flex justify-start">
+                            <Button onClick={() => setShowAddUserForm(true)} variant="outline">
+                                {t('user.addNewUser')}
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="border rounded-lg p-4">
+                            <h3 className="font-medium text-sm mb-3">{t('user.addNewUser')}</h3>
+                            <div className="grid gap-3">
+                                <div className="space-y-1">
+                                    <Label htmlFor="email" className="text-sm font-medium">
+                                        {t('user.email')} <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="email"
+                                        value={email}
+                                        onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
+                                        placeholder={t('user.email')}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="displayName" className="text-sm font-medium">
+                                        {t('user.name')} <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="displayName"
+                                        value={displayName}
+                                        onChange={(e) => setDisplayName((e.target as HTMLInputElement).value)}
+                                        placeholder={t('user.name')}
+                                        maxLength={32}
+                                    />
+                                    <p className="text-xs text-gray-500">
+                                        {displayName.length}/32 {t('common.charactersMax')}
+                                    </p>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="roleSelect" className="text-sm font-medium">
+                                        {t('user.role')}
+                                    </Label>
+                                    <select
+                                        id="roleSelect"
+                                        value={role}
+                                        onChange={(e) => setRole((e.target as HTMLSelectElement).value as UserRoleValue)}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    >
+                                        {roleOptions.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                                 {error && <div className="text-sm text-destructive">{error}</div>}
+                                <div className="flex items-center gap-2">
+                                    <Button onClick={handleInvite} disabled={!isFormValid}>
+                                        {t('user.inviteUser')}
+                                    </Button>
+                                    <Button onClick={handleCancelAddUser} variant="outline">
+                                        {t('common.cancel')}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Edit Display Name Dialog */}
                     {editingUser && (

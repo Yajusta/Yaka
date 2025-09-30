@@ -3,7 +3,8 @@ import { AlertCircle, AlertTriangle, CalendarDays, Clock, Edit, MessageSquare, M
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
-import { Card, UserRole, UserRoleValue } from '../../types/index';
+import { usePermissions } from '../../hooks/usePermissions';
+import { Card } from '../../types/index';
 import { CommentsForm } from '../cards/CommentsForm';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -37,13 +38,13 @@ export const CardItem = ({
 }: CardItemProps) => {
     const { user: currentUser } = useAuth();
     const currentUserId = currentUser?.id ?? null;
-    const userRole = currentUser?.role as UserRoleValue | undefined;
     const isCurrentUserAssigned = currentUserId !== null && (card.assignee_id === currentUserId || card.assignee?.id === currentUserId);
-    const canManageAllCards = userRole === UserRole.ADMIN || userRole === UserRole.USER;
-    const canModifyCard = canManageAllCards || (userRole === UserRole.ASSIGNED_ONLY && isCurrentUserAssigned);
-    const canComment = canManageAllCards || userRole === UserRole.COMMENTS_ONLY || (userRole === UserRole.ASSIGNED_ONLY && isCurrentUserAssigned);
-    const canManageComments = canManageAllCards || (userRole === UserRole.ASSIGNED_ONLY && isCurrentUserAssigned);
-    const canDrag = canModifyCard;
+
+    // Use the permissions hook for proper role-based access control
+    const permissions = usePermissions(currentUser);
+    const canModifyCard = permissions.canModifyCard(card);
+    const canComment = permissions.canCommentOnCard;
+    const canDrag = permissions.canMoveCard(card);
 
     // Determine if the user can view actions (edit, delete buttons)
     const canViewActions = canModifyCard;
@@ -385,7 +386,6 @@ export const CardItem = ({
                 isOpen={showCommentsModal}
                 onClose={() => setShowCommentsModal(false)}
                 canAdd={canComment}
-                canManageOwn={canManageComments}
             />
         </GlassmorphicCard>
     );

@@ -62,7 +62,7 @@ const renderListManager = (props = {}) => {
 describe('ListManager', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        
+
         mockUseAuth.mockReturnValue({
             user: mockAdminUser,
             loading: false,
@@ -71,7 +71,8 @@ describe('ListManager', () => {
         });
 
         mockUseToast.mockReturnValue({
-            toast: mockToast
+            toast: mockToast,
+            dismiss: vi.fn()
         });
 
         mockListsApi.getLists.mockResolvedValue(mockLists);
@@ -97,7 +98,7 @@ describe('ListManager', () => {
         });
 
         mockListsApi.deleteListWithProgress.mockImplementation(
-            (listId, targetId, onProgress) => {
+            (_listId, _targetId, onProgress) => {
                 // Simulate progress updates
                 if (onProgress) {
                     onProgress(0, 3, 'Card 1');
@@ -116,8 +117,8 @@ describe('ListManager', () => {
         });
 
         // Click delete button for first list
-        const deleteButton = screen.getByRole('button', { 
-            name: /delete|trash|supprimer/i 
+        const deleteButton = screen.getByRole('button', {
+            name: /delete|trash|supprimer/i
         });
         fireEvent.click(deleteButton);
 
@@ -128,7 +129,7 @@ describe('ListManager', () => {
         // Select target list and confirm deletion
         const targetSelect = screen.getByRole('combobox');
         fireEvent.click(targetSelect);
-        
+
         await waitFor(() => {
             const option = screen.getByText('En cours (Ordre: 2)');
             fireEvent.click(option);
@@ -145,7 +146,7 @@ describe('ListManager', () => {
 
     it('should not render for non-admin users', () => {
         mockUseAuth.mockReturnValue({
-            user: { ...mockAdminUser, role: UserRole.USER },
+            user: { ...mockAdminUser, role: UserRole.SUPERVISOR },
             loading: false,
             login: vi.fn(),
             logout: vi.fn()

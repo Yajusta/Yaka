@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/useAuth';
+import { usePermissions } from '../../hooks/usePermissions';
 import { cardCommentsService } from '../../services/api';
 import { CardComment } from '../../types/index';
 import { Button } from '../ui/button';
@@ -14,13 +15,13 @@ interface CommentsFormProps {
     isOpen: boolean;
     onClose: () => void;
     canAdd?: boolean;
-    canManageOwn?: boolean;
 }
 
-const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true, canManageOwn = true }: CommentsFormProps) => {
+const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true }: CommentsFormProps) => {
     const { t } = useTranslation();
     const { toast } = useToast();
     const { user: currentUser } = useAuth();
+    const permissions = usePermissions(currentUser);
     const [comments, setComments] = useState<CardComment[]>([]);
     const [newCommentText, setNewCommentText] = useState<string>('');
     const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
@@ -76,11 +77,8 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true, canManageOwn = t
     };
 
     const editComment = (commentId: number): void => {
-        if (!canManageOwn) {
-            return;
-        }
         const comment = comments.find(c => c.id === commentId);
-        if (comment) {
+        if (comment && permissions.canEditComment(comment)) {
             setEditingCommentId(commentId);
             setEditingCommentText(comment.comment);
         }
@@ -91,7 +89,8 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true, canManageOwn = t
             return;
         }
 
-        if (!canManageOwn) {
+        const comment = comments.find(c => c.id === editingCommentId);
+        if (!comment || !permissions.canEditComment(comment)) {
             return;
         }
 
@@ -119,7 +118,8 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true, canManageOwn = t
     };
 
     const deleteComment = async (commentId: number): Promise<void> => {
-        if (!canManageOwn) {
+        const comment = comments.find(c => c.id === commentId);
+        if (!comment || !permissions.canDeleteComment(comment)) {
             return;
         }
         setLoading(true);
@@ -150,7 +150,10 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true, canManageOwn = t
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-h-[90vh] max-w-2xl flex flex-col">
+            <DialogContent
+                className="max-h-[90vh] max-w-2xl flex flex-col"
+                onDoubleClick={(e) => e.stopPropagation()}
+            >
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <MessageSquare className="h-5 w-5" />
@@ -160,30 +163,29 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true, canManageOwn = t
 
                 <div className="space-y-4 flex flex-col min-h-0">
                     {/* Add Comment Section */}
-                    <div className="space-y-2">
-                        {!canAdd && (
-                            <p className="text-sm text-muted-foreground">{t('card.commentsReadOnlyNotice')}</p>
-                        )}
-                        <div className="flex gap-2">
-                            <Textarea
-                                id="new-comment"
-                                value={newCommentText}
-                                onChange={(e) => setNewCommentText(e.target.value)}
-                                placeholder={t('card.addCommentPlaceholder')}
-                                className="flex-1"
-                                rows={3}
-                                maxLength={1000}
-                                disabled={loading || !canAdd}
-                            />
-                            <Button
-                                onClick={addComment}
-                                disabled={!newCommentText.trim() || loading || !canAdd}
-                                className="self-end"
-                            >
-                                {t('card.add')}
-                            </Button>
+                    {canAdd && (
+                        <div className="space-y-2">
+                            <div className="flex gap-2">
+                                <Textarea
+                                    id="new-comment"
+                                    value={newCommentText}
+                                    onChange={(e) => setNewCommentText(e.target.value)}
+                                    placeholder={t('card.addCommentPlaceholder')}
+                                    className="flex-1"
+                                    rows={3}
+                                    maxLength={1000}
+                                    disabled={loading}
+                                />
+                                <Button
+                                    onClick={addComment}
+                                    disabled={!newCommentText.trim() || loading}
+                                    className="self-end"
+                                >
+                                    {t('card.add')}
+                                </Button>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Comments List */}
                     <div className="space-y-3 overflow-y-auto flex-grow min-h-0">
@@ -196,7 +198,7 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true, canManageOwn = t
                                             {formatCommentDate(comment.created_at)}
                                         </span>
                                     </div>
-                                    {canManageOwn && currentUser?.id === comment.user_id && (
+                                    {permissions.canEditComment(comment) && (
                                         <div className="flex gap-1">
                                             <Button
                                                 variant="ghost"
@@ -212,7 +214,7 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true, canManageOwn = t
                                                 size="icon"
                                                 onClick={() => deleteComment(comment.id)}
                                                 title={t('common.delete')}
-                                                disabled={loading || !canManageOwn}
+                                                disabled={loading || !permissions.canDeleteComment(comment)}
                                             >
                                                 <Trash2 className="h-3.5 w-3.5" />
                                             </Button>
@@ -244,7 +246,7 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true, canManageOwn = t
                                             </Button>
                                             <Button
                                                 onClick={saveCommentEdit}
-                                                disabled={!editingCommentText.trim() || loading || !canManageOwn}
+                                                disabled={!editingCommentText.trim() || loading || !permissions.canEditComment(comment)}
                                             >
                                                 {t('common.save')}
                                             </Button>
