@@ -17,12 +17,13 @@ import { Toaster } from './components/ui/sonner';
 import { useToast } from './hooks/use-toast.tsx';
 import { AuthProvider, useAuth } from './hooks/useAuth.tsx';
 import { BoardSettingsProvider } from './hooks/useBoardSettingsContext';
+import { usePermissions } from './hooks/usePermissions';
 import { useTheme } from './hooks/useTheme.tsx';
 import { useUserLanguage } from './hooks/useUserLanguage';
 import { UsersProvider, useUsers } from './hooks/useUsers';
 import './index.css';
 import { cardService, labelService } from './services/api.tsx';
-import { Card, Label, UserRole, UserRoleValue } from './types/index.ts';
+import { Card, Label } from './types/index.ts';
 
 interface Filters {
     search: string;
@@ -39,32 +40,7 @@ const KanbanApp = () => {
     const { user, loading, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const { toast } = useToast();
-
-    const userRole = user?.role as UserRoleValue | undefined;
-    const currentUserId = user?.id ?? null;
-
-    const isAdminRole = userRole === UserRole.ADMIN;
-    const isStandardUserRole = userRole === UserRole.USER;
-    const isAssignedOnlyRole = userRole === UserRole.ASSIGNED_ONLY;
-    const isReadOnlyRole = userRole === UserRole.READ_ONLY;
-    const isCommentsOnlyRole = userRole === UserRole.COMMENTS_ONLY;
-
-    const canManageAllCards = isAdminRole || isStandardUserRole;
-    const canCreateCards = canManageAllCards || isAssignedOnlyRole;
-
-    const canEditCard = (targetCard: Card | null | undefined): boolean => {
-        if (!targetCard || !user) {
-            return false;
-        }
-        if (canManageAllCards) {
-            return true;
-        }
-        if (isAssignedOnlyRole) {
-            return targetCard.assignee_id === currentUserId;
-        }
-        return false;
-    };
-
+    const permissions = usePermissions(user);
 
     const notifyPermissionDenied = () => {
         toast({
@@ -181,7 +157,7 @@ const KanbanApp = () => {
     }, [user]);
 
     const handleCreateCard = (listId?: number): void => {
-        if (!canCreateCards) {
+        if (!permissions.canCreateCard) {
             notifyPermissionDenied();
             return;
         }
@@ -193,7 +169,7 @@ const KanbanApp = () => {
     const handleCardUpdate = (updatedCard: Card, action: 'edit' | 'update' = 'edit'): void => {
         if (action === 'edit') {
             // Allow opening card for viewing even if user can't edit it
-            if (!canEditCard(updatedCard) && !user) {
+            if (!permissions.canModifyCard(updatedCard) && !user) {
                 notifyPermissionDenied();
                 return;
             }
@@ -217,7 +193,7 @@ const KanbanApp = () => {
 
     const handleCardDelete = async (cardId: number): Promise<void> => {
         const cardToDelete = allCards.find(card => card.id === cardId);
-        if (!cardToDelete || !canEditCard(cardToDelete)) {
+        if (!cardToDelete || !permissions.canArchiveCard) {
             notifyPermissionDenied();
             return;
         }
@@ -268,7 +244,7 @@ const KanbanApp = () => {
                 return;
             }
 
-            if (!canEditCard(currentCard)) {
+            if (!permissions.canMoveCard(currentCard)) {
                 notifyPermissionDenied();
                 await loadCards();
                 return;
@@ -417,7 +393,7 @@ const KanbanApp = () => {
                     filters={filters}
                     onFiltersChange={setFilters}
                     onCreateCard={handleCreateCard}
-                    canCreateCard={canCreateCards}
+                    canCreateCard={permissions.canCreateCard}
                     users={users}
                     labels={labels}
                     localSearchValue={filters.search || ''}
@@ -429,7 +405,7 @@ const KanbanApp = () => {
                     onCardUpdate={handleCardUpdate}
                     onCardDelete={handleCardDelete}
                     onCardMove={handleCardMove}
-                    onCreateCard={canCreateCards ? (listId) => handleCreateCard(listId) : undefined}
+                    onCreateCard={permissions.canCreateCard ? (listId) => handleCreateCard(listId) : undefined}
                     refreshTrigger={listsRefreshTrigger}
                     isAnyModalOpen={isAnyModalOpen}
                 />

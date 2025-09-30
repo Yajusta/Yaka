@@ -339,11 +339,12 @@
         "archived": "Archived"
     },
     "role": {
+        "visitor": "Visitor",
+        "commenter": "Commenter",
+        "contributor": "Contributor",
+        "editor": "Editor",
+        "supervisor": "Supervisor",
         "admin": "Administrator",
-        "user": "User",
-        "read_only": "Read only",
-        "comments_only": "Comments only",
-        "assigned_only": "Assigned only",
         "guest": "Guest"
     },
     "filter": {

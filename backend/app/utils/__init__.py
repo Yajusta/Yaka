@@ -1,10 +1,11 @@
-"""Utilitaires de l'application Kanban."""
+"""Kanban application utilities."""
 
 from .dependencies import get_current_active_user, get_current_user, require_admin
 from .permissions import (
     ensure_can_comment_on_card,
     ensure_can_create_card,
-    ensure_can_manage_comment,
+    ensure_can_delete_comment,
+    ensure_can_edit_comment,
     ensure_can_modify_card,
 )
 from .security import Token, TokenData, create_access_token, get_password_hash, verify_password, verify_token
@@ -19,4 +20,9 @@ __all__ = [
     "get_current_user",
     "get_current_active_user",
     "require_admin",
+    "ensure_can_comment_on_card",
+    "ensure_can_create_card",
+    "ensure_can_edit_comment",
+    "ensure_can_delete_comment",
+    "ensure_can_modify_card",
 ]

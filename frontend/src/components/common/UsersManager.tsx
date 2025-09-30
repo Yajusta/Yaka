@@ -21,25 +21,26 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
     const { users, loading, forbidden, refresh } = useUsers();
     const [email, setEmail] = useState('');
     const [displayName, setDisplayName] = useState('');
-    const [role, setRole] = useState<UserRoleValue>(UserRole.USER);
+    const [role, setRole] = useState<UserRoleValue>(UserRole.VISITOR);
     const [editingUser, setEditingUser] = useState<UserItem | null>(null);
     const [editingDisplayName, setEditingDisplayName] = useState('');
 
     const roleOptions = useMemo(() => ([
-        { value: UserRole.USER, label: t('role.user') },
+        { value: UserRole.VISITOR, label: t('role.visitor') },
+        { value: UserRole.COMMENTER, label: t('role.commenter') },
+        { value: UserRole.CONTRIBUTOR, label: t('role.contributor') },
+        { value: UserRole.EDITOR, label: t('role.editor') },
+        { value: UserRole.SUPERVISOR, label: t('role.supervisor') },
         { value: UserRole.ADMIN, label: t('role.admin') },
-        { value: UserRole.READ_ONLY, label: t('role.read_only') },
-        { value: UserRole.COMMENTS_ONLY, label: t('role.comments_only') },
-        { value: UserRole.ASSIGNED_ONLY, label: t('role.assigned_only') },
     ]), [t]);
 
     const roleLabelMap = useMemo(() => new Map(roleOptions.map(option => [option.value, option.label])), [roleOptions]);
 
     const getRoleLabel = (value?: string | null): string => {
         if (!value) {
-            return t('role.user');
+            return t('role.visitor');
         }
-        return roleLabelMap.get(value as UserRoleValue) || t('role.user');
+        return roleLabelMap.get(value as UserRoleValue) || t('role.visitor');
     };
 
 
@@ -68,7 +69,7 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
             await userService.inviteUser({ email, display_name: displayName, role });
             setEmail('');
             setDisplayName('');
-            setRole(UserRole.USER);
+            setRole(UserRole.VISITOR);
             await refresh();
             toast({
                 title: t('user.invitationSent'),

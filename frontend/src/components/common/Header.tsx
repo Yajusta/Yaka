@@ -58,15 +58,18 @@ export const Header = ({
         switch (role) {
             case UserRole.ADMIN:
                 return t('role.admin');
-            case UserRole.READ_ONLY:
-                return t('role.read_only');
-            case UserRole.COMMENTS_ONLY:
-                return t('role.comments_only');
-            case UserRole.ASSIGNED_ONLY:
-                return t('role.assigned_only');
-            case UserRole.USER:
+            case UserRole.SUPERVISOR:
+                return t('role.supervisor');
+            case UserRole.EDITOR:
+                return t('role.editor');
+            case UserRole.CONTRIBUTOR:
+                return t('role.contributor');
+            case UserRole.COMMENTER:
+                return t('role.commenter');
+            case UserRole.VISITOR:
+                return t('role.visitor');
             default:
-                return t('role.user');
+                return t('role.visitor');
         }
     };
 
@@ -74,16 +77,18 @@ export const Header = ({
         switch (role) {
             case UserRole.ADMIN:
                 return 'bg-green-500';
-            case UserRole.USER:
+            case UserRole.SUPERVISOR:
+                return 'bg-cyan-500';
+            case UserRole.EDITOR:
                 return 'bg-blue-500';
-            case UserRole.READ_ONLY:
-                return 'bg-gray-500';
-            case UserRole.COMMENTS_ONLY:
-                return 'bg-purple-500';
-            case UserRole.ASSIGNED_ONLY:
+            case UserRole.CONTRIBUTOR:
                 return 'bg-amber-500';
+            case UserRole.COMMENTER:
+                return 'bg-purple-500';
+            case UserRole.VISITOR:
+                return 'bg-gray-500';
             default:
-                return 'bg-blue-500';
+                return 'bg-gray-500';
         }
     };
 

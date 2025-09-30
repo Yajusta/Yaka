@@ -15,17 +15,27 @@ from .helpers import get_system_timezone_datetime
 
 
 class UserRole(enum.Enum):
-    """Énumération des rôles utilisateur."""
+    """User role enumeration.
 
+    Hierarchical structure:
+    - VISITOR: Read-only access (board, tasks, comments)
+    - COMMENTER: VISITOR + add/edit own comments
+    - CONTRIBUTOR: COMMENTER + self-assign + checklist items + move own tasks
+    - EDITOR: CONTRIBUTOR + create task + fully modify own tasks
+    - SUPERVISOR: EDITOR + create task for others + modify all tasks + move all tasks
+    - ADMIN: SUPERVISOR + full access + manage users/settings
+    """
+
+    VISITOR = "visitor"
+    COMMENTER = "commenter"
+    CONTRIBUTOR = "contributor"
+    EDITOR = "editor"
+    SUPERVISOR = "supervisor"
     ADMIN = "admin"
-    USER = "user"
-    READ_ONLY = "read_only"
-    COMMENTS_ONLY = "comments_only"
-    ASSIGNED_ONLY = "assigned_only"
 
 
 class UserStatus(enum.Enum):
-    """Énumération des statuts d'un utilisateur."""
+    """User status enumeration."""
 
     INVITED = "invited"
     ACTIVE = "active"
@@ -34,7 +44,7 @@ class UserStatus(enum.Enum):
 
 
 class User(Base):
-    """Modèle de données pour les utilisateurs."""
+    """User data model."""
 
     __tablename__ = "users"
 
@@ -42,8 +52,16 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, index=True, nullable=False)
     password_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     display_name: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER, nullable=False)
-    status: Mapped[UserStatus] = mapped_column(Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False)
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole, native_enum=False, values_callable=lambda obj: [e.value for e in obj], length=20),
+        default=UserRole.VISITOR,
+        nullable=False,
+    )
+    status: Mapped[UserStatus] = mapped_column(
+        Enum(UserStatus, native_enum=False, values_callable=lambda obj: [e.value for e in obj], length=20),
+        default=UserStatus.ACTIVE,
+        nullable=False,
+    )
     language: Mapped[Optional[str]] = mapped_column(String(2), nullable=True, server_default="fr")
     invite_token: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
     invited_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

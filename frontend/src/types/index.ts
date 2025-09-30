@@ -175,11 +175,12 @@ export enum CardPriority {
 }
 
 export const UserRole = {
-    ADMIN: 'admin',
-    USER: 'user',
-    READ_ONLY: 'read_only',
-    COMMENTS_ONLY: 'comments_only',
-    ASSIGNED_ONLY: 'assigned_only'
+    VISITOR: 'visitor',
+    COMMENTER: 'commenter',
+    CONTRIBUTOR: 'contributor',
+    EDITOR: 'editor',
+    SUPERVISOR: 'supervisor',
+    ADMIN: 'admin'
 } as const;
 
 export type UserRoleValue = (typeof UserRole)[keyof typeof UserRole];

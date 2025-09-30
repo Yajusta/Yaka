@@ -50,7 +50,7 @@ class UserBase(BaseModel):
         return validated
 
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
-    role: UserRole = UserRole.USER
+    role: UserRole = UserRole.VISITOR
     language: Optional[str] = Field("fr", description="Langue préférée (fr, en, etc.)")
 
 
@@ -135,7 +135,7 @@ class UserListItem(BaseModel):
 
     id: int
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
-    role: Optional[UserRole] = UserRole.USER
+    role: Optional[UserRole] = UserRole.VISITOR
     status: Optional[str] = None
     # email est optionnel ici : les non-admins recevront une liste sans email
     email: Optional[str] = None

@@ -13,7 +13,7 @@ from ..services import card as card_service
 from ..services import card_comment as card_comment_service
 from ..services.card_history import create_card_history_entry
 from ..utils.dependencies import get_current_active_user
-from ..utils.permissions import ensure_can_comment_on_card, ensure_can_manage_comment
+from ..utils.permissions import ensure_can_comment_on_card, ensure_can_delete_comment, ensure_can_edit_comment
 
 router = APIRouter(prefix="/card-comments", tags=["card-comments"])
 
@@ -67,11 +67,8 @@ async def update_comment(
     if not existing_comment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Commentaire non trouvé")
 
-    card = card_service.get_card(db, card_id=existing_comment.card_id)
-    if card is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
-
-    ensure_can_manage_comment(current_user, card)
+    # Vérifier que l'utilisateur peut modifier ce commentaire spécifique
+    ensure_can_edit_comment(current_user, existing_comment)
 
     try:
         db_comment = card_comment_service.update_comment(db, comment_id, comment, current_user.id)
@@ -109,11 +106,9 @@ async def delete_comment(
 
         # À ce point, db_comment n'est pas None, pas besoin de type: ignore
         card_id: int = db_comment.card_id
-        card = card_service.get_card(db, card_id=card_id)
-        if card is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
 
-        ensure_can_manage_comment(current_user, card)
+        # Vérifier que l'utilisateur peut supprimer ce commentaire spécifique
+        ensure_can_delete_comment(current_user, db_comment)
 
         ok = card_comment_service.delete_comment(db, comment_id, current_user.id)
 
