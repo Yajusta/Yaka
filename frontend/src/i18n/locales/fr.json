@@ -187,7 +187,8 @@
         "historyBy": "par {{userName}}",
         "priorityUpdated": "Priorité mise à jour",
         "priorityUpdatedDescription": "La priorité de la carte \"{{cardTitle}}\" est maintenant \"{{priority}}\".",
-        "toggleChecklistItem": "Cocher / décocher l'élément"
+        "toggleChecklistItem": "Cocher / décocher l'élément",
+        "dropItem": "Supprimer l'élément"
     },
     "list": {
         "title": "Titre",
@@ -323,6 +324,18 @@
         "demoteToMember": "Rétrograder en membre",
         "promoteToAdmin": "Promouvoir en administrateur",
         "cannotChangeOwnRole": "Vous ne pouvez pas changer votre propre rôle"
+    },
+    "permissions": {
+        "view": "Voir",
+        "comment": "Commenter",
+        "selfAssign": "Auto-assignation",
+        "checkItems": "Cocher les éléments",
+        "moveOwn": "Déplacer ses tâches",
+        "createTask": "Créer une tâche",
+        "modifyOwn": "Modifier ses tâches",
+        "modifyAll": "Modifier toutes les tâches",
+        "delete": "Supprimer",
+        "admin": "Administration"
     },
     "priority": {
         "low": "Basse",

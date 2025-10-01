@@ -40,7 +40,7 @@ def db_session():
 @pytest.fixture
 def sample_user(db_session):
     """Fixture pour créer un utilisateur de test."""
-    user = User(email="test@example.com", display_name="Test User", role=UserRole.USER, status=UserStatus.ACTIVE)
+    user = User(email="test@example.com", display_name="Test User", role=UserRole.EDITOR, status=UserStatus.ACTIVE)
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
@@ -358,8 +358,8 @@ class TestGetCardHistoryWithUsers:
     def test_get_card_history_with_users_multiple_users(self, db_session, sample_card):
         """Test avec plusieurs utilisateurs différents."""
         # Créer plusieurs utilisateurs
-        user1 = User(email="user1@example.com", display_name="User 1", role=UserRole.USER, status=UserStatus.ACTIVE)
-        user2 = User(email="user2@example.com", display_name="User 2", role=UserRole.USER, status=UserStatus.ACTIVE)
+        user1 = User(email="user1@example.com", display_name="User 1", role=UserRole.EDITOR, status=UserStatus.ACTIVE)
+        user2 = User(email="user2@example.com", display_name="User 2", role=UserRole.EDITOR, status=UserStatus.ACTIVE)
         db_session.add(user1)
         db_session.add(user2)
         db_session.commit()

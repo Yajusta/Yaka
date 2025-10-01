@@ -126,6 +126,14 @@ async def update_card(
     # Check permissions based on what's being modified
     update_data = card_update.model_dump(exclude_unset=True)
 
+    # EDITOR cannot change assignee_id on their own cards
+    if "assignee_id" in update_data and current_user.role == UserRole.EDITOR:
+        if card.assignee_id == current_user.id and update_data["assignee_id"] != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Editors cannot unassign themselves from a card",
+            )
+
     # Content fields (title, description)
     content_fields = {"title", "description"}
     if any(field in update_data for field in content_fields):

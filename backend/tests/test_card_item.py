@@ -39,7 +39,7 @@ def db_session():
 @pytest.fixture
 def sample_user(db_session):
     """Fixture pour créer un utilisateur de test."""
-    user = User(email="test@example.com", display_name="Test User", role=UserRole.USER, status=UserStatus.ACTIVE)
+    user = User(email="test@example.com", display_name="Test User", role=UserRole.EDITOR, status=UserStatus.ACTIVE)
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)

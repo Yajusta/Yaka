@@ -42,7 +42,7 @@ def sample_user(db_session):
     user = User(
         email="test@example.com",
         display_name="Test User",
-        role=UserRole.USER,
+        role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
     )
     db_session.add(user)
@@ -797,7 +797,7 @@ Notes supplémentaires"""
         user = User(
             email="constrainttest@example.com",
             display_name="Constraint Test",
-            role=UserRole.USER,
+            role=UserRole.EDITOR,
             status=UserStatus.ACTIVE,
         )
         kanban_list = KanbanList(name="Constraint Test List", order=1)

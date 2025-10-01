@@ -45,7 +45,7 @@ async def test_user_management_requires_admin(async_client_factory, seed_admin_u
             "email": "new.user@example.com",
             "password": "Password123!",
             "display_name": "New User",
-            "role": "user",
+            "role": "editor",
             "language": "fr",
         }
         create_response = await client.post(
@@ -73,7 +73,7 @@ async def test_user_management_requires_admin(async_client_factory, seed_admin_u
                 "email": "should.fail@example.com",
                 "password": "Fail123!",
                 "display_name": "Should Fail",
-                "role": "user",
+                "role": "editor",
                 "language": "fr",
             },
             headers={"Authorization": f"Bearer {user_token}"},

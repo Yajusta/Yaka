@@ -412,7 +412,7 @@
     transition: none !important;
   }
 
-  .kanban-card-container:hover {
+  .kanban-card-container:hover:not(:has(.no-drag-effect)) {
     transform: translateY(-2px);
   }
 
@@ -595,11 +595,13 @@
   .kanban-horizontal-scroll {
     /* stylelint-disable-next-line at-rule-no-unknown */
     @apply overflow-x-auto overflow-y-hidden;
+
     /* Fallback avec WebKit pour les navigateurs modernes */
     &::-webkit-scrollbar {
       width: 8px;
       height: 8px;
     }
+
     /* Smooth scrolling behavior */
     scroll-behavior: smooth;
     scroll-snap-type: x proximity;
@@ -631,7 +633,7 @@
     background-color: rgba(156, 163, 175, 0.7);
   }
 
-  
+
   /* Ensure columns maintain proper spacing in horizontal layout */
   .kanban-lists-container {
     display: flex;
@@ -782,8 +784,13 @@
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.6), 0 0 24px rgba(239, 68, 68, 0.3);
 }
 
-.priority-high:hover {
+.priority-high:hover:not(.no-drag-effect) {
   transform: translateY(-2px);
+}
+
+.priority-high:hover.no-drag-effect::before {
+  opacity: 1;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.6), 0 0 24px rgba(239, 68, 68, 0.3);
 }
 
 /* Medium priority glow (orange) */
@@ -796,7 +803,7 @@
   box-shadow: 0 0 12px rgba(14, 165, 233, 0.6), 0 0 24px rgba(14, 165, 233, 0.3);
 }
 
-.priority-medium:hover {
+.priority-medium:hover:not(.no-drag-effect) {
   transform: translateY(-2px);
 }
 
@@ -810,6 +817,6 @@
   box-shadow: 0 0 12px rgba(156, 163, 175, 0.6), 0 0 24px rgba(156, 163, 175, 0.3);
 }
 
-.priority-low:hover {
+.priority-low:hover:not(.no-drag-effect) {
   transform: translateY(-2px);
 }

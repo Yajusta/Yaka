@@ -22,6 +22,11 @@ async def test_card_items_crud(
     async with async_client_factory(auth_router, cards_router, card_items_router) as client:
         token = await login_user(client, "items@example.com", "Items123!")
 
+        # Get user ID
+        me_response = await client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert me_response.status_code == 200
+        user_id = me_response.json()["id"]
+
         card_response = await client.post(
             "/cards/",
             json={
@@ -29,6 +34,7 @@ async def test_card_items_crud(
                 "description": "Needs tasks",
                 "list_id": list_id,
                 "priority": "medium",
+                "assignee_id": user_id,
             },
             headers={"Authorization": f"Bearer {token}"},
         )

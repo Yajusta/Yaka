@@ -392,7 +392,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => deleteChecklistItem(index)}
-                                                        title={t('card.archive')}
+                                                        title={t('card.dropItem')}
                                                         style={{ display: isViewOnly ? 'none' : 'flex' }}
                                                     >
                                                         <Trash2 className="h-4 w-4" />

@@ -287,11 +287,10 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                 <div className="flex justify-center">
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            {u.role === 'admin' ? (
-                                                                <Key className="h-4 w-4 text-destructive cursor-help" />
-                                                            ) : (
-                                                                <User className="h-4 w-4 text-muted-foreground cursor-help" />
-                                                            )}
+                                                            {(() => {
+                                                                const IconComponent = getRoleIcon(u.role as UserRoleValue);
+                                                                return <IconComponent className={`h-4 w-4 cursor-help ${u.role === 'admin' ? 'text-destructive' : 'text-muted-foreground'}`} />;
+                                                            })()}
                                                         </TooltipTrigger>
                                                         <TooltipContent>
                                                             <p>{getRoleLabel(u.role)}</p>
@@ -410,36 +409,56 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                                                     </div>
                                                                                 </TooltipTrigger>
                                                                                 <TooltipContent side="right" className="p-3 bg-popover border-border">
-                                                                                    <div className="grid grid-cols-[auto_auto] gap-x-3 gap-y-1 text-xs">
-                                                                                        <span className="text-muted-foreground">View:</span>
-                                                                                        <span>{perms.view ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+                                                                                    <div className="flex flex-col gap-y-1 text-xs">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.view ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.view')}</span>
+                                                                                        </div>
 
-                                                                                        <span className="text-muted-foreground">Comment:</span>
-                                                                                        <span>{perms.comment ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.comment ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.comment')}</span>
+                                                                                        </div>
 
-                                                                                        <span className="text-muted-foreground">Self-Assign:</span>
-                                                                                        <span>{perms.selfAssign ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.selfAssign ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.selfAssign')}</span>
+                                                                                        </div>
 
-                                                                                        <span className="text-muted-foreground">Check Items:</span>
-                                                                                        <span>{perms.checkItems ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.checkItems ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.checkItems')}</span>
+                                                                                        </div>
 
-                                                                                        <span className="text-muted-foreground">Move Own:</span>
-                                                                                        <span>{perms.moveOwn ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.moveOwn ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.moveOwn')}</span>
+                                                                                        </div>
 
-                                                                                        <span className="text-muted-foreground">Create Task:</span>
-                                                                                        <span>{perms.createTask ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.createTask ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.createTask')}</span>
+                                                                                        </div>
 
-                                                                                        <span className="text-muted-foreground">Modify Own:</span>
-                                                                                        <span>{perms.modifyOwn ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.modifyOwn ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.modifyOwn')}</span>
+                                                                                        </div>
 
-                                                                                        <span className="text-muted-foreground">Modify All:</span>
-                                                                                        <span>{perms.modifyAll ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.modifyAll ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.modifyAll')}</span>
+                                                                                        </div>
 
-                                                                                        <span className="text-muted-foreground">Delete:</span>
-                                                                                        <span>{perms.delete ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.delete ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.delete')}</span>
+                                                                                        </div>
 
-                                                                                        <span className="text-muted-foreground">Admin:</span>
-                                                                                        <span>{perms.admin ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}</span>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.admin ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.admin')}</span>
+                                                                                        </div>
                                                                                     </div>
                                                                                 </TooltipContent>
                                                                             </Tooltip>

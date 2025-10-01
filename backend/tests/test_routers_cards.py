@@ -72,12 +72,12 @@ def db_session():
 
 @pytest.fixture
 def test_user(db_session):
-    """Fixture pour créer un utilisateur de test."""
+    """Fixture pour créer un utilisateur de test avec rôle SUPERVISOR pour tester la logique métier."""
     user = User(
         email="test@example.com",
         display_name="Test User",
         password_hash="$2b$12$testhashedpassword",
-        role=UserRole.USER,
+        role=UserRole.SUPERVISOR,
         status=UserStatus.ACTIVE,
         language="fr",
         created_at=datetime.utcnow(),

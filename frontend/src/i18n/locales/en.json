@@ -187,7 +187,8 @@
         "historyBy": "by {{userName}}",
         "priorityUpdated": "Priority updated",
         "priorityUpdatedDescription": "The priority of card \"{{cardTitle}}\" is now \"{{priority}}\".",
-        "toggleChecklistItem": "Toggle checklist item"
+        "toggleChecklistItem": "Toggle checklist item",
+        "dropItem": "Drop item"
     },
     "list": {
         "title": "Title",
@@ -323,6 +324,18 @@
         "demoteToMember": "Demote to member",
         "promoteToAdmin": "Promote to admin",
         "cannotChangeOwnRole": "You cannot change your own role"
+    },
+    "permissions": {
+        "view": "View",
+        "comment": "Comment",
+        "selfAssign": "Self-assign",
+        "checkItems": "Check items",
+        "moveOwn": "Move own",
+        "createTask": "Create task",
+        "modifyOwn": "Modify own",
+        "modifyAll": "Modify all",
+        "delete": "Delete",
+        "admin": "Admin"
     },
     "priority": {
         "low": "Low",

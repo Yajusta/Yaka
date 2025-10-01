@@ -182,8 +182,8 @@ export const CardItem = ({
             style={style}
             {...dragProps}
             onDoubleClick={handleDoubleClick}
-            variant="interactive"
-            className={`group ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} border-2 ${priorityGlowClass} ${draggingClasses} ${hiddenClass} ${trashClass} ${isInTrashZone ? 'card-trash-active border-destructive' : ''}`}
+            variant={canDrag ? "interactive" : "default"}
+            className={`group ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default no-drag-effect'} border-2 ${priorityGlowClass} ${draggingClasses} ${hiddenClass} ${trashClass} ${isInTrashZone ? 'card-trash-active border-destructive' : ''}`}
         >
             <CardContent>
                 <div>
