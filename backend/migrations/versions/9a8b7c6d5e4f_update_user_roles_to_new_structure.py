@@ -20,9 +20,11 @@ depends_on = None
 def upgrade() -> None:
     """Migrate old roles to new role structure (case-insensitive).
 
-    Step 1: Increase role column length from VARCHAR(5) to VARCHAR(20)
-    Step 2: Update role values to new structure (lowercase)
-    Step 3: Update status values to lowercase for consistency
+    Step 1: Drop the old unique constraint on email (status != 'DELETED')
+    Step 2: Increase role column length from VARCHAR(5) to VARCHAR(20)
+    Step 3: Update role values to new structure (lowercase)
+    Step 4: Update status values to lowercase for consistency
+    Step 5: Recreate unique constraint with lowercase 'deleted'
 
     Role mapping:
     - admin -> admin (unchanged)
@@ -36,7 +38,11 @@ def upgrade() -> None:
     - INVITED -> invited
     - DELETED -> deleted
     """
-    # Step 1: Increase role column length to accommodate longer role names
+    # Step 1: Drop the old unique constraint (it checks status != 'DELETED' in uppercase)
+    # Use IF EXISTS to handle cases where the index might not exist yet
+    op.execute("DROP INDEX IF EXISTS ux_users_email_not_deleted")
+
+    # Step 2: Increase role column length to accommodate longer role names
     # Old: VARCHAR(5) - sufficient for 'admin', 'user'
     # New: VARCHAR(20) - needed for 'contributor' (11 chars), 'supervisor' (10 chars)
     with op.batch_alter_table("users", schema=None) as batch_op:
@@ -47,7 +53,7 @@ def upgrade() -> None:
             existing_nullable=False,
         )
 
-    # Step 2: Update roles with case-insensitive matching
+    # Step 3: Update roles with case-insensitive matching
     # Using LOWER() to handle any case variations (e.g., "ADmiN" -> "admin")
     op.execute(
         """
@@ -62,20 +68,33 @@ def upgrade() -> None:
     """
     )
 
-    # Step 3: Convert status values to lowercase for consistency
+    # Step 4: Convert status values to lowercase for consistency
     op.execute(
         """
         UPDATE users SET status = LOWER(status)
     """
     )
 
+    # Step 5: Recreate the unique constraint with lowercase 'deleted'
+    condition = sa.text("status != 'deleted'")
+    op.create_index(
+        "ux_users_email_not_deleted",
+        "users",
+        ["email"],
+        unique=True,
+        sqlite_where=condition,
+        postgresql_where=condition,
+    )
+
 
 def downgrade() -> None:
     """Revert to old role structure (case-insensitive).
 
-    Step 1: Revert status values to uppercase
-    Step 2: Revert role values to old structure
-    Step 3: Decrease role column length from VARCHAR(20) to VARCHAR(5)
+    Step 1: Drop the new unique constraint (status != 'deleted')
+    Step 2: Revert status values to uppercase
+    Step 3: Recreate unique constraint with uppercase 'DELETED'
+    Step 4: Revert role values to old structure
+    Step 5: Decrease role column length from VARCHAR(20) to VARCHAR(5)
 
     Reverse mapping:
     - admin -> admin (unchanged)
@@ -90,14 +109,29 @@ def downgrade() -> None:
     - invited -> INVITED
     - deleted -> DELETED
     """
-    # Step 1: Revert status values to uppercase
+    # Step 1: Drop the new unique constraint (it checks status != 'deleted' in lowercase)
+    # Use IF EXISTS to handle cases where the index might not exist
+    op.execute("DROP INDEX IF EXISTS ux_users_email_not_deleted")
+
+    # Step 2: Revert status values to uppercase
     op.execute(
         """
         UPDATE users SET status = UPPER(status)
     """
     )
 
-    # Step 2: Revert role values
+    # Step 3: Recreate the unique constraint with uppercase 'DELETED'
+    condition = sa.text("status != 'DELETED'")
+    op.create_index(
+        "ux_users_email_not_deleted",
+        "users",
+        ["email"],
+        unique=True,
+        sqlite_where=condition,
+        postgresql_where=condition,
+    )
+
+    # Step 4: Revert role values
     op.execute(
         """
         UPDATE users SET role = CASE
@@ -112,7 +146,7 @@ def downgrade() -> None:
     """
     )
 
-    # Step 3: Revert role column length to original size
+    # Step 5: Revert role column length to original size
     with op.batch_alter_table("users", schema=None) as batch_op:
         batch_op.alter_column(
             "role",
