@@ -1,7 +1,7 @@
 """Update user roles to new structure
 
 Revision ID: 9a8b7c6d5e4f
-Revises: 689984d4c0de
+Revises: 8ffb0c54462a
 Create Date: 2025-09-30 10:00:00.000000
 
 """
