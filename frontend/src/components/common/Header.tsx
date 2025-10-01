@@ -1,24 +1,25 @@
 import { Button } from '../ui/button';
 
+import { List, LogOut, Moon, Palette, Settings, Sun, Tag, User, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useBoardSettings } from '../../hooks/useBoardSettingsContext';
+import { UserRole, UserRoleValue } from '../../types';
+import { Avatar, AvatarFallback } from '../ui/avatar';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuTrigger,
-    DropdownMenuSeparator
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '../ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '../ui/avatar';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
-import { LogOut, User, Settings, Sun, Moon, Users, List, Tag, Palette } from 'lucide-react';
-import { useBoardSettings } from '../../hooks/useBoardSettingsContext';
 import LanguageSelector from './LanguageSelector';
-import { useTranslation } from 'react-i18next';
 
 interface User {
     id: number;
     display_name?: string;
     email: string;
-    role?: string;
+    role?: UserRoleValue;
 }
 
 interface HeaderProps {
@@ -53,7 +54,45 @@ export const Header = ({
         return `${name.split(' ')[0]?.[0] || ''}${name.split(' ')[1]?.[0] || ''}`.toUpperCase();
     };
 
-    const isAdmin = (): boolean => user?.role === 'admin';
+    const getRoleLabel = (role?: UserRoleValue) => {
+        switch (role) {
+            case UserRole.ADMIN:
+                return t('role.admin');
+            case UserRole.SUPERVISOR:
+                return t('role.supervisor');
+            case UserRole.EDITOR:
+                return t('role.editor');
+            case UserRole.CONTRIBUTOR:
+                return t('role.contributor');
+            case UserRole.COMMENTER:
+                return t('role.commenter');
+            case UserRole.VISITOR:
+                return t('role.visitor');
+            default:
+                return t('role.visitor');
+        }
+    };
+
+    const getRoleIndicatorClass = (role?: UserRoleValue) => {
+        switch (role) {
+            case UserRole.ADMIN:
+                return 'bg-green-500';
+            case UserRole.SUPERVISOR:
+                return 'bg-cyan-500';
+            case UserRole.EDITOR:
+                return 'bg-blue-500';
+            case UserRole.CONTRIBUTOR:
+                return 'bg-amber-500';
+            case UserRole.COMMENTER:
+                return 'bg-purple-500';
+            case UserRole.VISITOR:
+                return 'bg-gray-500';
+            default:
+                return 'bg-gray-500';
+        }
+    };
+
+    const isAdmin = (): boolean => user?.role === UserRole.ADMIN;
 
     return (
         <GlassmorphicCard className="border-b border-border/50 rounded-none shadow-sm py-0">
@@ -113,7 +152,7 @@ export const Header = ({
 
                         {/* Language selector */}
                         <LanguageSelector />
-                        
+
                         {/* Theme toggle */}
                         <Button
                             variant="ghost"
@@ -154,10 +193,10 @@ export const Header = ({
                                             {user?.email}
                                         </p>
                                         <div className="flex items-center mt-1">
-                                            <div className={`w-2 h-2 rounded-full mr-2 ${user?.role === 'admin' ? 'bg-green-500' : 'bg-blue-500'
-                                                }`} />
+                                            <div className={`w-2 h-2 rounded-full mr-2 ${getRoleIndicatorClass(user?.role)}
+                                                `} />
                                             <p className="text-xs text-muted-foreground">
-                                                {user?.role === 'admin' ? t('role.admin') : t('role.user')}
+                                                {getRoleLabel(user?.role)}
                                             </p>
                                         </div>
                                     </div>

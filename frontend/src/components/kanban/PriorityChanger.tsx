@@ -1,26 +1,30 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { PriorityBadge } from '../ui/PriorityBadge';
-import { Card, UpdateCardData, getPriorityIcon, getPriorityIconColor } from '../../types';
-import { cardService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { useTranslatedLabels } from '../../hooks/useTranslatedLabels';
+import { cardService } from '../../services/api';
+import { Card, UpdateCardData, getPriorityIcon, getPriorityIconColor } from '../../types';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { PriorityBadge } from '../ui/PriorityBadge';
 
 interface PriorityChangerProps {
     card: Card;
     onPriorityChange: (updatedCard: Card) => void;
+    disabled?: boolean;
 }
 
 const priorities: ('low' | 'medium' | 'high')[] = ['high', 'medium', 'low'];
 
-export const PriorityChanger: React.FC<PriorityChangerProps> = ({ card, onPriorityChange }) => {
+export const PriorityChanger: React.FC<PriorityChangerProps> = ({ card, onPriorityChange, disabled = false }) => {
     const { t } = useTranslation();
     const { toast } = useToast();
     const { getPriorityLabel } = useTranslatedLabels();
 
     const handlePriorityChange = async (newPriority: 'low' | 'medium' | 'high') => {
+        if (disabled) {
+            return;
+        }
         if (newPriority === card.priority) {
             return;
         }
@@ -47,10 +51,14 @@ export const PriorityChanger: React.FC<PriorityChangerProps> = ({ card, onPriori
         }
     };
 
+    if (disabled) {
+        return <PriorityBadge priority={card.priority} interactive={false} />;
+    }
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger>
-                <PriorityBadge priority={card.priority} />
+                <PriorityBadge priority={card.priority} interactive={true} />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 {priorities.map((p) => {

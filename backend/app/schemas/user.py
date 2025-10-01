@@ -50,7 +50,7 @@ class UserBase(BaseModel):
         return validated
 
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
-    role: UserRole = UserRole.USER
+    role: UserRole = UserRole.VISITOR
     language: Optional[str] = Field("fr", description="Langue préférée (fr, en, etc.)")
 
 
@@ -85,9 +85,7 @@ class UserUpdate(BaseModel):
     @classmethod
     def validate_optional_password_strength(cls, value: Optional[str]) -> Optional[str]:
         """Valide la complexité du mot de passe si fourni."""
-        if value is None:
-            return None
-        return _validate_password_strength(value)
+        return None if value is None else _validate_password_strength(value)
 
 
 class LanguageUpdate(BaseModel):
@@ -137,7 +135,7 @@ class UserListItem(BaseModel):
 
     id: int
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
-    role: Optional[UserRole] = UserRole.USER
+    role: Optional[UserRole] = UserRole.VISITOR
     status: Optional[str] = None
     # email est optionnel ici : les non-admins recevront une liste sans email
     email: Optional[str] = None

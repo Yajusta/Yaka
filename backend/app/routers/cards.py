@@ -1,25 +1,45 @@
 """Routeur pour la gestion des cartes."""
 
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+
 from ..database import get_db
+from ..models import Card, CardPriority, User, UserRole
 from ..schemas import (
-    CardCreate,
-    CardUpdate,
-    CardListUpdate,
-    CardResponse,
-    CardFilter,
-    CardMoveRequest,
     BulkCardMoveRequest,
+    CardCreate,
+    CardFilter,
+    CardHistoryCreate,
+    CardHistoryResponse,
+    CardListUpdate,
+    CardMoveRequest,
+    CardResponse,
+    CardUpdate,
 )
 from ..services import card as card_service
-from ..utils.dependencies import get_current_active_user
-from ..models import User, CardPriority
-from ..schemas import CardHistoryCreate, CardHistoryResponse
 from ..services import card_history as card_history_service
+from ..utils.dependencies import get_current_active_user
+from ..utils.permissions import (
+    ensure_can_archive_card,
+    ensure_can_create_card,
+    ensure_can_delete_card,
+    ensure_can_modify_card,
+    ensure_can_modify_card_content,
+    ensure_can_modify_card_metadata,
+    ensure_can_move_card,
+)
 
 router = APIRouter(prefix="/cards", tags=["cartes"])
+
+
+def _get_card_or_404(db: Session, card_id: int) -> Card:
+    """Récupérer une carte ou lever une 404."""
+    card = card_service.get_card(db, card_id=card_id)
+    if card is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
+    return card
 
 
 @router.get("/", response_model=List[CardResponse])
@@ -75,6 +95,7 @@ async def create_card(
     card: CardCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """Créer une nouvelle carte."""
+    ensure_can_create_card(current_user, card.assignee_id)
     try:
         return card_service.create_card(db=db, card=card, created_by=current_user.id)
     except ValueError as e:
@@ -100,6 +121,37 @@ async def update_card(
     current_user: User = Depends(get_current_active_user),
 ):
     """Mettre à jour une carte."""
+    card = _get_card_or_404(db, card_id)
+
+    # Check permissions based on what's being modified
+    update_data = card_update.model_dump(exclude_unset=True)
+
+    # EDITOR cannot change assignee_id on their own cards
+    if "assignee_id" in update_data and current_user.role == UserRole.EDITOR:
+        if card.assignee_id == current_user.id and update_data["assignee_id"] != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Editors cannot unassign themselves from a card",
+            )
+
+    # Content fields (title, description)
+    content_fields = {"title", "description"}
+    if any(field in update_data for field in content_fields):
+        ensure_can_modify_card_content(current_user, card)
+
+    # Metadata fields (due_date, priority, assignee_id, label_ids)
+    metadata_fields = {"due_date", "priority", "assignee_id", "label_ids"}
+    if any(field in update_data for field in metadata_fields):
+        ensure_can_modify_card_metadata(current_user, card)
+
+    # If list_id is being changed, check move permission
+    if "list_id" in update_data:
+        ensure_can_move_card(current_user, card)
+
+    # If nothing specific was checked, ensure basic modify permission
+    if not any(field in update_data for field in content_fields | metadata_fields | {"list_id"}):
+        ensure_can_modify_card(current_user, card)
+
     db_card = card_service.update_card(db, card_id=card_id, card_update=card_update, updated_by=current_user.id)
     if db_card is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
@@ -114,6 +166,8 @@ async def update_card_list(
     current_user: User = Depends(get_current_active_user),
 ):
     """Mettre à jour la liste d'une carte (pour le drag & drop)."""
+    card = _get_card_or_404(db, card_id)
+    ensure_can_move_card(current_user, card)
     db_card = card_service.update_card_list(db, card_id=card_id, list_update=list_update)
     if db_card is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
@@ -125,6 +179,8 @@ async def archive_card(
     card_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """Archiver une carte."""
+    card = _get_card_or_404(db, card_id)
+    ensure_can_archive_card(current_user, card)
     db_card = card_service.archive_card(db, card_id=card_id, archived_by=current_user.id)
     if db_card is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
@@ -136,6 +192,8 @@ async def unarchive_card(
     card_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """Désarchiver une carte."""
+    card = _get_card_or_404(db, card_id)
+    ensure_can_archive_card(current_user, card)
     db_card = card_service.unarchive_card(db, card_id=card_id, unarchived_by=current_user.id)
     if db_card is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
@@ -150,6 +208,8 @@ async def move_card(
     current_user: User = Depends(get_current_active_user),
 ):
     """Déplacer une carte entre listes avec gestion de position."""
+    card = _get_card_or_404(db, card_id)
+    ensure_can_move_card(current_user, card)
     db_card = card_service.move_card(db, card_id=card_id, move_request=move_request, moved_by=current_user.id)
     if db_card is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
@@ -163,6 +223,15 @@ async def bulk_move_cards(
     current_user: User = Depends(get_current_active_user),
 ):
     """Déplacer plusieurs cartes vers une liste de destination."""
+    if bulk_move_request.card_ids:
+        cards = db.query(Card).filter(Card.id.in_(bulk_move_request.card_ids)).all()
+        cards_by_id = {card.id: card for card in cards}
+        for card_id in bulk_move_request.card_ids:
+            card = cards_by_id.get(card_id)
+            if card is None:
+                continue
+            ensure_can_move_card(current_user, card)
+
     if moved_cards := card_service.bulk_move_cards(db, bulk_move_request=bulk_move_request):
         return moved_cards
     else:
@@ -184,6 +253,8 @@ async def update_card_statut_legacy(
             detail=f"Statut invalide: {statut}. Valeurs acceptées: a_faire, en_cours, termine",
         )
 
+    card = _get_card_or_404(db, card_id)
+    ensure_can_move_card(current_user, card)
     list_update = CardListUpdate(list_id=statut_to_list_id[statut])
     db_card = card_service.update_card_list(db, card_id=card_id, list_update=list_update)
     if db_card is None:
@@ -196,6 +267,8 @@ async def delete_card(
     card_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """Supprimer définitivement une carte."""
+    card = _get_card_or_404(db, card_id)
+    ensure_can_delete_card(current_user, card)
     if success := card_service.delete_card(db, card_id=card_id):
         return {"message": "Carte supprimée avec succès"}
     else:
@@ -224,8 +297,7 @@ async def create_card_history_entry(
 ):
     """Ajouter une entrée à l'historique d'une carte."""
     # Vérifier que la carte existe
-    db_card = card_service.get_card(db, card_id=card_id)
-    if db_card is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
+    card = _get_card_or_404(db, card_id)
+    ensure_can_modify_card(current_user, card)
 
     return card_history_service.create_card_history_entry(db, history_entry)

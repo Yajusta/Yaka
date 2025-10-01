@@ -42,7 +42,7 @@ def sample_user(db_session):
     user = User(
         email="test@example.com",
         display_name="Test User",
-        role=UserRole.USER,
+        role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
     )
     db_session.add(user)

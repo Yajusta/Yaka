@@ -60,7 +60,7 @@ def sample_user_data():
         "email": "test@example.com",
         "password": "Password123",
         "display_name": "Test User",
-        "role": UserRole.USER,
+        "role": UserRole.EDITOR,
         "language": "fr",
     }
 
@@ -76,7 +76,7 @@ def sample_users(db_session, sample_user_data):
     users.append(user1)
 
     # Créer un utilisateur invité
-    user2 = invite_user(db_session, email="invited@example.com", display_name="Invited User", role=UserRole.USER)
+    user2 = invite_user(db_session, email="invited@example.com", display_name="Invited User", role=UserRole.EDITOR)
     users.append(user2)
 
     # Créer un administrateur
@@ -255,7 +255,7 @@ class TestCreateUser:
             email="test2@example.com",
             password="Password123",
             display_name="Test User 2",
-            role=UserRole.USER,
+            role=UserRole.EDITOR,
         )
         user = create_user(db_session, user_data)
 
@@ -312,12 +312,12 @@ class TestInviteUser:
     def test_invite_user_successfully(self, db_session, mock_email_service):
         """Test d'invitation réussie d'un utilisateur."""
         mixed_email = "NewInvite@Example.Com"
-        user = invite_user(db_session, email=mixed_email, display_name="New Invited User", role=UserRole.USER)
+        user = invite_user(db_session, email=mixed_email, display_name="New Invited User", role=UserRole.EDITOR)
 
         assert user.id is not None
         assert user.email == "newinvite@example.com"
         assert user.display_name == "New Invited User"
-        assert user.role == UserRole.USER
+        assert user.role == UserRole.EDITOR
         assert user.status == UserStatus.INVITED
         assert user.invite_token is not None
         assert user.invited_at is not None
@@ -329,7 +329,7 @@ class TestInviteUser:
 
     def test_invite_user_without_display_name(self, db_session, mock_email_service):
         """Test d'invitation d'un utilisateur sans nom d'affichage."""
-        user = invite_user(db_session, email="invite2@example.com", display_name=None, role=UserRole.USER)
+        user = invite_user(db_session, email="invite2@example.com", display_name=None, role=UserRole.EDITOR)
 
         assert user.display_name is None
         mock_email_service.send_invitation.assert_called_once()
@@ -347,14 +347,14 @@ class TestInviteUser:
         """Test d'invitation d'un utilisateur avec un email déjà existant (insensible à la casse)."""
         existing_email = sample_users[0].email.upper()
         with pytest.raises(ValueError):
-            invite_user(db_session, email=existing_email, display_name="Duplicate Invite", role=UserRole.USER)
+            invite_user(db_session, email=existing_email, display_name="Duplicate Invite", role=UserRole.EDITOR)
 
     def test_invite_user_email_sending_failure(self, db_session, mock_email_service):
         """Test d'échec d'envoi d'email lors de l'invitation."""
         mock_email_service.send_invitation.side_effect = Exception("SMTP Error")
 
         user = invite_user(
-            db_session, email="email_fail@example.com", display_name="Email Fail User", role=UserRole.USER
+            db_session, email="email_fail@example.com", display_name="Email Fail User", role=UserRole.EDITOR
         )
 
         # L'utilisateur devrait quand même être créé
@@ -805,7 +805,7 @@ class TestSecurityAndEdgeCases:
         # Les utilisateurs n'ont pas de validation XSS sur le display_name
         # Le contenu est stocké tel quel (protection au niveau affichage)
         user_data = UserCreate(email="xss@example.com", password="Password123", display_name=xss_name)
-        
+
         user = create_user(db_session, user_data)
         assert user.display_name == xss_name  # Stocké tel quel
 
@@ -903,8 +903,8 @@ class TestSecurityAndEdgeCases:
     def test_token_uniqueness(self, db_session, mock_email_service):
         """Test que les tokens d'invitation sont uniques."""
         # Inviter deux utilisateurs
-        user1 = invite_user(db_session, "token1@example.com", "User 1", UserRole.USER)
-        user2 = invite_user(db_session, "token2@example.com", "User 2", UserRole.USER)
+        user1 = invite_user(db_session, "token1@example.com", "User 1", UserRole.EDITOR)
+        user2 = invite_user(db_session, "token2@example.com", "User 2", UserRole.EDITOR)
 
         # Les tokens devraient être différents
         assert user1.invite_token != user2.invite_token
@@ -913,7 +913,7 @@ class TestSecurityAndEdgeCases:
 
     def test_timezone_handling(self, db_session, mock_email_service):
         """Test de la gestion des fuseaux horaires."""
-        invited_user = invite_user(db_session, "timezone@example.com", "Timezone User", UserRole.USER)
+        invited_user = invite_user(db_session, "timezone@example.com", "Timezone User", UserRole.EDITOR)
 
         assert invited_user.invited_at is not None
         # Note: SQLite ne stocke pas les timezone info, mais datetime devrait être présent

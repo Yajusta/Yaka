@@ -1,5 +1,9 @@
 # Changelog
 
+## 2025-10-01
+
+- [NEW] Nouveaux rôles plus granulaires pour les utilisateurs.
+
 ## 2025-09-19
 
 - [SECU] Configuration du token JWT en variable d'environnement.

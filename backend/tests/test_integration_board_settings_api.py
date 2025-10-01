@@ -46,10 +46,10 @@ async def test_non_admin_cannot_update_board_settings(
     async_client_factory, seed_admin_user, create_regular_user, login_user
 ):
     seed_admin_user()
-    create_regular_user("user@example.com", "userpass123")
+    create_regular_user("user@example.com", "Userpass123")
 
     async with async_client_factory(auth_router, board_settings_router) as client:
-        user_token = await login_user(client, "user@example.com", "userpass123")
+        user_token = await login_user(client, "user@example.com", "Userpass123")
 
         forbidden_response = await client.put(
             "/board-settings/title",

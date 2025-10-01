@@ -9,7 +9,7 @@ from app.routers.labels import router as labels_router
 @pytest.mark.asyncio
 async def test_label_crud_permissions(async_client_factory, seed_admin_user, create_regular_user, login_user):
     seed_admin_user()
-    create_regular_user("labeluser@example.com", "label123", display_name="Label User")
+    create_regular_user("labeluser@example.com", "Label123", display_name="Label User")
 
     async with async_client_factory(auth_router, labels_router) as client:
         admin_token = await login_user(client, "admin@yaka.local", "Admin123")
@@ -29,7 +29,7 @@ async def test_label_crud_permissions(async_client_factory, seed_admin_user, cre
         )
         assert duplicate_response.status_code == 400
 
-        user_token = await login_user(client, "labeluser@example.com", "label123")
+        user_token = await login_user(client, "labeluser@example.com", "Label123")
         forbidden_response = await client.post(
             "/labels/",
             json={"name": "ShouldFail", "color": "#123456"},

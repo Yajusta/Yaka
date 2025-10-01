@@ -10,7 +10,7 @@ async def test_admin_creates_lists_and_users_can_read(
     async_client_factory, seed_admin_user, create_regular_user, login_user
 ):
     seed_admin_user()
-    create_regular_user("reader@example.com", "reader123", display_name="Reader")
+    create_regular_user("reader@example.com", "Reader123", display_name="Reader")
 
     async with async_client_factory(auth_router, lists_router) as client:
         admin_token = await login_user(client, "admin@yaka.local", "Admin123")
@@ -29,7 +29,7 @@ async def test_admin_creates_lists_and_users_can_read(
         )
         assert progress_response.status_code == 200
 
-        user_token = await login_user(client, "reader@example.com", "reader123")
+        user_token = await login_user(client, "reader@example.com", "Reader123")
         forbidden_response = await client.post(
             "/lists/",
             json={"name": "Should Fail", "order": 3},

@@ -1,18 +1,19 @@
 import { useDraggable } from '@dnd-kit/core';
-import { CardContent } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { CalendarDays, Edit, Trash2, MoreHorizontal, Clock, MessageSquare, AlertTriangle, AlertCircle } from 'lucide-react';
-import { GlassmorphicCard } from '../ui/GlassmorphicCard';
-import { PriorityChanger } from './PriorityChanger';
-import { AssigneeChanger } from './AssigneeChanger';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { CardHistoryModal } from './CardHistoryModal';
-import { Card } from '../../types/index';
-import { useAuth } from '../../hooks/useAuth';
+import { AlertCircle, AlertTriangle, CalendarDays, Clock, Edit, MessageSquare, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../hooks/useAuth';
+import { usePermissions } from '../../hooks/usePermissions';
+import { Card } from '../../types/index';
 import { CommentsForm } from '../cards/CommentsForm';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { CardContent } from '../ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { GlassmorphicCard } from '../ui/GlassmorphicCard';
+import { AssigneeChanger } from './AssigneeChanger';
+import { CardHistoryModal } from './CardHistoryModal';
+import { PriorityChanger } from './PriorityChanger';
 
 interface CardItemProps {
     card: Card;
@@ -36,6 +37,17 @@ export const CardItem = ({
     isInTrashZone = false
 }: CardItemProps) => {
     const { user: currentUser } = useAuth();
+    const currentUserId = currentUser?.id ?? null;
+    const isCurrentUserAssigned = currentUserId !== null && (card.assignee_id === currentUserId || card.assignee?.id === currentUserId);
+
+    // Use the permissions hook for proper role-based access control
+    const permissions = usePermissions(currentUser);
+    const canModifyCard = permissions.canModifyCard(card);
+    const canComment = permissions.canCommentOnCard;
+    const canDrag = permissions.canMoveCard(card);
+
+    // Determine if the user can view actions (edit, delete buttons)
+    const canViewActions = canModifyCard;
     const { t } = useTranslation();
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [showCommentsModal, setShowCommentsModal] = useState(false);
@@ -50,10 +62,11 @@ export const CardItem = ({
         data: {
             type: 'card',
             card
-        }
+        },
+        disabled: !canDrag,
     });
 
-    const isCurrentUserAssigned = !!(card.assignee && currentUser && card.assignee.id === currentUser.id);
+    const dragProps = canDrag ? { ...attributes, ...listeners } : {};
 
     // Normalize priority to get the correct border color
     const normalizePriority = (priority: string): 'low' | 'medium' | 'high' => {
@@ -125,6 +138,9 @@ export const CardItem = ({
 
     const handleEdit = (e: React.MouseEvent): void => {
         e.stopPropagation();
+        if (!canModifyCard) {
+            return;
+        }
         onUpdate(card, 'edit');
     };
 
@@ -164,11 +180,10 @@ export const CardItem = ({
         <GlassmorphicCard
             ref={setNodeRef}
             style={style}
-            {...attributes}
-            {...listeners}
+            {...dragProps}
             onDoubleClick={handleDoubleClick}
-            variant="interactive"
-            className={`group cursor-grab active:cursor-grabbing border-2 ${priorityGlowClass} ${draggingClasses} ${hiddenClass} ${trashClass} ${isInTrashZone ? 'card-trash-active border-destructive' : ''}`}
+            variant={canDrag ? "interactive" : "default"}
+            className={`group ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default no-drag-effect'} border-2 ${priorityGlowClass} ${draggingClasses} ${hiddenClass} ${trashClass} ${isInTrashZone ? 'card-trash-active border-destructive' : ''}`}
         >
             <CardContent>
                 <div>
@@ -177,52 +192,54 @@ export const CardItem = ({
                         <h3 className="font-semibold text-sm leading-tight flex-1 text-foreground">
                             {card.title}
                         </h3>
-                        <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 w-7 p-0 hover:bg-primary/10"
-                                onClick={handleEdit}
-                                title={t('card.editCard')}
-                            >
-                                <Edit className="h-3.5 w-3.5" />
-                            </Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 w-7 p-0 hover:bg-muted"
-                                        title={t('common.actions')}
-                                    >
-                                        <MoreHorizontal className="h-3.5 w-3.5" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40">
-                                    <DropdownMenuItem
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowHistoryModal(true);
-                                        }}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <Clock className="h-3.5 w-3.5" />
-                                        {t('card.history')}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        variant="destructive"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDelete(card.id);
-                                        }}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                        {t('card.archiveCard')}
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
+                        {canViewActions && (
+                            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 hover:bg-primary/10"
+                                    onClick={handleEdit}
+                                    title={t('card.editCard')}
+                                >
+                                    <Edit className="h-3.5 w-3.5" />
+                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 w-7 p-0 hover:bg-muted"
+                                            title={t('common.actions')}
+                                        >
+                                            <MoreHorizontal className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-40">
+                                        <DropdownMenuItem
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowHistoryModal(true);
+                                            }}
+                                            className="flex items-center gap-2"
+                                        >
+                                            <Clock className="h-3.5 w-3.5" />
+                                            {t('card.history')}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            variant="destructive"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDelete(card.id);
+                                            }}
+                                            className="flex items-center gap-2"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                            {t('card.archiveCard')}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        )}
                     </div>
 
                     {/* Description */}
@@ -255,7 +272,7 @@ export const CardItem = ({
                     {/* Footer */}
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                         <div className="flex items-center space-x-2">
-                            <PriorityChanger card={card} onPriorityChange={handlePriorityChange} />
+                            <PriorityChanger card={card} onPriorityChange={handlePriorityChange} disabled={!canModifyCard} />
 
                             {card.due_date && (() => {
                                 const dueDateStatus = getDueDateStatus(card.due_date);
@@ -351,7 +368,7 @@ export const CardItem = ({
                         </div>
 
                         <div className={`flex items-center ml-auto ${card.assignee ? "opacity-100" : "opacity-0 group-hover:opacity-100 transition-opacity duration-200"} ${isCurrentUserAssigned ? 'bg-primary text-primary-foreground rounded-md px-2 py-1 -mx-2 -my-1 shadow-sm' : ''}`}>
-                            <AssigneeChanger card={card} onAssigneeChange={handleAssigneeChange} isCurrentUserAssigned={isCurrentUserAssigned} />
+                            <AssigneeChanger card={card} onAssigneeChange={handleAssigneeChange} isCurrentUserAssigned={isCurrentUserAssigned} disabled={!canModifyCard} />
                         </div>
                     </div>
                 </div>
@@ -368,6 +385,7 @@ export const CardItem = ({
                 cardId={card.id}
                 isOpen={showCommentsModal}
                 onClose={() => setShowCommentsModal(false)}
+                canAdd={canComment}
             />
         </GlassmorphicCard>
     );

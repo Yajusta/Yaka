@@ -157,9 +157,7 @@ app.add_middleware(
 
 
 # Trusted Host middleware pour prévenir les attaques Host Header
-base_url = os.getenv("BASE_URL", "http://localhost:5173")
-# Extraire le domaine de BASE_URL (enlever http:// ou https://)
-domain = base_url.replace("http://", "").replace("https://", "").split(":")[0]
+domain = frontend_url.replace("http://", "").replace("https://", "").split(":")[0]
 
 app.add_middleware(
     TrustedHostMiddleware,

@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { MoreHorizontal, Trash2, User, Key, Check, Mail, RefreshCw } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { userService } from '../../services/api';
+import { Check, Eye, Key, Mail, MessageSquare, MoreHorizontal, PenTool, RefreshCw, Shield, Trash2, User, Users, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../hooks/use-toast.tsx';
 import { useAuth } from '../../hooks/useAuth';
-import { useUsers, AppUser } from '../../hooks/useUsers';
-import { useTranslation } from 'react-i18next';
+import { AppUser, useUsers } from '../../hooks/useUsers';
+import { userService } from '../../services/api';
+import { UserRole, UserRoleValue } from '../../types';
+import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type UserItem = AppUser;
 
@@ -20,13 +21,83 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
     const { users, loading, forbidden, refresh } = useUsers();
     const [email, setEmail] = useState('');
     const [displayName, setDisplayName] = useState('');
-    const [role, setRole] = useState<'user' | 'admin'>('user');
+    const [role, setRole] = useState<UserRoleValue>(UserRole.VISITOR);
     const [editingUser, setEditingUser] = useState<UserItem | null>(null);
     const [editingDisplayName, setEditingDisplayName] = useState('');
+    const [showAddUserForm, setShowAddUserForm] = useState(false);
+
+    const roleOptions = useMemo(() => ([
+        { value: UserRole.VISITOR, label: t('role.visitor') },
+        { value: UserRole.COMMENTER, label: t('role.commenter') },
+        { value: UserRole.CONTRIBUTOR, label: t('role.contributor') },
+        { value: UserRole.EDITOR, label: t('role.editor') },
+        { value: UserRole.SUPERVISOR, label: t('role.supervisor') },
+        { value: UserRole.ADMIN, label: t('role.admin') },
+    ]), [t]);
+
+    const roleLabelMap = useMemo(() => new Map(roleOptions.map(option => [option.value, option.label])), [roleOptions]);
+
+    const getRoleLabel = (value?: string | null): string => {
+        if (!value) {
+            return t('role.visitor');
+        }
+        return roleLabelMap.get(value as UserRoleValue) || t('role.visitor');
+    };
+
+    const getRoleIcon = (role: UserRoleValue) => {
+        switch (role) {
+            case UserRole.ADMIN:
+                return Key;
+            case UserRole.SUPERVISOR:
+                return Shield;
+            case UserRole.EDITOR:
+                return PenTool;
+            case UserRole.CONTRIBUTOR:
+                return Users;
+            case UserRole.COMMENTER:
+                return MessageSquare;
+            case UserRole.VISITOR:
+                return Eye;
+            default:
+                return User;
+        }
+    };
+
+    const getRolePermissions = (role: UserRoleValue) => {
+        const permissions = {
+            view: true,
+            comment: false,
+            selfAssign: false,
+            checkItems: false,
+            moveOwn: false,
+            createTask: false,
+            modifyOwn: false,
+            modifyAll: false,
+            delete: false,
+            admin: false
+        };
+
+        switch (role) {
+            case UserRole.ADMIN:
+                return { ...permissions, comment: true, selfAssign: true, checkItems: true, moveOwn: true, createTask: true, modifyOwn: true, modifyAll: true, delete: true, admin: true };
+            case UserRole.SUPERVISOR:
+                return { ...permissions, comment: true, selfAssign: true, checkItems: true, moveOwn: true, createTask: true, modifyOwn: true, modifyAll: true, delete: true };
+            case UserRole.EDITOR:
+                return { ...permissions, comment: true, selfAssign: true, checkItems: true, moveOwn: true, createTask: true, modifyOwn: true };
+            case UserRole.CONTRIBUTOR:
+                return { ...permissions, comment: true, selfAssign: true, checkItems: true, moveOwn: true };
+            case UserRole.COMMENTER:
+                return { ...permissions, comment: true };
+            case UserRole.VISITOR:
+            default:
+                return permissions;
+        }
+    };
+
 
     useEffect(() => {
         if (isOpen) {
-          refresh();
+            refresh();
         }
     }, [isOpen]);
 
@@ -49,6 +120,8 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
             await userService.inviteUser({ email, display_name: displayName, role });
             setEmail('');
             setDisplayName('');
+            setRole(UserRole.VISITOR);
+            setShowAddUserForm(false);
             await refresh();
             toast({
                 title: t('user.invitationSent'),
@@ -63,6 +136,14 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                 variant: 'destructive'
             });
         }
+    };
+
+    const handleCancelAddUser = () => {
+        setEmail('');
+        setDisplayName('');
+        setRole(UserRole.VISITOR);
+        setError(null);
+        setShowAddUserForm(false);
     };
 
     const handleDelete = async (id: number) => {
@@ -104,7 +185,7 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
 
     const handleSaveDisplayName = async () => {
         if (!editingUser || !editingDisplayName.trim()) {
-          return;
+            return;
         }
 
         try {
@@ -127,7 +208,14 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
         }
     };
 
-    const handleChangeRole = async (userId: number, newRole: 'user' | 'admin') => {
+    const handleChangeRole = async (userId: number, newRole: UserRoleValue) => {
+        if (userId === currentUser?.id) {
+            return;
+        }
+        const targetUser = users.find((existing) => existing.id === userId);
+        if (targetUser?.role === newRole) {
+            return;
+        }
         try {
             await userService.updateUser(userId, { role: newRole });
             await refresh();
@@ -153,7 +241,7 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
 
     const canResendInvitation = (invitedAt?: string): boolean => {
         if (!invitedAt) {
-          return true;
+            return true;
         }
         const invitedTime = new Date(invitedAt);
         const now = new Date();
@@ -199,14 +287,13 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                 <div className="flex justify-center">
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            {u.role === 'admin' ? (
-                                                                <Key className="h-4 w-4 text-destructive cursor-help" />
-                                                            ) : (
-                                                                <User className="h-4 w-4 text-muted-foreground cursor-help" />
-                                                            )}
+                                                            {(() => {
+                                                                const IconComponent = getRoleIcon(u.role as UserRoleValue);
+                                                                return <IconComponent className={`h-4 w-4 cursor-help ${u.role === 'admin' ? 'text-destructive' : 'text-muted-foreground'}`} />;
+                                                            })()}
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            <p>{u.role === 'admin' ? t('role.admin') : t('user.member')}</p>
+                                                            <p>{getRoleLabel(u.role)}</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </div>
@@ -224,10 +311,10 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                             <p>{(() => {
                                                                 const status = u.status?.toLowerCase();
                                                                 if (status === 'active') {
-                                                                  return t('user.activeUser');
+                                                                    return t('user.activeUser');
                                                                 }
                                                                 if (status === 'invited') {
-                                                                  return t('user.invitationPending');
+                                                                    return t('user.invitationPending');
                                                                 }
                                                                 return t('user.activeUser');
                                                             })()}</p>
@@ -285,19 +372,16 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                                 <User className="h-4 w-4" />
                                                                 {t('user.modifyName')}
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() => {
-                                                                    if (u.id === currentUser?.id) return;
-                                                                    handleChangeRole(u.id, u.role === 'admin' ? 'user' : 'admin');
-                                                                }}
-                                                                className={`flex items-center gap-2 ${u.id === currentUser?.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                            >
+                                                            <DropdownMenuSub>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <div className="flex items-center gap-2 w-full">
+                                                                        <DropdownMenuSubTrigger
+                                                                            disabled={u.id === currentUser?.id}
+                                                                            className={`flex items-center gap-2 ${u.id === currentUser?.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                        >
                                                                             <Key className="h-4 w-4" />
-                                                                            {u.role === 'admin' ? t('user.demoteToMember') : t('user.promoteToAdmin')}
-                                                                        </div>
+                                                                            <span className="flex-1">{t('user.changeRole')}</span>
+                                                                        </DropdownMenuSubTrigger>
                                                                     </TooltipTrigger>
                                                                     {u.id === currentUser?.id && (
                                                                         <TooltipContent>
@@ -305,7 +389,83 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                                         </TooltipContent>
                                                                     )}
                                                                 </Tooltip>
-                                                            </DropdownMenuItem>
+                                                                <DropdownMenuSubContent className="w-48">
+                                                                    {roleOptions.map((option) => {
+                                                                        const IconComponent = getRoleIcon(option.value);
+                                                                        const perms = getRolePermissions(option.value);
+                                                                        return (
+                                                                            <Tooltip key={option.value}>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <div>
+                                                                                        <DropdownMenuItem
+                                                                                            onClick={() => handleChangeRole(u.id, option.value)}
+                                                                                            disabled={u.id === currentUser?.id || u.role === option.value}
+                                                                                            className="flex items-center gap-2"
+                                                                                        >
+                                                                                            <IconComponent className="h-3.5 w-3.5" />
+                                                                                            <span>{option.label}</span>
+                                                                                            {u.role === option.value && <Check className="ml-auto h-3.5 w-3.5 text-primary" />}
+                                                                                        </DropdownMenuItem>
+                                                                                    </div>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent side="right" className="p-3 bg-popover border-border">
+                                                                                    <div className="flex flex-col gap-y-1 text-xs">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.view ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.view')}</span>
+                                                                                        </div>
+
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.comment ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.comment')}</span>
+                                                                                        </div>
+
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.selfAssign ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.selfAssign')}</span>
+                                                                                        </div>
+
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.checkItems ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.checkItems')}</span>
+                                                                                        </div>
+
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.moveOwn ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.moveOwn')}</span>
+                                                                                        </div>
+
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.createTask ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.createTask')}</span>
+                                                                                        </div>
+
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.modifyOwn ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.modifyOwn')}</span>
+                                                                                        </div>
+
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.modifyAll ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.modifyAll')}</span>
+                                                                                        </div>
+
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.delete ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.delete')}</span>
+                                                                                        </div>
+
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            {perms.admin ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                            <span className="text-muted-foreground">{t('permissions.admin')}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
+                                                                        );
+                                                                    })}
+                                                                </DropdownMenuSubContent>
+                                                            </DropdownMenuSub>
                                                             <DropdownMenuItem
                                                                 variant="destructive"
                                                                 onClick={() => {
@@ -339,45 +499,72 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                         )}
                     </div>
 
-                    <div>
-                        <h3 className="font-medium text-sm">{t('user.addNewUser')}</h3>
-                        <div className="grid gap-2 mt-2">
-                            <div className="space-y-1">
-                                <Label htmlFor="email" className="text-sm font-medium">
-                                    {t('user.email')} <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    id="email"
-                                    value={email}
-                                    onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
-                                    placeholder={t('user.email')}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="displayName" className="text-sm font-medium">
-                                    {t('user.name')} <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    id="displayName"
-                                    value={displayName}
-                                    onChange={(e) => setDisplayName((e.target as HTMLInputElement).value)}
-                                    placeholder={t('user.name')}
-                                    maxLength={32}
-                                />
-                                <p className="text-xs text-gray-500">
-                                    {displayName.length}/32 {t('common.charactersMax')}
-                                </p>
-                            </div>
-                            <select value={role} onChange={(e) => setRole((e.target as HTMLSelectElement).value as any)} className="input">
-                                <option value="user">{t('user.member')}</option>
-                                <option value="admin">{t('role.admin')}</option>
-                            </select>
-                            <div className="flex items-center space-x-2">
-                                <Button onClick={handleInvite} disabled={!isFormValid}>{t('user.inviteUser')}</Button>
+                    {/* Add User Button or Form */}
+                    {!showAddUserForm ? (
+                        <div className="flex justify-start">
+                            <Button onClick={() => setShowAddUserForm(true)} variant="outline">
+                                {t('user.addNewUser')}
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="border rounded-lg p-4">
+                            <h3 className="font-medium text-sm mb-3">{t('user.addNewUser')}</h3>
+                            <div className="grid gap-3">
+                                <div className="space-y-1">
+                                    <Label htmlFor="email" className="text-sm font-medium">
+                                        {t('user.email')} <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="email"
+                                        value={email}
+                                        onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
+                                        placeholder={t('user.email')}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="displayName" className="text-sm font-medium">
+                                        {t('user.name')} <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="displayName"
+                                        value={displayName}
+                                        onChange={(e) => setDisplayName((e.target as HTMLInputElement).value)}
+                                        placeholder={t('user.name')}
+                                        maxLength={32}
+                                    />
+                                    <p className="text-xs text-gray-500">
+                                        {displayName.length}/32 {t('common.charactersMax')}
+                                    </p>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="roleSelect" className="text-sm font-medium">
+                                        {t('user.role')}
+                                    </Label>
+                                    <select
+                                        id="roleSelect"
+                                        value={role}
+                                        onChange={(e) => setRole((e.target as HTMLSelectElement).value as UserRoleValue)}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    >
+                                        {roleOptions.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                                 {error && <div className="text-sm text-destructive">{error}</div>}
+                                <div className="flex items-center gap-2">
+                                    <Button onClick={handleInvite} disabled={!isFormValid}>
+                                        {t('user.inviteUser')}
+                                    </Button>
+                                    <Button onClick={handleCancelAddUser} variant="outline">
+                                        {t('common.cancel')}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Edit Display Name Dialog */}
                     {editingUser && (

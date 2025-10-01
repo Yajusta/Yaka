@@ -90,7 +90,9 @@
         "checklistProgress": "Checklist progress",
         "olderComment": "older comment |||| older comments",
         "editCardDescription": "Edit card information",
+        "detailsDescription": "Review the card information",
         "newCardDescription": "Fill in the details to create a new card",
+        "viewCardDescription": "View card details",
         "assignee": "Assignee",
         "priority": "Priority",
         "labels": "Labels",
@@ -103,6 +105,8 @@
         "history": "History",
         "newCard": "New card",
         "editCard": "Edit card",
+        "viewCard": "View card",
+        "detailsTitle": "Card details",
         "deleteCard": "Delete card",
         "archiveCard": "Archive card",
         "restoreCard": "Restore card",
@@ -157,6 +161,9 @@
         "updateCommentError": "Error updating comment",
         "deleteCommentError": "Error deleting comment",
         "commentUpdated": "Comment updated",
+        "permissionDenied": "You do not have permission to perform this action.",
+        "selfAssignmentRequired": "Assign the card to yourself before creating it.",
+        "commentsReadOnlyNotice": "You can view comments but cannot add or edit them.",
         "commentDeleted": "Comment deleted",
         "createSuccess": "Card created successfully",
         "updateSuccess": "Card updated successfully",
@@ -180,7 +187,8 @@
         "historyBy": "by {{userName}}",
         "priorityUpdated": "Priority updated",
         "priorityUpdatedDescription": "The priority of card \"{{cardTitle}}\" is now \"{{priority}}\".",
-        "toggleChecklistItem": "Toggle checklist item"
+        "toggleChecklistItem": "Toggle checklist item",
+        "dropItem": "Drop item"
     },
     "list": {
         "title": "Title",
@@ -317,6 +325,18 @@
         "promoteToAdmin": "Promote to admin",
         "cannotChangeOwnRole": "You cannot change your own role"
     },
+    "permissions": {
+        "view": "View",
+        "comment": "Comment",
+        "selfAssign": "Self-assign",
+        "checkItems": "Check items",
+        "moveOwn": "Move own",
+        "createTask": "Create task",
+        "modifyOwn": "Modify own",
+        "modifyAll": "Modify all",
+        "delete": "Delete",
+        "admin": "Admin"
+    },
     "priority": {
         "low": "Low",
         "medium": "Medium",
@@ -332,8 +352,12 @@
         "archived": "Archived"
     },
     "role": {
+        "visitor": "Visitor",
+        "commenter": "Commenter",
+        "contributor": "Contributor",
+        "editor": "Editor",
+        "supervisor": "Supervisor",
         "admin": "Administrator",
-        "user": "User",
         "guest": "Guest"
     },
     "filter": {

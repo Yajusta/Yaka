@@ -1,24 +1,28 @@
+import { User as UserIcon } from 'lucide-react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { User as UserIcon } from 'lucide-react';
-import { Card, UpdateCardData } from '../../types';
-import { cardService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { useUsers } from '../../hooks/useUsers';
+import { cardService } from '../../services/api';
+import { Card, UpdateCardData } from '../../types';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 interface AssigneeChangerProps {
     card: Card;
     onAssigneeChange: (updatedCard: Card) => void;
     isCurrentUserAssigned?: boolean;
+    disabled?: boolean;
 }
 
-export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssigneeChange, isCurrentUserAssigned = false }) => {
+export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssigneeChange, isCurrentUserAssigned = false, disabled = false }) => {
     const { t } = useTranslation();
     const { toast } = useToast();
     const { users } = useUsers();
 
     const handleAssigneeChange = async (newAssigneeId: number | null) => {
+        if (disabled) {
+            return;
+        }
         if (newAssigneeId === card.assignee_id) {
             return;
         }
@@ -45,6 +49,25 @@ export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssign
             });
         }
     };
+
+    if (disabled) {
+        return (
+            <div className="flex items-center space-x-1 text-muted-foreground" title={t('card.changeAssignee')}>
+                {card.assignee ? (
+                    <>
+                        <UserIcon className={`h-3 w-3 ${isCurrentUserAssigned ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
+                        <span className={`text-xs font-medium ${isCurrentUserAssigned ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
+                            {card.assignee.display_name}
+                        </span>
+                    </>
+                ) : (
+                    <div className='flex items-center text-muted-foreground'>
+                        <UserIcon className="h-3 w-3" />
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     return (
         <DropdownMenu>

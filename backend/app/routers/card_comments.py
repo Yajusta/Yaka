@@ -1,17 +1,19 @@
 """Routeur pour la gestion des commentaires des cartes."""
 
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..utils.dependencies import get_current_active_user
 from ..models import User
-from ..schemas.card_comment import CardCommentResponse, CardCommentCreate, CardCommentUpdate
+from ..schemas.card_comment import CardCommentCreate, CardCommentResponse, CardCommentUpdate
+from ..schemas.card_history import CardHistoryCreate
+from ..services import card as card_service
 from ..services import card_comment as card_comment_service
 from ..services.card_history import create_card_history_entry
-from ..schemas.card_history import CardHistoryCreate
-
+from ..utils.dependencies import get_current_active_user
+from ..utils.permissions import ensure_can_comment_on_card, ensure_can_delete_comment, ensure_can_edit_comment
 
 router = APIRouter(prefix="/card-comments", tags=["card-comments"])
 
@@ -33,6 +35,11 @@ async def create_comment(
     current_user: User = Depends(get_current_active_user),
 ):
     """Créer un nouveau commentaire pour une carte."""
+    card = card_service.get_card(db, card_id=comment.card_id)
+    if card is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
+
+    ensure_can_comment_on_card(current_user, card)
     try:
         db_comment = card_comment_service.create_comment(db, comment, current_user.id)
 
@@ -56,6 +63,13 @@ async def update_comment(
     current_user: User = Depends(get_current_active_user),
 ):
     """Mettre à jour un commentaire."""
+    existing_comment = card_comment_service.get_comment_by_id(db, comment_id)
+    if not existing_comment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Commentaire non trouvé")
+
+    # Vérifier que l'utilisateur peut modifier ce commentaire spécifique
+    ensure_can_edit_comment(current_user, existing_comment)
+
     try:
         db_comment = card_comment_service.update_comment(db, comment_id, comment, current_user.id)
 
@@ -93,6 +107,9 @@ async def delete_comment(
         # À ce point, db_comment n'est pas None, pas besoin de type: ignore
         card_id: int = db_comment.card_id
 
+        # Vérifier que l'utilisateur peut supprimer ce commentaire spécifique
+        ensure_can_delete_comment(current_user, db_comment)
+
         ok = card_comment_service.delete_comment(db, comment_id, current_user.id)
 
         if not ok:
@@ -109,6 +126,4 @@ async def delete_comment(
 
         return {"message": "Commentaire supprimé"}
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

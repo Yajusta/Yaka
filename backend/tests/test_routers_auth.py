@@ -47,7 +47,7 @@ def test_user(db_session):
         email="test@example.com",
         display_name="Test User",
         password_hash="$2b$12$testhashedpassword",
-        role=UserRole.USER,
+        role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
         language="fr",
         created_at=datetime.utcnow(),

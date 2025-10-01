@@ -66,7 +66,7 @@ def regular_user(db_session):
         email="user@example.com",
         display_name="Regular User",
         password_hash="$2b$12$testhashedpassword",
-        role=UserRole.USER,
+        role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
         language="fr",
         created_at=datetime.utcnow(),
@@ -245,31 +245,14 @@ class TestLabelsRouter:
 
     def test_create_label_empty_name(self, admin_user):
         """Test de création d'un libellé avec un nom vide."""
-        label_data = LabelCreate(name="", color="#FF0000", description="Priorité haute")
+        from pydantic import ValidationError
 
-        with patch("app.routers.labels.require_admin") as mock_require_admin:
-            mock_require_admin.return_value = admin_user
+        # Test with empty name - should be caught by Pydantic validation
+        with pytest.raises(ValidationError) as exc_info:
+            LabelCreate(name="", color="#FF0000", description="Priorité haute")
 
-            with patch("app.routers.labels.get_db") as mock_db:
-                mock_db.return_value.__enter__.return_value = MagicMock()
-
-                with patch("app.routers.labels.label_service.get_label_by_name") as mock_get_by_name:
-                    mock_get_by_name.return_value = None
-
-                    with patch("app.routers.labels.label_service.create_label") as mock_create:
-                        mock_create.side_effect = ValueError("Le nom ne peut pas être vide")
-
-                        with pytest.raises(HTTPException) as exc_info:
-                            asyncio.run(
-                                create_label_route(
-                                    label_data,
-                                    mock_db.return_value.__enter__.return_value,
-                                    mock_require_admin.return_value,
-                                )
-                            )
-
-                        assert exc_info.value.status_code == 400
-                        assert exc_info.value.detail == "Le nom ne peut pas être vide"
+        # Verify that the validation error is about empty name
+        assert "at least 1 character" in str(exc_info.value).lower()
 
     def test_create_label_duplicate_name(self, admin_user):
         """Test de création d'un libellé avec un nom dupliqué."""
@@ -440,25 +423,14 @@ class TestLabelsRouter:
 
     def test_invalid_color_format(self, admin_user):
         """Test avec un format de color invalide."""
-        label_data = LabelCreate(name="Test Label", color="invalid_color", description="Test description")
+        from pydantic import ValidationError
 
-        with patch("app.routers.labels.require_admin") as mock_require_admin:
-            mock_require_admin.return_value = admin_user
+        # Test with invalid color format - should be caught by Pydantic validation
+        with pytest.raises(ValidationError) as exc_info:
+            LabelCreate(name="Test Label", color="invalid_color", description="Test description")
 
-            # Mock database session
-            with patch("app.routers.labels.get_db") as mock_db:
-                mock_db.return_value.__enter__.return_value = MagicMock()
-
-                with patch("app.routers.labels.label_service.get_label_by_name") as mock_get_by_name:
-                    mock_get_by_name.side_effect = ValueError("Format de color invalide")
-
-                    with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(
-                            create_label_route(label_data, mock_db.return_value.__enter__.return_value, admin_user)
-                        )
-
-                    assert exc_info.value.status_code == 400
-                    assert exc_info.value.detail == "Format de color invalide"
+        # Verify that the validation error is about color format
+        assert "color" in str(exc_info.value).lower()
 
     def test_service_error_handling(self, admin_user):
         """Test de gestion des erreurs de service."""

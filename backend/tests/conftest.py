@@ -94,7 +94,9 @@ def seed_admin_user(integration_session_factory: sessionmaker) -> Callable[[], N
 def create_regular_user(integration_session_factory: sessionmaker) -> Callable[[str, str, str | None], None]:
     """Create a regular user in the isolated database."""
 
-    def _create(email: str, password: str, display_name: str | None = "Regular", role: UserRole = UserRole.USER) -> None:
+    def _create(
+        email: str, password: str, display_name: str | None = "Regular", role: UserRole = UserRole.EDITOR
+    ) -> None:
         session = integration_session_factory()
         try:
             payload = UserCreate(
@@ -146,14 +148,20 @@ def login_user() -> Callable[[httpx.AsyncClient, str, str], Awaitable[str]]:
     return _login
 
 
-
 @pytest.fixture(autouse=True)
 def disable_email_sending(monkeypatch):
     """Neutralise l'envoi d'emails pour éviter les appels réseau pendant les tests."""
-    from app.services import email as email_service
 
+    # Patcher directement au niveau du module pour éviter les timeouts SMTP
     def _noop(*args, **kwargs):
         return None
 
-    monkeypatch.setattr(email_service, 'send_mail', _noop)
+    # Patcher le module email source
+    monkeypatch.setattr("app.services.email.send_mail", _noop)
+    monkeypatch.setattr("app.services.email.send_invitation", _noop)
+    monkeypatch.setattr("app.services.email.send_password_reset", _noop)
 
+    # Patcher aussi les références locales dans user.py qui importe email as email_service
+    monkeypatch.setattr("app.services.user.email_service.send_mail", _noop)
+    monkeypatch.setattr("app.services.user.email_service.send_invitation", _noop)
+    monkeypatch.setattr("app.services.user.email_service.send_password_reset", _noop)

@@ -49,12 +49,12 @@ def db_session():
 
 @pytest.fixture
 def test_user(db_session):
-    """Fixture pour créer un utilisateur de test."""
+    """Fixture pour créer un utilisateur de test avec rôle SUPERVISOR pour tester la logique métier."""
     user = User(
         email="test@example.com",
         display_name="Test User",
         password_hash="$2b$12$testhashedpassword",
-        role=UserRole.USER,
+        role=UserRole.SUPERVISOR,
         status=UserStatus.ACTIVE,
         language="fr",
         created_at=datetime.utcnow(),
@@ -201,40 +201,34 @@ class TestCardCommentsRouter:
 
     def test_create_comment_empty_content(self, test_user):
         """Test de création d'un commentaire avec un contenu vide."""
-        from app.routers.card_comments import create_comment
+        from pydantic import ValidationError
 
-        with patch("app.routers.card_comments.get_current_active_user") as mock_current_user:
-            mock_current_user.return_value = test_user
+        # Test with empty content - should be caught by Pydantic validation
+        with pytest.raises(ValidationError) as exc_info:
+            CardCommentCreate(card_id=1, comment="   ")
 
-            # Mock database session
-            with patch("app.routers.card_comments.get_db") as mock_db:
-                mock_db.return_value.__enter__.return_value = MagicMock()
-
-                # Test with empty content - should be caught by validation
-                # Use a different approach since Pydantic validation will catch empty strings
-                comment_data = CardCommentCreate(card_id=1, comment="   ")
-
-                with patch("app.routers.card_comments.card_comment_service.create_comment") as mock_create:
-                    mock_create.side_effect = ValueError("Content cannot be empty")
-
-                    with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(
-                            create_comment(comment_data, mock_db.return_value.__enter__.return_value, test_user)
-                        )
-
-                    assert exc_info.value.status_code == 400
-                    assert exc_info.value.detail == "Content cannot be empty"
+        # Verify that the validation error is about empty content
+        assert "commentaire ne peut pas" in str(exc_info.value).lower() or "empty" in str(exc_info.value).lower()
 
     def test_update_comment_success(self, test_user):
         """Test de mise à jour d'un commentaire avec succès."""
         from app.routers.card_comments import update_comment
+        from app.models.card_comment import CardComment
 
         update_data = CardCommentUpdate(comment="Updated comment")
+
+        # Mock existing comment with correct user_id
+        existing_comment = MagicMock(spec=CardComment)
+        existing_comment.id = 1
+        existing_comment.card_id = 1
+        existing_comment.user_id = test_user.id
+        existing_comment.comment = "Original comment"
+        existing_comment.is_deleted = False
 
         mock_comment = CardCommentResponse(
             id=1,
             card_id=1,
-            user_id=1,
+            user_id=test_user.id,
             comment="Updated comment",
             is_deleted=False,
             created_at=datetime.utcnow(),
@@ -242,24 +236,27 @@ class TestCardCommentsRouter:
             user_display_name="Test User",
         )
 
-        with patch("app.routers.card_comments.card_comment_service.update_comment") as mock_update:
-            mock_update.return_value = mock_comment
+        with patch("app.routers.card_comments.card_comment_service.get_comment_by_id") as mock_get:
+            mock_get.return_value = existing_comment
 
-            with patch("app.routers.card_comments.create_card_history_entry") as mock_history:
-                mock_history.return_value = None
+            with patch("app.routers.card_comments.card_comment_service.update_comment") as mock_update:
+                mock_update.return_value = mock_comment
 
-                with patch("app.routers.card_comments.get_current_active_user") as mock_current_user:
-                    mock_current_user.return_value = test_user
+                with patch("app.routers.card_comments.create_card_history_entry") as mock_history:
+                    mock_history.return_value = None
 
-                    # Mock database session
-                    with patch("app.routers.card_comments.get_db") as mock_db:
-                        mock_db.return_value.__enter__.return_value = MagicMock()
+                    with patch("app.routers.card_comments.get_current_active_user") as mock_current_user:
+                        mock_current_user.return_value = test_user
 
-                        result = asyncio.run(
-                            update_comment(1, update_data, mock_db.return_value.__enter__.return_value, test_user)
-                        )
+                        # Mock database session
+                        with patch("app.routers.card_comments.get_db") as mock_db:
+                            mock_db.return_value.__enter__.return_value = MagicMock()
 
-                        assert result.comment == "Updated comment"
+                            result = asyncio.run(
+                                update_comment(1, update_data, mock_db.return_value.__enter__.return_value, test_user)
+                            )
+
+                            assert result.comment == "Updated comment"
 
     def test_update_comment_not_found(self, test_user):
         """Test de mise à jour d'un commentaire qui n'existe pas."""
@@ -267,8 +264,8 @@ class TestCardCommentsRouter:
 
         update_data = CardCommentUpdate(comment="Updated comment")
 
-        with patch("app.routers.card_comments.card_comment_service.update_comment") as mock_update:
-            mock_update.return_value = None
+        with patch("app.routers.card_comments.card_comment_service.get_comment_by_id") as mock_get:
+            mock_get.return_value = None
 
             with patch("app.routers.card_comments.get_current_active_user") as mock_current_user:
                 mock_current_user.return_value = test_user
@@ -277,46 +274,66 @@ class TestCardCommentsRouter:
                 with patch("app.routers.card_comments.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    with pytest.raises(AssertionError) as exc_info:
+                    with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
                             update_comment(999, update_data, mock_db.return_value.__enter__.return_value, test_user)
                         )
 
-                    assert "Commentaire devrait exister après mise à jour" in str(exc_info.value)
+                    assert exc_info.value.status_code == 404
+                    assert "Commentaire non trouvé" in exc_info.value.detail
 
     def test_update_comment_empty_content(self, test_user):
         """Test de mise à jour d'un commentaire avec un contenu vide."""
         from app.routers.card_comments import update_comment
+        from app.models.card_comment import CardComment
 
-        with patch("app.routers.card_comments.get_current_active_user") as mock_current_user:
-            mock_current_user.return_value = test_user
+        # Mock existing comment
+        existing_comment = MagicMock(spec=CardComment)
+        existing_comment.id = 1
+        existing_comment.card_id = 1
+        existing_comment.user_id = test_user.id
+        existing_comment.comment = "Original comment"
 
-            # Mock database session
-            with patch("app.routers.card_comments.get_db") as mock_db:
-                mock_db.return_value.__enter__.return_value = MagicMock()
+        with patch("app.routers.card_comments.card_comment_service.get_comment_by_id") as mock_get:
+            mock_get.return_value = existing_comment
 
-                # Test with empty content
-                update_data = CardCommentUpdate(comment="   ")
+            with patch("app.routers.card_comments.get_current_active_user") as mock_current_user:
+                mock_current_user.return_value = test_user
 
-                with patch("app.routers.card_comments.card_comment_service.update_comment") as mock_update:
-                    mock_update.side_effect = ValueError("Content cannot be empty")
+                # Mock database session
+                with patch("app.routers.card_comments.get_db") as mock_db:
+                    mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(
-                            update_comment(1, update_data, mock_db.return_value.__enter__.return_value, test_user)
-                        )
+                    # Test with empty content
+                    update_data = CardCommentUpdate(comment="   ")
 
-                    assert exc_info.value.status_code == 400
+                    with patch("app.routers.card_comments.card_comment_service.update_comment") as mock_update:
+                        mock_update.side_effect = ValueError("Content cannot be empty")
+
+                        with pytest.raises(HTTPException) as exc_info:
+                            asyncio.run(
+                                update_comment(1, update_data, mock_db.return_value.__enter__.return_value, test_user)
+                            )
+
+                        assert exc_info.value.status_code == 400
                     assert exc_info.value.detail == "Content cannot be empty"
 
     def test_update_comment_permission_denied(self, test_user):
         """Test de mise à jour d'un commentaire sans permission."""
         from app.routers.card_comments import update_comment
+        from app.models.card_comment import CardComment
 
         update_data = CardCommentUpdate(comment="Updated comment")
 
-        with patch("app.routers.card_comments.card_comment_service.update_comment") as mock_update:
-            mock_update.side_effect = ValueError("Permission denied")
+        # Mock existing comment with different user_id to trigger permission check
+        existing_comment = MagicMock(spec=CardComment)
+        existing_comment.id = 1
+        existing_comment.card_id = 1
+        existing_comment.user_id = 999  # Different user
+        existing_comment.comment = "Original comment"
+
+        with patch("app.routers.card_comments.card_comment_service.get_comment_by_id") as mock_get:
+            mock_get.return_value = existing_comment
 
             with patch("app.routers.card_comments.get_current_active_user") as mock_current_user:
                 mock_current_user.return_value = test_user
@@ -330,8 +347,7 @@ class TestCardCommentsRouter:
                             update_comment(1, update_data, mock_db.return_value.__enter__.return_value, test_user)
                         )
 
-                    assert exc_info.value.status_code == 400
-                    assert exc_info.value.detail == "Permission denied"
+                    assert exc_info.value.status_code == 403
 
     def test_delete_comment_success(self, test_user, test_comment):
         """Test de suppression d'un commentaire avec succès."""
@@ -408,20 +424,24 @@ class TestCardCommentsRouter:
 
         update_data = CardCommentUpdate(comment="Updated comment")
 
-        with patch("app.routers.card_comments.get_current_active_user") as mock_current_user:
-            mock_current_user.return_value = test_user
+        with patch("app.routers.card_comments.card_comment_service.get_comment_by_id") as mock_get:
+            mock_get.return_value = None
 
-            # Mock database session
-            with patch("app.routers.card_comments.get_db") as mock_db:
-                mock_db.return_value.__enter__.return_value = MagicMock()
+            with patch("app.routers.card_comments.get_current_active_user") as mock_current_user:
+                mock_current_user.return_value = test_user
 
-                with pytest.raises(HTTPException) as exc_info:
-                    asyncio.run(
-                        update_comment("invalid", update_data, mock_db.return_value.__enter__.return_value, test_user)
-                    )
+                # Mock database session
+                with patch("app.routers.card_comments.get_db") as mock_db:
+                    mock_db.return_value.__enter__.return_value = MagicMock()
 
-                # The actual error is 400 because of permission checking, not validation
-                assert exc_info.value.status_code == 400
+                    with pytest.raises(HTTPException) as exc_info:
+                        asyncio.run(
+                            update_comment(
+                                "invalid", update_data, mock_db.return_value.__enter__.return_value, test_user
+                            )
+                        )
+
+                    assert exc_info.value.status_code == 404
 
     def test_create_comment_history_error(self, test_user):
         """Test de création d'un commentaire avec une erreur d'historique."""

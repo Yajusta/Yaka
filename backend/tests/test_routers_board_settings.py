@@ -77,7 +77,7 @@ def regular_user(db_session):
         email="user@example.com",
         display_name="Regular User",
         password_hash="$2b$12$testhashedpassword",
-        role=UserRole.USER,
+        role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
         language="fr",
         created_at=datetime.utcnow(),
@@ -427,4 +427,3 @@ class TestBoardSettingsRouter:
                     )
 
                 assert exc_info.value.status_code == 422
-

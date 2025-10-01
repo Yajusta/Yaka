@@ -39,7 +39,7 @@ def sample_user(db_session):
     user = User(
         email="test@example.com",
         display_name="Test User",
-        role=UserRole.USER,
+        role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
     )
     db_session.add(user)
@@ -68,14 +68,14 @@ def sample_labels(db_session, sample_user):
             created_by=sample_user.id,
         ),
     ]
-    
+
     for label in labels:
         db_session.add(label)
     db_session.commit()
-    
+
     for label in labels:
         db_session.refresh(label)
-    
+
     return labels
 
 
@@ -85,7 +85,7 @@ class TestLabelModel:
     def test_model_creation(self):
         """Test de création du modèle Label."""
         label = Label()
-        
+
         # Vérifier que l'objet est créé
         assert label is not None
         assert isinstance(label, Label)
@@ -93,13 +93,13 @@ class TestLabelModel:
     def test_model_attributes(self):
         """Test que le modèle a tous les attributs attendus."""
         label = Label()
-        
+
         # Vérifier que tous les attributs existent
-        assert hasattr(label, 'id')
-        assert hasattr(label, 'name')
-        assert hasattr(label, 'color')
-        assert hasattr(label, 'created_by')
-        assert hasattr(label, 'created_at')
+        assert hasattr(label, "id")
+        assert hasattr(label, "name")
+        assert hasattr(label, "color")
+        assert hasattr(label, "created_by")
+        assert hasattr(label, "created_at")
 
     def test_model_table_name(self):
         """Test que le nom de la table est correct."""
@@ -108,25 +108,25 @@ class TestLabelModel:
     def test_create_label_successfully(self, db_session, sample_user):
         """Test de création réussie d'une étiquette."""
         before_creation = datetime.datetime.now(datetime.timezone.utc)
-        
+
         label = Label(
             name="Test Label",
             color="#FF00FF",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label)
         db_session.commit()
         db_session.refresh(label)
-        
+
         after_creation = datetime.datetime.now(datetime.timezone.utc)
-        
+
         assert label.id is not None
         assert label.name == "Test Label"
         assert label.color == "#FF00FF"
         assert label.created_by == sample_user.id
         assert label.created_at is not None
-        
+
         # Vérifier que le timestamp existe et est récent
         assert label.created_at is not None
         time_diff = abs((after_creation - before_creation).total_seconds())
@@ -140,11 +140,11 @@ class TestLabelModel:
             color="#123456",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label)
         db_session.commit()
         db_session.refresh(label)
-        
+
         assert label.id is not None
         assert label.name == "Minimal Label"
         assert label.color == "#123456"
@@ -158,10 +158,10 @@ class TestLabelModel:
             color="#FF0000",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label)
         db_session.commit()
-        
+
         # Vérifier created_at
         assert label.created_at is not None
         assert isinstance(label.created_at, datetime.datetime)
@@ -170,14 +170,14 @@ class TestLabelModel:
         """Test de mise à jour d'une étiquette."""
         label = sample_labels[0]
         original_created_at = label.created_at
-        
+
         # Mettre à jour plusieurs champs
         label.name = "Updated Label Name"
-        label.color="#00FFFF"
-        
+        label.color = "#00FFFF"
+
         db_session.commit()
         db_session.refresh(label)
-        
+
         # Vérifier les mises à jour
         assert label.name == "Updated Label Name"
         assert label.color == "#00FFFF"
@@ -185,28 +185,22 @@ class TestLabelModel:
 
     def test_label_query_by_name(self, db_session, sample_labels):
         """Test de recherche par nom."""
-        label = db_session.query(Label).filter(
-            Label.name == "Bug"
-        ).first()
-        
+        label = db_session.query(Label).filter(Label.name == "Bug").first()
+
         assert label is not None
         assert label.name == "Bug"
 
     def test_label_query_by_creator(self, db_session, sample_labels, sample_user):
         """Test de recherche par créateur."""
-        labels = db_session.query(Label).filter(
-            Label.created_by == sample_user.id
-        ).all()
-        
+        labels = db_session.query(Label).filter(Label.created_by == sample_user.id).all()
+
         assert len(labels) >= 1
         assert all(label.created_by == sample_user.id for label in labels)
 
     def test_label_query_by_color(self, db_session, sample_labels):
         """Test de recherche par color."""
-        label = db_session.query(Label).filter(
-            Label.color == "#FF0000"
-        ).first()
-        
+        label = db_session.query(Label).filter(Label.color == "#FF0000").first()
+
         assert label is not None
         assert label.color == "#FF0000"
 
@@ -218,36 +212,30 @@ class TestLabelModel:
             Label(name="Medium Priority", color="#FFFF00", created_by=sample_user.id),
             Label(name="Low Priority", color="#00FF00", created_by=sample_user.id),
         ]
-        
+
         for label in search_labels:
             db_session.add(label)
-        
+
         db_session.commit()
-        
+
         # Rechercher les étiquettes contenant "Priority"
-        priority_labels = db_session.query(Label).filter(
-            Label.name.like("%Priority%")
-        ).all()
-        
+        priority_labels = db_session.query(Label).filter(Label.name.like("%Priority%")).all()
+
         assert len(priority_labels) == 3
         assert all("Priority" in label.name for label in priority_labels)
 
     def test_label_order_by_name(self, db_session, sample_labels):
         """Test de tri par nom."""
-        labels = db_session.query(Label).order_by(
-            Label.name
-        ).all()
-        
+        labels = db_session.query(Label).order_by(Label.name).all()
+
         # Vérifier que les noms sont en ordre alphabétique
         names = [label.name for label in labels]
         assert names == sorted(names)
 
     def test_label_order_by_creation_date(self, db_session, sample_labels):
         """Test de tri par date de création."""
-        labels = db_session.query(Label).order_by(
-            Label.created_at
-        ).all()
-        
+        labels = db_session.query(Label).order_by(Label.created_at).all()
+
         # Vérifier que les dates sont en ordre chronologique
         for i in range(len(labels) - 1):
             assert labels[i].created_at <= labels[i + 1].created_at
@@ -256,30 +244,28 @@ class TestLabelModel:
         """Test de suppression d'une étiquette."""
         label = sample_labels[0]
         label_id = label.id
-        
+
         db_session.delete(label)
         db_session.commit()
-        
+
         # Vérifier que l'étiquette a été supprimée
-        deleted_label = db_session.query(Label).filter(
-            Label.id == label_id
-        ).first()
+        deleted_label = db_session.query(Label).filter(Label.id == label_id).first()
         assert deleted_label is None
 
     def test_label_string_fields_validation(self, db_session, sample_user):
         """Test des validations des champs text."""
         # Test avec name à la limite de la longueur
         max_length_nom = "x" * 32  # Longueur maximale selon le modèle
-        
+
         label = Label(
             name=max_length_nom,
             color="#123456",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label)
         db_session.commit()
-        
+
         assert label.name == max_length_nom
         assert len(label.name) == 32
 
@@ -296,7 +282,7 @@ class TestLabelModel:
             "#000000",  # Noir
             "#123ABC",  # Couleur hexadécimale aléatoire
         ]
-        
+
         for color in color_formats:
             label = Label(
                 name=f"Color Test {color}",
@@ -304,14 +290,12 @@ class TestLabelModel:
                 created_by=sample_user.id,
             )
             db_session.add(label)
-        
+
         db_session.commit()
-        
+
         # Vérifier que toutes les étiquettes ont été créées
         for color in color_formats:
-            label = db_session.query(Label).filter(
-                Label.name == f"Color Test {color}"
-            ).first()
+            label = db_session.query(Label).filter(Label.name == f"Color Test {color}").first()
             assert label is not None
             assert label.color == color
 
@@ -322,10 +306,10 @@ class TestLabelModel:
             color="#FF00FF",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label)
         db_session.commit()
-        
+
         assert label.name == "Étiquette spéciale: éèàçù"
 
     def test_label_unicode_emojis(self, db_session, sample_user):
@@ -335,10 +319,10 @@ class TestLabelModel:
             color="#FFD700",  # Or
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label)
         db_session.commit()
-        
+
         assert label.name == "Emoji Label 🎯🚀✨"
 
     def test_label_empty_name(self, db_session, sample_user):
@@ -348,10 +332,10 @@ class TestLabelModel:
             color="#FF0000",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label)
         db_session.commit()
-        
+
         assert label.name == ""
 
     def test_label_whitespace_only_name(self, db_session, sample_user):
@@ -361,10 +345,10 @@ class TestLabelModel:
             color="#FF0000",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label)
         db_session.commit()
-        
+
         assert label.name == "   "
 
     def test_label_unique_name_constraint(self, db_session, sample_user):
@@ -375,19 +359,19 @@ class TestLabelModel:
             color="#FF0000",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label1)
         db_session.commit()
-        
+
         # Essayer de créer une deuxième étiquette avec le même name
         label2 = Label(
             name="Unique Name",  # Même name
             color="#00FF00",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label2)
-        
+
         # Devrait lever une erreur d'intégrité
         with pytest.raises(Exception):  # SQLAlchemy lève généralement IntegrityError
             db_session.commit()
@@ -395,13 +379,13 @@ class TestLabelModel:
     def test_label_color_validation(self, db_session, sample_user):
         """Test de validation des colors."""
         valid_colors = [
-            "#ABC",      # Court
-            "#ABCDEF",   # Standard
-            "#123456",   # Nombres
-            "#abcdef",   # Minuscules
-            "#AbCdEf",   # Mixte
+            "#ABC",  # Court
+            "#ABCDEF",  # Standard
+            "#123456",  # Nombres
+            "#abcdef",  # Minuscules
+            "#AbCdEf",  # Mixte
         ]
-        
+
         for color in valid_colors:
             label = Label(
                 name=f"Color Valid {color}",
@@ -409,13 +393,11 @@ class TestLabelModel:
                 created_by=sample_user.id,
             )
             db_session.add(label)
-        
+
         db_session.commit()
-        
+
         # Vérifier que toutes les étiquettes ont été créées
-        count = db_session.query(Label).filter(
-            Label.name.like("Color Valid %")
-        ).count()
+        count = db_session.query(Label).filter(Label.name.like("Color Valid %")).count()
         assert count == len(valid_colors)
 
     def test_label_case_sensitivity(self, db_session, sample_user):
@@ -425,16 +407,16 @@ class TestLabelModel:
             color="#FF0000",
             created_by=sample_user.id,
         )
-        
+
         label2 = Label(
             name="case sensitive",  # Même name en minuscules
             color="#00FF00",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label1)
         db_session.add(label2)
-        
+
         # Les deux devraient pouvoir coexister (la contrainte est sensible à la casse)
         try:
             db_session.commit()
@@ -452,7 +434,7 @@ class TestLabelModel:
             color="#FF0000",
             created_by=99999,  # N'existe pas
         )
-        
+
         db_session.add(label)
         # Peut échouer selon la configuration de la base de données
         try:
@@ -465,7 +447,7 @@ class TestLabelModel:
         # Créer plusieurs étiquettes en lot
         labels = []
         colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"]
-        
+
         for i, color in enumerate(colors):
             label = Label(
                 name=f"Batch Label {i}",
@@ -473,28 +455,24 @@ class TestLabelModel:
                 created_by=sample_user.id,
             )
             labels.append(label)
-        
+
         db_session.add_all(labels)
         db_session.commit()
-        
+
         # Vérifier que toutes ont été créées
-        count = db_session.query(Label).filter(
-            Label.name.like("Batch Label %")
-        ).count()
+        count = db_session.query(Label).filter(Label.name.like("Batch Label %")).count()
         assert count == len(colors)
 
     def test_label_bulk_update(self, db_session, sample_labels):
         """Test de mises à jour en masse."""
         # Ajouter un préfixe à tous les noms d'étiquettes
-        db_session.query(Label).update({
-            "name": Label.name + " (Updated)"
-        })
-        
+        db_session.query(Label).update({"name": Label.name + " (Updated)"})
+
         db_session.commit()
-        
+
         # Vérifier que tous les noms ont été mis à jour
         updated_labels = db_session.query(Label).all()
-        
+
         for label in updated_labels:
             assert "(Updated)" in label.name
 
@@ -508,23 +486,18 @@ class TestLabelModel:
             ("Low Priority", "#0000FF"),
             ("Information", "#800080"),
         ]
-        
+
         for name, color in labels_data:
             label = Label(name=name, color=color, created_by=sample_user.id)
             db_session.add(label)
-        
+
         db_session.commit()
-        
+
         # Chercher les étiquettes avec des colors "chaudes" (rouge/orange)
         from sqlalchemy import or_
-        
-        warm_colors = db_session.query(Label).filter(
-            or_(
-                Label.color == "#FF0000",
-                Label.color == "#FFA500"
-            )
-        ).all()
-        
+
+        warm_colors = db_session.query(Label).filter(or_(Label.color == "#FF0000", Label.color == "#FFA500")).all()
+
         assert len(warm_colors) == 2
 
     def test_label_pagination(self, db_session, sample_user):
@@ -537,13 +510,13 @@ class TestLabelModel:
                 created_by=sample_user.id,
             )
             db_session.add(label)
-        
+
         db_session.commit()
-        
+
         # Test pagination
         page1 = db_session.query(Label).limit(5).all()
         page2 = db_session.query(Label).offset(5).limit(5).all()
-        
+
         assert len(page1) == 5
         assert len(page2) == 5
         assert page1[0].id != page2[0].id
@@ -560,26 +533,24 @@ class TestLabelModel:
                 created_by=sample_user.id,
             )
             db_session.add(label)
-        
+
         db_session.commit()
-        
+
         # Compter par color
         for color in colors:
-            count = db_session.query(Label).filter(
-                Label.color == color
-            ).count()
+            count = db_session.query(Label).filter(Label.color == color).count()
             assert count == 2  # 6 étiquettes / 3 colors = 2 par color
 
     def test_label_error_handling(self, db_session, sample_user):
         """Test de gestion des erreurs."""
         # Simuler une erreur de base de données
-        with patch.object(db_session, 'commit', side_effect=SQLAlchemyError("Database error")):
+        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
             label = Label(
                 name="Error Test",
                 color="#FF0000",
                 created_by=sample_user.id,
             )
-            
+
             db_session.add(label)
             with pytest.raises(SQLAlchemyError):
                 db_session.commit()
@@ -591,10 +562,10 @@ class TestLabelModel:
             color="#FF0000",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label)
         db_session.commit()
-        
+
         # La représentation devrait contenir des informations utiles
         str_repr = str(label)
         assert "Label" in str_repr
@@ -606,17 +577,17 @@ class TestLabelModel:
             color="#FF0000",
             created_by=sample_user.id,
         )
-        
+
         label2 = Label(
             name="Equality Test 2",
             color="#00FF00",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label1)
         db_session.add(label2)
         db_session.commit()
-        
+
         # Ce sont des objets différents
         assert label1 != label2
         assert label1.id != label2.id
@@ -624,43 +595,48 @@ class TestLabelModel:
     def test_label_database_constraints(self, db_session):
         """Test des contraintes de base de données."""
         # Créer un utilisateur pour le test
-        user = User(email="constrainttest@example.com", display_name="Constraint Test", role=UserRole.USER, status=UserStatus.ACTIVE)
+        user = User(
+            email="constrainttest@example.com",
+            display_name="Constraint Test",
+            role=UserRole.EDITOR,
+            status=UserStatus.ACTIVE,
+        )
         db_session.add(user)
         db_session.commit()
-        
+
         # Test que nom ne peut pas être NULL
         label = Label(
             name=None,  # Devrait échouer
             color="#FF0000",
             created_by=user.id,
         )
-        
+
         db_session.add(label)
         with pytest.raises(Exception):
             db_session.commit()
 
         db_session.rollback()
-        
+
         # Test que color ne peut pas être NULL
         label = Label(
             name="Test",
             color=None,  # Devrait échouer
             created_by=user.id,
         )
-        
+
         db_session.add(label)
         with pytest.raises(Exception):
             db_session.commit()
 
         db_session.rollback()
-        
+
         # Test que created_by ne peut pas être NULL
         label = Label(
             name="Test",
             color="#FF0000",
             created_by=None,  # Devrait échouer
         )
-        
+
         db_session.add(label)
         with pytest.raises(Exception):
             db_session.commit()
@@ -669,16 +645,16 @@ class TestLabelModel:
         """Test de la contrainte de longueur du nom."""
         # Le modèle limite le nom à 32 caractères
         exact_length_name = "x" * 32
-        
+
         label = Label(
             name=exact_length_name,
             color="#FF0000",
             created_by=sample_user.id,
         )
-        
+
         db_session.add(label)
         db_session.commit()
-        
+
         assert len(label.name) == 32
         assert label.name == exact_length_name
 
@@ -693,7 +669,7 @@ class TestLabelModel:
             ("Warning", "#ffc107"),
             ("Info", "#17a2b8"),
         ]
-        
+
         created_labels = []
         for name, color in color_palette:
             label = Label(
@@ -703,14 +679,12 @@ class TestLabelModel:
             )
             db_session.add(label)
             created_labels.append(label)
-        
+
         db_session.commit()
-        
+
         # Vérifier que toutes les étiquettes de la palette ont été créées
         for name, color in color_palette:
-            label = db_session.query(Label).filter(
-                Label.name == name
-            ).first()
+            label = db_session.query(Label).filter(Label.name == name).first()
             assert label is not None
             assert label.color == color
 
@@ -722,7 +696,7 @@ class TestLabelModel:
             "Type": ["Bug", "Feature", "Enhancement"],
             "Status": ["New", "InProgress", "Review"],
         }
-        
+
         for category, labels in categories.items():
             for label_name in labels:
                 full_name = f"{category}: {label_name}"
@@ -733,21 +707,19 @@ class TestLabelModel:
                     color = {"Bug": "#FF0000", "Feature": "#00FF00", "Enhancement": "#0000FF"}[label_name]
                 else:  # Status
                     color = {"New": "#CCCCCC", "InProgress": "#FFA500", "Review": "#800080"}[label_name]
-                
+
                 label = Label(
                     name=full_name,
                     color=color,
                     created_by=sample_user.id,
                 )
                 db_session.add(label)
-        
+
         db_session.commit()
-        
+
         # Vérifier que toutes les étiquettes ont été créées
         total_expected = sum(len(labels) for labels in categories.values())
-        total_actual = db_session.query(Label).filter(
-            Label.name.like("%: %")
-        ).count()
+        total_actual = db_session.query(Label).filter(Label.name.like("%: %")).count()
         assert total_actual == total_expected
 
     def test_label_data_types(self, db_session, sample_user):
@@ -761,7 +733,7 @@ class TestLabelModel:
             ("special_chars", "!@#$%^&*()", "#00FFFF"),
             ("numbers_and_text", "Label 123", "#FFD700"),
         ]
-        
+
         for suffix, name, color in test_labels:
             label = Label(
                 name=name,
@@ -769,9 +741,9 @@ class TestLabelModel:
                 created_by=sample_user.id,
             )
             db_session.add(label)
-        
+
         db_session.commit()
-        
+
         # Vérifier que toutes les étiquettes ont été créées
         count = db_session.query(Label).count()
         assert count >= len(test_labels)

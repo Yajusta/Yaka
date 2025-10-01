@@ -1,8 +1,10 @@
 """Integration tests for the cards router."""
 
 import pytest
+from app.models.user import UserRole
 from app.routers.auth import router as auth_router
 from app.routers.cards import router as cards_router
+from app.routers.card_comments import router as card_comments_router
 from app.routers.labels import router as labels_router
 
 
@@ -17,7 +19,7 @@ async def test_card_lifecycle(
     seed_admin_user()
     list_id = create_list_record("Backlog", 1)
     target_list_id = create_list_record("Done", 2)
-    create_regular_user("writer@example.com", "UserPass123!", display_name="Writer")
+    create_regular_user("writer@example.com", "UserPass123!", display_name="Writer", role=UserRole.SUPERVISOR)
 
     async with async_client_factory(auth_router, cards_router) as client:
         token = await login_user(client, "writer@example.com", "UserPass123!")
@@ -120,7 +122,7 @@ async def test_card_filters_bulk_move_and_archive(
     seed_admin_user()
     list_a = create_list_record("Backlog", 1)
     list_b = create_list_record("Review", 2)
-    create_regular_user("bulk@example.com", "Bulk123!", display_name="Bulk User")
+    create_regular_user("bulk@example.com", "Bulk123!", display_name="Bulk User", role=UserRole.SUPERVISOR)
     create_regular_user("assignee@example.com", "Assign123!", display_name="Assignee")
 
     async with async_client_factory(auth_router, labels_router, cards_router) as client:
@@ -279,7 +281,7 @@ async def test_legacy_statut_endpoint(
     list_a = create_list_record("A faire", 1)
     list_b = create_list_record("En cours", 2)
     list_c = create_list_record("Termin?", 3)
-    create_regular_user("legacy@example.com", "Legacy123!", display_name="Legacy")
+    create_regular_user("legacy@example.com", "Legacy123!", display_name="Legacy", role=UserRole.SUPERVISOR)
 
     async with async_client_factory(auth_router, cards_router) as client:
         token = await login_user(client, "legacy@example.com", "Legacy123!")
@@ -339,7 +341,7 @@ async def test_card_update_assigns_and_labels(
 ):
     seed_admin_user()
     list_id = create_list_record("Backlog", 1)
-    create_regular_user("cardowner@example.com", "Owner123!", display_name="Owner")
+    create_regular_user("cardowner@example.com", "Owner123!", display_name="Owner", role=UserRole.SUPERVISOR)
     create_regular_user("teammate@example.com", "Mate123!", display_name="Teammate")
 
     async with async_client_factory(auth_router, labels_router, cards_router) as client:
@@ -410,3 +412,208 @@ async def test_card_update_assigns_and_labels(
         assert any("Teammate" in desc or "personne" in desc for desc in descriptions)
 
         assert cleared_card["assignee"] is None
+
+
+@pytest.mark.asyncio
+async def test_read_only_user_cannot_modify_cards(
+    async_client_factory,
+    seed_admin_user,
+    create_regular_user,
+    create_list_record,
+    login_user,
+):
+    seed_admin_user()
+    list_id = create_list_record("Lecture", 1)
+    create_regular_user("observer@example.com", "ReadOnly123!", display_name="Observer", role=UserRole.VISITOR)
+
+    async with async_client_factory(auth_router, cards_router) as client:
+        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        card_response = await client.post(
+            "/cards/",
+            json={
+                "title": "Admin Card",
+                "description": "Created by admin",
+                "list_id": list_id,
+                "priority": "medium",
+            },
+            headers=admin_headers,
+        )
+        assert card_response.status_code == 200
+        card_id = card_response.json()["id"]
+
+        readonly_token = await login_user(client, "observer@example.com", "ReadOnly123!")
+        readonly_headers = {"Authorization": f"Bearer {readonly_token}"}
+
+        forbidden_create = await client.post(
+            "/cards/",
+            json={
+                "title": "Attempt",
+                "list_id": list_id,
+                "priority": "low",
+            },
+            headers=readonly_headers,
+        )
+        assert forbidden_create.status_code == 403
+
+        forbidden_update = await client.put(
+            f"/cards/{card_id}",
+            json={"description": "Should not work"},
+            headers=readonly_headers,
+        )
+        assert forbidden_update.status_code == 403
+
+        allowed_list = await client.get(
+            "/cards/",
+            headers=readonly_headers,
+        )
+        assert allowed_list.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_comments_only_user_can_comment_but_not_edit(
+    async_client_factory,
+    seed_admin_user,
+    create_regular_user,
+    create_list_record,
+    login_user,
+):
+    seed_admin_user()
+    list_id = create_list_record("Commentaires", 1)
+    create_regular_user("commenter@example.com", "Comment123!", display_name="Commenter", role=UserRole.COMMENTER)
+
+    async with async_client_factory(auth_router, cards_router, card_comments_router) as client:
+        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        card_response = await client.post(
+            "/cards/",
+            json={
+                "title": "Discussion",
+                "list_id": list_id,
+                "priority": "medium",
+            },
+            headers=admin_headers,
+        )
+        assert card_response.status_code == 200
+        card_id = card_response.json()["id"]
+
+        commenter_token = await login_user(client, "commenter@example.com", "Comment123!")
+        commenter_headers = {"Authorization": f"Bearer {commenter_token}"}
+
+        comment_create = await client.post(
+            "/card-comments/",
+            json={"card_id": card_id, "comment": "First remark"},
+            headers=commenter_headers,
+        )
+        assert comment_create.status_code == 200
+        comment_id = comment_create.json()["id"]
+
+        comment_update = await client.put(
+            f"/card-comments/{comment_id}",
+            json={"comment": "Edited remark"},
+            headers=commenter_headers,
+        )
+        assert comment_update.status_code == 200
+
+        comment_delete = await client.delete(
+            f"/card-comments/{comment_id}",
+            headers=commenter_headers,
+        )
+        assert comment_delete.status_code == 200
+
+        card_update = await client.put(
+            f"/cards/{card_id}",
+            json={"description": "Attempted edit"},
+            headers=commenter_headers,
+        )
+        assert card_update.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_assigned_only_user_restrictions(
+    async_client_factory,
+    seed_admin_user,
+    create_regular_user,
+    create_list_record,
+    login_user,
+):
+    seed_admin_user()
+    list_id = create_list_record("Assignments", 1)
+    create_regular_user("doer@example.com", "Assigned123!", display_name="Doer", role=UserRole.CONTRIBUTOR)
+    create_regular_user("other@example.com", "UserPass123!", display_name="Other")
+
+    async with async_client_factory(auth_router, cards_router) as client:
+        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        assigned_token = await login_user(client, "doer@example.com", "Assigned123!")
+        assigned_headers = {"Authorization": f"Bearer {assigned_token}"}
+        assigned_me = await client.get("/auth/me", headers=assigned_headers)
+        assert assigned_me.status_code == 200
+        assigned_id = assigned_me.json()["id"]
+
+        other_token = await login_user(client, "other@example.com", "UserPass123!")
+        other_headers = {"Authorization": f"Bearer {other_token}"}
+        other_card_resp = await client.post(
+            "/cards/",
+            json={
+                "title": "General Task",
+                "list_id": list_id,
+                "priority": "medium",
+            },
+            headers=other_headers,
+        )
+        assert other_card_resp.status_code == 200
+        other_card_id = other_card_resp.json()["id"]
+
+        assigned_card_resp = await client.post(
+            "/cards/",
+            json={
+                "title": "Assigned Task",
+                "list_id": list_id,
+                "priority": "medium",
+                "assignee_id": assigned_id,
+            },
+            headers=admin_headers,
+        )
+        assert assigned_card_resp.status_code == 200
+        assigned_card_id = assigned_card_resp.json()["id"]
+
+        # CONTRIBUTOR can move their assigned card
+        allowed_move = await client.patch(
+            f"/cards/{assigned_card_id}/list",
+            json={"list_id": list_id},
+            headers=assigned_headers,
+        )
+        assert allowed_move.status_code == 200
+
+        forbidden_update = await client.put(
+            f"/cards/{other_card_id}",
+            json={"description": "Should fail"},
+            headers=assigned_headers,
+        )
+        assert forbidden_update.status_code == 403
+
+        # CONTRIBUTOR cannot create cards at all
+        forbidden_create = await client.post(
+            "/cards/",
+            json={
+                "title": "Self Created",
+                "list_id": list_id,
+                "priority": "low",
+                "assignee_id": assigned_id,
+            },
+            headers=assigned_headers,
+        )
+        assert forbidden_create.status_code == 403
+
+        forbidden_create2 = await client.post(
+            "/cards/",
+            json={
+                "title": "Missing Assignment",
+                "list_id": list_id,
+                "priority": "low",
+            },
+            headers=assigned_headers,
+        )
+        assert forbidden_create2.status_code == 403

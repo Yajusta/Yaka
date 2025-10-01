@@ -10,7 +10,7 @@ async def test_users_listing_hides_emails_for_non_admins(
     async_client_factory, seed_admin_user, create_regular_user, login_user
 ):
     seed_admin_user()
-    create_regular_user("member@example.com", "userpass123", display_name="Member")
+    create_regular_user("member@example.com", "Userpass123", display_name="Member")
 
     async with async_client_factory(auth_router, users_router) as client:
         admin_token = await login_user(client, "admin@yaka.local", "Admin123")
@@ -23,7 +23,7 @@ async def test_users_listing_hides_emails_for_non_admins(
         member_entry = next(user for user in admin_payload if user["display_name"] == "Member")
         assert member_entry["email"] == "member@example.com"
 
-        user_token = await login_user(client, "member@example.com", "userpass123")
+        user_token = await login_user(client, "member@example.com", "Userpass123")
         user_response = await client.get(
             "/users/",
             headers={"Authorization": f"Bearer {user_token}"},
@@ -37,7 +37,7 @@ async def test_users_listing_hides_emails_for_non_admins(
 @pytest.mark.asyncio
 async def test_user_management_requires_admin(async_client_factory, seed_admin_user, create_regular_user, login_user):
     seed_admin_user()
-    create_regular_user("observer@example.com", "observer123", display_name="Observer")
+    create_regular_user("observer@example.com", "Observer123", display_name="Observer")
 
     async with async_client_factory(auth_router, users_router) as client:
         admin_token = await login_user(client, "admin@yaka.local", "Admin123")
@@ -45,7 +45,7 @@ async def test_user_management_requires_admin(async_client_factory, seed_admin_u
             "email": "new.user@example.com",
             "password": "Password123!",
             "display_name": "New User",
-            "role": "user",
+            "role": "editor",
             "language": "fr",
         }
         create_response = await client.post(
@@ -66,14 +66,14 @@ async def test_user_management_requires_admin(async_client_factory, seed_admin_u
         assert duplicate_response.status_code == 400
 
         # Non-admin cannot create a user
-        user_token = await login_user(client, "observer@example.com", "observer123")
+        user_token = await login_user(client, "observer@example.com", "Observer123")
         forbidden_response = await client.post(
             "/users/",
             json={
                 "email": "should.fail@example.com",
                 "password": "Fail123!",
                 "display_name": "Should Fail",
-                "role": "user",
+                "role": "editor",
                 "language": "fr",
             },
             headers={"Authorization": f"Bearer {user_token}"},
@@ -84,10 +84,10 @@ async def test_user_management_requires_admin(async_client_factory, seed_admin_u
 @pytest.mark.asyncio
 async def test_user_can_update_language(async_client_factory, seed_admin_user, create_regular_user, login_user):
     seed_admin_user()
-    create_regular_user("languser@example.com", "langpass123", display_name="Lang User")
+    create_regular_user("languser@example.com", "Langpass123", display_name="Lang User")
 
     async with async_client_factory(auth_router, users_router) as client:
-        token = await login_user(client, "languser@example.com", "langpass123")
+        token = await login_user(client, "languser@example.com", "Langpass123")
         update_response = await client.put(
             "/users/me/language",
             json={"language": "en"},

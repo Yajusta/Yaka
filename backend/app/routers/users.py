@@ -17,7 +17,7 @@ from ..utils.dependencies import get_current_active_user, require_admin
 class InvitePayload(BaseModel):
     email: str
     display_name: str | None = None
-    role: UserRole = UserRole.USER
+    role: UserRole = UserRole.VISITOR
 
 
 router = APIRouter(prefix="/users", tags=["utilisateurs"])
@@ -59,7 +59,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db), current_u
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Données invalides pour la création de l'utilisateur"
+            detail="Données invalides pour la création de l'utilisateur",
         )
     try:
         if user_service.get_user_by_email(db, email=user.email):
@@ -68,16 +68,13 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db), current_u
             )
         return user_service.create_user(db=db, user=user)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur interne lors de la création de l'utilisateur"
+            detail="Erreur interne lors de la création de l'utilisateur",
         ) from exc
 
 
@@ -88,8 +85,7 @@ async def invite_user(
     """Inviter un utilisateur par email (Admin uniquement)."""
     if payload is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Données invalides pour l'invitation"
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Données invalides pour l'invitation"
         )
     try:
         if user_service.get_user_by_email(db, email=payload.email):
@@ -100,16 +96,13 @@ async def invite_user(
             db=db, email=payload.email, display_name=payload.display_name, role=payload.role
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur interne lors de l'invitation de l'utilisateur"
+            detail="Erreur interne lors de l'invitation de l'utilisateur",
         ) from exc
 
 
@@ -130,21 +123,18 @@ async def update_user(
     if user_update is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Données invalides pour la mise à jour de l'utilisateur"
+            detail="Données invalides pour la mise à jour de l'utilisateur",
         )
     try:
         db_user = user_service.update_user(db, user_id=user_id, user_update=user_update)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur interne lors de la mise à jour de l'utilisateur"
+            detail="Erreur interne lors de la mise à jour de l'utilisateur",
         ) from exc
     if db_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
@@ -229,16 +219,13 @@ async def delete_user(user_id: int, db: Session = Depends(get_db), current_user:
     try:
         success = user_service.delete_user(db, user_id=user_id)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur interne lors de la suppression de l'utilisateur"
+            detail="Erreur interne lors de la suppression de l'utilisateur",
         ) from exc
     if success:
         return {"message": "Utilisateur supprimé avec succès"}

@@ -49,7 +49,7 @@ def sample_user(db_session):
         email="test@example.com",
         password_hash="hashed_password",
         display_name="Test User",
-        role=UserRole.USER,
+        role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
     )
     db_session.add(user)
@@ -174,7 +174,7 @@ class TestGetLabelByName:
         special_label = Label(name="Test Spécial", color="#123456", created_by=sample_user.id)
         db_session.add(special_label)
         db_session.commit()
-        
+
         label = get_label_by_name(db_session, "Test Spécial")
         assert label is not None
         assert label.name == "Test Spécial"
@@ -200,7 +200,7 @@ class TestCreateLabel:
             email="other@example.com",
             password_hash="hashed_password",
             display_name="Other User",
-            role=UserRole.USER,
+            role=UserRole.EDITOR,
             status=UserStatus.ACTIVE,
         )
         db_session.add(other_user)
@@ -223,7 +223,7 @@ class TestCreateLabel:
     def test_create_label_duplicate_name(self, db_session, sample_labels, sample_user):
         """Test de création d'un libellé avec name en double."""
         label_data = LabelCreate(name="Urgent", color="#FF0000")
-        
+
         with pytest.raises(SQLAlchemyError):
             create_label(db_session, label_data, sample_user.id)
 
@@ -252,7 +252,7 @@ class TestCreateLabel:
     def test_create_label_invalid_user_id(self, db_session):
         """Test de création d'un libellé avec ID utilisateur invalide."""
         label_data = LabelCreate(name="Test", color="#FF0000")
-        
+
         # Devrait quand même créer le libellé même si l'utilisateur n'existe pas
         # car la contrainte est au niveau de la base de données
         label = create_label(db_session, label_data, 999)
@@ -278,9 +278,9 @@ class TestUpdateLabel:
         """Test de mise à jour du nom d'un libellé."""
         label_id = sample_labels[0].id
         update_data = LabelUpdate(name="Nouveau name")
-        
+
         label = update_label(db_session, label_id, update_data)
-        
+
         assert label is not None
         assert label.name == "Nouveau name"
         assert label.color == sample_labels[0].color  # La color ne change pas
@@ -289,9 +289,9 @@ class TestUpdateLabel:
         """Test de mise à jour de la color d'un libellé."""
         label_id = sample_labels[0].id
         update_data = LabelUpdate(color="#123456")
-        
+
         label = update_label(db_session, label_id, update_data)
-        
+
         assert label is not None
         assert label.color == "#123456"
         assert label.name == sample_labels[0].name  # Le nom ne change pas
@@ -300,9 +300,9 @@ class TestUpdateLabel:
         """Test de mise à jour des deux champs d'un libellé."""
         label_id = sample_labels[0].id
         update_data = LabelUpdate(name="Complètement nouveau", color="#ABCDEF")
-        
+
         label = update_label(db_session, label_id, update_data)
-        
+
         assert label is not None
         assert label.name == "Complètement nouveau"
         assert label.color == "#ABCDEF"
@@ -318,9 +318,9 @@ class TestUpdateLabel:
         label_id = sample_labels[0].id
         original_label = get_label(db_session, label_id)
         update_data = LabelUpdate()  # Pas de champs à mettre à jour
-        
+
         label = update_label(db_session, label_id, update_data)
-        
+
         assert label is not None
         assert label.name == original_label.name
         assert label.color == original_label.color
@@ -329,9 +329,9 @@ class TestUpdateLabel:
         """Test de mise à jour d'un libellé avec les mêmes valeurs."""
         label_id = sample_labels[0].id
         update_data = LabelUpdate(name=sample_labels[0].name, color=sample_labels[0].color)
-        
+
         label = update_label(db_session, label_id, update_data)
-        
+
         assert label is not None
         assert label.name == sample_labels[0].name
         assert label.color == sample_labels[0].color
@@ -340,9 +340,9 @@ class TestUpdateLabel:
         """Test de mise à jour d'un libellé avec caractères unicode."""
         label_id = sample_labels[0].id
         update_data = LabelUpdate(name="测试", color="#测试")
-        
+
         label = update_label(db_session, label_id, update_data)
-        
+
         assert label is not None
         assert label.name == "测试"
         assert label.color == "#测试"
@@ -351,9 +351,9 @@ class TestUpdateLabel:
         """Test de mise à jour d'un libellé avec emoji."""
         label_id = sample_labels[0].id
         update_data = LabelUpdate(name="🚀 Urgent", color="#FF0000")
-        
+
         label = update_label(db_session, label_id, update_data)
-        
+
         assert label is not None
         assert label.name == "🚀 Urgent"
 
@@ -364,11 +364,11 @@ class TestDeleteLabel:
     def test_delete_existing_label(self, db_session, sample_labels):
         """Test de suppression d'un libellé existant."""
         label_id = sample_labels[0].id
-        
+
         result = delete_label(db_session, label_id)
-        
+
         assert result is True
-        
+
         # Vérifier que le libellé est bien supprimé
         label = get_label(db_session, label_id)
         assert label is None
@@ -402,11 +402,11 @@ class TestDeleteLabel:
         db_session.add(single_label)
         db_session.commit()
         db_session.refresh(single_label)
-        
+
         result = delete_label(db_session, single_label.id)
-        
+
         assert result is True
-        
+
         # Vérifier qu'il n'y a plus de libellés
         labels = get_labels(db_session)
         assert len(labels) == 0
@@ -418,7 +418,7 @@ class TestSecurityAndEdgeCases:
     def test_sql_injection_attempt_in_name(self, db_session, sample_user):
         """Test de tentative d'injection SQL dans le nom."""
         malicious_name = "test'; DROP TABLE labels; --"
-        
+
         # La validation Pydantic devrait bloquer les caractères dangereux
         with pytest.raises(ValidationError):
             LabelCreate(name=malicious_name, color="#FF0000")
@@ -426,7 +426,7 @@ class TestSecurityAndEdgeCases:
     def test_sql_injection_attempt_in_color(self, db_session, sample_user):
         """Test de tentative d'injection SQL dans la color."""
         malicious_color = "#FF0000'; DROP TABLE labels; --"
-        
+
         # La validation Pydantic devrait bloquer les formats invalides
         with pytest.raises(ValidationError):
             LabelCreate(name="Test", color=malicious_color)
@@ -434,7 +434,7 @@ class TestSecurityAndEdgeCases:
     def test_xss_attempt_in_name(self, db_session, sample_user):
         """Test de tentative XSS dans le nom."""
         xss_name = "<script>alert('XSS')</script>"
-        
+
         # La validation Pydantic devrait bloquer les XSS
         with pytest.raises(ValidationError):
             LabelCreate(name=xss_name, color="#FF0000")
@@ -442,7 +442,7 @@ class TestSecurityAndEdgeCases:
     def test_xss_attempt_in_color(self, db_session, sample_user):
         """Test de tentative XSS dans la color."""
         xss_color = "<script>alert('XSS')</script>"
-        
+
         # La validation Pydantic devrait bloquer les formats invalides
         with pytest.raises(ValidationError):
             LabelCreate(name="XSS Test", color=xss_color)
@@ -451,7 +451,7 @@ class TestSecurityAndEdgeCases:
         """Test avec des caractères spéciaux dans le nom."""
         special_name = "éèàçùñáéíóú_中文_العربية"
         label_data = LabelCreate(name=special_name, color="#FF0000")
-        
+
         label = create_label(db_session, label_data, sample_user.id)
         assert label.name == special_name
 
@@ -466,7 +466,7 @@ class TestSecurityAndEdgeCases:
         unicode_name = "🚀_测试_العربية"
         unicode_color = "#FF5733"  # Couleur hexadécimale valide
         label_data = LabelCreate(name=unicode_name, color=unicode_color)
-        
+
         label = create_label(db_session, label_data, sample_user.id)
         assert label.name == unicode_name
         assert label.color == unicode_color
@@ -476,7 +476,7 @@ class TestSecurityAndEdgeCases:
         # Les espaces devraient être acceptés mais trimés
         whitespace_name = "  whitespace label  "
         label_data = LabelCreate(name=whitespace_name, color="#FF0000")
-        
+
         label = create_label(db_session, label_data, sample_user.id)
         assert label.name == "whitespace label"  # Devrait être trimé
 
@@ -496,11 +496,11 @@ class TestSecurityAndEdgeCases:
             "red",  # Nom de couleur
             "",  # Vide
         ]
-        
+
         for invalid_color in invalid_colors:
             with pytest.raises(ValidationError):
                 LabelCreate(name="Test", color=invalid_color)
-        
+
         # Test de couleur valide
         valid_label = LabelCreate(name="Valid", color="#FF5733")
         label = create_label(db_session, valid_label, sample_user.id)
@@ -511,11 +511,11 @@ class TestSecurityAndEdgeCases:
         # Créer un libellé
         label_data1 = LabelCreate(name="Original", color="#FF0000")
         label1 = create_label(db_session, label_data1, sample_user.id)
-        
+
         # Le mettre à jour
         update_data = LabelUpdate(name="Updated", color="#00FF00")
         label2 = update_label(db_session, label1.id, update_data)
-        
+
         # Vérifier que les opérations sont séquentielles
         assert label2.id == label1.id
         assert label2.name == "Updated"
@@ -524,12 +524,12 @@ class TestSecurityAndEdgeCases:
     def test_database_transaction_rollback_on_error(self, db_session, sample_user):
         """Test de rollback de transaction en cas d'erreur."""
         label_data = LabelCreate(name="Test Transaction", color="#FF0000")
-        
+
         # Simuler une erreur pendant la création
         with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
             with pytest.raises(SQLAlchemyError):
                 create_label(db_session, label_data, sample_user.id)
-        
+
         # Vérifier que le libellé n'a pas été créé
         label = get_label_by_name(db_session, "Test Transaction")
         assert label is None
