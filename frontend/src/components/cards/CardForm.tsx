@@ -56,13 +56,13 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
     const currentUserId = currentUser?.id ?? null;
     const permissions = usePermissions(currentUser);
     const isEditing = Boolean(card);
-    const canCreateCard = permissions.canCreateCard;
+    const { canCreateCard } = permissions;
 
     // For editing, check if user can modify content OR metadata (not just checklist items)
     const canEditCardContent = isEditing ? permissions.canModifyCardContent(card!) : canCreateCard;
     const canEditCardMetadata = isEditing ? permissions.canModifyCardMetadata(card!) : canCreateCard;
     const canEditCard = canEditCardContent || canEditCardMetadata;
-    const canDeleteCard = permissions.canDeleteCard;
+    const { canDeleteCard } = permissions;
 
     // Check if user can toggle checklist items (CONTRIBUTOR can do this)
     const canToggleChecklistItems = isEditing ? permissions.canToggleCardItem(card!) : canCreateCard;
@@ -503,11 +503,14 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">{t('card.unassign')}</SelectItem>
-                                    {users.map(user => (
-                                        <SelectItem key={user.id} value={user.id.toString()}>
-                                            {user.display_name}
-                                        </SelectItem>
-                                    ))}
+                                    {users
+                                        .slice()
+                                        .sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''))
+                                        .map(user => (
+                                            <SelectItem key={user.id} value={user.id.toString()}>
+                                                {user.display_name}
+                                            </SelectItem>
+                                        ))}
                                 </SelectContent>
                             </Select>
                         </div>

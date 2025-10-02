@@ -91,11 +91,14 @@ export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssign
                 <DropdownMenuItem onSelect={() => handleAssigneeChange(null)}>
                     {t('card.unassign')}
                 </DropdownMenuItem>
-                {users.map((user) => (
-                    <DropdownMenuItem key={user.id} onSelect={() => handleAssigneeChange(user.id)}>
-                        {user.display_name}
-                    </DropdownMenuItem>
-                ))}
+                {users
+                    .slice()
+                    .sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''))
+                    .map((user) => (
+                        <DropdownMenuItem key={user.id} onSelect={() => handleAssigneeChange(user.id)}>
+                            {user.display_name}
+                        </DropdownMenuItem>
+                    ))}
             </DropdownMenuContent>
         </DropdownMenu>
     );
