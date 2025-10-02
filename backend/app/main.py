@@ -1,5 +1,8 @@
 """Application FastAPI principale pour l'application Kanban."""
 
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
+
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI
@@ -17,6 +20,35 @@ from .services.email import FROM_ADDRESS, SMTP_HOST, SMTP_USER
 from .services.user import create_admin_user
 from .utils.demo_mode import is_demo_mode
 from .utils.demo_reset import reset_database, setup_fresh_database
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Gestion du cycle de vie de l'application FastAPI."""
+    # Événement de démarrage
+    db = SessionLocal()
+    try:
+        # Vérifier s'il y a déjà des données dans la base
+        from .models import User
+
+        user_count = db.query(User).count()
+        if user_count > 0:
+            print("Base de donnees existante detectee, aucune initialisation automatique effectuee")
+            print("Pour reinitialiser en mode demo, utilisez l'endpoint POST /demo/reset")
+        else:
+            # Base de données vide ou nouvellement créée, configurer avec les données de base
+            print("Base de donnees vide detectee, configuration initiale...")
+            setup_fresh_database()
+    finally:
+        db.close()
+
+    # Afficher la configuration d'envoi d'emails utilisée au démarrage
+    print(f"Mail config: FROM_ADDRESS={FROM_ADDRESS}, SMTP_USER={SMTP_USER or 'None'}, SMTP_HOST={SMTP_HOST}")
+
+    yield  # L'application commence à recevoir des requêtes ici
+
+    # Événement d'arrêt (nettoyage si nécessaire)
+    print("Arrêt de l'application...")
 
 
 # Créer les tables de la base de données si nécessaire
@@ -138,6 +170,7 @@ app = FastAPI(
     description="API pour l'application de gestion Yaka",
     version="1.0.0",
     redirect_slashes=False,
+    lifespan=lifespan,
 )
 
 # Configuration CORS pour permettre les requêtes depuis le frontend
@@ -212,30 +245,6 @@ app.include_router(lists_router)
 app.include_router(board_settings_router)
 app.include_router(card_items_router)
 app.include_router(card_comments_router)
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Événement de démarrage de l'application."""
-    # Vérifier et initialiser les données par défaut seulement si nécessaire
-    db = SessionLocal()
-    try:
-        # Vérifier s'il y a déjà des données dans la base
-        from .models import User
-
-        user_count = db.query(User).count()
-        if user_count > 0:
-            print("Base de donnees existante detectee, aucune initialisation automatique effectuee")
-            print("Pour reinitialiser en mode demo, utilisez l'endpoint POST /demo/reset")
-        else:
-            # Base de données vide ou nouvellement créée, configurer avec les données de base
-            print("Base de donnees vide detectee, configuration initiale...")
-            setup_fresh_database()
-    finally:
-        db.close()
-
-    # Afficher la configuration d'envoi d'emails utilisée au démarrage
-    print(f"Mail config: FROM_ADDRESS={FROM_ADDRESS}, SMTP_USER={SMTP_USER or 'None'}, SMTP_HOST={SMTP_HOST}")
 
 
 @app.get("/")
