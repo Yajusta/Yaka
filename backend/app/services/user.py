@@ -29,7 +29,7 @@ def get_user(db: Session, user_id: int) -> Optional[User]:
     return (
         db.query(User)
         .filter(
-            and_(User.__table__.c.id == user_id, func.lower(User.__table__.c.status) != func.lower(UserStatus.DELETED))
+            and_(User.__table__.c.id == user_id, func.lower(User.__table__.c.status) != UserStatus.DELETED.value.lower())
         )
         .first()
     )
@@ -45,7 +45,7 @@ def get_user_by_email(db: Session, email: str | None) -> Optional[User]:
         .filter(
             and_(
                 func.lower(User.__table__.c.email) == normalized_email,
-                func.lower(User.__table__.c.status) != func.lower(UserStatus.DELETED),
+                func.lower(User.__table__.c.status) != UserStatus.DELETED.value.lower(),
             )
         )
         .first()
@@ -56,7 +56,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
     """Récupérer une liste d'utilisateurs."""
     return (
         db.query(User)
-        .filter(func.lower(User.__table__.c.status) != func.lower(UserStatus.DELETED))
+        .filter(func.lower(User.__table__.c.status) != UserStatus.DELETED.value.lower())
         .offset(skip)
         .limit(limit)
         .all()
@@ -144,7 +144,7 @@ def get_user_by_invite_token(db: Session, token: str) -> Optional[User]:
         .filter(
             and_(
                 User.__table__.c.invite_token == token,
-                func.lower(User.__table__.c.status) == func.lower(UserStatus.INVITED),
+                func.lower(User.__table__.c.status) == UserStatus.INVITED.value.lower(),
             )
         )
         .first()
@@ -200,7 +200,7 @@ def get_user_by_reset_token(db: Session, token: str) -> Optional[User]:
         .filter(
             and_(
                 User.__table__.c.invite_token == token,
-                func.lower(User.__table__.c.status) == func.lower(UserStatus.ACTIVE),
+                func.lower(User.__table__.c.status) == UserStatus.ACTIVE.value.lower(),
             )
         )
         .first()
