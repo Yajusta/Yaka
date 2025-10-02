@@ -1,14 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { closestCenter, DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { Loader2, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, DragOverlay, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, DragStartEvent, DragEndEvent, DragOverEvent, useDroppable } from '@dnd-kit/core';
+import { cn } from '../../lib/utils';
+import { listsApi } from '../../services/listsApi';
+import { Card as CardType, KanbanList } from '../../types/index';
+import { ArchiveManager } from '../admin/ArchiveManager';
+import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { KanbanColumn } from './KanbanColumn';
 import { CardItem } from './index';
-import { GlassmorphicCard } from '../ui/GlassmorphicCard';
-import { ArchiveManager } from '../admin/ArchiveManager';
-import { Trash2, Loader2 } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import { Card as CardType, KanbanList } from '../../types/index';
-import { listsApi } from '../../services/listsApi';
 
 
 interface KanbanBoardProps {
@@ -23,21 +23,15 @@ interface KanbanBoardProps {
 
 const TrashZone = ({
     isActive,
-    onOverChange,
+    isOver,
     isAnyModalOpen,
     onClick
 }: {
     isActive: boolean;
-    onOverChange?: (v: boolean) => void;
+    isOver: boolean;
     isAnyModalOpen?: boolean;
     onClick?: () => void;
 }) => {
-    const { setNodeRef, isOver } = useDroppable({ id: 'trash' });
-
-    useEffect(() => {
-        onOverChange?.(!!isOver);
-    }, [isOver]);
-
     const handleClick = (e: React.MouseEvent) => {
         // Only handle click if we're not dragging
         if (!isActive && onClick) {
@@ -49,7 +43,6 @@ const TrashZone = ({
 
     return (
         <div
-            ref={setNodeRef}
             data-trash-zone
             className={cn(
                 "fixed bottom-6 right-6 z-[2000] transition-all duration-200",
@@ -91,8 +84,104 @@ export const KanbanBoard = ({
     const [justDroppedCardId, setJustDroppedCardId] = useState<number | null>(null);
     const [hiddenCardId, setHiddenCardId] = useState<number | null>(null);
     const [isOverTrash, setIsOverTrash] = useState<boolean>(false);
+    const [isScrollBlocked, setIsScrollBlocked] = useState<boolean>(false);
     const [activeCardSize, setActiveCardSize] = useState<{ width: number; height: number } | null>(null);
     const [originalPositions, setOriginalPositions] = useState<Map<string, DOMRect>>(new Map());
+
+    // Effet pour bloquer/débloquer le scroll quand on survole la zone trash
+    useEffect(() => {
+        if (isOverTrash && activeCard) {
+            setIsScrollBlocked(true);
+
+            // Sauvegarder le scroll actuel
+            const { scrollX, scrollY } = window;
+
+            // Bloquer le scroll en gardant l'ascenseur visible avec scrollbar-gutter
+            document.documentElement.style.scrollbarGutter = 'stable';
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.left = '0';
+            document.body.style.right = '0';
+            document.body.style.top = `-${scrollY}px`;
+
+            // Forcer la largeur pour éviter le saut de layout
+            const bodyWidth = document.body.offsetWidth;
+            document.body.style.width = `${bodyWidth}px`;
+
+            // Garder la position pour la restauration
+            (window as any).__savedScrollPosition = { x: scrollX, y: scrollY };
+            (window as any).__originalBodyWidth = bodyWidth;
+
+            // Ajouter un listener pour empêcher le scroll manuel (backup)
+            const preventScroll = (e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            };
+
+            document.addEventListener('wheel', preventScroll, { passive: false });
+            document.addEventListener('touchmove', preventScroll, { passive: false });
+            (window as any).__scrollPreventers = [preventScroll];
+        } else {
+            setIsScrollBlocked(false);
+
+            // Rétablir la position de scroll
+            const savedScroll = (window as any).__savedScrollPosition;
+
+            document.documentElement.style.scrollbarGutter = '';
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.left = '';
+            document.body.style.right = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+
+            if (savedScroll && typeof savedScroll.x === 'number' && typeof savedScroll.y === 'number') {
+                window.scrollTo(savedScroll.x, savedScroll.y);
+            }
+
+            // Retirer les listeners
+            const preventers = (window as any).__scrollPreventers;
+            if (preventers && preventers.length) {
+                preventers.forEach((preventer: EventListener) => {
+                    document.removeEventListener('wheel', preventer);
+                    document.removeEventListener('touchmove', preventer);
+                });
+                delete (window as any).__scrollPreventers;
+            }
+
+            delete (window as any).__savedScrollPosition;
+            delete (window as any).__originalBodyWidth;
+        }
+
+        return () => {
+            // Nettoyage complet au démontage
+            document.documentElement.style.scrollbarGutter = '';
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.left = '';
+            document.body.style.right = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+
+            const savedScroll = (window as any).__savedScrollPosition;
+            if (savedScroll && typeof savedScroll.x === 'number' && typeof savedScroll.y === 'number') {
+                window.scrollTo(savedScroll.x, savedScroll.y);
+            }
+
+            const preventers = (window as any).__scrollPreventers;
+            if (preventers && preventers.length) {
+                preventers.forEach((preventer: EventListener) => {
+                    document.removeEventListener('wheel', preventer);
+                    document.removeEventListener('touchmove', preventer);
+                });
+                delete (window as any).__scrollPreventers;
+            }
+
+            delete (window as any).__savedScrollPosition;
+            delete (window as any).__originalBodyWidth;
+        };
+    }, [isOverTrash, activeCard]);
     const [, setAnimationData] = useState<Map<string, { element: HTMLElement; deltaY: number }>>(new Map());
     const [lists, setLists] = useState<KanbanList[]>([]);
     const [, setSuppressAnimationListId] = useState<number | null>(null);
@@ -103,6 +192,33 @@ export const KanbanBoard = ({
     const [showArchiveManager, setShowArchiveManager] = useState<boolean>(false);
     const boardRef = useRef<HTMLDivElement>(null);
     const lastDropUpdateTsRef = useRef<number>(0);
+
+    // Event listener global pour suivre la position de la souris pendant le drag
+    useEffect(() => {
+        const handleMouseMove = (event: MouseEvent) => {
+            if (!activeCard) {
+                return;
+            }
+
+
+            // Détecter si on est sur la zone trash
+            const trashElem = document.querySelector('[data-trash-zone]') as HTMLElement | null;
+            if (trashElem) {
+                const rect = trashElem.getBoundingClientRect();
+                const overTrash = event.clientX >= rect.left && event.clientX <= rect.right &&
+                    event.clientY >= rect.top && event.clientY <= rect.bottom;
+                setIsOverTrash(overTrash);
+            }
+        };
+
+        if (activeCard) {
+            document.addEventListener('mousemove', handleMouseMove);
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+        };
+    }, [activeCard]);
 
     // Fetch lists on component mount and when refreshTrigger changes
     useEffect(() => {
@@ -432,8 +548,8 @@ export const KanbanBoard = ({
                 const trashElem = document.querySelector('[data-trash-zone]') as HTMLElement | null;
                 if (trashElem) {
                     const rect = trashElem.getBoundingClientRect();
-                    const over = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
-                    setIsOverTrash(over);
+                    const overTrash = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+                    setIsOverTrash(overTrash);
                 } else {
                     setIsOverTrash(false);
                 }
@@ -575,13 +691,42 @@ export const KanbanBoard = ({
             }
         }
 
-        // handleDragEnd
+        // Get final mouse position from the event
+        let finalClientX: number | null = null;
+        let finalClientY: number | null = null;
+
+        if (event.activatorEvent) {
+            if ('touches' in event.activatorEvent) {
+                const touch = (event.activatorEvent as TouchEvent).changedTouches?.[0];
+                if (touch) {
+                    finalClientX = touch.clientX;
+                    finalClientY = touch.clientY;
+                }
+            } else {
+                finalClientX = (event.activatorEvent as MouseEvent).clientX;
+                finalClientY = (event.activatorEvent as MouseEvent).clientY;
+            }
+        }
 
         // Mark this card as just dropped to keep it invisible
         setJustDroppedCardId(activeId);
 
         // Clear drop target immediately
         setDropTarget(null);
+
+        // Handle trash FIRST (use our manual detection instead of DndKit)
+        if (isOverTrash) {
+            try {
+                onCardDelete(activeId);
+            } catch (e) {
+                console.error('Error archiving card:', e);
+            }
+
+            setTimeout(() => {
+                clearDragStates();
+            }, 300);
+            return;
+        }
 
         if (!over) {
             // Delay clearing to prevent flash
@@ -592,20 +737,6 @@ export const KanbanBoard = ({
         }
 
         const overId = over.id as string;
-
-        // Handle trash
-        if (overId === 'trash') {
-            try {
-                onCardDelete(activeId);
-            } catch (e) {
-                console.error(t('card.archiveError'), e);
-            }
-
-            setTimeout(() => {
-                clearDragStates();
-            }, 300);
-            return;
-        }
 
         // Utiliser notre finalDropTarget au lieu de la logique DndKit
         if (finalDropTarget) {
@@ -698,7 +829,7 @@ export const KanbanBoard = ({
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}
-                autoScroll={true}
+                autoScroll={!isScrollBlocked}
             >
                 {/* Horizontal scrolling container */}
                 <div className="h-full kanban-horizontal-scroll">
@@ -741,7 +872,7 @@ export const KanbanBoard = ({
 
                 <TrashZone
                     isActive={!!activeCard}
-                    onOverChange={(v) => setIsOverTrash(v)}
+                    isOver={isOverTrash}
                     isAnyModalOpen={isAnyModalOpen || showArchiveManager}
                     onClick={handleOpenArchiveManager}
                 />
