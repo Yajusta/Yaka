@@ -2,7 +2,7 @@
 
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -50,8 +50,8 @@ def admin_user(db_session):
         role=UserRole.ADMIN,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -69,8 +69,8 @@ def regular_user(db_session):
         role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -86,8 +86,8 @@ def test_label(db_session):
         color="#FF0000",
         description="Problème à corriger",
         created_by=1,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(label)
     db_session.commit()
@@ -108,8 +108,8 @@ class TestLabelsRouter:
                     color="#FF0000",
                     description="Problème à corriger",
                     created_by=1,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
                 )
             ]
             mock_get_labels.return_value = mock_labels
@@ -136,8 +136,8 @@ class TestLabelsRouter:
                     color="#00FF00",
                     description="Nouvelle fonctionnalité",
                     created_by=1,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
                 )
             ]
             mock_get_labels.return_value = mock_labels
@@ -182,8 +182,8 @@ class TestLabelsRouter:
             color="#FF0000",
             description="Priorité haute",
             created_by=1,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.labels.label_service.get_label_by_name") as mock_get_by_name:
@@ -286,8 +286,8 @@ class TestLabelsRouter:
             color="#FFFF00",
             description="Problème critique",
             created_by=1,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.labels.label_service.update_label") as mock_update:

@@ -3,7 +3,7 @@
 import asyncio
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -24,12 +24,7 @@ from app.routers.board_settings import (
     update_board_title,
 )
 from app.schemas.board_settings import BoardSettingsResponse, BoardTitleUpdate
-from app.services.board_settings import (
-    create_or_update_setting,
-    delete_setting,
-    get_all_settings,
-    get_setting,
-)
+from app.services.board_settings import create_or_update_setting, delete_setting, get_all_settings, get_setting
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -61,8 +56,8 @@ def admin_user(db_session):
         role=UserRole.ADMIN,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -80,8 +75,8 @@ def regular_user(db_session):
         role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -125,8 +120,8 @@ class TestBoardSettingsRouter:
                     setting_key="test_key",
                     setting_value="test_value",
                     description="Test setting",
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
                 )
             ]
             mock_get_all.return_value = mock_settings
@@ -184,8 +179,8 @@ class TestBoardSettingsRouter:
                 setting_key="board_title",
                 setting_value="Nouveau Titre",
                 description="Titre du tableau",
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             )
             mock_set_title.return_value = mock_setting
 
@@ -229,8 +224,8 @@ class TestBoardSettingsRouter:
                 setting_key="test_key",
                 setting_value="test_value",
                 description="Test setting",
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             )
             mock_get_setting.return_value = mock_setting
 
@@ -283,8 +278,8 @@ class TestBoardSettingsRouter:
                 setting_key="test_key",
                 setting_value="new_value",
                 description="Updated setting",
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             )
             mock_update.return_value = mock_setting
 

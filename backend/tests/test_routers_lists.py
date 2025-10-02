@@ -2,7 +2,7 @@
 
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,28 +12,23 @@ from pydantic import ValidationError
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.database import Base
-from app.models.user import User, UserRole, UserStatus
 from app.models.kanban_list import KanbanList
-from app.routers.lists import (
-    router,
-    read_lists,
-    create_list as create_list_route,
-    read_list,
-    update_list as update_list_route,
-    delete_list as delete_list_route,
-    get_list_cards_count,
-    reorder_lists as reorder_lists_route,
-    require_admin,
-)
-from app.schemas import KanbanListCreate, KanbanListUpdate, KanbanListResponse, ListDeletionRequest, ListReorderRequest
+from app.models.user import User, UserRole, UserStatus
+from app.routers.lists import create_list as create_list_route
+from app.routers.lists import delete_list as delete_list_route
+from app.routers.lists import get_list_cards_count, read_list, read_lists
+from app.routers.lists import reorder_lists as reorder_lists_route
+from app.routers.lists import require_admin, router
+from app.routers.lists import update_list as update_list_route
+from app.schemas import KanbanListCreate, KanbanListResponse, KanbanListUpdate, ListDeletionRequest, ListReorderRequest
 from app.services.kanban_list import (
-    get_lists,
-    get_list,
     create_list,
-    update_list,
     delete_list,
+    get_list,
     get_list_with_cards_count,
+    get_lists,
     reorder_lists,
+    update_list,
 )
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -66,8 +61,8 @@ def admin_user(db_session):
         role=UserRole.ADMIN,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -85,8 +80,8 @@ def regular_user(db_session):
         role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -101,8 +96,8 @@ def test_list(db_session):
         name="À faire",
         description="Tâches à faire",
         display_order=1,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(kanban_list)
     db_session.commit()
@@ -118,7 +113,11 @@ class TestListsRouter:
         with patch("app.routers.lists.list_service.get_lists") as mock_get_lists:
             mock_lists = [
                 KanbanListResponse(
-                    id=1, name="À faire", order=1, created_at=datetime.utcnow(), updated_at=datetime.utcnow()
+                    id=1,
+                    name="À faire",
+                    order=1,
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
                 )
             ]
             mock_get_lists.return_value = mock_lists
@@ -140,7 +139,11 @@ class TestListsRouter:
         with patch("app.routers.lists.list_service.get_lists") as mock_get_lists:
             mock_lists = [
                 KanbanListResponse(
-                    id=1, name="En cours", order=2, created_at=datetime.utcnow(), updated_at=datetime.utcnow()
+                    id=1,
+                    name="En cours",
+                    order=2,
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
                 )
             ]
             mock_get_lists.return_value = mock_lists
@@ -178,7 +181,11 @@ class TestListsRouter:
         list_data = KanbanListCreate(name="Nouvelle liste", order=3)
 
         mock_list = KanbanListResponse(
-            id=1, name="Nouvelle liste", order=3, created_at=datetime.utcnow(), updated_at=datetime.utcnow()
+            id=1,
+            name="Nouvelle liste",
+            order=3,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.lists.list_service.create_list") as mock_create:
@@ -263,7 +270,11 @@ class TestListsRouter:
         update_data = KanbanListUpdate(name="Liste mise à jour", order=1)
 
         mock_list = KanbanListResponse(
-            id=1, name="Liste mise à jour", order=1, created_at=datetime.utcnow(), updated_at=datetime.utcnow()
+            id=1,
+            name="Liste mise à jour",
+            order=1,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.lists.list_service.update_list") as mock_update:

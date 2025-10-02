@@ -3,7 +3,7 @@
 import asyncio
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,15 +12,13 @@ from fastapi import HTTPException, status
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.database import Base
-from app.models.user import User, UserRole, UserStatus
 from app.models.card import Card
-from app.routers.card_history import get_card_history, create_card_history_entry
+from app.models.user import User, UserRole, UserStatus
+from app.routers.card_history import create_card_history_entry, get_card_history
 from app.schemas import CardHistoryCreate, CardHistoryResponse
-from app.services.card_history import (
-    get_card_history as service_get_history,
-    create_card_history_entry as service_create_history,
-)
 from app.services.card import get_card
+from app.services.card_history import create_card_history_entry as service_create_history
+from app.services.card_history import get_card_history as service_get_history
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -52,8 +50,8 @@ def test_user(db_session):
         role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -71,8 +69,8 @@ def test_card(db_session):
         created_by=1,
         position=0,
         is_archived=False,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(card)
     db_session.commit()
@@ -89,8 +87,7 @@ def test_history_entry():
         user_id=1,
         action="card_created",
         description="Carte créée",
-        created_at=datetime.utcnow(),
-        user_display_name="Test User",
+        created_at=datetime.now(timezone.utc),
     )
 
 
@@ -112,8 +109,7 @@ class TestCardHistoryRouter:
                         user_id=1,
                         action="card_created",
                         description="Carte créée",
-                        created_at=datetime.utcnow(),
-                        user_display_name="Test User",
+                        created_at=datetime.now(timezone.utc),
                     )
                 ]
                 mock_get_history.return_value = mock_history

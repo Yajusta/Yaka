@@ -2,7 +2,7 @@
 
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,10 +11,10 @@ from fastapi import HTTPException, status
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.database import Base
-from app.models.user import User, UserRole, UserStatus
 from app.models.card_item import CardItem
-from app.routers.card_items import list_items, create_item, update_item, delete_item
-from app.schemas.card_item import CardItemCreate, CardItemUpdate, CardItemResponse
+from app.models.user import User, UserRole, UserStatus
+from app.routers.card_items import create_item, delete_item, list_items, update_item
+from app.schemas.card_item import CardItemCreate, CardItemResponse, CardItemUpdate
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -46,8 +46,8 @@ def test_user(db_session):
         role=UserRole.SUPERVISOR,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -63,8 +63,8 @@ def test_item(db_session):
         text="Test Item",
         is_done=False,
         position=0,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(item)
     db_session.commit()
@@ -85,8 +85,8 @@ class TestCardItemsRouter:
                     text="Test Item",
                     is_done=False,
                     position=0,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
                 )
             ]
             mock_get_items.return_value = mock_items
@@ -130,8 +130,8 @@ class TestCardItemsRouter:
             text="New Item",
             is_done=False,
             position=0,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.services.card_item.create_item") as mock_create:
@@ -214,8 +214,8 @@ class TestCardItemsRouter:
             text="Updated Item",
             is_done=True,
             position=0,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.services.card_item.update_item") as mock_update:
@@ -357,8 +357,8 @@ class TestCardItemsRouter:
             text="Test Item",
             is_done=True,
             position=0,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.services.card_item.update_item") as mock_update:
@@ -387,8 +387,8 @@ class TestCardItemsRouter:
                 text="Item 1",
                 is_done=False,
                 position=0,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             ),
             CardItemResponse(
                 id=2,
@@ -396,8 +396,8 @@ class TestCardItemsRouter:
                 text="Item 2",
                 is_done=False,
                 position=1,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             ),
         ]
 

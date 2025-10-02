@@ -1,8 +1,9 @@
 """Tests pour le routeur card_comments."""
 
+import contextlib
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -57,8 +58,8 @@ def test_user(db_session):
         role=UserRole.SUPERVISOR,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -74,8 +75,8 @@ def test_comment(db_session):
         user_id=1,
         comment="Test comment",
         is_deleted=False,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(comment)
     db_session.commit()
@@ -98,8 +99,8 @@ class TestCardCommentsRouter:
                     "user_id": 1,
                     "comment": "Test comment",
                     "is_deleted": False,
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
                     "user_display_name": "Test User",
                 }
             ]
@@ -147,9 +148,8 @@ class TestCardCommentsRouter:
             user_id=1,
             comment="New comment",
             is_deleted=False,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-            user_display_name="Test User",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.card_comments.card_comment_service.create_comment") as mock_create:
@@ -212,8 +212,8 @@ class TestCardCommentsRouter:
 
     def test_update_comment_success(self, test_user):
         """Test de mise à jour d'un commentaire avec succès."""
-        from app.routers.card_comments import update_comment
         from app.models.card_comment import CardComment
+        from app.routers.card_comments import update_comment
 
         update_data = CardCommentUpdate(comment="Updated comment")
 
@@ -231,9 +231,8 @@ class TestCardCommentsRouter:
             user_id=test_user.id,
             comment="Updated comment",
             is_deleted=False,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-            user_display_name="Test User",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.card_comments.card_comment_service.get_comment_by_id") as mock_get:
@@ -284,8 +283,8 @@ class TestCardCommentsRouter:
 
     def test_update_comment_empty_content(self, test_user):
         """Test de mise à jour d'un commentaire avec un contenu vide."""
-        from app.routers.card_comments import update_comment
         from app.models.card_comment import CardComment
+        from app.routers.card_comments import update_comment
 
         # Mock existing comment
         existing_comment = MagicMock(spec=CardComment)
@@ -320,8 +319,8 @@ class TestCardCommentsRouter:
 
     def test_update_comment_permission_denied(self, test_user):
         """Test de mise à jour d'un commentaire sans permission."""
-        from app.routers.card_comments import update_comment
         from app.models.card_comment import CardComment
+        from app.routers.card_comments import update_comment
 
         update_data = CardCommentUpdate(comment="Updated comment")
 
@@ -455,9 +454,8 @@ class TestCardCommentsRouter:
             user_id=1,
             comment="New comment",
             is_deleted=False,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-            user_display_name="Test User",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.card_comments.card_comment_service.create_comment") as mock_create:
@@ -475,15 +473,11 @@ class TestCardCommentsRouter:
 
                         # The comment should be created even if history fails
                         # History errors should not prevent comment creation
-                        try:
+                        with contextlib.suppress(Exception):
                             result = asyncio.run(
                                 create_comment(comment_data, mock_db.return_value.__enter__.return_value, test_user)
                             )
                             assert result.comment == "New comment"
-                        except Exception:
-                            # If history error prevents creation, that's also acceptable
-                            # The important thing is that the error is handled gracefully
-                            pass
 
     def test_exception_handling(self, test_user):
         """Test de gestion des exceptions générales."""

@@ -2,7 +2,7 @@
 
 import os
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,30 +13,24 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.database import Base
 from app.models.user import User, UserRole, UserStatus
-from app.routers.users import (
-    router,
-    InvitePayload,
-    read_users,
-    create_user as create_user_route,
-    read_user,
-    update_user as update_user_route,
-    delete_user as delete_user_route,
-    invite_user as invite_user_route,
-    update_user_language,
-    set_password,
-    require_admin,
-)
-from app.schemas import UserCreate, UserUpdate, UserResponse, UserListItem, LanguageUpdate, SetPasswordPayload
+from app.routers.users import InvitePayload
+from app.routers.users import create_user as create_user_route
+from app.routers.users import delete_user as delete_user_route
+from app.routers.users import invite_user as invite_user_route
+from app.routers.users import read_user, read_users, require_admin, router, set_password
+from app.routers.users import update_user as update_user_route
+from app.routers.users import update_user_language
+from app.schemas import LanguageUpdate, SetPasswordPayload, UserCreate, UserListItem, UserResponse, UserUpdate
 from app.services.user import (
-    get_users,
-    get_user,
-    get_user_by_email,
     create_user,
-    update_user,
     delete_user,
-    invite_user,
+    get_user,
     get_user_by_any_token,
+    get_user_by_email,
+    get_users,
+    invite_user,
     set_password_from_invite,
+    update_user,
 )
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -69,8 +63,8 @@ def admin_user(db_session):
         role=UserRole.ADMIN,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -88,8 +82,8 @@ def regular_user(db_session):
         role=UserRole.EDITOR,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -110,8 +104,8 @@ def invited_user(db_session):
         language="fr",
         invite_token="test_token_123",
         invited_at=invited_time,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -132,9 +126,6 @@ class TestUsersRouter:
                     display_name="Admin User",
                     role=UserRole.ADMIN,
                     status=UserStatus.ACTIVE,
-                    language="fr",
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
                 ),
                 UserListItem(
                     id=2,
@@ -142,9 +133,6 @@ class TestUsersRouter:
                     display_name="Regular User",
                     role=UserRole.EDITOR,
                     status=UserStatus.ACTIVE,
-                    language="fr",
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
                 ),
             ]
             mock_get_users.return_value = mock_users
@@ -176,9 +164,6 @@ class TestUsersRouter:
                     display_name="Admin User",
                     role=UserRole.ADMIN,
                     status=UserStatus.ACTIVE,
-                    language="fr",
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
                 )
             ]
             mock_get_users.return_value = mock_users
@@ -214,10 +199,9 @@ class TestUsersRouter:
             email="newuser@example.com",
             display_name="New User",
             role=UserRole.EDITOR,
-            status=UserStatus.ACTIVE,
             language="fr",
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.users.user_service.get_user_by_email") as mock_get_by_email:
@@ -276,7 +260,13 @@ class TestUsersRouter:
 
                 with pytest.raises(ValidationError) as exc_info:
                     # This should raise a validation error before even reaching the route function
-                    UserCreate(email="invalid-email", display_name="Test", role=UserRole.EDITOR, password="test")
+                    UserCreate(
+                        email="invalid-email",
+                        display_name="Test",
+                        role=UserRole.EDITOR,
+                        password="test",
+                        language="fr",
+                    )
 
                 # Verify it's a validation error
                 assert len(exc_info.value.errors()) > 0
@@ -319,10 +309,9 @@ class TestUsersRouter:
             email="user@example.com",
             display_name="Updated User",
             role=UserRole.ADMIN,
-            status=UserStatus.ACTIVE,
             language="fr",
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.users.user_service.update_user") as mock_update:
@@ -447,10 +436,9 @@ class TestUsersRouter:
             email="invitee@example.com",
             display_name="Invitee",
             role=UserRole.EDITOR,
-            status=UserStatus.INVITED,
             language="fr",
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.users.user_service.get_user_by_email") as mock_get_by_email:
@@ -502,10 +490,9 @@ class TestUsersRouter:
             email="user@example.com",
             display_name="Regular User",
             role=UserRole.EDITOR,
-            status=UserStatus.ACTIVE,
             language="en",
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.users.user_service.update_user") as mock_update:
@@ -534,10 +521,9 @@ class TestUsersRouter:
             email="invited@example.com",
             display_name="Invited User",
             role=UserRole.EDITOR,
-            status=UserStatus.ACTIVE,
             language="fr",
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.users.user_service.set_password_from_invite") as mock_set_password:

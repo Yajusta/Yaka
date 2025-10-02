@@ -3,7 +3,7 @@
 import asyncio
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -80,8 +80,8 @@ def test_user(db_session):
         role=UserRole.SUPERVISOR,
         status=UserStatus.ACTIVE,
         language="fr",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(user)
     db_session.commit()
@@ -100,8 +100,8 @@ def test_card(db_session):
         position=0,
         priority=CardPriority.MEDIUM,
         is_archived=False,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db_session.add(card)
     db_session.commit()
@@ -124,8 +124,8 @@ class TestCardsRouter:
                     position=0,
                     priority=CardPriority.MEDIUM,
                     is_archived=False,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
                     created_by=1,
                     assignee_id=None,
                 )
@@ -170,8 +170,8 @@ class TestCardsRouter:
                     position=0,
                     priority=CardPriority.HIGH,
                     is_archived=False,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
                     created_by=1,
                     assignee_id=None,
                 )
@@ -216,8 +216,8 @@ class TestCardsRouter:
                     position=0,
                     priority=CardPriority.LOW,
                     is_archived=True,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
                     created_by=1,
                     assignee_id=None,
                 )
@@ -254,8 +254,8 @@ class TestCardsRouter:
             position=0,
             priority=CardPriority.MEDIUM,
             is_archived=False,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
             created_by=1,
             assignee_id=None,
         )
@@ -326,8 +326,8 @@ class TestCardsRouter:
                 position=0,
                 priority=CardPriority.MEDIUM,
                 is_archived=False,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
                 created_by=1,
                 assignee_id=None,
             )
@@ -375,8 +375,8 @@ class TestCardsRouter:
             position=0,
             priority=CardPriority.HIGH,
             is_archived=False,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
             created_by=1,
             assignee_id=None,
         )
@@ -433,8 +433,8 @@ class TestCardsRouter:
             position=0,
             priority=CardPriority.MEDIUM,
             is_archived=True,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
             created_by=1,
             assignee_id=None,
         )
@@ -484,8 +484,8 @@ class TestCardsRouter:
             position=0,
             priority=CardPriority.MEDIUM,
             is_archived=False,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
             created_by=1,
             assignee_id=None,
         )
@@ -519,8 +519,8 @@ class TestCardsRouter:
             position=0,
             priority=CardPriority.MEDIUM,
             is_archived=False,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
             created_by=1,
             assignee_id=None,
         )
@@ -557,8 +557,8 @@ class TestCardsRouter:
                 position=0,
                 priority=CardPriority.MEDIUM,
                 is_archived=False,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
                 created_by=1,
                 assignee_id=None,
             )
@@ -631,7 +631,7 @@ class TestCardsRouter:
                     user_id=1,
                     action="created",
                     description="Card created: New Card",
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
                 )
             ]
             mock_get_history.return_value = mock_history

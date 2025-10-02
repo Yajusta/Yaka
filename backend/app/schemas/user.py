@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ..models.user import UserRole
+from ..models.user import UserRole, UserStatus
 
 
 def _validate_email(value: str | None) -> str | None:
@@ -136,7 +136,7 @@ class UserListItem(BaseModel):
     id: int
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
     role: Optional[UserRole] = UserRole.VISITOR
-    status: Optional[str] = None
+    status: Optional[UserStatus] = None
     # email est optionnel ici : les non-admins recevront une liste sans email
     email: Optional[str] = None
 
