@@ -166,7 +166,7 @@ async def resend_invitation(user_id: int, db: Session = Depends(get_db), current
     if db_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
 
-    if db_user.status.lower() != UserStatus.INVITED.lower():
+    if db_user.status != UserStatus.INVITED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="L'utilisateur n'est pas dans un état d'invitation"
         )
