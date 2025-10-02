@@ -14,7 +14,7 @@ from .routers.card_comments import router as card_comments_router
 from .routers.card_items import router as card_items_router
 from .services.board_settings import initialize_default_settings
 from .services.email import FROM_ADDRESS, SMTP_HOST, SMTP_USER
-from .services.user import create_admin_user, get_user_by_email
+from .services.user import create_admin_user
 from .utils.demo_mode import is_demo_mode
 from .utils.demo_reset import reset_database, setup_fresh_database
 
@@ -223,7 +223,8 @@ async def startup_event():
         # Vérifier s'il y a déjà des données dans la base
         from .models import User
 
-        if admin_user := get_user_by_email(db, "admin@yaka.local"):
+        user_count = db.query(User).count()
+        if user_count > 0:
             print("Base de donnees existante detectee, aucune initialisation automatique effectuee")
             print("Pour reinitialiser en mode demo, utilisez l'endpoint POST /demo/reset")
         else:

@@ -77,8 +77,8 @@ class User(Base):
             "ux_users_email_not_deleted",
             "email",
             unique=True,
-            sqlite_where=text("status != 'DELETED'"),
-            postgresql_where=text("status != 'DELETED'"),
+            sqlite_where=text("lower(status) != 'deleted'"),
+            postgresql_where=text("lower(status) != 'deleted'"),
         ),
     )
 

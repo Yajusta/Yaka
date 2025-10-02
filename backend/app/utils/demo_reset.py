@@ -60,31 +60,31 @@ def create_demo_users(db_session):
     demo_users = [
         {
             "email": "supervisor@yaka.local",
-            "password": "Demo123",
+            "password": "Demo1234",
             "display_name": "Sarah Supervisor",
             "role": UserRole.SUPERVISOR,
         },
         {
             "email": "editor@yaka.local",
-            "password": "Demo123",
+            "password": "Demo1234",
             "display_name": "Eric Editor",
             "role": UserRole.EDITOR,
         },
         {
             "email": "contributor@yaka.local",
-            "password": "Demo123",
+            "password": "Demo1234",
             "display_name": "Chris Contributor",
             "role": UserRole.CONTRIBUTOR,
         },
         {
             "email": "commenter@yaka.local",
-            "password": "Demo123",
+            "password": "Demo1234",
             "display_name": "Carol Commenter",
             "role": UserRole.COMMENTER,
         },
         {
             "email": "visitor@yaka.local",
-            "password": "Demo123",
+            "password": "Demo1234",
             "display_name": "Victor Visitor",
             "role": UserRole.VISITOR,
         },
@@ -92,8 +92,9 @@ def create_demo_users(db_session):
 
     created_users = []
     for user_data in demo_users:
-        existing_user = get_user_by_email(db_session, user_data["email"])
-        if not existing_user:
+        if existing_user := get_user_by_email(db_session, user_data["email"]):
+            created_users.append(existing_user)
+        else:
             user_create = UserCreate(
                 email=user_data["email"],
                 password=user_data["password"],
@@ -104,9 +105,6 @@ def create_demo_users(db_session):
             user = create_user(db_session, user_create)
             created_users.append(user)
             print(f"Demo user created: {user_data['email']} ({user_data['role'].value}) / {user_data['password']}")
-        else:
-            created_users.append(existing_user)
-
     return created_users
 
 

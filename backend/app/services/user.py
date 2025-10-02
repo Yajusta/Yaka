@@ -28,7 +28,9 @@ def get_user(db: Session, user_id: int) -> Optional[User]:
     """Récupérer un utilisateur par son ID."""
     return (
         db.query(User)
-        .filter(and_(User.__table__.c.id == user_id, User.__table__.c.status != UserStatus.DELETED))
+        .filter(
+            and_(User.__table__.c.id == user_id, func.lower(User.__table__.c.status) != func.lower(UserStatus.DELETED))
+        )
         .first()
     )
 
@@ -41,7 +43,10 @@ def get_user_by_email(db: Session, email: str | None) -> Optional[User]:
     return (
         db.query(User)
         .filter(
-            and_(func.lower(User.__table__.c.email) == normalized_email, User.__table__.c.status != UserStatus.DELETED)
+            and_(
+                func.lower(User.__table__.c.email) == normalized_email,
+                func.lower(User.__table__.c.status) != func.lower(UserStatus.DELETED),
+            )
         )
         .first()
     )
@@ -49,7 +54,13 @@ def get_user_by_email(db: Session, email: str | None) -> Optional[User]:
 
 def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
     """Récupérer une liste d'utilisateurs."""
-    return db.query(User).filter(User.__table__.c.status != UserStatus.DELETED).offset(skip).limit(limit).all()
+    return (
+        db.query(User)
+        .filter(func.lower(User.__table__.c.status) != func.lower(UserStatus.DELETED))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 def create_user(db: Session, user: UserCreate) -> User:
@@ -130,7 +141,12 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[
 def get_user_by_invite_token(db: Session, token: str) -> Optional[User]:
     return (
         db.query(User)
-        .filter(and_(User.__table__.c.invite_token == token, User.__table__.c.status == UserStatus.INVITED))
+        .filter(
+            and_(
+                User.__table__.c.invite_token == token,
+                func.lower(User.__table__.c.status) == func.lower(UserStatus.INVITED),
+            )
+        )
         .first()
     )
 
@@ -181,7 +197,12 @@ def get_user_by_reset_token(db: Session, token: str) -> Optional[User]:
     """Récupérer un utilisateur par son token de réinitialisation (pour utilisateurs actifs)."""
     return (
         db.query(User)
-        .filter(and_(User.__table__.c.invite_token == token, User.__table__.c.status == UserStatus.ACTIVE))
+        .filter(
+            and_(
+                User.__table__.c.invite_token == token,
+                func.lower(User.__table__.c.status) == func.lower(UserStatus.ACTIVE),
+            )
+        )
         .first()
     )
 
