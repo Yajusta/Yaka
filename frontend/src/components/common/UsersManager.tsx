@@ -278,7 +278,7 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                     <div className="divide-y">
                                         <TooltipProvider>
                                             {users.map(u => (
-                                                <div key={u.id} className="grid grid-cols-[1fr_1fr_auto_auto_auto] gap-2 p-3 items-center hover:bg-muted/30">
+                                                <div key={u.id} className="group grid grid-cols-[1fr_1fr_auto_auto_auto] gap-2 p-3 items-center hover:bg-muted/30">
                                                     <div className="font-medium min-w-0 truncate">
                                                         {u.display_name || t('user.noName')}
                                                     </div>
@@ -323,26 +323,13 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                         </Tooltip>
                                                     </div>
                                                     <div className="flex justify-center">
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="h-6 w-6 p-0 cursor-help"
-                                                                >
-                                                                    <MoreHorizontal className="h-3 w-3" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                <p>{t('common.actions')}</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger asChild>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
-                                                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity absolute"
+                                                                    className="h-6 w-6 p-0"
+                                                                    title={t('common.actions')}
                                                                 >
                                                                     <MoreHorizontal className="h-3 w-3" />
                                                                 </Button>
