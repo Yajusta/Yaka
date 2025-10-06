@@ -127,7 +127,9 @@ def create_demo_data(db_session):
     # Define labels according to language
     if default_language == "en":
         list_names = ["📝 To do", "🔄 In progress", "✅ Done"]
+        list_descriptions = ["Tasks to be started", "Tasks currently in progress", "Completed tasks"]
         label_name = "Important"
+        label_description = "High priority tasks requiring immediate attention"
         card_title = "Configure Yaka"
         card_description = "Initial configuration of the Yaka application"
         checklist_items = [
@@ -140,7 +142,9 @@ def create_demo_data(db_session):
         ]
     else:
         list_names = ["📝 A faire", "🔄 En cours", "✅ Terminé"]
+        list_descriptions = ["Tâches en attente de démarrage", "Tâches en cours de réalisation", "Tâches terminées"]
         label_name = "Important"
+        label_description = "Tâches prioritaires nécessitant une attention immédiate"
         card_title = "Configurer Yaka"
         card_description = "Configuration initiale de l'application Yaka"
         checklist_items = [
@@ -153,17 +157,17 @@ def create_demo_data(db_session):
         ]
 
     # Create the 3 lists
-    todo_list_data = KanbanListCreate(name=list_names[0], order=1)
+    todo_list_data = KanbanListCreate(name=list_names[0], description=list_descriptions[0], order=1)
     todo_list = create_list(db_session, todo_list_data)
 
-    in_progress_list_data = KanbanListCreate(name=list_names[1], order=2)
+    in_progress_list_data = KanbanListCreate(name=list_names[1], description=list_descriptions[1], order=2)
     in_progress_list = create_list(db_session, in_progress_list_data)
 
-    done_list_data = KanbanListCreate(name=list_names[2], order=3)
+    done_list_data = KanbanListCreate(name=list_names[2], description=list_descriptions[2], order=3)
     done_list = create_list(db_session, done_list_data)
 
     # Create "Important" label with red color
-    label_data = LabelCreate(name=label_name, color="#940000")
+    label_data = LabelCreate(name=label_name, color="#940000", description=label_description)
     important_label = create_label(db_session, label_data, admin_user.id)
 
     # Create configuration task in "To do" list
