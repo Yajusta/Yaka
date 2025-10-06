@@ -8,6 +8,7 @@ import { Search, Filter, X, Plus, ChevronDown, ChevronUp, Mic } from 'lucide-rea
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { VoiceControlDialog } from './VoiceControlDialog';
+import { useAuth } from '../../hooks/useAuth';
 
 interface User {
     id: number;
@@ -54,6 +55,7 @@ export const FilterBar = ({
     defaultListId,
 }: FilterBarProps) => {
     const { t } = useTranslation();
+    const { aiAvailable } = useAuth();
     const [showFilters, setShowFilters] = useState(false);
     const [searchValue, setSearchValue] = useState(localSearchValue);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -192,15 +194,17 @@ export const FilterBar = ({
 
                     {/* Voice control and Create card buttons */}
                     <div className="flex items-center gap-2">
-                        {/* Voice control button */}
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowVoiceDialog(true)}
-                            className="transition-all duration-200"
-                            title={t('voice.title')}
-                        >
-                            <Mic className="h-4 w-4" />
-                        </Button>
+                        {/* Voice control button - only show if AI features are available */}
+                        {aiAvailable && (
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowVoiceDialog(true)}
+                                className="transition-all duration-200"
+                                title={t('voice.title')}
+                            >
+                                <Mic className="h-4 w-4" />
+                            </Button>
+                        )}
 
                         {/* Create card button */}
                         {canCreateCard && (

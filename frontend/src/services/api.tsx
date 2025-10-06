@@ -163,6 +163,11 @@ export const authService = {
     async requestPasswordReset(email: string): Promise<void> {
         // Calls backend endpoint that returns a generic message regardless of existence
         await api.post('/auth/request-password-reset', { email });
+    },
+
+    async checkAIFeatures(): Promise<{ ai_available: boolean }> {
+        const response = await api.get<{ ai_available: boolean }>('/auth/ai-features');
+        return response.data;
     }
 };
 
