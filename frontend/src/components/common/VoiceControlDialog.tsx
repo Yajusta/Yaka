@@ -52,9 +52,6 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
             const recognition = new SpeechRecognition();
             recognition.continuous = true;
             recognition.interimResults = true;
-            // Utiliser la langue actuelle de l'utilisateur (fr -> fr-FR, en -> en-US)
-            const lang = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
-            recognition.lang = lang;
 
             recognition.onresult = (event: any) => {
                 // Ne traiter les résultats que si on est encore en train d'écouter
@@ -104,6 +101,12 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
             };
 
             recognitionRef.current = recognition;
+        }
+
+        // Mettre à jour la langue à chaque fois que i18n.language change
+        if (recognitionRef.current) {
+            const lang = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
+            recognitionRef.current.lang = lang;
         }
 
         return () => {
