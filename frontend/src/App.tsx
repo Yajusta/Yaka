@@ -398,6 +398,7 @@ const KanbanApp = () => {
                     labels={labels}
                     localSearchValue={filters.search || ''}
                     onLocalSearchChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
+                    onCardSave={handleCardSave}
                 />
 
                 <KanbanBoard

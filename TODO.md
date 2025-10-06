@@ -19,6 +19,7 @@
 [ ] Remplissage par IA
     [ ] Variable d'environnement pour afficher ou non le bouton "IA".
     [ ] Ajouter une description aux libellés et aux listes pour aider l'IA.
+    [ ] Afficher la liste dans laquelle est une carte pour pouvoir la changer.
 
 ## Frontend
 

@@ -33,7 +33,9 @@
         "charactersMax": "caractères maximum",
         "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce libellé ?",
         "saving": "Sauvegarde...",
-        "unknownDate": "Date inconnue"
+        "unknownDate": "Date inconnue",
+        "empty": "Vide",
+        "none": "Aucun"
     },
     "auth": {
         "login": "Connexion",
@@ -517,7 +519,7 @@
     },
     "voice": {
         "title": "Pilotage par la voix",
-        "description": "Exprimez votre demande",
+        "description": "Exprimez votre demande, on s'occupe du reste",
         "placeholder": "Votre demande apparaîtra ici...",
         "start": "Démarrer l'écoute",
         "stop": "Arrêter",
@@ -526,7 +528,21 @@
         "processing": "Traitement en cours...",
         "notSupported": "Reconnaissance vocale non supportée",
         "notSupportedDescription": "Votre navigateur ne supporte pas la reconnaissance vocale. Veuillez utiliser Chrome, Edge ou Safari.",
+        "notSupportedBrowser": "Indisponible avec votre navigateur",
         "resultTitle": "Résultat du pilotage vocal",
-        "resultDescription": "Voici le résultat de votre demande vocale"
+        "resultDescription": "Voici le résultat de votre demande vocale",
+        "previousValue": "Ancienne valeur : {{value}}",
+        "wasChecked": "Ancienne valeur : coché",
+        "wasUnchecked": "Ancienne valeur : décoché",
+        "previousLabels": "Ancienne(s) valeur(s) : {{labels}}",
+        "noLabels": "Aucune étiquette",
+        "newItem": "Nouvel élément",
+        "noPermission": "Permission refusée",
+        "cannotCreateCard": "Vous n'avez pas la permission de créer des cartes",
+        "cannotEditCard": "Vous n'avez pas la permission de modifier cette carte",
+        "cardNotFound": "Carte introuvable",
+        "cardNotFoundDescription": "La carte sera recréée avec les nouvelles données",
+        "cardLoadError": "Erreur lors du chargement de la carte",
+        "processingError": "Erreur lors du traitement de l'instruction vocale"
     }
 }

@@ -33,7 +33,9 @@
         "charactersMax": "characters maximum",
         "confirmDelete": "Are you sure you want to delete this label?",
         "saving": "Saving...",
-        "unknownDate": "Unknown date"
+        "unknownDate": "Unknown date",
+        "empty": "Empty",
+        "none": "None"
     },
     "auth": {
         "login": "Login",
@@ -517,7 +519,7 @@
     },
     "voice": {
         "title": "Voice control",
-        "description": "Express your request",
+        "description": "Express your request, we'll take care of the rest",
         "placeholder": "Your request will appear here...",
         "start": "Start listening",
         "stop": "Stop",
@@ -526,7 +528,21 @@
         "processing": "Processing...",
         "notSupported": "Voice recognition not supported",
         "notSupportedDescription": "Your browser does not support voice recognition. Please use Chrome, Edge or Safari.",
+        "notSupportedBrowser": "Unavailable with your browser",
         "resultTitle": "Voice Control Result",
-        "resultDescription": "Here is the result of your voice request"
+        "resultDescription": "Here is the result of your voice request",
+        "previousValue": "Previous value: {{value}}",
+        "wasChecked": "Previous value: checked",
+        "wasUnchecked": "Previous value: unchecked",
+        "previousLabels": "Previous value(s): {{labels}}",
+        "noLabels": "No labels",
+        "newItem": "New item",
+        "noPermission": "Permission denied",
+        "cannotCreateCard": "You don't have permission to create cards",
+        "cannotEditCard": "You don't have permission to edit this card",
+        "cardNotFound": "Card not found",
+        "cardNotFoundDescription": "The card will be recreated with the new data",
+        "cardLoadError": "Error loading card",
+        "processingError": "Error processing voice instruction"
     }
 }

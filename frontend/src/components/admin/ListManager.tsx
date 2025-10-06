@@ -142,6 +142,7 @@ const SortableListItem = ({
                                     className={`${editingErrors.name ? 'border-red-500' : ''}`}
                                     autoFocus
                                     onKeyDown={(e) => {
+                                        e.stopPropagation();
                                         if (e.key === 'Enter') {
                                             onSaveEdit();
                                         } else if (e.key === 'Escape') {
