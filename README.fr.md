@@ -7,6 +7,8 @@
 
 Une application web moderne et intuitive pour la gestion collaborative de tâches utilisant la méthodologie Kanban.
 
+NOUVEAU : **Gérez vos tâches avec la voix en langage naturel grâce au pouvoir de l'IA**
+
 ## 🖼️ Captures d'écran
 
 ![Board](./docs/screenshot-001.png)
@@ -27,6 +29,7 @@ L'envoie des emails d'invation est désactivé.
 ## ⚙️ Fonctionnalités
 
 - **Tableau Kanban interactif**
+- **Gestion des tâches à la voix grâce à l'IA**
 - **Drag & Drop** fluide pour déplacer les cartes
 - **Authentification sécurisée** avec JWT
 - **Cartes détaillées** avec titre, description, liste d'éléments, priorité, assigné, libellés, date d'échéance, commentaires
@@ -102,7 +105,7 @@ Copier / coller le fichier `.env.sample` en `.env` et remplir les paramètres de
 Exemple :
 
 ```txt
-# Paramètres pour l'envoi de mail
+## Paramètres pour l'envoi de mail
 SMTP_HOST = "smtp.resend.com"
 SMTP_PORT = 587
 SMTP_USER = "resend"
@@ -111,7 +114,20 @@ SMTP_SECURE = "starttls"  # values: 'ssl'|'starttls'|'none'
 SMTP_FROM = "no-reply@domain.com"
 ```
 
-### 3. Démarrage du backend
+### 3. (optionel) Configuration du point d'accès IA
+
+Le modèle LLM qui sera utilisé pour analyser les demandes faites en langage naturel.
+Laisser vide pour désactiver la fonctionnalité.
+
+```txt
+## AI features (leave empty to disable)
+OPENAI_API_KEY=sk-proj-bim-bam-boum
+OPENAI_API_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-5-nano
+MODEL_TEMPERATURE=
+```
+
+### 4. Démarrage du backend
 
 ```bash
 cd backend
@@ -121,7 +137,7 @@ uv run uvicorn app.main:app --reload
 Un environnement virtuel sera automatiquement créé avec toutes les dépendances nécessaires.
 Le backend sera accessible sur <http://localhost:8000>
 
-### 4. Démarrage du frontend
+### 5. Démarrage du frontend
 
 ```bash
 cd frontend
@@ -160,9 +176,7 @@ Pour toute question ou problème :
 
 ## 🔄 Roadmap hypothétique
 
-- [x] Interface multilingue
 - [ ] Notifications en temps réel (websockets)
-- [x] Commentaires sur les cartes
 - [ ] Pièces jointes
 - [ ] Rapports et analytics
 - [ ] API publique

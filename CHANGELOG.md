@@ -1,10 +1,16 @@
 # Changelog
 
-## 2025-10-01
+## v1.2.0 (2025-10-07)
+
+- [NEW] Saisie et modification des tâches par la voix (nécessite un accès à une API OpenAI ou similaire).
+- [NEW] Ajout de description pour les libellés et les listes.
+- [UX] Possibilité de changer une carte de liste depuis son formulaire.
+
+## v1.1.0 (2025-10-01)
 
 - [NEW] Nouveaux rôles plus granulaires pour les utilisateurs.
 
-## 2025-09-19
+## v1.0.0 (2025-09-19)
 
 - [SECU] Configuration du token JWT en variable d'environnement.
 - [SECU] Expiration du token JWT.
@@ -13,14 +19,14 @@
 - [FIX] Nettoyage des commentaires dans la démo.
 - [TESTS] Ajout de tests unitaires.
 
-## 2025-09-10
+## v0.2.0 (2025-09-10)
 
 - [NEW] Interface multilingue (français / anglais).
 - [NEW] Commentaires sur les cartes.
 - [NEW] Possibilité de changer le rôle d'un utilisateur existant.
 - [NEW] Date d'échéance mise en avant quand elle est dépassée.
 
-## 2025-08-24
+## v0.1.0 (2025-08-24)
 
 - [NEW] Gestion de l'archivage / désarchivage.
 - [NEW] Historique des actions effectuées sur les cartes.

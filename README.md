@@ -6,6 +6,8 @@
 
 A modern and intuitive web application for collaborative task management using the Kanban methodology.
 
+NEW: **Manage your tasks with your voice using natural language thanks to the power of AI.**
+
 ## 🖼️ Screenshots
 
 ![Board](./docs/screenshot-001.png)
@@ -26,6 +28,7 @@ Email invitation sending is disabled.
 ## ⚙️ Features
 
 - **Interactive Kanban Board**
+- **Mange tasks with your voice with AI**
 - **Drag & Drop** for moving cards smoothly
 - **Secure Authentication** with JWT
 - **Detailed Cards** with title, description, checklist, priority, assignee, labels, due date, comments
@@ -110,7 +113,20 @@ SMTP_SECURE = "starttls"  # values: 'ssl'|'starttls'|'none'
 SMTP_FROM = "no-reply@domain.com"
 ```
 
-### 3. Start the backend
+### 3. (optional) AI endpoint
+
+The LLM model that will be used to analyze natural language requests.
+Leave empty to disable the feature.
+
+```txt
+## AI features (leave empty to disable)
+OPENAI_API_KEY=sk-proj-bim-bam-boum
+OPENAI_API_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-5-nano
+MODEL_TEMPERATURE=
+```
+
+### 4. Start the backend
 
 ```bash
 cd backend
@@ -120,7 +136,7 @@ uv run uvicorn app.main:app --reload
 A virtual environment will be automatically created with all necessary dependencies.
 The backend will be accessible at <http://localhost:8000>
 
-### 4. Start the frontend
+### 5. Start the frontend
 
 ```bash
 cd frontend
@@ -159,9 +175,7 @@ For any questions or problems:
 
 ## 🔄 Hypothetical Roadmap
 
-- [x] Multilingual interface
 - [ ] Real-time notifications (websockets)
-- [x] Card comments
 - [ ] Attachments
 - [ ] Reports and analytics
 - [ ] Public API
