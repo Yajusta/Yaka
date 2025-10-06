@@ -57,10 +57,10 @@ async def check_ai_features():
 
     load_dotenv(override=True)
 
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    default_model = os.getenv("DEFAULT_MODEL")
+    openai_api_key = os.getenv("OPENAI_API_KEY", "")
+    llm_model = os.getenv("LLM_MODEL", "")
 
     # Les fonctionnalités IA sont disponibles si les deux variables sont configurées
-    ai_available = bool(openai_api_key and default_model)
+    ai_available = bool(openai_api_key and llm_model)
 
     return {"ai_available": ai_available}

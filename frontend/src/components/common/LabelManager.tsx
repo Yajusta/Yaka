@@ -19,6 +19,7 @@ interface LabelManagerProps {
 interface FormData {
     name: string;
     color: string;
+    description: string;
 }
 
 const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
@@ -29,7 +30,8 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
     const [showForm, setShowForm] = useState<boolean>(false);
     const [formData, setFormData] = useState<FormData>({
         name: '',
-        color: '#3B82F6'
+        color: '#3B82F6',
+        description: ''
     });
     const { toast } = useToast();
 
@@ -73,7 +75,7 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
             }
             setShowForm(false);
             setEditingLabel(null);
-            setFormData({ name: '', color: '#3B82F6' });
+            setFormData({ name: '', color: '#3B82F6', description: '' });
             loadLabels();
         } catch (error: any) {
             toast({
@@ -88,7 +90,8 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
         setEditingLabel(label);
         setFormData({
             name: label.name,
-            color: label.color
+            color: label.color,
+            description: label.description || ''
         });
         setShowForm(true);
     };
@@ -116,14 +119,14 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
 
     const handleCreate = (): void => {
         setEditingLabel(null);
-        setFormData({ name: '', color: '#3B82F6' });
+        setFormData({ name: '', color: '#3B82F6', description: '' });
         setShowForm(true);
     };
 
     const handleCloseForm = (): void => {
         setShowForm(false);
         setEditingLabel(null);
-        setFormData({ name: '', color: '#3B82F6' });
+        setFormData({ name: '', color: '#3B82F6', description: '' });
     };
 
     return (
@@ -184,6 +187,22 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
                                                 className="flex-1"
                                             />
                                         </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="description">{t('label.description')}</Label>
+                                        <textarea
+                                            id="description"
+                                            value={formData.description}
+                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                            placeholder={t('label.description')}
+                                            maxLength={255}
+                                            rows={3}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                        />
+                                        <p className="text-xs text-gray-500">
+                                            {formData.description.length}/255 {t('common.charactersMax')}
+                                        </p>
                                     </div>
 
                                     <div className="flex justify-end space-x-2">

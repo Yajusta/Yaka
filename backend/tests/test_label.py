@@ -185,12 +185,25 @@ class TestCreateLabel:
 
     def test_create_label_successfully(self, db_session, sample_user):
         """Test de création réussie d'un libellé."""
-        label_data = LabelCreate(name="Nouveau libellé", color="#FF00FF")
+        label_data = LabelCreate(name="Nouveau libellé", color="#FF00FF", description="Test description")
         label = create_label(db_session, label_data, sample_user.id)
 
         assert label.id is not None
         assert label.name == "Nouveau libellé"
         assert label.color == "#FF00FF"
+        assert label.description == "Test description"
+        assert label.created_by == sample_user.id
+        assert label.created_at is not None
+    
+    def test_create_label_without_description(self, db_session, sample_user):
+        """Test de création d'un libellé sans description."""
+        label_data = LabelCreate(name="No Description", color="#FF00FF")
+        label = create_label(db_session, label_data, sample_user.id)
+
+        assert label.id is not None
+        assert label.name == "No Description"
+        assert label.color == "#FF00FF"
+        assert label.description is None
         assert label.created_by == sample_user.id
         assert label.created_at is not None
 
@@ -284,6 +297,17 @@ class TestUpdateLabel:
         assert label is not None
         assert label.name == "Nouveau name"
         assert label.color == sample_labels[0].color  # La color ne change pas
+    
+    def test_update_label_description(self, db_session, sample_labels):
+        """Test de mise à jour de la description d'un libellé."""
+        label_id = sample_labels[0].id
+        update_data = LabelUpdate(description="Updated description")
+
+        label = update_label(db_session, label_id, update_data)
+
+        assert label is not None
+        assert label.description == "Updated description"
+        assert label.name == sample_labels[0].name  # Le nom ne change pas
 
     def test_update_label_color(self, db_session, sample_labels):
         """Test de mise à jour de la color d'un libellé."""
@@ -306,6 +330,18 @@ class TestUpdateLabel:
         assert label is not None
         assert label.name == "Complètement nouveau"
         assert label.color == "#ABCDEF"
+    
+    def test_update_label_all_fields(self, db_session, sample_labels):
+        """Test de mise à jour de tous les champs d'un libellé."""
+        label_id = sample_labels[0].id
+        update_data = LabelUpdate(name="Tout nouveau", color="#ABCDEF", description="Nouvelle description")
+
+        label = update_label(db_session, label_id, update_data)
+
+        assert label is not None
+        assert label.name == "Tout nouveau"
+        assert label.color == "#ABCDEF"
+        assert label.description == "Nouvelle description"
 
     def test_update_nonexistent_label(self, db_session):
         """Test de mise à jour d'un libellé qui n'existe pas."""

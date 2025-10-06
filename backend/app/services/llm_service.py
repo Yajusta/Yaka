@@ -42,7 +42,7 @@ class LLMService:
             raise ValueError("Clé API OpenAI manquante. Veuillez définir OPENAI_API_KEY dans .env")
 
         # Utiliser le modèle fourni ou celui de l'environnement, ou la valeur par défaut
-        self.model_name = model or os.getenv("DEFAULT_MODEL", DEFAULT_MODEL)
+        self.model_name = model or os.getenv("LLM_MODEL", DEFAULT_MODEL)
 
         # Initialiser le client OpenAI
         self.client = OpenAI(api_key=api_key, base_url=os.getenv("OPENAI_API_BASE_URL", ""))
@@ -191,7 +191,7 @@ def get_lists() -> str:
     db = SessionLocal()
     try:
         lists = db.query(KanbanList).order_by(KanbanList.order).all()
-        result = [{"status_id": lst.id, "name": lst.name} for lst in lists]
+        result = [{"list_id": lst.id, "list_name": lst.name, "list_description": lst.description} for lst in lists]
         return json.dumps(result, ensure_ascii=False, indent=2)
     finally:
         db.close()
@@ -202,7 +202,7 @@ def get_users() -> str:
     db = SessionLocal()
     try:
         users = db.query(User).filter(User.status != UserStatus.DELETED).all()
-        result = [{"user_id": user.id, "name": user.display_name or user.email} for user in users]
+        result = [{"user_id": user.id, "user_name": user.display_name or user.email} for user in users]
         return json.dumps(result, ensure_ascii=False, indent=2)
     finally:
         db.close()
@@ -217,7 +217,7 @@ def get_tasks() -> str:
         cards = (
             db.query(Card)
             .join(KanbanList)
-            .options(selectinload(Card.items), selectinload(Card.labels))
+            .options(selectinload(Card.items), selectinload(Card.labels), selectinload(Card.assignee))
             .filter(Card.is_archived == False)
             .all()
         )
@@ -232,6 +232,11 @@ def get_tasks() -> str:
             # Construire la liste des labels
             labels = [{"label_id": label.id, "label_name": label.name} for label in card.labels]
 
+            # Obtenir le nom de l'assignee
+            assignee_name = None
+            if card.assignee:
+                assignee_name = card.assignee.display_name or card.assignee.email
+
             task = {
                 "task_id": card.id,
                 "title": card.title,
@@ -240,6 +245,7 @@ def get_tasks() -> str:
                 "list_name": card.kanban_list.name,
                 "priority": card.priority.value.lower(),
                 "assignee_id": card.assignee_id,
+                "assignee_name": assignee_name,
                 "due_date": card.due_date.isoformat() if card.due_date else None,
                 "checklist": checklist,
                 "labels": labels,
@@ -260,7 +266,10 @@ def get_labels() -> str:
     db = SessionLocal()
     try:
         labels = db.query(Label).all()
-        result = [{"label_id": label.id, "name": label.name} for label in labels]
+        result = [
+            {"label_id": label.id, "label_name": label.name, "label_description": label.description}
+            for label in labels
+        ]
         return json.dumps(result, ensure_ascii=False, indent=2)
     finally:
         db.close()

@@ -21,6 +21,7 @@ class Label(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     color: Mapped[str] = mapped_column(String, nullable=False)  # Code hexadécimal
+    description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime(timezone=True), default=get_system_timezone_datetime
