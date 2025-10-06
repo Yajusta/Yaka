@@ -174,6 +174,7 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
             priority: response.priority || 'medium',
             assignee_id: response.assignee_id || null,
             label_ids: response.labels?.map(l => l.label_id) || [],
+            list_id: response.list_id || undefined,
             checklist: response.checklist?.map((item, index) => ({
                 id: item.item_id || undefined,
                 text: item.item_name,

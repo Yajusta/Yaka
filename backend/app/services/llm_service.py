@@ -201,7 +201,7 @@ def get_users() -> str:
     """Retourne les utilisateurs actifs depuis la base de données."""
     db = SessionLocal()
     try:
-        users = db.query(User).filter(User.status == UserStatus.ACTIVE).all()
+        users = db.query(User).filter(User.status != UserStatus.DELETED).all()
         result = [{"user_id": user.id, "name": user.display_name or user.email} for user in users]
         return json.dumps(result, ensure_ascii=False, indent=2)
     finally:

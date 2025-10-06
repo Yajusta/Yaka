@@ -10,7 +10,8 @@ import { usePermissions } from '../../hooks/usePermissions';
 import { useUsers } from '../../hooks/useUsers';
 import { mapPriorityFromBackend, mapPriorityToBackend } from '../../lib/priority';
 import { cardItemsService, cardService, labelService } from '../../services/api.tsx';
-import { Card, CardPriority, Label as LabelType } from '../../types/index.ts';
+import { listsApi } from '../../services/listsApi';
+import { Card, CardPriority, Label as LabelType, KanbanList } from '../../types/index.ts';
 import { Badge } from '../ui/badge.tsx';
 import { Button } from '../ui/button.tsx';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog.tsx';
@@ -34,6 +35,7 @@ interface CardFormProps {
         priority?: string;
         assignee_id?: number | null;
         label_ids?: number[];
+        list_id?: number;
         checklist?: { id?: number; text: string; is_done: boolean; position: number }[];
     };
     proposedChanges?: {
@@ -43,6 +45,7 @@ interface CardFormProps {
         priority?: string;
         assignee_id?: number | null;
         label_ids?: number[];
+        list_id?: number;
         checklist?: { id?: number; text: string; is_done: boolean; position: number }[];
     };
 }
@@ -85,6 +88,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
         priority?: string;
         assignee_id?: number | null;
         label_ids?: number[];
+        list_id?: number;
         checklist?: { id?: number; text: string; is_done: boolean; position: number }[];
     }>({});
 
@@ -105,6 +109,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
     const isViewOnly = isEditing && !canEditCard;
 
     const [labels, setLabels] = useState<LabelType[]>([]);
+    const [lists, setLists] = useState<KanbanList[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [checklist, setChecklist] = useState<{ id?: number; text: string; is_done: boolean; position: number }[]>([]);
     const [newItemText, setNewItemText] = useState<string>('');
@@ -172,6 +177,16 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
                     tooltipContent: t('voice.previousLabels', { labels: oldLabels || t('voice.noLabels') })
                 };
             }
+            case 'list_id': {
+                const oldValue = originalValues.list_id;
+                const newValue = formData.list_id;
+                const isChanged = oldValue !== newValue && proposedChanges.list_id !== undefined;
+                const oldList = lists.find(l => l.id === oldValue);
+                return {
+                    isChanged,
+                    tooltipContent: t('voice.previousValue', { value: oldList?.name || t('common.unknown') })
+                };
+            }
             default:
                 return { isChanged: false, tooltipContent: '' };
         }
@@ -225,8 +240,12 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
 
     const loadData = useCallback(async (): Promise<void> => {
         try {
-            const labelsData = await labelService.getLabels();
+            const [labelsData, listsData] = await Promise.all([
+                labelService.getLabels(),
+                listsApi.getLists()
+            ]);
             setLabels(labelsData);
+            setLists(listsData);
         } catch {
             toast({
                 title: t('common.error'),
@@ -250,6 +269,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
                             priority: mapPriorityFromBackend(card.priority || ''),
                             assignee_id: card.assignee_id ?? null,
                             label_ids: card.labels?.map(l => l.id) || [],
+                            list_id: card.list_id,
                             checklist: []
                         });
 
@@ -275,7 +295,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
                             priority: proposedChanges.priority ?? mapPriorityFromBackend(card.priority || ''),
                             assignee_id: proposedChanges.assignee_id !== undefined ? proposedChanges.assignee_id : (card.assignee_id ?? null),
                             label_ids: proposedChanges.label_ids ?? (card.labels?.map(l => l.id) || []),
-                            list_id: card.list_id
+                            list_id: proposedChanges.list_id ?? card.list_id
                         });
                     } else {
                         // Normal edit mode without proposed changes
@@ -303,7 +323,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
                         priority: initialData?.priority || CardPriority.MEDIUM,
                         assignee_id: initialData?.assignee_id ?? (shouldEnforceSelfAssignment ? currentUserId ?? null : null),
                         label_ids: initialData?.label_ids || [],
-                        list_id: defaultListId ?? -1 // Utiliser -1 par défaut
+                        list_id: initialData?.list_id ?? defaultListId ?? -1 // Utiliser -1 par défaut
                     });
                     setChecklist(initialData?.checklist || []);
                 }
@@ -500,9 +520,36 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
                     <DialogTitle>
                         {isViewOnly ? t('card.viewCard') : (card ? t('card.editCard') : t('card.newCard'))}
                     </DialogTitle>
-                    <DialogDescription>
-                        {isViewOnly ? t('card.viewCardDescription') : (card ? t('card.editCardDescription') : t('card.newCardDescription'))}
-                    </DialogDescription>
+                    <div className="flex items-center justify-between gap-3 w-full">
+                        <DialogDescription>
+                            {isViewOnly ? t('card.viewCardDescription') : (card ? t('card.editCardDescription') : t('card.newCardDescription'))}
+                        </DialogDescription>
+                        {/* List selector */}
+                        <HighlightedField
+                            isChanged={getFieldChangeInfo('list_id').isChanged}
+                            tooltipContent={getFieldChangeInfo('list_id').tooltipContent}
+                        >
+                            <Select
+                                value={formData.list_id && formData.list_id > 0 ? formData.list_id.toString() : (lists[0]?.id.toString() || '')}
+                                onValueChange={(value) => setFormData(prev => ({
+                                    ...prev,
+                                    list_id: parseInt(value)
+                                }))}
+                                disabled={isViewOnly}
+                            >
+                                <SelectTrigger className="h-8 text-sm w-auto">
+                                    <SelectValue placeholder={t('card.selectList')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {lists.map(list => (
+                                        <SelectItem key={list.id} value={list.id.toString()}>
+                                            {list.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </HighlightedField>
+                    </div>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-3">
