@@ -337,7 +337,11 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                                 className="min-h-[150px] resize-none"
                                 disabled={isProcessing}
                                 readOnly={isListening}
+                                maxLength={500}
                             />
+                            <div className="text-xs text-muted-foreground text-right">
+                                {transcript.length}/500
+                            </div>
                         </div>
 
                         {/* Indicateur d'écoute */}

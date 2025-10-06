@@ -31,8 +31,12 @@ async def process_voice_instruction(
 ):
     """
     Traiter une instruction vocale et retourner l'action à effectuer en JSON.
+    Limite l'instruction aux 500 premiers caractères.
     """
 
+    # Limiter l'instruction aux 1000 premiers caractères
+    instruction = request.instruction[:500]
+
     llm_service = LLMService()
-    response_json = llm_service.analyze_transcript(request.instruction)
+    response_json = llm_service.analyze_transcript(instruction)
     return JSONResponse(content=json.loads(response_json))
