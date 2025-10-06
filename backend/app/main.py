@@ -15,6 +15,7 @@ from .models import BoardSettings, Card, KanbanList, Label, User
 from .routers import auth_router, board_settings_router, cards_router, labels_router, lists_router, users_router
 from .routers.card_comments import router as card_comments_router
 from .routers.card_items import router as card_items_router
+from .routers.voice_control import router as voice_control_router
 from .services.board_settings import initialize_default_settings
 from .services.email import FROM_ADDRESS, SMTP_HOST, SMTP_USER
 from .services.user import create_admin_user
@@ -245,6 +246,7 @@ app.include_router(lists_router)
 app.include_router(board_settings_router)
 app.include_router(card_items_router)
 app.include_router(card_comments_router)
+app.include_router(voice_control_router)
 
 
 @app.get("/")

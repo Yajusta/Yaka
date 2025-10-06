@@ -26,6 +26,15 @@ interface CardFormProps {
     onSave: (card: Card) => void;
     onDelete?: (cardId: number) => void;
     defaultListId?: number; // ID de la liste par défaut pour les nouvelles cartes
+    initialData?: {
+        title?: string;
+        description?: string;
+        due_date?: string;
+        priority?: string;
+        assignee_id?: number | null;
+        label_ids?: number[];
+        checklist?: { id?: number; text: string; is_done: boolean; position: number }[];
+    };
 }
 
 interface FormData {
@@ -38,7 +47,7 @@ interface FormData {
     list_id: number;
 }
 
-const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: CardFormProps) => {
+const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, initialData }: CardFormProps) => {
     const { t } = useTranslation();
     const [formData, setFormData] = useState<FormData>({
         title: '',
@@ -118,16 +127,17 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                         setChecklist(items.map(i => ({ id: i.id, text: i.text, is_done: i.is_done, position: i.position })));
                     } catch { /* ignore */ }
                 } else {
+                    // Utiliser initialData si fourni, sinon valeurs par défaut
                     setFormData({
-                        title: '',
-                        description: '',
-                        due_date: '',
-                        priority: CardPriority.MEDIUM,
-                        assignee_id: shouldEnforceSelfAssignment ? currentUserId ?? null : null,
-                        label_ids: [],
+                        title: initialData?.title || '',
+                        description: initialData?.description || '',
+                        due_date: initialData?.due_date || '',
+                        priority: initialData?.priority || CardPriority.MEDIUM,
+                        assignee_id: initialData?.assignee_id ?? (shouldEnforceSelfAssignment ? currentUserId ?? null : null),
+                        label_ids: initialData?.label_ids || [],
                         list_id: defaultListId ?? -1 // Utiliser -1 par défaut
                     });
-                    setChecklist([]);
+                    setChecklist(initialData?.checklist || []);
                 }
             };
             run();

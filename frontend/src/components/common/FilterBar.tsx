@@ -38,6 +38,8 @@ interface FilterBarProps {
     canCreateCard?: boolean;
     localSearchValue?: string;
     onLocalSearchChange?: (value: string) => void;
+    onCardSave?: (card: any) => void;
+    defaultListId?: number;
 }
 
 export const FilterBar = ({
@@ -48,6 +50,8 @@ export const FilterBar = ({
     labels,
     canCreateCard = true,
     localSearchValue = '',
+    onCardSave,
+    defaultListId,
 }: FilterBarProps) => {
     const { t } = useTranslation();
     const [showFilters, setShowFilters] = useState(false);
@@ -325,7 +329,9 @@ export const FilterBar = ({
             <VoiceControlDialog
                 open={showVoiceDialog}
                 onOpenChange={setShowVoiceDialog}
+                onCardSave={onCardSave}
+                defaultListId={defaultListId}
             />
         </GlassmorphicCard>
     );
-}; 
+};

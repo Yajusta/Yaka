@@ -523,7 +523,10 @@
         "stop": "Stop",
         "send": "Send",
         "listening": "Listening...",
+        "processing": "Processing...",
         "notSupported": "Voice recognition not supported",
-        "notSupportedDescription": "Your browser does not support voice recognition. Please use Chrome, Edge or Safari."
+        "notSupportedDescription": "Your browser does not support voice recognition. Please use Chrome, Edge or Safari.",
+        "resultTitle": "Voice Control Result",
+        "resultDescription": "Here is the result of your voice request"
     }
 }

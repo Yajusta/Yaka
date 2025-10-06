@@ -523,7 +523,10 @@
         "stop": "Arrêter",
         "send": "Envoyer",
         "listening": "Écoute en cours...",
+        "processing": "Traitement en cours...",
         "notSupported": "Reconnaissance vocale non supportée",
-        "notSupportedDescription": "Votre navigateur ne supporte pas la reconnaissance vocale. Veuillez utiliser Chrome, Edge ou Safari."
+        "notSupportedDescription": "Votre navigateur ne supporte pas la reconnaissance vocale. Veuillez utiliser Chrome, Edge ou Safari.",
+        "resultTitle": "Résultat du pilotage vocal",
+        "resultDescription": "Voici le résultat de votre demande vocale"
     }
 }

@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tâche",
+  "description": "Schéma décrivant une tâche avec ses détails et son état.",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "description": "Identifiant unique de la tâche. Doit être vide dans le cas d'une nouvelle tâche.",
+      "type": "integer"
+    },
+    "title": {
+      "description": "Titre de la tâche.",
+      "type": "string"
+    },
+    "description": {
+      "description": "Description détaillée de la tâche.",
+      "type": "string"
+    },
+    "checklist": {
+      "description": "Liste des éléments à vérifier pour la tâche.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item_id": {
+            "description": "Identifiant unique de l'élément de la checklist. Doit être vide dans le cas d'un nouvel élément.",
+            "type": "integer"
+          },
+          "item_name": {
+            "type": "string",
+            "description": "Description de l'élément de la checklist."
+          },
+          "is_done": {
+            "type": "boolean",
+            "description": "Indique si l'élément est complété."
+          }
+        },
+        "required": [
+          "item",
+          "done"
+        ]
+      }
+    },
+    "due_date": {
+      "description": "Date limite de la tâche.",
+      "type": "string",
+      "format": "date"
+    },
+    "list_id": {
+      "description": "Identifiant de la liste à laquelle appartient la tâche.",
+      "type": "integer"
+    },
+    "priority": {
+      "description": "Niveau de priorité de la tâche.",
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "assignee_id": {
+      "description": "Identifiant de l'utilisateur assigné à la tâche.",
+      "type": "integer"
+    },
+    "labels": {
+      "description": "Liste des libellés associés à la tâche.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label_id": {
+            "description": "Identifiant unique du libellé.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label_id"
+        ]
+      }
+    }
+  },
+  "required": [
+    "title",
+    "status"
+  ]
+}

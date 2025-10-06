@@ -16,6 +16,9 @@
 [x] Multilangue.
 [x] Mettre en avant quand une date arrive à échéance.
 [ ] Définir l'utilisateur par défaut dans les variables d'environnement.
+[ ] Remplissage par IA
+    [ ] Variable d'environnement pour afficher ou non le bouton "IA".
+    [ ] Ajouter une description aux libellés et aux listes pour aider l'IA.
 
 ## Frontend
 
