@@ -514,5 +514,16 @@
         "internalServerError": "Internal server error. Please try again later.",
         "serviceUnavailable": "Service temporarily unavailable. Please try again later.",
         "unknownError": "An unexpected error occurred."
+    },
+    "voice": {
+        "title": "Voice control",
+        "description": "Express your request",
+        "placeholder": "Your request will appear here...",
+        "start": "Start listening",
+        "stop": "Stop",
+        "send": "Send",
+        "listening": "Listening...",
+        "notSupported": "Voice recognition not supported",
+        "notSupportedDescription": "Your browser does not support voice recognition. Please use Chrome, Edge or Safari."
     }
 }

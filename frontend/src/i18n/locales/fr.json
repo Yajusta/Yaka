@@ -514,5 +514,16 @@
         "internalServerError": "Erreur interne du serveur. Veuillez réessayer plus tard.",
         "serviceUnavailable": "Service temporairement indisponible. Veuillez réessayer plus tard.",
         "unknownError": "Une erreur inattendue s'est produite."
+    },
+    "voice": {
+        "title": "Pilotage par la voix",
+        "description": "Exprimez votre demande",
+        "placeholder": "Votre demande apparaîtra ici...",
+        "start": "Démarrer l'écoute",
+        "stop": "Arrêter",
+        "send": "Envoyer",
+        "listening": "Écoute en cours...",
+        "notSupported": "Reconnaissance vocale non supportée",
+        "notSupportedDescription": "Votre navigateur ne supporte pas la reconnaissance vocale. Veuillez utiliser Chrome, Edge ou Safari."
     }
 }
