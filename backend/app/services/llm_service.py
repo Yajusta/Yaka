@@ -47,12 +47,13 @@ class LLMService:
         # Initialiser le client OpenAI
         self.client = OpenAI(api_key=api_key, base_url=os.getenv("OPENAI_API_BASE_URL", ""))
 
-    def analyze_transcript(self, transcript: str, instructions: str = "") -> str:
+    def analyze_transcript(self, transcript: str, user_context: str, instructions: str = "") -> str:
         """
         Analyse un transcript de réunion et extrait les informations selon le modèle ResponseModel.
 
         Args:
             transcript: Le texte du transcript à analyser
+            user_context: Contexte utilisateur au format JSON
             instructions: Instructions préformatées pour le LLM (optionnel)
 
         Returns:
@@ -61,7 +62,7 @@ class LLMService:
         try:
             # Construire les instructions pour le LLM
             if not instructions:
-                instructions = self._build_instructions_from_model()
+                instructions = self._build_instructions_from_model(user_context)
 
             return self._analyze_with_openai(transcript, instructions)
 
@@ -115,13 +116,17 @@ class LLMService:
                 raise e
         return completion
 
-    def _build_instructions_from_model(self) -> str:
+    def _build_instructions_from_model(self, user_context: str) -> str:
         """
         Construit les instructions pour le LLM basées sur le modèle ResponseModel
+
+        Args:
+            user_context: Contexte utilisateur au format JSON
 
         Returns:
             Les instructions formatées pour le LLM
         """
+
         instructions = f"""
 ### CONTEXTE EXISTANT ###
 Tu es un assistant de gestion de tâches intelligent. Voici les données actuelles de l'application :
@@ -131,18 +136,18 @@ Tu es un assistant de gestion de tâches intelligent. Voici les données actuell
 {get_users()}
 ```
 
-2.  **Statuts possibles :**
+2.  **Listes possibles :**
 ```json
 {get_lists()}
 ```
 
-Le "statut" peut-être aussi appelé "état".
+Les "listes" peuvent être aussi appelées "statuts", "états", "colonnes" ou "étapes".
 
 3.  **Priorités possibles :**
 ```json
 {get_priorities()}
 ```
-La "priorité" peut aussi être appelée "niveau de priorité" ou "importance".
+Les "priorités" peuvent être aussi appelées "niveaux de priorité" ou "importances".
 
 4.  **Tâches déjà existantes (pour éviter les doublons et comprendre le contexte) :**
 ```json
@@ -159,6 +164,11 @@ La "tâche" peut aussi être appelée "élément", "item", "carte", "chose à fa
 Le "libellé" peut aussi être appelé "étiquette", "flag" ou "tag".
 
 6. **Date et heure actuelles :** {datetime.now().strftime("%Y-%m-%d %H:%M")}
+
+7. **Utilisateur actuel, qui fait la demande :**
+```json
+{user_context}
+```
 
 ### INSTRUCTION ###
 Ton rôle est d'analyser la "DEMANDE UTILISATEUR" ci-dessous. 

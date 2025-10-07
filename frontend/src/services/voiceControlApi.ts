@@ -25,7 +25,7 @@ api.interceptors.request.use(
 );
 
 export interface VoiceControlRequest {
-    instruction: string;
+    transcript: string;
 }
 
 export interface ChecklistItem {
@@ -51,9 +51,9 @@ export interface VoiceControlResponse {
 }
 
 export const voiceControlService = {
-    async processInstruction(instruction: string): Promise<VoiceControlResponse> {
+    async processTranscript(transcript: string): Promise<VoiceControlResponse> {
         const response = await api.post<VoiceControlResponse>('/voice-control/', {
-            instruction
+            transcript: transcript
         });
         return response.data;
     }

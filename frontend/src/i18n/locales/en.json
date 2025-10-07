@@ -522,7 +522,7 @@
     },
     "voice": {
         "title": "Voice control",
-        "description": "Express your request, we'll take care of the rest",
+        "description": "Express your request in english, we'll take care of the rest",
         "placeholder": "Your request will appear here...",
         "start": "Start listening",
         "stop": "Stop",
@@ -546,6 +546,6 @@
         "cardNotFound": "Card not found",
         "cardNotFoundDescription": "The card will be recreated with the new data",
         "cardLoadError": "Error loading card",
-        "processingError": "Error processing voice instruction"
+        "processingError": "Error processing voice transcript"
     }
 }

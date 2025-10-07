@@ -207,7 +207,7 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
         setIsProcessing(true);
 
         try {
-            const response = await voiceControlService.processInstruction(transcript);
+            const response = await voiceControlService.processTranscript(transcript);
             setResult(response);
 
             // Si task_id est null ou vide, ouvrir CardForm en mode création avec les données pré-remplies
