@@ -530,8 +530,14 @@
         "listening": "Écoute en cours...",
         "processing": "Traitement en cours...",
         "notSupported": "Reconnaissance vocale non supportée",
-        "notSupportedDescription": "Votre navigateur ne supporte pas la reconnaissance vocale. Veuillez utiliser Chrome, Edge ou Safari.",
-        "notSupportedBrowser": "Indisponible avec votre navigateur",
+        "notSupportedDescription": "Votre navigateur ne supporte pas la reconnaissance vocale. Utilisez le menu paramètres pour choisir un mode local (Whisper).",
+        "notSupportedBrowser": "Mode navigateur non disponible",
+        "switchToLocal": "Reconnaissance locale",
+        "mode": {
+            "browser": "🌐 Navigateur (natif)",
+            "whisperTiny": "💻 Local - Whisper tiny (~40 MB)",
+            "whisperBase": "💻 Local - Whisper (~75 MB)"
+        },
         "resultTitle": "Résultat du pilotage vocal",
         "resultDescription": "Voici le résultat de votre demande vocale",
         "previousValue": "Ancienne valeur : {{value}}",
@@ -546,6 +552,25 @@
         "cardNotFound": "Carte introuvable",
         "cardNotFoundDescription": "La carte sera recréée avec les nouvelles données",
         "cardLoadError": "Erreur lors du chargement de la carte",
-        "processingError": "Erreur lors du traitement de l'instruction vocale"
+        "processingError": "Erreur lors du traitement de l'instruction vocale",
+        "microphoneError": "Impossible d'accéder au microphone",
+        "whisper": {
+            "title": "Reconnaissance locale (Whisper)",
+            "description": "Reconnaissance vocale 100% locale dans votre navigateur",
+            "model": "Modèle",
+            "language": "Langue",
+            "autoDetect": "Détection automatique",
+            "loading": "Chargement du modèle Whisper...",
+            "downloading": "Téléchargement",
+            "ready": "Modèle prêt !",
+            "loadError": "Erreur de chargement",
+            "transcribing": "Transcription en cours...",
+            "transcriptionComplete": "Transcription terminée",
+            "transcriptionCompleteDescription": "Le texte a été ajouté à votre demande",
+            "transcriptionError": "Erreur lors de la transcription",
+            "noTranscript": "Aucun texte détecté",
+            "noTranscriptDescription": "Aucun texte n'a été transcrit. Veuillez réessayer.",
+            "switchToNative": "Retour"
+        }
     }
 }

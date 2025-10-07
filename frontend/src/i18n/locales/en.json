@@ -530,9 +530,15 @@
         "listening": "Listening...",
         "processing": "Processing...",
         "notSupported": "Voice recognition not supported",
-        "notSupportedDescription": "Your browser does not support voice recognition. Please use Chrome, Edge or Safari.",
-        "notSupportedBrowser": "Unavailable with your browser",
-        "resultTitle": "Voice Control Result",
+        "notSupportedDescription": "Your browser does not support voice recognition. Use the settings menu to choose a local mode (Whisper).",
+        "notSupportedBrowser": "Browser mode unavailable",
+        "switchToLocal": "Local recognition",
+        "mode": {
+            "browser": "🌐 Browser (native)",
+            "whisperTiny": "💻 Local - Whisper tiny (~40 MB)",
+            "whisperBase": "💻 Local - Whisper (~75 MB)"
+        },
+        "resultTitle": "Voice control result",
         "resultDescription": "Here is the result of your voice request",
         "previousValue": "Previous value: {{value}}",
         "wasChecked": "Previous value: checked",
@@ -546,6 +552,25 @@
         "cardNotFound": "Card not found",
         "cardNotFoundDescription": "The card will be recreated with the new data",
         "cardLoadError": "Error loading card",
-        "processingError": "Error processing voice transcript"
+        "processingError": "Error processing voice transcript",
+        "microphoneError": "Unable to access microphone",
+        "whisper": {
+            "title": "Local recognition (Whisper)",
+            "description": "100% local voice recognition in your browser",
+            "model": "Model",
+            "language": "Language",
+            "autoDetect": "Auto-detect",
+            "loading": "Loading Whisper model...",
+            "downloading": "Downloading",
+            "ready": "Model ready!",
+            "loadError": "Loading error",
+            "transcribing": "Transcribing...",
+            "transcriptionComplete": "Transcription complete",
+            "transcriptionCompleteDescription": "Text has been added to your request",
+            "transcriptionError": "Transcription error",
+            "noTranscript": "No text detected",
+            "noTranscriptDescription": "No text was transcribed. Please try again.",
+            "switchToNative": "Back"
+        }
     }
 }

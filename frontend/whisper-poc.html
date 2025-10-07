@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POC Whisper - Reconnaissance vocale</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status {
+            background: #f0f0f0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status.ready {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.recording {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .language-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .language-selector label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 15px;
+            font-size: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f5f5f5;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-start {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-stop {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn-clear {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-clear:hover:not(:disabled) {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(149, 165, 166, 0.4);
+        }
+
+        .transcript-container {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .model-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .model-info strong {
+            color: #333;
+        }
+
+        .recording-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #e74c3c;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+            margin-right: 5px;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .progress {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎤 POC Whisper - Reconnaissance Vocale</h1>
+        <p class="subtitle">Reconnaissance vocale dans le navigateur avec Transformers.js + Whisper</p>
+
+        <div id="status" class="status loading">
+            <span class="spinner"></span> Chargement du modèle Whisper...
+        </div>
+
+        <div class="language-selector">
+            <label for="languageSelect">🌍 Langue de reconnaissance :</label>
+            <select id="languageSelect">
+                <option value="auto">🌐 Détection automatique</option>
+                <option value="french" selected>🇫🇷 Français</option>
+                <option value="english">🇬🇧 English</option>
+            </select>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn-start" disabled>
+                🎙️ Démarrer l'enregistrement
+            </button>
+            <button id="stopBtn" class="btn-stop" disabled>
+                ⏹️ Arrêter
+            </button>
+            <button id="clearBtn" class="btn-clear">
+                🗑️ Effacer
+            </button>
+        </div>
+
+        <div class="transcript-container">
+            <label for="transcript">Transcription :</label>
+            <textarea id="transcript" placeholder="La transcription apparaîtra ici..."></textarea>
+        </div>
+
+        <div class="model-info">
+            <strong>ℹ️ Informations :</strong><br>
+            • Modèle : <span id="modelName">Whisper Base</span><br>
+            • Taille : <span id="modelSize">~75 MB</span><br>
+            • Langues supportées : Français 🇫🇷, English 🇬🇧, et 97 autres<br>
+            • Traitement : 100% local dans votre navigateur<br>
+            • Langue sélectionnée : <span id="currentLanguage">Français</span><br>
+            <div id="progress" class="progress"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Transformers.js depuis le CDN
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+        // Configuration pour éviter les problèmes de CORS
+        // Les modèles seront téléchargés depuis Hugging Face CDN
+        env.allowLocalModels = false;
+        env.useBrowserCache = true;
+
+        let transcriber = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
+        const statusDiv = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const transcriptArea = document.getElementById('transcript');
+        const progressDiv = document.getElementById('progress');
+        const languageSelect = document.getElementById('languageSelect');
+        const currentLanguageSpan = document.getElementById('currentLanguage');
+
+        // Mettre à jour l'affichage de la langue sélectionnée
+        function updateLanguageDisplay() {
+            const languageMap = {
+                'auto': 'Détection automatique 🌐',
+                'french': 'Français 🇫🇷',
+                'english': 'English 🇬🇧'
+            };
+            currentLanguageSpan.textContent = languageMap[languageSelect.value] || 'Français 🇫🇷';
+        }
+
+        // Event listener pour le changement de langue
+        languageSelect.addEventListener('change', updateLanguageDisplay);
+
+        // Fonction pour mettre à jour le statut
+        function updateStatus(message, type = 'loading') {
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = type === 'loading'
+                ? `<span class="spinner"></span> ${message}`
+                : type === 'recording'
+                    ? `<span class="recording-indicator"></span> ${message}`
+                    : message;
+        }
+
+        // Fonction pour charger le modèle Whisper
+        async function loadModel() {
+            try {
+                updateStatus('Téléchargement du modèle Whisper (première utilisation uniquement)...', 'loading');
+                progressDiv.textContent = 'Initialisation...';
+
+                // Créer le pipeline de reconnaissance vocale automatique
+                // Utilisation de whisper-base pour un meilleur équilibre qualité/taille
+                transcriber = await pipeline(
+                    'automatic-speech-recognition',
+                    'Xenova/whisper-base',
+                    {
+                        quantized: true, // Utiliser la version quantifiée pour réduire la taille
+                        progress_callback: (progress) => {
+                            console.log('Progress:', progress);
+                            if (progress.status === 'progress') {
+                                const percent = Math.round((progress.loaded / progress.total) * 100);
+                                progressDiv.textContent = `Téléchargement : ${progress.file} (${percent}%)`;
+                            } else if (progress.status === 'done') {
+                                progressDiv.textContent = `✓ ${progress.file} téléchargé`;
+                            } else if (progress.status === 'ready') {
+                                progressDiv.textContent = `✓ Modèle prêt !`;
+                            }
+                        }
+                    }
+                );
+
+                updateStatus('✅ Modèle chargé ! Prêt à enregistrer.', 'ready');
+                startBtn.disabled = false;
+                languageSelect.disabled = false;
+                progressDiv.textContent = 'Modèle en cache - prochains chargements instantanés !';
+            } catch (error) {
+                console.error('Erreur détaillée lors du chargement du modèle:', error);
+                console.error('Stack:', error.stack);
+
+                let errorMessage = error.message;
+                if (error.message.includes('not valid JSON')) {
+                    errorMessage = 'Erreur de chargement. Assurez-vous d\'ouvrir cette page via un serveur HTTP (http://localhost) et non en file:// direct.';
+                }
+
+                updateStatus(`❌ Erreur : ${errorMessage}`, 'error');
+                progressDiv.innerHTML = `
+                    <strong>Solutions :</strong><br>
+                    1. Ouvrez cette page via un serveur HTTP local<br>
+                    2. Utilisez : <code>python -m http.server 8000</code> ou <code>npm run dev</code><br>
+                    3. Puis accédez à : <code>http://localhost:8000/whisper-poc.html</code>
+                `;
+            }
+        }
+
+        // Fonction pour démarrer l'enregistrement
+        async function startRecording() {
+            try {
+                // Demander l'accès au microphone
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                // Créer le MediaRecorder
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    // Arrêter tous les tracks audio
+                    stream.getTracks().forEach(track => track.stop());
+
+                    // Créer un blob audio
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+
+                    // Transcrire l'audio
+                    await transcribeAudio(audioBlob);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+
+                updateStatus('🎙️ Enregistrement en cours... Parlez maintenant !', 'recording');
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                languageSelect.disabled = true; // Désactiver le changement de langue pendant l'enregistrement
+            } catch (error) {
+                console.error('Erreur lors de l\'accès au microphone:', error);
+                updateStatus(`❌ Erreur : Impossible d'accéder au microphone. ${error.message}`, 'error');
+            }
+        }
+
+        // Fonction pour arrêter l'enregistrement
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+
+                updateStatus('⏳ Transcription en cours...', 'loading');
+                startBtn.disabled = true;
+                stopBtn.disabled = true;
+            }
+        }
+
+        // Fonction pour transcrire l'audio
+        async function transcribeAudio(audioBlob) {
+            try {
+                // Convertir le blob en ArrayBuffer
+                const arrayBuffer = await audioBlob.arrayBuffer();
+
+                // Créer un contexte audio pour décoder
+                const audioContext = new AudioContext({ sampleRate: 16000 });
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                // Extraire les données audio (mono, 16kHz)
+                let audio;
+                if (audioBuffer.numberOfChannels === 2) {
+                    // Convertir stéréo en mono
+                    const left = audioBuffer.getChannelData(0);
+                    const right = audioBuffer.getChannelData(1);
+                    audio = new Float32Array(left.length);
+                    for (let i = 0; i < left.length; i++) {
+                        audio[i] = (left[i] + right[i]) / 2;
+                    }
+                } else {
+                    audio = audioBuffer.getChannelData(0);
+                }
+
+                // Récupérer la langue sélectionnée
+                const selectedLanguage = languageSelect.value;
+                const language = selectedLanguage === 'auto' ? null : selectedLanguage;
+
+                // Transcrire avec Whisper
+                const result = await transcriber(audio, {
+                    language: language, // null pour auto-détection, 'french' ou 'english' selon sélection
+                    task: 'transcribe'
+                });
+
+                // Afficher le résultat
+                const currentText = transcriptArea.value;
+                const newText = result.text.trim();
+
+                if (currentText) {
+                    transcriptArea.value = currentText + '\n' + newText;
+                } else {
+                    transcriptArea.value = newText;
+                }
+
+                updateStatus('✅ Transcription terminée ! Prêt pour un nouvel enregistrement.', 'ready');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                languageSelect.disabled = false; // Réactiver le sélecteur de langue
+            } catch (error) {
+                console.error('Erreur lors de la transcription:', error);
+                updateStatus(`❌ Erreur lors de la transcription : ${error.message}`, 'error');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                languageSelect.disabled = false; // Réactiver le sélecteur de langue même en cas d'erreur
+            }
+        }
+
+        // Fonction pour effacer la transcription
+        function clearTranscript() {
+            transcriptArea.value = '';
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startRecording);
+        stopBtn.addEventListener('click', stopRecording);
+        clearBtn.addEventListener('click', clearTranscript);
+
+        // Initialiser l'affichage de la langue
+        updateLanguageDisplay();
+
+        // Charger le modèle au démarrage
+        loadModel();
+    </script>
+</body>
+
+</html>

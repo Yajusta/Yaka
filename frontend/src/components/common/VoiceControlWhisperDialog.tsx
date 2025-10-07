@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Mic, MicOff, Send, X, AlertTriangle, Settings, Check } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useTranslation } from 'react-i18next';
 import { voiceControlService, VoiceControlResponse } from '../../services/voiceControlApi';
 import CardForm from '../cards/CardForm';
@@ -12,221 +12,245 @@ import { cardService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
-import { VoiceControlWhisperDialog } from './VoiceControlWhisperDialog';
+import { pipeline, env } from '@xenova/transformers';
 
-interface VoiceControlDialogProps {
+// Configuration Transformers.js
+env.allowLocalModels = false;
+env.useBrowserCache = true;
+env.backends.onnx.wasm.numThreads = 1;
+
+type WhisperModel = 'Xenova/whisper-tiny' | 'Xenova/whisper-base';
+
+// Cache global pour les modèles Whisper (partagé entre toutes les instances)
+const whisperModelsCache: { [key: string]: any } = {};
+
+interface VoiceControlWhisperDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onCardSave?: (card: Card) => void;
     defaultListId?: number;
+    onSwitchToNative?: () => void;
+    onSwitchModel?: (model: WhisperModel) => void;
+    initialModel?: WhisperModel;
+    autoStart?: boolean;
 }
 
-type RecognitionMode = 'browser' | 'whisper-tiny' | 'whisper-base';
-
-export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultListId }: VoiceControlDialogProps) => {
+export const VoiceControlWhisperDialog = ({
+    open,
+    onOpenChange,
+    onCardSave,
+    defaultListId,
+    onSwitchToNative,
+    onSwitchModel,
+    initialModel = 'Xenova/whisper-base',
+    autoStart = false
+}: VoiceControlWhisperDialogProps) => {
     const { t, i18n } = useTranslation();
     const { toast } = useToast();
     const { user: currentUser } = useAuth();
     const permissions = usePermissions(currentUser);
 
-    // Charger le mode de reconnaissance depuis localStorage
-    const getInitialRecognitionMode = (): RecognitionMode => {
-        try {
-            const saved = localStorage.getItem('voiceRecognitionMode');
-            if (saved && ['browser', 'whisper-tiny', 'whisper-base'].includes(saved)) {
-                return saved as RecognitionMode;
-            }
-        } catch (error) {
-            console.error('Erreur lors du chargement du mode de reconnaissance:', error);
-        }
-        return 'browser';
-    };
-
-    const [recognitionMode, setRecognitionMode] = useState<RecognitionMode>(getInitialRecognitionMode);
-    const [isListening, setIsListening] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
     const [transcript, setTranscript] = useState('');
-    const [isSupported, setIsSupported] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isTranscribing, setIsTranscribing] = useState(false);
+    const [isLoadingModel, setIsLoadingModel] = useState(true);
+    const [modelLoadError, setModelLoadError] = useState<string | null>(null);
+    const [loadProgress, setLoadProgress] = useState<string>('');
+    const [selectedModel] = useState<WhisperModel>(initialModel);
+
+    // Utiliser la langue de l'interface
+    const selectedLanguage = i18n.language === 'fr' ? 'french' : 'english';
     const [result, setResult] = useState<VoiceControlResponse | null>(null);
     const [showCardForm, setShowCardForm] = useState(false);
     const [cardInitialData, setCardInitialData] = useState<any>(null);
     const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
     const [proposedChanges, setProposedChanges] = useState<any>(null);
-    const recognitionRef = useRef<any>(null);
-    const isListeningRef = useRef<boolean>(false);
 
-    // Stocker le mode actuel dans un ref pour éviter les problèmes de narrowing TypeScript
-    const currentModeRef = useRef<RecognitionMode>(recognitionMode);
-    currentModeRef.current = recognitionMode;
+    const transcriberRef = useRef<any>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const transcriptRef = useRef<string>('');
 
-    // Gérer le changement de mode
-    const handleModeChange = (mode: RecognitionMode) => {
-        if (isListening) {
-            stopListening();
-        }
-        // Sauvegarder le mode dans localStorage
-        try {
-            localStorage.setItem('voiceRecognitionMode', mode);
-        } catch (error) {
-            console.error('Erreur lors de la sauvegarde du mode de reconnaissance:', error);
-        }
-        // Ne pas fermer le dialogue lors du changement de mode
-        setRecognitionMode(mode);
-    };
-
-    // Déterminer si on utilise Whisper
-    const isWhisperMode = recognitionMode === 'whisper-tiny' || recognitionMode === 'whisper-base';
-
-    // TOUS les useEffect doivent être appelés AVANT tout return conditionnel
+    // Charger le modèle Whisper
     useEffect(() => {
-        // Vérifier si l'API Web Speech est disponible
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        let isMounted = true;
 
-        if (!SpeechRecognition) {
-            setIsSupported(false);
-            return;
-        }
+        const loadModel = async () => {
+            // Vérifier si le modèle est déjà dans le cache
+            if (whisperModelsCache[selectedModel]) {
+                transcriberRef.current = whisperModelsCache[selectedModel];
+                setIsLoadingModel(false);
+                setLoadProgress(t('voice.whisper.ready'));
+                return;
+            }
 
-        // Initialiser la reconnaissance vocale seulement si elle n'existe pas déjà
-        if (!recognitionRef.current) {
-            const recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
+            // Si le modèle est déjà chargé dans le ref, ne pas recharger
+            if (transcriberRef.current) {
+                setIsLoadingModel(false);
+                return;
+            }
 
-            recognition.onresult = (event: any) => {
-                // Ne traiter les résultats que si on est encore en train d'écouter
-                if (!isListeningRef.current) {
-                    return;
-                }
+            try {
+                setIsLoadingModel(true);
+                setModelLoadError(null);
+                setLoadProgress(t('voice.whisper.loading'));
 
-                let interimTranscript = '';
-                let finalTranscript = '';
+                const transcriber = await pipeline(
+                    'automatic-speech-recognition',
+                    selectedModel,
+                    {
+                        quantized: true,
+                        progress_callback: (progress: any) => {
+                            if (!isMounted) return;
 
-                // Parcourir tous les résultats pour reconstruire le transcript complet
-                for (let i = 0; i < event.results.length; i++) {
-                    const transcriptPart = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcriptPart + ' ';
-                    } else {
-                        interimTranscript += transcriptPart;
+                            if (progress.status === 'progress') {
+                                const percent = Math.round((progress.loaded / progress.total) * 100);
+                                setLoadProgress(`${t('voice.whisper.downloading')}: ${progress.file} (${percent}%)`);
+                            } else if (progress.status === 'done') {
+                                setLoadProgress(`✓ ${progress.file}`);
+                            } else if (progress.status === 'ready') {
+                                setLoadProgress(`✓ ${t('voice.whisper.ready')}`);
+                            }
+                        }
                     }
+                );
+
+                if (isMounted) {
+                    // Stocker dans le cache global
+                    whisperModelsCache[selectedModel] = transcriber;
+                    transcriberRef.current = transcriber;
+                    setIsLoadingModel(false);
+                    setLoadProgress(t('voice.whisper.ready'));
+                }
+            } catch (error: any) {
+                console.error('Erreur lors du chargement du modèle Whisper:', error);
+                console.error('Stack:', error.stack);
+
+                let errorMessage = error.message;
+                if (error.message.includes('not valid JSON')) {
+                    errorMessage = 'Erreur de chargement. Assurez-vous que l\'application est servie via HTTP et non file://';
                 }
 
-                // Remplacer le transcript par la combinaison des résultats finaux et intermédiaires
-                setTranscript(finalTranscript + interimTranscript);
-            };
-
-            recognition.onerror = (event: any) => {
-                console.error('Speech recognition error:', event.error);
-                if (event.error === 'no-speech') {
-                    // Pas de parole détectée, continuer l'écoute
-                    return;
-                }
-                isListeningRef.current = false;
-                setIsListening(false);
-            };
-
-            recognition.onend = () => {
-                // Vérifier avec le ref pour avoir la valeur actuelle, pas celle du closure
-                if (isListeningRef.current) {
-                    // Redémarrer automatiquement si on est toujours en mode écoute
-                    try {
-                        recognition.start();
-                    } catch (e) {
-                        console.error('Error restarting recognition:', e);
-                        isListeningRef.current = false;
-                        setIsListening(false);
-                    }
-                }
-            };
-
-            recognitionRef.current = recognition;
-        }
-
-        // Mettre à jour la langue à chaque fois que i18n.language change
-        if (recognitionRef.current) {
-            const lang = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
-            recognitionRef.current.lang = lang;
-        }
-
-        return () => {
-            // Ne pas réinitialiser le ref lors du cleanup
-            if (recognitionRef.current) {
-                try {
-                    recognitionRef.current.stop();
-                } catch (e) {
-                    // Ignorer l'erreur si déjà arrêté
+                if (isMounted) {
+                    setModelLoadError(errorMessage);
+                    setIsLoadingModel(false);
                 }
             }
         };
-    }, [i18n.language]);
 
-    // Arrêter l'écoute quand le dialogue se ferme
+        if (open) {
+            loadModel();
+        }
+
+        return () => {
+            isMounted = false;
+        };
+    }, [open, selectedModel, t]);
+
+    // Arrêter l'enregistrement quand le dialogue se ferme
     useEffect(() => {
-        if (!open && isListening) {
-            stopListening();
+        if (!open && isRecording) {
+            stopRecording();
         }
     }, [open]);
 
-    // Démarrer automatiquement l'écoute quand le dialogue s'ouvre
+    // Démarrer automatiquement l'enregistrement si autoStart est true
     useEffect(() => {
-        if (open && isSupported && !isListening && !isWhisperMode) {
-            // Petit délai pour s'assurer que le dialogue est complètement ouvert
+        if (open && autoStart && !isLoadingModel && !modelLoadError && !isRecording) {
+            // Petit délai pour s'assurer que le dialogue est complètement ouvert et le modèle chargé
             const timer = setTimeout(() => {
-                startListening();
+                startRecording();
             }, 300);
             return () => clearTimeout(timer);
         }
-    }, [open, isSupported, isWhisperMode]);
+    }, [open, autoStart, isLoadingModel, modelLoadError]);
 
-    // Si on utilise Whisper, afficher le dialogue Whisper à la place
-    // IMPORTANT: Ce return doit être APRÈS tous les hooks
-    if (isWhisperMode) {
-        const whisperModel = recognitionMode === 'whisper-tiny' ? 'Xenova/whisper-tiny' : 'Xenova/whisper-base';
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-        return (
-            <VoiceControlWhisperDialog
-                open={open}
-                onOpenChange={onOpenChange}
-                onCardSave={onCardSave}
-                defaultListId={defaultListId}
-                onSwitchToNative={() => handleModeChange('browser')}
-                onSwitchModel={(model) => {
-                    const mode = model === 'Xenova/whisper-tiny' ? 'whisper-tiny' : 'whisper-base';
-                    handleModeChange(mode);
-                }}
-                initialModel={whisperModel}
-                autoStart={true}
-            />
-        );
-    }
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            audioChunksRef.current = [];
 
-    const startListening = () => {
-        if (recognitionRef.current && !isListeningRef.current) {
-            setTranscript('');
-            try {
-                recognitionRef.current.start();
-                isListeningRef.current = true;
-                setIsListening(true);
-            } catch (e) {
-                console.error('Error starting recognition:', e);
-                isListeningRef.current = false;
-                setIsListening(false);
-            }
+            mediaRecorderRef.current.ondataavailable = (event) => {
+                audioChunksRef.current.push(event.data);
+            };
+
+            mediaRecorderRef.current.onstop = async () => {
+                stream.getTracks().forEach(track => track.stop());
+                await transcribeAudio();
+            };
+
+            mediaRecorderRef.current.start();
+            setIsRecording(true);
+        } catch (error: any) {
+            console.error('Erreur lors de l\'accès au microphone:', error);
+            toast({
+                title: t('common.error'),
+                description: t('voice.microphoneError'),
+                variant: 'destructive'
+            });
         }
     };
 
-    const stopListening = () => {
-        // Mettre à jour le ref AVANT d'arrêter pour éviter le redémarrage automatique
-        isListeningRef.current = false;
-        setIsListening(false);
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
 
-        if (recognitionRef.current) {
-            try {
-                recognitionRef.current.stop();
-            } catch (e) {
-                console.error('Error stopping recognition:', e);
+    const transcribeAudio = async () => {
+        setIsTranscribing(true);
+
+        try {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+
+            // Convertir le blob en ArrayBuffer
+            const arrayBuffer = await audioBlob.arrayBuffer();
+
+            // Créer un contexte audio pour décoder
+            const audioContext = new AudioContext({ sampleRate: 16000 });
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+            // Extraire les données audio (mono, 16kHz)
+            let audio: Float32Array;
+            if (audioBuffer.numberOfChannels === 2) {
+                // Convertir stéréo en mono
+                const left = audioBuffer.getChannelData(0);
+                const right = audioBuffer.getChannelData(1);
+                audio = new Float32Array(left.length);
+                for (let i = 0; i < left.length; i++) {
+                    audio[i] = (left[i] + right[i]) / 2;
+                }
+            } else {
+                audio = audioBuffer.getChannelData(0);
             }
+
+            // Transcrire avec Whisper (utiliser la langue de l'interface)
+            const result = await transcriberRef.current(audio, {
+                language: selectedLanguage,
+                task: 'transcribe'
+            });
+
+            // Ajouter le texte transcrit
+            const newText = result.text.trim();
+            if (newText) {
+                const currentText = transcript;
+                const updatedTranscript = currentText ? currentText + ' ' + newText : newText;
+                setTranscript(updatedTranscript);
+                transcriptRef.current = updatedTranscript;
+            }
+        } catch (error: any) {
+            console.error('Erreur lors de la transcription:', error);
+            toast({
+                title: t('common.error'),
+                description: t('voice.whisper.transcriptionError'),
+                variant: 'destructive'
+            });
+        } finally {
+            setIsTranscribing(false);
         }
     };
 
@@ -250,20 +274,32 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
     };
 
     const handleSend = async () => {
-        if (!transcript.trim()) {
-            return;
+        // Si on est en train d'enregistrer, arrêter d'abord et attendre la transcription
+        if (isRecording) {
+            stopRecording();
+            // Attendre que la transcription soit terminée
+            await new Promise(resolve => {
+                const checkTranscribing = setInterval(() => {
+                    if (!isTranscribing) {
+                        clearInterval(checkTranscribing);
+                        resolve(true);
+                    }
+                }, 100);
+            });
+
+            // Petit délai supplémentaire pour s'assurer que le state est à jour
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        // Arrêter l'écoute en mettant à jour le ref AVANT d'arrêter la reconnaissance
-        isListeningRef.current = false;
-        setIsListening(false);
-
-        if (recognitionRef.current) {
-            try {
-                recognitionRef.current.stop();
-            } catch (e) {
-                console.error('Error stopping recognition:', e);
-            }
+        // Vérifier qu'il y a du texte après la transcription (utiliser le ref pour la valeur actuelle)
+        const currentTranscript = transcriptRef.current || transcript;
+        if (!currentTranscript.trim()) {
+            toast({
+                title: t('voice.whisper.noTranscript'),
+                description: t('voice.whisper.noTranscriptDescription'),
+                variant: 'destructive'
+            });
+            return;
         }
 
         setIsProcessing(true);
@@ -359,23 +395,23 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
     };
 
     const handleCancel = () => {
-        stopListening();
+        if (isRecording) {
+            stopRecording();
+        }
         onOpenChange(false);
         setTranscript('');
     };
 
     const handleTranscriptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setTranscript(e.target.value);
+        const newValue = e.target.value;
+        setTranscript(newValue);
+        transcriptRef.current = newValue;
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         // Si Enter est pressé sans Shift et qu'il y a du texte, envoyer
         if (e.key === 'Enter' && !e.shiftKey && transcript.trim() && !isProcessing) {
             e.preventDefault();
-            // Arrêter l'écoute si elle est en cours avant d'envoyer
-            if (isListening) {
-                stopListening();
-            }
             handleSend();
         }
     };
@@ -385,13 +421,38 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
-                        <DialogTitle>{t('voice.title')}</DialogTitle>
+                        <DialogTitle className="flex items-center gap-2">
+                            {t('voice.title')}
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                                {initialModel === 'Xenova/whisper-tiny' ? 'Whisper tiny' : 'Whisper'}
+                            </span>
+                        </DialogTitle>
                         <DialogDescription>
                             {t('voice.description')}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4">
+
+                        {/* État du modèle */}
+                        {isLoadingModel && (
+                            <div className="flex items-center justify-center space-x-2 text-primary bg-primary/10 rounded-lg p-3">
+                                <div className="flex space-x-1">
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                </div>
+                                <span className="text-sm font-medium">{loadProgress}</span>
+                            </div>
+                        )}
+
+                        {modelLoadError && (
+                            <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/20 rounded-lg p-3">
+                                <AlertTriangle className="h-4 w-4" />
+                                <span>{t('voice.whisper.loadError')}: {modelLoadError}</span>
+                            </div>
+                        )}
+
                         {/* Zone de texte éditable */}
                         <div className="space-y-2">
                             <Textarea
@@ -401,7 +462,7 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                                 placeholder={t('voice.placeholder')}
                                 className="min-h-[150px] resize-none"
                                 disabled={isProcessing}
-                                readOnly={isListening}
+                                readOnly={isRecording}
                                 maxLength={500}
                             />
                             <div className="text-xs text-muted-foreground text-right">
@@ -409,15 +470,25 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                             </div>
                         </div>
 
-                        {/* Indicateur d'écoute */}
-                        {isListening && (
+                        {/* Indicateur d'enregistrement */}
+                        {isRecording && (
+                            <div className="flex items-center justify-center space-x-2 text-primary">
+                                <div className="flex space-x-1">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                </div>
+                                <span className="text-sm font-medium">{t('voice.listening')}</span>
+                            </div>
+                        )}
+
+                        {/* Indicateur de transcription */}
+                        {isTranscribing && (
                             <div className="flex items-center justify-center space-x-2 text-primary">
                                 <div className="flex space-x-1">
                                     <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                                     <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                                     <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                 </div>
-                                <span className="text-sm font-medium">{t('voice.listening')}</span>
+                                <span className="text-sm font-medium">{t('voice.whisper.transcribing')}</span>
                             </div>
                         )}
 
@@ -433,33 +504,22 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                             </div>
                         )}
 
-                        {/* Message d'incompatibilité si mode navigateur sélectionné mais non supporté */}
-                        {!isSupported && (
-                            <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/20 rounded-lg p-3">
-                                <AlertTriangle className="h-4 w-4" />
-                                <div>
-                                    <div className="font-medium">{t('voice.notSupportedBrowser')}</div>
-                                    <div className="text-xs mt-1">{t('voice.notSupportedDescription')}</div>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Boutons d'action */}
                         <div className="flex justify-between gap-2">
                             <div className="flex gap-2 items-center">
-                                {!isListening ? (
+                                {!isRecording ? (
                                     <Button
-                                        onClick={startListening}
+                                        onClick={startRecording}
                                         variant="default"
                                         className="bg-primary hover:bg-primary/90"
-                                        disabled={!isSupported || isProcessing}
+                                        disabled={isLoadingModel || isProcessing || !!modelLoadError}
                                     >
                                         <Mic className="h-4 w-4 mr-2" />
                                         {t('voice.start')}
                                     </Button>
                                 ) : (
                                     <Button
-                                        onClick={stopListening}
+                                        onClick={stopRecording}
                                         variant="destructive"
                                         disabled={isProcessing}
                                     >
@@ -474,32 +534,31 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                                         <Button
                                             variant="outline"
                                             size="icon"
-                                            disabled={isListening || isProcessing}
+                                            disabled={isRecording || isProcessing}
                                         >
                                             <Settings className="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="start" className="w-56">
                                         <DropdownMenuItem
-                                            onClick={() => handleModeChange('browser')}
+                                            onClick={() => onSwitchToNative?.()}
                                             className="flex items-center justify-between"
                                         >
                                             <span>{t('voice.mode.browser')}</span>
-                                            {currentModeRef.current === 'browser' && <Check className="h-4 w-4" />}
                                         </DropdownMenuItem>
                                         {/* <DropdownMenuItem
-                                            onClick={() => handleModeChange('whisper-tiny')}
+                                            onClick={() => onSwitchModel?.('Xenova/whisper-tiny')}
                                             className="flex items-center justify-between"
                                         >
                                             <span>{t('voice.mode.whisperTiny')}</span>
-                                            {currentModeRef.current === 'whisper-tiny' && <Check className="h-4 w-4" />}
+                                            {initialModel === 'Xenova/whisper-tiny' && <Check className="h-4 w-4" />}
                                         </DropdownMenuItem> */}
                                         <DropdownMenuItem
-                                            onClick={() => handleModeChange('whisper-base')}
+                                            onClick={() => onSwitchModel?.('Xenova/whisper-base')}
                                             className="flex items-center justify-between"
                                         >
                                             <span>{t('voice.mode.whisperBase')}</span>
-                                            {currentModeRef.current === 'whisper-base' && <Check className="h-4 w-4" />}
+                                            {initialModel === 'Xenova/whisper-base' && <Check className="h-4 w-4" />}
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -516,7 +575,7 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                                 </Button>
                                 <Button
                                     onClick={handleSend}
-                                    disabled={!transcript.trim() || isProcessing}
+                                    disabled={(!transcript.trim() && !isRecording) || isProcessing}
                                     className="bg-primary hover:bg-primary/90"
                                 >
                                     <Send className="h-4 w-4 mr-2" />

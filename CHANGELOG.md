@@ -1,10 +1,11 @@
 # Changelog
 
-## v1.2.0 (2025-10-07)
+## v1.2.1 (2025-10-07)
 
-- [NEW] Saisie et modification des tâches par la voix (nécessite un accès à une API OpenAI ou similaire).
+- [NEW] Saisie et modification des tâches par la voix (nécessite un accès à une API de LLM OpenAI ou similaire).
 - [NEW] Ajout de description pour les libellés et les listes.
 - [UX] Possibilité de changer une carte de liste depuis son formulaire.
+- [NEW] Utilisation de Whisper en local.
 
 ## v1.1.0 (2025-10-01)
 
