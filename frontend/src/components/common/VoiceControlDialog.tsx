@@ -5,7 +5,6 @@ import { Textarea } from '../ui/textarea';
 import { Mic, MicOff, Send, X, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { voiceControlService, VoiceControlResponse } from '../../services/voiceControlApi';
-import { VoiceControlResultDialog } from './VoiceControlResultDialog';
 import CardForm from '../cards/CardForm';
 import { Card } from '../../types';
 import { cardService } from '../../services/api';
@@ -30,7 +29,6 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
     const [isSupported, setIsSupported] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [result, setResult] = useState<VoiceControlResponse | null>(null);
-    const [showResultDialog, setShowResultDialog] = useState(false);
     const [showCardForm, setShowCardForm] = useState(false);
     const [cardInitialData, setCardInitialData] = useState<any>(null);
     const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
@@ -426,13 +424,6 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                     </div>
                 </DialogContent>
             </Dialog>
-
-            {/* Dialog de résultat */}
-            <VoiceControlResultDialog
-                open={showResultDialog}
-                onOpenChange={setShowResultDialog}
-                result={result}
-            />
 
             {/* CardForm pour créer/modifier une carte */}
             {showCardForm && (
