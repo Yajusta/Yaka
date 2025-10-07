@@ -197,12 +197,11 @@ export const FilterBar = ({
                         {/* Voice control button - only show if AI features are available */}
                         {aiAvailable && (
                             <Button
-                                variant="outline"
                                 onClick={() => setShowVoiceDialog(true)}
-                                className="transition-all duration-200"
-                                title={t('voice.title')}
+                                className="bg-green-500 hover:bg-green-600 text-white hover:text-white border-green-600 dark:bg-green-500 dark:hover:bg-green-600 dark:text-white dark:hover:text-white dark:border-green-600 transition-all duration-200 shadow-sm"
                             >
-                                <Mic className="h-4 w-4" />
+                                <Mic className="h-4 w-4 mr-2" />
+                                {t('voice.title')}
                             </Button>
                         )}
 

@@ -6,7 +6,8 @@
 
 A modern and intuitive web application for collaborative task management using the Kanban methodology.
 
-NEW: **Manage your tasks with your voice using natural language thanks to the power of AI.**
+NEW: **Voice control**
+Manage your tasks with your voice using natural language thanks to the power of AI.
 
 ## 🖼️ Screenshots
 
@@ -28,7 +29,7 @@ Email invitation sending is disabled.
 ## ⚙️ Features
 
 - **Interactive Kanban Board**
-- **Mange tasks with your voice with AI**
+- **Manage tasks with your voice with AI**
 - **Drag & Drop** for moving cards smoothly
 - **Secure Authentication** with JWT
 - **Detailed Cards** with title, description, checklist, priority, assignee, labels, due date, comments

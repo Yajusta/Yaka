@@ -7,7 +7,8 @@
 
 Une application web moderne et intuitive pour la gestion collaborative de tâches utilisant la méthodologie Kanban.
 
-NOUVEAU : **Gérez vos tâches avec la voix en langage naturel grâce au pouvoir de l'IA**
+NOUVEAU : **Pilotage par la voix**
+Gérez vos tâches avec la voix en langage naturel grâce au pouvoir de l'IA.
 
 ## 🖼️ Captures d'écran
 
