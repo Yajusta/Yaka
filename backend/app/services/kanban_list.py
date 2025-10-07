@@ -91,7 +91,7 @@ class KanbanListService:
             KanbanListService._shift_orders_up(db, list_data.order)
 
         try:
-            db_list = KanbanList(name=list_data.name, order=list_data.order)
+            db_list = KanbanList(name=list_data.name, description=list_data.description, order=list_data.order)
 
             db.add(db_list)
             db.commit()

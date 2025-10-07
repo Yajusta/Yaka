@@ -33,6 +33,9 @@ class KanbanListBase(BaseModel):
     """Schéma de base pour les listes Kanban."""
 
     name: str = Field(..., min_length=1, max_length=100, description="Nom de la liste")
+    description: Optional[str] = Field(
+        default=None, max_length=255, description="Description de la liste (255 caractères max)"
+    )
     order: int = Field(..., ge=1, description="Ordre d'affichage de la liste")
 
     @field_validator("name")
@@ -53,8 +56,11 @@ class KanbanListCreate(KanbanListBase):
 class KanbanListUpdate(BaseModel):
     """Schéma pour la mise à jour d'une liste Kanban."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=100, description="Nom de la liste")
-    order: Optional[int] = Field(None, ge=1, description="Ordre d'affichage de la liste")
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100, description="Nom de la liste")
+    description: Optional[str] = Field(
+        default=None, max_length=255, description="Description de la liste (255 caractères max)"
+    )
+    order: Optional[int] = Field(default=None, ge=1, description="Ordre d'affichage de la liste")
 
     @field_validator("name")
     @classmethod

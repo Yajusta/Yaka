@@ -15,6 +15,7 @@ export interface User {
 export interface KanbanList {
     id: number;
     name: string;
+    description?: string;
     order: number;
     created_at: string;
     updated_at?: string;
@@ -43,6 +44,7 @@ export interface Label {
     id: number;
     name: string;
     color: string;
+    description?: string;
     created_at: string;
     updated_at: string;
 }
@@ -59,6 +61,7 @@ export interface Filters {
 export interface AuthContextType {
     user: User | null;
     loading: boolean;
+    aiAvailable: boolean;
     login: (email: string, password: string) => Promise<void>;
     logout: () => void;
 }
@@ -101,6 +104,7 @@ export interface UpdateCardData extends Partial<CreateCardData> { }
 export interface CreateLabelData {
     name: string;
     color: string;
+    description?: string;
 }
 
 export interface UpdateLabelData extends Partial<CreateLabelData> {
@@ -141,11 +145,13 @@ export interface CardHistoryEntry {
 // List management types
 export interface KanbanListCreate {
     name: string;
+    description?: string;
     order: number;
 }
 
 export interface KanbanListUpdate {
     name?: string;
+    description?: string;
     order?: number;
 }
 

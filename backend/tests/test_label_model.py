@@ -98,6 +98,7 @@ class TestLabelModel:
         assert hasattr(label, "id")
         assert hasattr(label, "name")
         assert hasattr(label, "color")
+        assert hasattr(label, "description")
         assert hasattr(label, "created_by")
         assert hasattr(label, "created_at")
 
@@ -112,6 +113,7 @@ class TestLabelModel:
         label = Label(
             name="Test Label",
             color="#FF00FF",
+            description="Test description",
             created_by=sample_user.id,
         )
 
@@ -124,6 +126,7 @@ class TestLabelModel:
         assert label.id is not None
         assert label.name == "Test Label"
         assert label.color == "#FF00FF"
+        assert label.description == "Test description"
         assert label.created_by == sample_user.id
         assert label.created_at is not None
 
@@ -148,8 +151,47 @@ class TestLabelModel:
         assert label.id is not None
         assert label.name == "Minimal Label"
         assert label.color == "#123456"
+        assert label.description is None  # Description is optional
         assert label.created_by == sample_user.id
         assert label.created_at is not None
+
+    def test_create_label_with_description(self, db_session, sample_user):
+        """Test de création d'une étiquette avec description."""
+        label = Label(
+            name="Label with Description",
+            color="#123456",
+            description="This is a test description",
+            created_by=sample_user.id,
+        )
+
+        db_session.add(label)
+        db_session.commit()
+        db_session.refresh(label)
+
+        assert label.id is not None
+        assert label.name == "Label with Description"
+        assert label.color == "#123456"
+        assert label.description == "This is a test description"
+        assert label.created_by == sample_user.id
+        assert label.created_at is not None
+
+    def test_create_label_with_max_length_description(self, db_session, sample_user):
+        """Test de création d'une étiquette avec description maximale (255 caractères)."""
+        max_description = "x" * 255
+        label = Label(
+            name="Max Description Label",
+            color="#123456",
+            description=max_description,
+            created_by=sample_user.id,
+        )
+
+        db_session.add(label)
+        db_session.commit()
+        db_session.refresh(label)
+
+        assert label.description is not None
+        assert label.description == max_description
+        assert len(label.description) == 255
 
     def test_label_timestamps(self, db_session, sample_user):
         """Test que les timestamps sont correctement gérés."""

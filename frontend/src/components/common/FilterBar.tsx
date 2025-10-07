@@ -4,9 +4,11 @@ import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
-import { Search, Filter, X, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, X, Plus, ChevronDown, ChevronUp, Mic } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { VoiceControlDialog } from './VoiceControlDialog';
+import { useAuth } from '../../hooks/useAuth';
 
 interface User {
     id: number;
@@ -37,6 +39,8 @@ interface FilterBarProps {
     canCreateCard?: boolean;
     localSearchValue?: string;
     onLocalSearchChange?: (value: string) => void;
+    onCardSave?: (card: any) => void;
+    defaultListId?: number;
 }
 
 export const FilterBar = ({
@@ -47,11 +51,15 @@ export const FilterBar = ({
     labels,
     canCreateCard = true,
     localSearchValue = '',
+    onCardSave,
+    defaultListId,
 }: FilterBarProps) => {
     const { t } = useTranslation();
+    const { aiAvailable } = useAuth();
     const [showFilters, setShowFilters] = useState(false);
     const [searchValue, setSearchValue] = useState(localSearchValue);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const [showVoiceDialog, setShowVoiceDialog] = useState(false);
 
     // Debounce search value
     useEffect(() => {
@@ -184,13 +192,27 @@ export const FilterBar = ({
                         )}
                     </div>
 
-                    {/* Create card button */}
-                    {canCreateCard && (
-                        <Button onClick={onCreateCard} className="bg-primary hover:bg-primary/90 shadow-sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            {t('card.newCard')}
-                        </Button>
-                    )}
+                    {/* Voice control and Create card buttons */}
+                    <div className="flex items-center gap-2">
+                        {/* Voice control button - only show if AI features are available */}
+                        {aiAvailable && (
+                            <Button
+                                onClick={() => setShowVoiceDialog(true)}
+                                className="bg-green-500 hover:bg-green-600 text-white hover:text-white border-green-600 dark:bg-green-500 dark:hover:bg-green-600 dark:text-white dark:hover:text-white dark:border-green-600 transition-all duration-200 shadow-sm"
+                            >
+                                <Mic className="h-4 w-4 mr-2" />
+                                {t('voice.title')}
+                            </Button>
+                        )}
+
+                        {/* Create card button */}
+                        {canCreateCard && (
+                            <Button onClick={onCreateCard} className="bg-primary hover:bg-primary/90 shadow-sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                {t('card.newCard')}
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Advanced filters */}
@@ -305,6 +327,14 @@ export const FilterBar = ({
                     </>
                 )}
             </div>
+
+            {/* Voice Control Dialog */}
+            <VoiceControlDialog
+                open={showVoiceDialog}
+                onOpenChange={setShowVoiceDialog}
+                onCardSave={onCardSave}
+                defaultListId={defaultListId}
+            />
         </GlassmorphicCard>
     );
-}; 
+};

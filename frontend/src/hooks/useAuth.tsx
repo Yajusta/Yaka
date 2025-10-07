@@ -19,6 +19,7 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+    const [aiAvailable, setAiAvailable] = useState<boolean>(false);
 
     useEffect(() => {
         const initAuth = async (): Promise<void> => {
@@ -27,6 +28,14 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
                     const userData = authService.getCurrentUserFromStorage();
                     if (userData && typeof userData === 'object' && 'id' in userData) {
                         setUser(userData);
+                        // Check AI features availability
+                        try {
+                            const aiFeatures = await authService.checkAIFeatures();
+                            setAiAvailable(aiFeatures.ai_available);
+                        } catch (error) {
+                            console.error('Erreur lors de la vérification des fonctionnalités IA:', error);
+                            setAiAvailable(false);
+                        }
                     } else {
                         // Données invalides, forcer la déconnexion
                         console.warn('Données utilisateur invalides, déconnexion forcée');
@@ -51,6 +60,14 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
         try {
             const userData = await authService.login(email, password);
             setUser(userData);
+            // Check AI features availability after login
+            try {
+                const aiFeatures = await authService.checkAIFeatures();
+                setAiAvailable(aiFeatures.ai_available);
+            } catch (error) {
+                console.error('Erreur lors de la vérification des fonctionnalités IA:', error);
+                setAiAvailable(false);
+            }
         } catch (error) {
             throw error;
         }
@@ -60,6 +77,7 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
         try {
             await authService.logout();
             setUser(null);
+            setAiAvailable(false);
         } catch (error) {
             console.error('Erreur lors de la déconnexion:', error);
         }
@@ -70,6 +88,7 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
         login,
         logout,
         loading,
+        aiAvailable,
     };
 
     return (

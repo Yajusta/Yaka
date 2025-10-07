@@ -10,7 +10,8 @@ import { usePermissions } from '../../hooks/usePermissions';
 import { useUsers } from '../../hooks/useUsers';
 import { mapPriorityFromBackend, mapPriorityToBackend } from '../../lib/priority';
 import { cardItemsService, cardService, labelService } from '../../services/api.tsx';
-import { Card, CardPriority, Label as LabelType } from '../../types/index.ts';
+import { listsApi } from '../../services/listsApi';
+import { Card, CardPriority, Label as LabelType, KanbanList } from '../../types/index.ts';
 import { Badge } from '../ui/badge.tsx';
 import { Button } from '../ui/button.tsx';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog.tsx';
@@ -18,6 +19,7 @@ import { Input } from '../ui/input.tsx';
 import { Label } from '../ui/label.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select.tsx';
 import { Textarea } from '../ui/textarea.tsx';
+import { HighlightedField } from '../common/HighlightedField';
 
 interface CardFormProps {
     card: Card | null;
@@ -26,6 +28,26 @@ interface CardFormProps {
     onSave: (card: Card) => void;
     onDelete?: (cardId: number) => void;
     defaultListId?: number; // ID de la liste par défaut pour les nouvelles cartes
+    initialData?: {
+        title?: string;
+        description?: string;
+        due_date?: string;
+        priority?: string;
+        assignee_id?: number | null;
+        label_ids?: number[];
+        list_id?: number;
+        checklist?: { id?: number; text: string; is_done: boolean; position: number }[];
+    };
+    proposedChanges?: {
+        title?: string;
+        description?: string;
+        due_date?: string;
+        priority?: string;
+        assignee_id?: number | null;
+        label_ids?: number[];
+        list_id?: number;
+        checklist?: { id?: number; text: string; is_done: boolean; position: number }[];
+    };
 }
 
 interface FormData {
@@ -38,7 +60,7 @@ interface FormData {
     list_id: number;
 }
 
-const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: CardFormProps) => {
+const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, initialData, proposedChanges }: CardFormProps) => {
     const { t } = useTranslation();
     const [formData, setFormData] = useState<FormData>({
         title: '',
@@ -58,6 +80,18 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
     const isEditing = Boolean(card);
     const { canCreateCard } = permissions;
 
+    // Store original values when proposedChanges is provided
+    const [originalValues, setOriginalValues] = useState<{
+        title?: string;
+        description?: string;
+        due_date?: string;
+        priority?: string;
+        assignee_id?: number | null;
+        label_ids?: number[];
+        list_id?: number;
+        checklist?: { id?: number; text: string; is_done: boolean; position: number }[];
+    }>({});
+
     // For editing, check if user can modify content OR metadata (not just checklist items)
     const canEditCardContent = isEditing ? permissions.canModifyCardContent(card!) : canCreateCard;
     const canEditCardMetadata = isEditing ? permissions.canModifyCardMetadata(card!) : canCreateCard;
@@ -75,9 +109,128 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
     const isViewOnly = isEditing && !canEditCard;
 
     const [labels, setLabels] = useState<LabelType[]>([]);
+    const [lists, setLists] = useState<KanbanList[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [checklist, setChecklist] = useState<{ id?: number; text: string; is_done: boolean; position: number }[]>([]);
     const [newItemText, setNewItemText] = useState<string>('');
+
+    // Helper function to check if a field has changed
+    const getFieldChangeInfo = (fieldName: string): { isChanged: boolean; tooltipContent: string } => {
+        if (!proposedChanges) {
+            return { isChanged: false, tooltipContent: '' };
+        }
+
+        switch (fieldName) {
+            case 'title': {
+                const oldValue = originalValues.title || '';
+                const newValue = formData.title || '';
+                const isChanged = oldValue !== newValue && proposedChanges.title !== undefined;
+                return {
+                    isChanged,
+                    tooltipContent: t('voice.previousValue', { value: oldValue })
+                };
+            }
+            case 'description': {
+                const oldValue = originalValues.description || '';
+                const newValue = formData.description || '';
+                const isChanged = oldValue !== newValue && proposedChanges.description !== undefined;
+                return {
+                    isChanged,
+                    tooltipContent: t('voice.previousValue', { value: oldValue || t('common.empty') })
+                };
+            }
+            case 'due_date': {
+                const oldValue = originalValues.due_date || '';
+                const newValue = formData.due_date || '';
+                const isChanged = oldValue !== newValue && proposedChanges.due_date !== undefined;
+                return {
+                    isChanged,
+                    tooltipContent: t('voice.previousValue', { value: oldValue || t('common.none') })
+                };
+            }
+            case 'priority': {
+                const oldValue = originalValues.priority || '';
+                const newValue = formData.priority || '';
+                const isChanged = oldValue !== newValue && proposedChanges.priority !== undefined;
+                return {
+                    isChanged,
+                    tooltipContent: t('voice.previousValue', { value: oldValue ? t(`priority.${oldValue}`) : t('priority.medium') })
+                };
+            }
+            case 'assignee_id': {
+                const oldValue = originalValues.assignee_id;
+                const newValue = formData.assignee_id;
+                const isChanged = oldValue !== newValue && proposedChanges.assignee_id !== undefined;
+                const oldUser = users.find(u => u.id === oldValue);
+                return {
+                    isChanged,
+                    tooltipContent: t('voice.previousValue', { value: oldUser?.display_name || t('card.unassign') })
+                };
+            }
+            case 'labels': {
+                const oldIds = originalValues.label_ids || [];
+                const newIds = formData.label_ids || [];
+                const isChanged = JSON.stringify(oldIds.sort()) !== JSON.stringify(newIds.sort()) && proposedChanges.label_ids !== undefined;
+                const oldLabels = labels.filter(l => oldIds.includes(l.id)).map(l => l.name).join(', ');
+                return {
+                    isChanged,
+                    tooltipContent: t('voice.previousLabels', { labels: oldLabels || t('voice.noLabels') })
+                };
+            }
+            case 'list_id': {
+                const oldValue = originalValues.list_id;
+                const newValue = formData.list_id;
+                const isChanged = oldValue !== newValue && proposedChanges.list_id !== undefined;
+                const oldList = lists.find(l => l.id === oldValue);
+                return {
+                    isChanged,
+                    tooltipContent: t('voice.previousValue', { value: oldList?.name || t('common.unknown') })
+                };
+            }
+            default:
+                return { isChanged: false, tooltipContent: '' };
+        }
+    };
+
+    // Helper function to check if a checklist item has changed
+    const getChecklistItemChangeInfo = (item: { id?: number; text: string; is_done: boolean }, index: number): {
+        textChanged: boolean;
+        statusChanged: boolean;
+        textTooltip: string;
+        statusTooltip: string;
+        isNew: boolean;
+    } => {
+        if (!proposedChanges?.checklist || !originalValues.checklist) {
+            return { textChanged: false, statusChanged: false, textTooltip: '', statusTooltip: '', isNew: false };
+        }
+
+        // Find corresponding original item by id or position
+        const originalItem = item.id
+            ? originalValues.checklist.find(ci => ci.id === item.id)
+            : originalValues.checklist[index];
+
+        // If no original item found, this is a new item
+        if (!originalItem) {
+            return {
+                textChanged: true,
+                statusChanged: false,
+                textTooltip: t('voice.newItem'),
+                statusTooltip: '',
+                isNew: true
+            };
+        }
+
+        const textChanged = originalItem.text !== item.text;
+        const statusChanged = originalItem.is_done !== item.is_done;
+
+        return {
+            textChanged,
+            statusChanged,
+            textTooltip: t('voice.previousValue', { value: originalItem.text }),
+            statusTooltip: originalItem.is_done ? t('voice.wasChecked') : t('voice.wasUnchecked'),
+            isNew: false
+        };
+    };
 
     useEffect(() => {
         if (isOpen && !canEditCard && !isEditing) {
@@ -87,8 +240,12 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
 
     const loadData = useCallback(async (): Promise<void> => {
         try {
-            const labelsData = await labelService.getLabels();
+            const [labelsData, listsData] = await Promise.all([
+                labelService.getLabels(),
+                listsApi.getLists()
+            ]);
             setLabels(labelsData);
+            setLists(listsData);
         } catch {
             toast({
                 title: t('common.error'),
@@ -103,36 +260,77 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
             const run = async () => {
                 await loadData();
                 if (card) {
-                    setFormData({
-                        title: card.title || '',
-                        description: card.description || '',
-                        due_date: card.due_date || '',
-                        priority: mapPriorityFromBackend(card.priority || ''),
-                        assignee_id: card.assignee_id ?? null,
-                        label_ids: card.labels?.map(l => l.id) || [],
-                        list_id: card.list_id
-                    });
-                    // Load existing items for edit
-                    try {
-                        const items = await cardItemsService.getItems(card.id);
-                        setChecklist(items.map(i => ({ id: i.id, text: i.text, is_done: i.is_done, position: i.position })));
-                    } catch { /* ignore */ }
+                    // Store original values when proposedChanges is provided
+                    if (proposedChanges) {
+                        setOriginalValues({
+                            title: card.title || '',
+                            description: card.description || '',
+                            due_date: card.due_date || '',
+                            priority: mapPriorityFromBackend(card.priority || ''),
+                            assignee_id: card.assignee_id ?? null,
+                            label_ids: card.labels?.map(l => l.id) || [],
+                            list_id: card.list_id,
+                            checklist: []
+                        });
+
+                        // Load existing items and store as original
+                        try {
+                            const items = await cardItemsService.getItems(card.id);
+                            const originalItems = items.map(i => ({ id: i.id, text: i.text, is_done: i.is_done, position: i.position }));
+                            setOriginalValues(prev => ({ ...prev, checklist: originalItems }));
+
+                            // Apply proposed changes to checklist
+                            if (proposedChanges.checklist) {
+                                setChecklist(proposedChanges.checklist);
+                            } else {
+                                setChecklist(originalItems);
+                            }
+                        } catch { /* ignore */ }
+
+                        // Apply proposed changes to form data
+                        setFormData({
+                            title: proposedChanges.title ?? (card.title || ''),
+                            description: proposedChanges.description ?? (card.description || ''),
+                            due_date: proposedChanges.due_date ?? (card.due_date || ''),
+                            priority: proposedChanges.priority ?? mapPriorityFromBackend(card.priority || ''),
+                            assignee_id: proposedChanges.assignee_id !== undefined ? proposedChanges.assignee_id : (card.assignee_id ?? null),
+                            label_ids: proposedChanges.label_ids ?? (card.labels?.map(l => l.id) || []),
+                            list_id: proposedChanges.list_id ?? card.list_id
+                        });
+                    } else {
+                        // Normal edit mode without proposed changes
+                        setFormData({
+                            title: card.title || '',
+                            description: card.description || '',
+                            due_date: card.due_date || '',
+                            priority: mapPriorityFromBackend(card.priority || ''),
+                            assignee_id: card.assignee_id ?? null,
+                            label_ids: card.labels?.map(l => l.id) || [],
+                            list_id: card.list_id
+                        });
+                        // Load existing items for edit
+                        try {
+                            const items = await cardItemsService.getItems(card.id);
+                            setChecklist(items.map(i => ({ id: i.id, text: i.text, is_done: i.is_done, position: i.position })));
+                        } catch { /* ignore */ }
+                    }
                 } else {
+                    // Utiliser initialData si fourni, sinon valeurs par défaut
                     setFormData({
-                        title: '',
-                        description: '',
-                        due_date: '',
-                        priority: CardPriority.MEDIUM,
-                        assignee_id: shouldEnforceSelfAssignment ? currentUserId ?? null : null,
-                        label_ids: [],
-                        list_id: defaultListId ?? -1 // Utiliser -1 par défaut
+                        title: initialData?.title || '',
+                        description: initialData?.description || '',
+                        due_date: initialData?.due_date || '',
+                        priority: initialData?.priority || CardPriority.MEDIUM,
+                        assignee_id: initialData?.assignee_id ?? (shouldEnforceSelfAssignment ? currentUserId ?? null : null),
+                        label_ids: initialData?.label_ids || [],
+                        list_id: initialData?.list_id ?? defaultListId ?? -1 // Utiliser -1 par défaut
                     });
-                    setChecklist([]);
+                    setChecklist(initialData?.checklist || []);
                 }
             };
             run();
         }
-    }, [isOpen, card, loadData]);
+    }, [isOpen, card, loadData, proposedChanges]);
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
@@ -322,34 +520,71 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                     <DialogTitle>
                         {isViewOnly ? t('card.viewCard') : (card ? t('card.editCard') : t('card.newCard'))}
                     </DialogTitle>
-                    <DialogDescription>
-                        {isViewOnly ? t('card.viewCardDescription') : (card ? t('card.editCardDescription') : t('card.newCardDescription'))}
-                    </DialogDescription>
+                    <div className="flex items-center justify-between gap-3 w-full">
+                        <DialogDescription>
+                            {isViewOnly ? t('card.viewCardDescription') : (card ? t('card.editCardDescription') : t('card.newCardDescription'))}
+                        </DialogDescription>
+                        {/* List selector */}
+                        <HighlightedField
+                            isChanged={getFieldChangeInfo('list_id').isChanged}
+                            tooltipContent={getFieldChangeInfo('list_id').tooltipContent}
+                        >
+                            <Select
+                                value={formData.list_id && formData.list_id > 0 ? formData.list_id.toString() : (lists[0]?.id.toString() || '')}
+                                onValueChange={(value) => setFormData(prev => ({
+                                    ...prev,
+                                    list_id: parseInt(value)
+                                }))}
+                                disabled={isViewOnly}
+                            >
+                                <SelectTrigger className="h-8 text-sm w-auto">
+                                    <SelectValue placeholder={t('card.selectList')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {lists.map(list => (
+                                        <SelectItem key={list.id} value={list.id.toString()}>
+                                            {list.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </HighlightedField>
+                    </div>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-3">
                     <div className="space-y-2">
                         <Label htmlFor="title">{t('card.title')} *</Label>
-                        <Input
-                            id="title"
-                            value={formData.title}
-                            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                            required
-                            readOnly={isViewOnly}
-                            disabled={isViewOnly}
-                        />
+                        <HighlightedField
+                            isChanged={getFieldChangeInfo('title').isChanged}
+                            tooltipContent={getFieldChangeInfo('title').tooltipContent}
+                        >
+                            <Input
+                                id="title"
+                                value={formData.title}
+                                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                                required
+                                readOnly={isViewOnly}
+                                disabled={isViewOnly}
+                            />
+                        </HighlightedField>
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="description">{t('card.description')}</Label>
-                        <Textarea
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            rows={3}
-                            readOnly={isViewOnly}
-                            disabled={isViewOnly}
-                        />
+                        <HighlightedField
+                            isChanged={getFieldChangeInfo('description').isChanged}
+                            tooltipContent={getFieldChangeInfo('description').tooltipContent}
+                        >
+                            <Textarea
+                                id="description"
+                                value={formData.description}
+                                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                                rows={3}
+                                readOnly={isViewOnly}
+                                disabled={isViewOnly}
+                            />
+                        </HighlightedField>
                     </div>
 
                     {/* Checklist Section */}
@@ -358,49 +593,63 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
                         <div className="space-y-2">
                             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                                 <SortableContext items={checklist.map(i => i.id ?? `new-${i.position}`)} strategy={verticalListSortingStrategy}>
-                                    {checklist.map((item, index) => (
-                                        <SortableItem key={item.id ?? `new-${item.position}`} id={item.id ?? `new-${item.position}`}>
-                                            {({ attributes, listeners }: any) => (
-                                                <div className="flex items-center gap-2">
-                                                    <div
-                                                        className="h-6 w-6 flex items-center justify-center text-muted-foreground cursor-grab active:cursor-grabbing"
-                                                        title={t('card.move')}
-                                                        {...attributes}
-                                                        {...listeners}
-                                                        style={{ display: isViewOnly ? 'none' : 'flex' }}
-                                                    >
-                                                        <GripVertical className="h-4 w-4" />
+                                    {checklist.map((item, index) => {
+                                        const changeInfo = getChecklistItemChangeInfo(item, index);
+                                        return (
+                                            <SortableItem key={item.id ?? `new-${item.position}`} id={item.id ?? `new-${item.position}`}>
+                                                {({ attributes, listeners }: any) => (
+                                                    <div className="flex items-center gap-2">
+                                                        <div
+                                                            className="h-6 w-6 flex items-center justify-center text-muted-foreground cursor-grab active:cursor-grabbing"
+                                                            title={t('card.move')}
+                                                            {...attributes}
+                                                            {...listeners}
+                                                            style={{ display: isViewOnly ? 'none' : 'flex' }}
+                                                        >
+                                                            <GripVertical className="h-4 w-4" />
+                                                        </div>
+                                                        <HighlightedField
+                                                            isChanged={changeInfo.statusChanged}
+                                                            tooltipContent={changeInfo.statusTooltip}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                className="h-4 w-4"
+                                                                checked={item.is_done}
+                                                                onChange={() => toggleChecklistItem(index)}
+                                                                title={t('card.toggleChecklistItem')}
+                                                                disabled={isViewOnly && !canToggleChecklistItems}
+                                                            />
+                                                        </HighlightedField>
+                                                        <HighlightedField
+                                                            isChanged={changeInfo.textChanged}
+                                                            tooltipContent={changeInfo.textTooltip}
+                                                            className="flex-1"
+                                                        >
+                                                            <Input
+                                                                value={item.text}
+                                                                onChange={(e) => updateChecklistItemText(index, e.target.value)}
+                                                                className={item.is_done ? 'line-through text-muted-foreground' : ''}
+                                                                maxLength={64}
+                                                                readOnly={isViewOnly}
+                                                                disabled={isViewOnly}
+                                                            />
+                                                        </HighlightedField>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => deleteChecklistItem(index)}
+                                                            title={t('card.dropItem')}
+                                                            style={{ display: isViewOnly ? 'none' : 'flex' }}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
                                                     </div>
-                                                    <input
-                                                        type="checkbox"
-                                                        className="h-4 w-4"
-                                                        checked={item.is_done}
-                                                        onChange={() => toggleChecklistItem(index)}
-                                                        title={t('card.toggleChecklistItem')}
-                                                        disabled={isViewOnly && !canToggleChecklistItems}
-                                                    />
-                                                    <Input
-                                                        value={item.text}
-                                                        onChange={(e) => updateChecklistItemText(index, e.target.value)}
-                                                        className={item.is_done ? 'line-through text-muted-foreground' : ''}
-                                                        maxLength={64}
-                                                        readOnly={isViewOnly}
-                                                        disabled={isViewOnly}
-                                                    />
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => deleteChecklistItem(index)}
-                                                        title={t('card.dropItem')}
-                                                        style={{ display: isViewOnly ? 'none' : 'flex' }}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            )}
-                                        </SortableItem>
-                                    ))}
+                                                )}
+                                            </SortableItem>
+                                        );
+                                    })}
                                 </SortableContext>
                             </DndContext>
                             {!isViewOnly && (
@@ -421,98 +670,118 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId }: Ca
 
                     <div className="space-y-2">
                         <Label>{t('card.labels')}</Label>
-                        <div className="flex flex-wrap gap-2">
-                            {labels.map(label => (
-                                <Badge
-                                    key={label.id}
-                                    variant={formData.label_ids.includes(label.id) ? "default" : "outline"}
-                                    className={isViewOnly ? "cursor-default" : "cursor-pointer"}
-                                    style={{
-                                        backgroundColor: formData.label_ids.includes(label.id) ? label.color : 'transparent',
-                                        borderColor: label.color
-                                    }}
-                                    onClick={isViewOnly ? undefined : () => handleLabelToggle(label.id)}
-                                >
-                                    {label.name}
-                                    {formData.label_ids.includes(label.id) && !isViewOnly && (
-                                        <X className="h-3 w-3 ml-1" />
-                                    )}
-                                </Badge>
-                            ))}
-                        </div>
+                        <HighlightedField
+                            isChanged={getFieldChangeInfo('labels').isChanged}
+                            tooltipContent={getFieldChangeInfo('labels').tooltipContent}
+                        >
+                            <div className="flex flex-wrap gap-2 p-2 rounded-md">
+                                {labels.map(label => (
+                                    <Badge
+                                        key={label.id}
+                                        variant={formData.label_ids.includes(label.id) ? "default" : "outline"}
+                                        className={isViewOnly ? "cursor-default" : "cursor-pointer"}
+                                        style={{
+                                            backgroundColor: formData.label_ids.includes(label.id) ? label.color : 'transparent',
+                                            borderColor: label.color
+                                        }}
+                                        onClick={isViewOnly ? undefined : () => handleLabelToggle(label.id)}
+                                    >
+                                        {label.name}
+                                        {formData.label_ids.includes(label.id) && !isViewOnly && (
+                                            <X className="h-3 w-3 ml-1" />
+                                        )}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </HighlightedField>
                     </div>
 
                     <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-2">
                             <Label htmlFor="priority">{t('card.priority')}</Label>
-                            <Select
-                                value={formData.priority}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
-                                disabled={isViewOnly}
+                            <HighlightedField
+                                isChanged={getFieldChangeInfo('priority').isChanged}
+                                tooltipContent={getFieldChangeInfo('priority').tooltipContent}
                             >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="high">
-                                        <div className="flex items-center gap-2">
-                                            <ArrowUp className="h-4 w-4 text-destructive" />
-                                            <span>{t('priority.high')}</span>
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="medium">
-                                        <div className="flex items-center gap-2">
-                                            <Minus className="h-4 w-4 text-sky-600" />
-                                            <span>{t('priority.medium')}</span>
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="low">
-                                        <div className="flex items-center gap-2">
-                                            <ArrowDown className="h-4 w-4 text-muted-foreground" />
-                                            <span>{t('priority.low')}</span>
-                                        </div>
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
+                                <Select
+                                    value={formData.priority}
+                                    onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
+                                    disabled={isViewOnly}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="high">
+                                            <div className="flex items-center gap-2">
+                                                <ArrowUp className="h-4 w-4 text-destructive" />
+                                                <span>{t('priority.high')}</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="medium">
+                                            <div className="flex items-center gap-2">
+                                                <Minus className="h-4 w-4 text-sky-600" />
+                                                <span>{t('priority.medium')}</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="low">
+                                            <div className="flex items-center gap-2">
+                                                <ArrowDown className="h-4 w-4 text-muted-foreground" />
+                                                <span>{t('priority.low')}</span>
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </HighlightedField>
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="due_date">{t('card.dueDate')}</Label>
-                            <Input
-                                id="due_date"
-                                type="date"
-                                value={formData.due_date}
-                                onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
-                                readOnly={isViewOnly}
-                                disabled={isViewOnly}
-                            />
+                            <HighlightedField
+                                isChanged={getFieldChangeInfo('due_date').isChanged}
+                                tooltipContent={getFieldChangeInfo('due_date').tooltipContent}
+                            >
+                                <Input
+                                    id="due_date"
+                                    type="date"
+                                    value={formData.due_date}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
+                                    readOnly={isViewOnly}
+                                    disabled={isViewOnly}
+                                />
+                            </HighlightedField>
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="assignee">{t('card.assignee')}</Label>
-                            <Select
-                                value={formData.assignee_id?.toString() || 'none'}
-                                onValueChange={(value) => setFormData(prev => ({
-                                    ...prev,
-                                    assignee_id: value === 'none' ? null : parseInt(value)
-                                }))}
-                                disabled={isViewOnly}
+                            <HighlightedField
+                                isChanged={getFieldChangeInfo('assignee_id').isChanged}
+                                tooltipContent={getFieldChangeInfo('assignee_id').tooltipContent}
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder={t('card.selectUser')} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">{t('card.unassign')}</SelectItem>
-                                    {users
-                                        .slice()
-                                        .sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''))
-                                        .map(user => (
-                                            <SelectItem key={user.id} value={user.id.toString()}>
-                                                {user.display_name}
-                                            </SelectItem>
-                                        ))}
-                                </SelectContent>
-                            </Select>
+                                <Select
+                                    value={formData.assignee_id?.toString() || 'none'}
+                                    onValueChange={(value) => setFormData(prev => ({
+                                        ...prev,
+                                        assignee_id: value === 'none' ? null : parseInt(value)
+                                    }))}
+                                    disabled={isViewOnly}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={t('card.selectUser')} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">{t('card.unassign')}</SelectItem>
+                                        {users
+                                            .slice()
+                                            .sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''))
+                                            .map(user => (
+                                                <SelectItem key={user.id} value={user.id.toString()}>
+                                                    {user.display_name}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </HighlightedField>
                         </div>
                     </div>
 

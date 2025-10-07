@@ -92,14 +92,14 @@ export const authService = {
     async getCurrentUser(): Promise<User> {
         const response = await api.get<User>('/auth/me');
         const userData = response.data;
-        
+
         // Set the language from user preferences
         if (userData.language) {
             // Dynamically import i18n to avoid circular dependency
             const i18n = await import('../i18n').then(module => module.default);
             await i18n.changeLanguage(userData.language);
         }
-        
+
         return userData;
     },
 
@@ -163,6 +163,11 @@ export const authService = {
     async requestPasswordReset(email: string): Promise<void> {
         // Calls backend endpoint that returns a generic message regardless of existence
         await api.post('/auth/request-password-reset', { email });
+    },
+
+    async checkAIFeatures(): Promise<{ ai_available: boolean }> {
+        const response = await api.get<{ ai_available: boolean }>('/auth/ai-features');
+        return response.data;
     }
 };
 
@@ -261,6 +266,18 @@ export const cardService = {
     async getArchivedCards(): Promise<Card[]> {
         const response = await api.get<Card[]>('/cards/archived');
         return response.data;
+    },
+
+    async getCard(cardId: number): Promise<Card | null> {
+        try {
+            const response = await api.get<Card>(`/cards/${cardId}`);
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 404) {
+                return null;
+            }
+            throw error;
+        }
     },
 
     async createCard(cardData: CreateCardData): Promise<Card> {

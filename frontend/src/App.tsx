@@ -398,6 +398,7 @@ const KanbanApp = () => {
                     labels={labels}
                     localSearchValue={filters.search || ''}
                     onLocalSearchChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
+                    onCardSave={handleCardSave}
                 />
 
                 <KanbanBoard
@@ -449,6 +450,7 @@ const KanbanApp = () => {
 const AppContent = () => {
     const location = useLocation();
     const { theme } = useTheme();
+    const { user, loading } = useAuth();
     useUserLanguage(); // Initialize user language
 
     useEffect(() => {
@@ -456,15 +458,22 @@ const AppContent = () => {
     }, [theme]);
 
     // Routes qui ne nécessitent pas d'authentification
-    const publicRoutes = ['/invite'];
+    const publicRoutes = ['/invite', '/login'];
     const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route));
 
     if (isPublicRoute) {
         return (
             <Routes>
                 <Route path="/invite" element={<InvitePage />} />
+                <Route path="/login" element={<LoginForm />} />
             </Routes>
         );
+    }
+
+    // Si l'utilisateur n'est pas authentifié et n'est pas sur une route publique,
+    // afficher le formulaire de login (sans changer l'URL pour le moment)
+    if (!loading && !user) {
+        return <LoginForm />;
     }
 
     // Routes protégées (nécessitent une authentification)

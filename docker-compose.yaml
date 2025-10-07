@@ -13,6 +13,10 @@ services:
       - SMTP_PASS=${SMTP_PASS:-your_smtp_pass}
       - SMTP_SECURE=${SMTP_SECURE:-starttls}
       - SMTP_FROM=${SMTP_FROM:-no-reply@yaka.local}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL:-https://api.openai.com/v1}
+      - LLM_MODEL=${LLM_MODEL:-gpt-5-nano}
+      - MODEL_TEMPERATURE=${MODEL_TEMPERATURE:-}
       - BASE_URL=${BASE_URL:-http://localhost:3000}
       - DEMO_MODE=${DEMO_MODE:-false}
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-fr}

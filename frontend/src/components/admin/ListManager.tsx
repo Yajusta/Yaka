@@ -68,6 +68,7 @@ interface ListManagerProps {
 
 interface FormData {
     name: string;
+    description: string;
 }
 
 interface FormErrors {
@@ -82,7 +83,9 @@ interface SortableListItemProps {
     onDelete: (list: KanbanList) => void;
     isEditing: boolean;
     editingName: string;
+    editingDescription: string;
     onEditingNameChange: (name: string) => void;
+    onEditingDescriptionChange: (description: string) => void;
     onSaveEdit: () => void;
     onCancelEdit: () => void;
     editingErrors: FormErrors;
@@ -96,7 +99,9 @@ const SortableListItem = ({
     onDelete,
     isEditing,
     editingName,
+    editingDescription,
     onEditingNameChange,
+    onEditingDescriptionChange,
     onSaveEdit,
     onCancelEdit,
     editingErrors
@@ -133,54 +138,77 @@ const SortableListItem = ({
 
                     {isEditing ? (
                         <div className="flex items-center space-x-2 flex-1">
-                            <div className="flex-1">
-                                <Input
-                                    value={editingName}
-                                    onChange={(e) => onEditingNameChange(e.target.value)}
-                                    placeholder={t('list.title')}
-                                    maxLength={100}
-                                    className={`${editingErrors.name ? 'border-red-500' : ''}`}
-                                    autoFocus
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            onSaveEdit();
-                                        } else if (e.key === 'Escape') {
-                                            onCancelEdit();
-                                        }
-                                    }}
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                />
-                                {editingErrors.name && (
-                                    <div className="flex items-center space-x-1 text-red-600 text-xs mt-1">
-                                        <AlertCircle className="h-3 w-3" />
-                                        <span>{editingErrors.name}</span>
-                                    </div>
-                                )}
+                            <div className="flex-1 space-y-2">
+                                <div>
+                                    <Input
+                                        value={editingName}
+                                        onChange={(e) => onEditingNameChange(e.target.value)}
+                                        placeholder={t('list.title')}
+                                        maxLength={100}
+                                        className={`${editingErrors.name ? 'border-red-500' : ''}`}
+                                        autoFocus
+                                        onKeyDown={(e) => {
+                                            e.stopPropagation();
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                onSaveEdit();
+                                            } else if (e.key === 'Escape') {
+                                                onCancelEdit();
+                                            }
+                                        }}
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                    />
+                                    {editingErrors.name && (
+                                        <div className="flex items-center space-x-1 text-red-600 text-xs mt-1">
+                                            <AlertCircle className="h-3 w-3" />
+                                            <span>{editingErrors.name}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <textarea
+                                        value={editingDescription}
+                                        onChange={(e) => onEditingDescriptionChange(e.target.value)}
+                                        placeholder={t('list.description')}
+                                        maxLength={255}
+                                        rows={2}
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                        onKeyDown={(e) => e.stopPropagation()}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {editingDescription.length}/255 {t('common.charactersMax')}
+                                    </p>
+                                </div>
                             </div>
-                            <Button
-                                size="sm"
-                                onClick={() => onSaveEdit()}
-                                disabled={!editingName.trim() || !!editingErrors.name || isDragging}
-                                onPointerDown={(e) => e.stopPropagation()}
-                                className="cursor-pointer"
-                            >
-                                <Save className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => onCancelEdit()}
-                                disabled={isDragging}
-                                onPointerDown={(e) => e.stopPropagation()}
-                                className="cursor-pointer"
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
+                            <div className="flex flex-col space-y-1">
+                                <Button
+                                    size="sm"
+                                    onClick={() => onSaveEdit()}
+                                    disabled={!editingName.trim() || !!editingErrors.name || isDragging}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="cursor-pointer"
+                                >
+                                    <Save className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => onCancelEdit()}
+                                    disabled={isDragging}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className="cursor-pointer"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </div>
                     ) : (
                         <div className="flex-1">
                             <div className="font-medium">{list.name}</div>
-                            <div className="text-sm text-gray-500">
+                            {list.description && (
+                                <div className="text-sm text-gray-600 mt-1">{list.description}</div>
+                            )}
+                            <div className="text-sm text-gray-500 mt-1">
                                 {t('list.card', { count: cardCount })}
                             </div>
                         </div>
@@ -224,6 +252,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
     const [loading, setLoading] = useState<boolean>(false);
     const [editingList, setEditingList] = useState<KanbanList | null>(null);
     const [editingName, setEditingName] = useState<string>('');
+    const [editingDescription, setEditingDescription] = useState<string>('');
     const [showForm, setShowForm] = useState<boolean>(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
     const [listToDelete, setListToDelete] = useState<KanbanList | null>(null);
@@ -236,7 +265,8 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
         cardName: ''
     });
     const [formData, setFormData] = useState<FormData>({
-        name: ''
+        name: '',
+        description: ''
     });
     const [formErrors, setFormErrors] = useState<FormErrors>({});
     const [editingErrors, setEditingErrors] = useState<FormErrors>({});
@@ -362,6 +392,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
             const newOrder = Math.max(...lists.map(l => l.order), 0) + 1;
             const listData: KanbanListCreate = {
                 name: formData.name.trim(),
+                description: formData.description.trim() || undefined,
                 order: newOrder
             };
 
@@ -373,7 +404,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
             });
 
             setShowForm(false);
-            setFormData({ name: '' });
+            setFormData({ name: '', description: '' });
             setFormErrors({});
             await loadLists();
             onListsUpdated?.();
@@ -391,6 +422,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
     const handleEdit = (list: KanbanList): void => {
         setEditingList(list);
         setEditingName(list.name);
+        setEditingDescription(list.description || '');
     };
 
     const handleSaveEdit = async (): Promise<void> => {
@@ -405,7 +437,8 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
 
         try {
             const updateData: KanbanListUpdate = {
-                name: editingName.trim()
+                name: editingName.trim(),
+                description: editingDescription.trim() || undefined
             };
 
             await listsApi.updateList(editingList.id, updateData);
@@ -434,6 +467,7 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
     const handleCancelEdit = (): void => {
         setEditingList(null);
         setEditingName('');
+        setEditingDescription('');
         setEditingErrors({});
     };
 
@@ -584,13 +618,13 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
     };
 
     const handleCreate = (): void => {
-        setFormData({ name: '' });
+        setFormData({ name: '', description: '' });
         setShowForm(true);
     };
 
     const handleCloseForm = (): void => {
         setShowForm(false);
-        setFormData({ name: '' });
+        setFormData({ name: '', description: '' });
         setFormErrors({});
     };
 
@@ -611,6 +645,10 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
         if (editingErrors.name) {
             setEditingErrors({ ...editingErrors, name: undefined });
         }
+    };
+
+    const handleEditingDescriptionChange = (value: string): void => {
+        setEditingDescription(value);
     };
 
     const availableTargetLists = lists.filter(l => l.id !== listToDelete?.id);
@@ -668,6 +706,22 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                                             </p>
                                         </div>
 
+                                        <div className="space-y-2">
+                                            <Label htmlFor="description">{t('list.description')}</Label>
+                                            <textarea
+                                                id="description"
+                                                value={formData.description}
+                                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                placeholder={t('list.description')}
+                                                maxLength={255}
+                                                rows={3}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                            />
+                                            <p className="text-xs text-gray-500">
+                                                {formData.description.length}/255 {t('common.charactersMax')}
+                                            </p>
+                                        </div>
+
                                         <div className="flex justify-end space-x-2">
                                             <Button type="button" variant="outline" onClick={handleCloseForm}>
                                                 {t('common.cancel')}
@@ -711,7 +765,9 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                                                 onDelete={handleDelete}
                                                 isEditing={editingList?.id === list.id}
                                                 editingName={editingName}
+                                                editingDescription={editingDescription}
                                                 onEditingNameChange={handleEditingNameChange}
+                                                onEditingDescriptionChange={handleEditingDescriptionChange}
                                                 onSaveEdit={handleSaveEdit}
                                                 onCancelEdit={handleCancelEdit}
                                                 editingErrors={editingErrors}

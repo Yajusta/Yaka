@@ -40,14 +40,14 @@ def sample_lists(db_session):
         KanbanList(name="In Progress", order=2),
         KanbanList(name="Done", order=3),
     ]
-    
+
     for kanban_list in lists:
         db_session.add(kanban_list)
     db_session.commit()
-    
+
     for kanban_list in lists:
         db_session.refresh(kanban_list)
-    
+
     return lists
 
 
@@ -57,7 +57,7 @@ class TestKanbanListModel:
     def test_model_creation(self):
         """Test de création du modèle KanbanList."""
         kanban_list = KanbanList()
-        
+
         # Vérifier que l'objet est créé
         assert kanban_list is not None
         assert isinstance(kanban_list, KanbanList)
@@ -65,13 +65,14 @@ class TestKanbanListModel:
     def test_model_attributes(self):
         """Test que le modèle a tous les attributs attendus."""
         kanban_list = KanbanList()
-        
+
         # Vérifier que tous les attributs existent
-        assert hasattr(kanban_list, 'id')
-        assert hasattr(kanban_list, 'name')
-        assert hasattr(kanban_list, 'order')
-        assert hasattr(kanban_list, 'created_at')
-        assert hasattr(kanban_list, 'updated_at')
+        assert hasattr(kanban_list, "id")
+        assert hasattr(kanban_list, "name")
+        assert hasattr(kanban_list, "description")
+        assert hasattr(kanban_list, "order")
+        assert hasattr(kanban_list, "created_at")
+        assert hasattr(kanban_list, "updated_at")
 
     def test_model_table_name(self):
         """Test que le nom de la table est correct."""
@@ -80,24 +81,26 @@ class TestKanbanListModel:
     def test_create_kanban_list_successfully(self, db_session):
         """Test de création réussie d'une liste Kanban."""
         before_creation = datetime.datetime.now()
-        
+
         kanban_list = KanbanList(
             name="Test List",
+            description="Test description",
             order=1,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
         db_session.refresh(kanban_list)
-        
+
         after_creation = datetime.datetime.now()
-        
+
         assert kanban_list.id is not None
         assert kanban_list.name == "Test List"
+        assert kanban_list.description == "Test description"
         assert kanban_list.order == 1
         assert kanban_list.created_at is not None
         assert kanban_list.updated_at is None
-        
+
         # Vérifier que le timestamp est dans la plage attendue
         assert before_creation <= kanban_list.created_at <= after_creation
 
@@ -106,14 +109,49 @@ class TestKanbanListModel:
         kanban_list = KanbanList(
             name="Minimal List",
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
         db_session.refresh(kanban_list)
-        
+
         assert kanban_list.id is not None
         assert kanban_list.name == "Minimal List"
+        assert kanban_list.description is None  # Description is optional
         assert kanban_list.order is not None  # Devrait avoir une valeur par défaut
+
+    def test_create_kanban_list_with_description(self, db_session):
+        """Test de création d'une liste Kanban avec description."""
+        kanban_list = KanbanList(
+            name="List with Description",
+            description="This is a test description",
+            order=1,
+        )
+
+        db_session.add(kanban_list)
+        db_session.commit()
+        db_session.refresh(kanban_list)
+
+        assert kanban_list.id is not None
+        assert kanban_list.name == "List with Description"
+        assert kanban_list.description == "This is a test description"
+        assert kanban_list.order == 1
+
+    def test_create_kanban_list_with_max_length_description(self, db_session):
+        """Test de création d'une liste avec description maximale (255 caractères)."""
+        max_description = "x" * 255
+        kanban_list = KanbanList(
+            name="Max Description List",
+            description=max_description,
+            order=1,
+        )
+
+        db_session.add(kanban_list)
+        db_session.commit()
+        db_session.refresh(kanban_list)
+
+        assert kanban_list.description is not None
+        assert kanban_list.description == max_description
+        assert len(kanban_list.description) == 255
 
     def test_kanban_list_timestamps(self, db_session):
         """Test que les timestamps sont correctement gérés."""
@@ -121,20 +159,20 @@ class TestKanbanListModel:
             name="Timestamp Test",
             order=1,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
-        
+
         # Vérifier created_at
         assert kanban_list.created_at is not None
         assert isinstance(kanban_list.created_at, datetime.datetime)
-        
+
         # Mettre à jour pour tester updated_at
         original_updated_at = kanban_list.updated_at
         kanban_list.name = "Updated Name"
         db_session.commit()
         db_session.refresh(kanban_list)
-        
+
         # updated_at devrait maintenant être défini
         assert kanban_list.updated_at is not None
         assert isinstance(kanban_list.updated_at, datetime.datetime)
@@ -144,14 +182,14 @@ class TestKanbanListModel:
         """Test de mise à jour d'une liste Kanban."""
         kanban_list = sample_lists[0]
         original_created_at = kanban_list.created_at
-        
+
         # Mettre à jour plusieurs champs
         kanban_list.name = "Updated List Name"
         kanban_list.order = 10
-        
+
         db_session.commit()
         db_session.refresh(kanban_list)
-        
+
         # Vérifier les mises à jour
         assert kanban_list.name == "Updated List Name"
         assert kanban_list.order == 10
@@ -160,38 +198,30 @@ class TestKanbanListModel:
 
     def test_kanban_list_query_by_name(self, db_session, sample_lists):
         """Test de recherche par nom."""
-        kanban_list = db_session.query(KanbanList).filter(
-            KanbanList.name == "To Do"
-        ).first()
-        
+        kanban_list = db_session.query(KanbanList).filter(KanbanList.name == "To Do").first()
+
         assert kanban_list is not None
         assert kanban_list.name == "To Do"
 
     def test_kanban_list_query_by_order(self, db_session, sample_lists):
         """Test de recherche par ordre."""
-        kanban_list = db_session.query(KanbanList).filter(
-            KanbanList.order == 2
-        ).first()
-        
+        kanban_list = db_session.query(KanbanList).filter(KanbanList.order == 2).first()
+
         assert kanban_list is not None
         assert kanban_list.order == 2
 
     def test_kanban_list_order_by_order(self, db_session, sample_lists):
         """Test de tri par ordre."""
-        lists = db_session.query(KanbanList).order_by(
-            KanbanList.order
-        ).all()
-        
+        lists = db_session.query(KanbanList).order_by(KanbanList.order).all()
+
         # Vérifier que les listes sont dans l'ordre croissant
         orders = [kanban_list.order for kanban_list in lists]
         assert orders == sorted(orders)
 
     def test_kanban_list_order_by_name(self, db_session, sample_lists):
         """Test de tri par nom."""
-        lists = db_session.query(KanbanList).order_by(
-            KanbanList.name
-        ).all()
-        
+        lists = db_session.query(KanbanList).order_by(KanbanList.name).all()
+
         # Vérifier que les noms sont en ordre alphabétique
         names = [kanban_list.name for kanban_list in lists]
         assert names == sorted(names)
@@ -204,17 +234,15 @@ class TestKanbanListModel:
             KanbanList(name="Sprint Planning", order=5),
             KanbanList(name="Code Review", order=6),
         ]
-        
+
         for kanban_list in search_lists:
             db_session.add(kanban_list)
-        
+
         db_session.commit()
-        
+
         # Rechercher les listes contenant "Tasks"
-        task_lists = db_session.query(KanbanList).filter(
-            KanbanList.name.like("%Tasks%")
-        ).all()
-        
+        task_lists = db_session.query(KanbanList).filter(KanbanList.name.like("%Tasks%")).all()
+
         assert len(task_lists) == 1
         assert "Tasks" in task_lists[0].name
 
@@ -222,29 +250,27 @@ class TestKanbanListModel:
         """Test de suppression d'une liste Kanban."""
         kanban_list = sample_lists[0]
         list_id = kanban_list.id
-        
+
         db_session.delete(kanban_list)
         db_session.commit()
-        
+
         # Vérifier que la liste a été supprimée
-        deleted_list = db_session.query(KanbanList).filter(
-            KanbanList.id == list_id
-        ).first()
+        deleted_list = db_session.query(KanbanList).filter(KanbanList.id == list_id).first()
         assert deleted_list is None
 
     def test_kanban_list_string_fields_validation(self, db_session):
         """Test des validations des champs text."""
         # Test avec nom à la limite de la longueur
         max_length_name = "x" * 100  # Longueur maximale selon le modèle
-        
+
         kanban_list = KanbanList(
             name=max_length_name,
             order=1,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
-        
+
         assert kanban_list.name == max_length_name
         assert len(kanban_list.name) == 100
 
@@ -254,10 +280,10 @@ class TestKanbanListModel:
             name="Liste spéciale: éèàçù 🚀 中文",
             order=1,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
-        
+
         assert kanban_list.name == "Liste spéciale: éèàçù 🚀 中文"
 
     def test_kanban_list_unicode_emojis(self, db_session):
@@ -266,10 +292,10 @@ class TestKanbanListModel:
             name="Emoji List 🎯🚀✨",
             order=1,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
-        
+
         assert kanban_list.name == "Emoji List 🎯🚀✨"
 
     def test_kanban_list_empty_name(self, db_session):
@@ -278,10 +304,10 @@ class TestKanbanListModel:
             name="",
             order=1,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
-        
+
         assert kanban_list.name == ""
 
     def test_kanban_list_whitespace_only(self, db_session):
@@ -290,31 +316,29 @@ class TestKanbanListModel:
             name="   ",
             order=1,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
-        
+
         assert kanban_list.name == "   "
 
     def test_kanban_list_order_management(self, db_session):
         """Test de gestion des ordres."""
         # Créer des listes avec des ordres variés
         orders = [10, 5, 15, 1, 20]
-        
+
         for i, order in enumerate(orders):
             kanban_list = KanbanList(
                 name=f"Order Test {i}",
                 order=order,
             )
             db_session.add(kanban_list)
-        
+
         db_session.commit()
-        
+
         # Récupérer les listes triées par ordre
-        sorted_lists = db_session.query(KanbanList).order_by(
-            KanbanList.order
-        ).all()
-        
+        sorted_lists = db_session.query(KanbanList).order_by(KanbanList.order).all()
+
         # Vérifier que les ordres sont en ordre croissant
         for i in range(len(sorted_lists) - 1):
             assert sorted_lists[i].order <= sorted_lists[i + 1].order
@@ -325,10 +349,10 @@ class TestKanbanListModel:
             name="Negative Order Test",
             order=-5,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
-        
+
         assert kanban_list.order == -5
 
     def test_kanban_list_zero_order(self, db_session):
@@ -337,10 +361,10 @@ class TestKanbanListModel:
             name="Zero Order Test",
             order=0,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
-        
+
         assert kanban_list.order == 0
 
     def test_kanban_list_large_order(self, db_session):
@@ -349,21 +373,21 @@ class TestKanbanListModel:
             name="Large Order Test",
             order=999999,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
-        
+
         assert kanban_list.order == 999999
 
     def test_kanban_list_duplicate_orders(self, db_session):
         """Test avec des ordres dupliqués."""
         list1 = KanbanList(name="List 1", order=5)
         list2 = KanbanList(name="List 2", order=5)
-        
+
         db_session.add(list1)
         db_session.add(list2)
         db_session.commit()
-        
+
         # Les deux listes devraient exister avec le même ordre
         assert list1.id is not None
         assert list2.id is not None
@@ -379,28 +403,24 @@ class TestKanbanListModel:
                 order=i,
             )
             lists.append(kanban_list)
-        
+
         db_session.add_all(lists)
         db_session.commit()
-        
+
         # Vérifier que toutes ont été créées
-        count = db_session.query(KanbanList).filter(
-            KanbanList.name.like("Batch List %")
-        ).count()
+        count = db_session.query(KanbanList).filter(KanbanList.name.like("Batch List %")).count()
         assert count == 10
 
     def test_kanban_list_bulk_update(self, db_session, sample_lists):
         """Test de mises à jour en masse."""
         # Ajouter un préfixe à tous les noms de liste
-        db_session.query(KanbanList).update({
-            "name": KanbanList.name + " (Updated)"
-        })
-        
+        db_session.query(KanbanList).update({"name": KanbanList.name + " (Updated)"})
+
         db_session.commit()
-        
+
         # Vérifier que tous les noms ont été mis à jour
         updated_lists = db_session.query(KanbanList).all()
-        
+
         for kanban_list in updated_lists:
             assert "(Updated)" in kanban_list.name
 
@@ -414,23 +434,23 @@ class TestKanbanListModel:
             ("Review", 4),
             ("Done", 5),
         ]
-        
+
         for name, order in lists_data:
             kanban_list = KanbanList(name=name, order=order)
             db_session.add(kanban_list)
-        
+
         db_session.commit()
-        
+
         # Chercher les listes avec ordre entre 2 et 4
         from sqlalchemy import and_
-        
-        middle_lists = db_session.query(KanbanList).filter(
-            and_(
-                KanbanList.order >= 2,
-                KanbanList.order <= 4
-            )
-        ).order_by(KanbanList.order).all()
-        
+
+        middle_lists = (
+            db_session.query(KanbanList)
+            .filter(and_(KanbanList.order >= 2, KanbanList.order <= 4))
+            .order_by(KanbanList.order)
+            .all()
+        )
+
         assert len(middle_lists) == 3
         expected_names = ["To Do", "In Progress", "Review"]
         actual_names = [kanban_list.name for kanban_list in middle_lists]
@@ -445,13 +465,13 @@ class TestKanbanListModel:
                 order=i,
             )
             db_session.add(kanban_list)
-        
+
         db_session.commit()
-        
+
         # Test pagination
         page1 = db_session.query(KanbanList).limit(5).all()
         page2 = db_session.query(KanbanList).offset(5).limit(5).all()
-        
+
         assert len(page1) == 5
         assert len(page2) == 5
         assert page1[0].id != page2[0].id
@@ -465,9 +485,9 @@ class TestKanbanListModel:
                 order=i,
             )
             db_session.add(kanban_list)
-        
+
         db_session.commit()
-        
+
         # Compter le nombre total de listes
         total_count = db_session.query(KanbanList).count()
         assert total_count >= 5
@@ -475,12 +495,12 @@ class TestKanbanListModel:
     def test_kanban_list_error_handling(self, db_session):
         """Test de gestion des erreurs."""
         # Simuler une erreur de base de données
-        with patch.object(db_session, 'commit', side_effect=SQLAlchemyError("Database error")):
+        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
             kanban_list = KanbanList(
                 name="Error Test",
                 order=1,
             )
-            
+
             db_session.add(kanban_list)
             with pytest.raises(SQLAlchemyError):
                 db_session.commit()
@@ -491,10 +511,10 @@ class TestKanbanListModel:
             name="Representation Test",
             order=1,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
-        
+
         # La représentation devrait contenir des informations utiles
         str_repr = str(kanban_list)
         assert "KanbanList" in str_repr
@@ -503,11 +523,11 @@ class TestKanbanListModel:
         """Test de l'égalité entre objets."""
         list1 = KanbanList(name="Equality Test 1", order=1)
         list2 = KanbanList(name="Equality Test 2", order=2)
-        
+
         db_session.add(list1)
         db_session.add(list2)
         db_session.commit()
-        
+
         # Ce sont des objets différents
         assert list1 != list2
         assert list1.id != list2.id
@@ -519,7 +539,7 @@ class TestKanbanListModel:
             name=None,  # Devrait échouer
             order=1,
         )
-        
+
         db_session.add(kanban_list)
         with pytest.raises(Exception):
             db_session.commit()
@@ -528,15 +548,15 @@ class TestKanbanListModel:
         """Test de la contrainte de longueur du nom."""
         # Le modèle limite le nom à 100 caractères
         exact_length_name = "x" * 100
-        
+
         kanban_list = KanbanList(
             name=exact_length_name,
             order=1,
         )
-        
+
         db_session.add(kanban_list)
         db_session.commit()
-        
+
         assert len(kanban_list.name) == 100
         assert kanban_list.name == exact_length_name
 
@@ -551,23 +571,21 @@ class TestKanbanListModel:
             ("Testing", 4),
             ("Done", 5),
         ]
-        
+
         created_lists = []
         for name, order in workflow_sequences:
             kanban_list = KanbanList(name=name, order=order)
             db_session.add(kanban_list)
             created_lists.append(kanban_list)
-        
+
         db_session.commit()
-        
+
         # Vérifier que la séquence est correcte
-        workflow_lists = db_session.query(KanbanList).order_by(
-            KanbanList.order
-        ).all()
-        
-        actual_names = [kanban_list.name for kanban_list in workflow_lists[-len(workflow_sequences):]]
+        workflow_lists = db_session.query(KanbanList).order_by(KanbanList.order).all()
+
+        actual_names = [kanban_list.name for kanban_list in workflow_lists[-len(workflow_sequences) :]]
         expected_names = [name for name, _ in workflow_sequences]
-        
+
         assert actual_names == expected_names
 
     def test_kanban_list_reordering(self, db_session):
@@ -581,23 +599,21 @@ class TestKanbanListModel:
             )
             db_session.add(kanban_list)
             original_lists.append(kanban_list)
-        
+
         db_session.commit()
-        
+
         # Réordonner : échanger les positions
         original_lists[0].order = 20
         original_lists[2].order = 0
-        
+
         db_session.commit()
-        
+
         # Vérifier le nouvel ordre
-        reordered_lists = db_session.query(KanbanList).order_by(
-            KanbanList.order
-        ).all()
-        
+        reordered_lists = db_session.query(KanbanList).order_by(KanbanList.order).all()
+
         expected_names = ["Original 2", "Original 1", "Original 0"]
         actual_names = [kanban_list.name for kanban_list in reordered_lists]
-        
+
         assert actual_names == expected_names
 
     def test_kanban_list_data_types(self, db_session):
@@ -611,16 +627,16 @@ class TestKanbanListModel:
             ("special_chars", "!@#$%^&*()_+-=[]{}|;':\",./<>?"),
             ("numbers_and_text", "List 123: Something"),
         ]
-        
+
         for suffix, name in test_lists:
             kanban_list = KanbanList(
                 name=name,
                 order=len(test_lists),
             )
             db_session.add(kanban_list)
-        
+
         db_session.commit()
-        
+
         # Vérifier que toutes les listes ont été créées
         count = db_session.query(KanbanList).count()
         assert count >= len(test_lists)
