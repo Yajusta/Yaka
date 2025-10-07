@@ -305,7 +305,7 @@ export const VoiceControlWhisperDialog = ({
         setIsProcessing(true);
 
         try {
-            const response = await voiceControlService.processTranscript(transcript);
+            const response = await voiceControlService.processTranscript(currentTranscript);
             setResult(response);
 
             // Si task_id est null ou vide, ouvrir CardForm en mode création avec les données pré-remplies
