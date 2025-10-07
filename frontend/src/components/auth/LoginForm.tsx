@@ -1,6 +1,7 @@
 import { AlertTriangle, Copy, Eye, Loader2, Trash, Zap } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.tsx';
 import { authService, boardSettingsService } from '../../services/api.tsx';
 import { Footer } from '../common/Footer.tsx';
@@ -21,6 +22,7 @@ declare global {
 
 const LoginForm = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');
@@ -64,6 +66,8 @@ const LoginForm = () => {
 
         try {
             await login(email, password);
+            // Rediriger vers la page d'accueil après une connexion réussie
+            navigate('/', { replace: true });
         } catch (error: any) {
             setError(error.response?.data?.detail || t('auth.loginError'));
         } finally {
