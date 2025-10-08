@@ -101,6 +101,19 @@
     transform: translateY(0);
     transition: opacity 160ms ease, transform 160ms ease;
   }
+
+  /* Vertical writing mode for collapsed columns */
+  .writing-mode-vertical {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+  }
+
+  /* Collapsed column styling */
+  .kanban-column-collapsed {
+    min-width: 60px;
+    max-width: 60px;
+  }
 }
 
 /* Styles personnalisés pour forcer les couleurs */

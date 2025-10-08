@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.2 (2025-10-08)
+
+- [NEW] Possibilité de réduire les colonnes.
+
 ## v1.2.1 (2025-10-07)
 
 - [NEW] Saisie et modification des tâches par la voix (nécessite un accès à une API de LLM OpenAI ou similaire).

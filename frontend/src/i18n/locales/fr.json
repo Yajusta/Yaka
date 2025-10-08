@@ -252,7 +252,10 @@
         "loadingError": "Une erreur s'est produite lors du chargement de la gestion des listes. Veuillez fermer cette fenêtre et réessayer.",
         "contactAdmin": "Contactez un administrateur pour créer des listes",
         "createCardInList": "Créer une nouvelle carte dans cette liste",
-        "updatePriorityError": "Impossible de mettre à jour la priorité de la carte"
+        "updatePriorityError": "Impossible de mettre à jour la priorité de la carte",
+        "collapse": "Réduire",
+        "expand": "Étendre",
+        "columnOptions": "Options de la colonne"
     },
     "label": {
         "name": "Nom",

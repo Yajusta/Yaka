@@ -252,7 +252,10 @@
         "loadingError": "An error occurred while loading the list management. Please close this window and try again.",
         "contactAdmin": "Contact an administrator to create lists",
         "createCardInList": "Create a new card in this list",
-        "updatePriorityError": "Unable to update card priority"
+        "updatePriorityError": "Unable to update card priority",
+        "collapse": "Collapse",
+        "expand": "Expand",
+        "columnOptions": "Column options"
     },
     "label": {
         "name": "Name",

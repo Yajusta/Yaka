@@ -7,7 +7,13 @@ import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
 import { Card, KanbanList } from '../../types/index';
 import { useElasticTransition } from '../../hooks/useElasticTransition';
-import { Plus } from 'lucide-react';
+import { Plus, MoreVertical, ChevronRight, ChevronLeft } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 
 interface KanbanColumnProps {
     id: string;
@@ -23,6 +29,7 @@ interface KanbanColumnProps {
     hiddenCardId?: number | null;
     activeCardSize?: { width: number; height: number } | null;
     originalPositions?: Map<string, DOMRect>;
+    onToggleCollapse?: (listId: number) => void;
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
@@ -38,7 +45,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     justDroppedCardId,
     hiddenCardId,
     activeCardSize,
-    originalPositions
+    originalPositions,
+    onToggleCollapse
 }) => {
     const { t } = useTranslation();
     const { setNodeRef } = useDroppable({
@@ -74,13 +82,71 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         }
     }, [isDragging, justDroppedCardId]);
 
+    // If collapsed, render a minimal vertical column
+    if (list.is_collapsed) {
+        return (
+            <div className="h-full flex flex-col">
+                <GlassmorphicCard
+                    data-list-id={id}
+                    className={cn(
+                        "h-full flex flex-col kanban-column-collapsed py-0 gap-0 transition-all duration-300"
+                    )}
+                >
+                    <div className="p-2 flex justify-center group">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary/10"
+                                    title={t('list.columnOptions')}
+                                >
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                                <DropdownMenuItem onClick={() => onToggleCollapse?.(list.id)}>
+                                    <ChevronRight className="h-4 w-4 mr-2" />
+                                    {t('list.expand')}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+
+                    <div className="flex-1 flex flex-col items-center justify-start p-4 gap-4">
+                        {/* Vertical text for list name */}
+                        <div
+                            className="text-lg font-semibold text-foreground whitespace-nowrap"
+                            style={{
+                                writingMode: 'vertical-rl',
+                                textOrientation: 'mixed'
+                            }}
+                        >
+                            {list.name}
+                        </div>
+                        {/* Card count badge with label */}
+                        <div
+                            className="text-sm text-muted-foreground whitespace-nowrap"
+                            style={{
+                                writingMode: 'vertical-rl',
+                                textOrientation: 'mixed'
+                            }}
+                        >
+                            {t('list.card', { count: cards.length })}
+                        </div>
+                    </div>
+                </GlassmorphicCard>
+            </div>
+        );
+    }
+
     return (
         <div className="h-full flex flex-col">
             <GlassmorphicCard
                 ref={setNodeRef}
                 data-list-id={id}
                 className={cn(
-                    "h-full flex flex-col kanban-column py-0 gap-0",
+                    "h-full flex flex-col kanban-column py-0 gap-0 transition-all duration-300",
                     isDragging && "kanban-column-dragging",
                     isDragging && dropTarget !== null && "placeholder-active",
                     justDropped && "just-dropped"
@@ -92,17 +158,37 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                             <h3 className="text-lg font-semibold text-foreground">{list.name}</h3>
                             <p className="text-sm text-muted-foreground">{t('list.card', { count: cards.length })}</p>
                         </div>
-                        {onCreateCard && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onCreateCard(list.id)}
-                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary/10"
-                                title={t('list.createCardInList')}
-                            >
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        )}
+                        <div className="flex items-center gap-1">
+                            {onCreateCard && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onCreateCard(list.id)}
+                                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary/10"
+                                    title={t('list.createCardInList')}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            )}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary/10"
+                                        title={t('list.columnOptions')}
+                                    >
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => onToggleCollapse?.(list.id)}>
+                                        <ChevronLeft className="h-4 w-4 mr-2" />
+                                        {t('list.collapse')}
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </div>
                 </div>
 
