@@ -289,7 +289,7 @@ class TestCardCommentModel:
         # Attendre un peu pour s'assurer que le timestamp change
         import time
 
-        time.sleep(0.01)
+        time.sleep(0.5)
 
         # Mettre à jour le commentaire
         comment.comment = "Updated comment"
@@ -301,6 +301,7 @@ class TestCardCommentModel:
 
         # updated_at devrait être différent et plus récent
         assert comment.updated_at != original_updated_at
+        assert comment.updated_at is not None and original_updated_at is not None
         assert comment.updated_at > original_updated_at
 
     def test_card_comment_update(self, db_session, sample_card, sample_user):
