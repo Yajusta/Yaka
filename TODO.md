@@ -8,13 +8,14 @@
 
 [ ] Pièces jointes sur les tâches.
 [ ] Définir l'utilisateur par défaut dans les variables d'environnement.
-[ ] Export au format Excel de toutes les tâches.
+[x] Export au format Excel de toutes les tâches.
 [x] Pouvoir "réduire" un colonne (qui ne sert pas souvent).
 [x] Option pour réduire toutes les tâches (vue compacte).
 
 ## Frontend
 
 [ ] Séparer la page "invite" et la page "reset-password".
+[ ] Titre de la page dynamique.
 
 ## Backend
 

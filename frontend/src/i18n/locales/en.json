@@ -408,7 +408,9 @@
         "notifications": "Notifications",
         "appearance": "Appearance",
         "language": "Language",
-        "theme": "Change theme",
+        "theme": "Theme",
+        "lightTheme": "Light theme",
+        "darkTheme": "Dark theme",
         "timezone": "Timezone",
         "dateFormat": "Date format",
         "timeFormat": "Time format",
@@ -432,6 +434,16 @@
         "compact": "Compact",
         "extendedDescription": "Full display with all details",
         "compactDescription": "Compact display with title and icons only"
+    },
+    "export": {
+        "title": "Export",
+        "csv": "CSV (.csv)",
+        "excel": "Excel (.xlsx)",
+        "success": "Export successful",
+        "error": "Export error",
+        "csvDownloaded": "CSV file downloaded successfully under the name \"{{filename}}\"",
+        "excelDownloaded": "Excel file downloaded successfully under the name \"{{filename}}\"",
+        "errorMessage": "An error occurred during export"
     },
     "errors": {
         "networkError": "Network error",

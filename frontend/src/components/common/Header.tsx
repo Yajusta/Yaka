@@ -1,6 +1,6 @@
 import { Button } from '../ui/button';
 import * as React from 'react';
-import { Check, ChevronLeft, Eye, List, LogOut, Moon, Palette, Settings, Sun, Tag, User, Users } from 'lucide-react';
+import { Check, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, Sun, Tag, User, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useBoardSettings } from '../../hooks/useBoardSettingsContext';
 import { UserRole, UserRoleValue } from '../../types';
@@ -16,9 +16,11 @@ import {
     DropdownMenuTrigger
 } from '../ui/dropdown-menu';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
-import LanguageSelector from './LanguageSelector';
 import { DisplayMode } from '../../hooks/useDisplayMode';
 import { cn } from '../../lib/utils';
+import { exportApi } from '../../services/exportApi';
+import { useToast } from '../../hooks/use-toast';
+import { authService, userService } from '../../services/api';
 
 interface User {
     id: number;
@@ -53,8 +55,76 @@ export const Header = ({
     onDisplayModeChange
 }: HeaderProps) => {
     const { boardTitle, loading } = useBoardSettings();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const { toast } = useToast();
+    const [isLanguageMenuHovered, setIsLanguageMenuHovered] = React.useState(false);
     const [isDisplayMenuHovered, setIsDisplayMenuHovered] = React.useState(false);
+    const [isThemeMenuHovered, setIsThemeMenuHovered] = React.useState(false);
+    const [isExportMenuHovered, setIsExportMenuHovered] = React.useState(false);
+    const [isSettingsMenuHovered, setIsSettingsMenuHovered] = React.useState(false);
+    const [isChangingLanguage, setIsChangingLanguage] = React.useState(false);
+
+    const handleExportCSV = async () => {
+        try {
+            const filename = await exportApi.exportCSV();
+            toast({
+                title: t('export.success'),
+                description: t('export.csvDownloaded', { filename }),
+            });
+        } catch (error: any) {
+            toast({
+                title: t('export.error'),
+                description: error.message || t('export.errorMessage'),
+                variant: 'destructive',
+            });
+        }
+    };
+
+    const handleExportExcel = async () => {
+        try {
+            const filename = await exportApi.exportExcel();
+            toast({
+                title: t('export.success'),
+                description: t('export.excelDownloaded', { filename }),
+            });
+        } catch (error: any) {
+            toast({
+                title: t('export.error'),
+                description: error.message || t('export.errorMessage'),
+                variant: 'destructive',
+            });
+        }
+    };
+
+    const handleChangeLanguage = async (lng: string) => {
+        setIsChangingLanguage(true);
+        try {
+            // Change language in i18next
+            await i18n.changeLanguage(lng);
+
+            // Check if user is authenticated
+            if (authService.isAuthenticated()) {
+                try {
+                    // Update language in database
+                    await userService.updateLanguage(lng);
+
+                    // Update user in localStorage
+                    const currentUser = authService.getCurrentUserFromStorage();
+                    if (currentUser) {
+                        const updatedUser = { ...currentUser, language: lng };
+                        authService.setCurrentUserToStorage(updatedUser);
+                    }
+                } catch (error) {
+                    console.error('Failed to update language in database:', error);
+                    // Don't revert the language change, just log the error
+                }
+            }
+        } catch (error) {
+            console.error('Failed to change language:', error);
+        } finally {
+            setIsChangingLanguage(false);
+        }
+    };
 
     const getUserInitials = (): string => {
         if (!user) {
@@ -126,59 +196,6 @@ export const Header = ({
 
                     {/* Actions */}
                     <div className="flex items-center space-x-3">
-                        {/* Admin actions */}
-                        {isAdmin() && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="bg-background/50 border-border/50 hover:bg-background"
-                                        title={t('settings.admin')}
-                                    >
-                                        <Settings className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem onClick={onShowInterface}>
-                                        <Palette className="h-4 w-4 mr-2" />
-                                        {t('settings.interface')}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={onShowUsers}>
-                                        <Users className="h-4 w-4 mr-2" />
-                                        {t('navigation.users')}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={onShowLists}>
-                                        <List className="h-4 w-4 mr-2" />
-                                        {t('navigation.lists')}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={onShowLabels}>
-                                        <Tag className="h-4 w-4 mr-2" />
-                                        {t('navigation.labels')}
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
-
-                        {/* Language selector */}
-                        <LanguageSelector />
-
-                        {/* Theme toggle */}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onToggleTheme}
-                            className="h-9 w-9 p-0 hover:bg-primary/10"
-                            title={t('settings.theme')}
-                        >
-                            {theme === 'light' ? (
-                                <Moon className="h-4 w-4" />
-                            ) : (
-                                <Sun className="h-4 w-4" />
-                            )}
-                        </Button>
-
-
                         {/* User menu */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -213,53 +230,231 @@ export const Header = ({
                                 </div>
                                 <DropdownMenuSeparator />
 
+                                {/* Language submenu */}
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger
+                                        className="cursor-pointer [&>svg:last-child]:hidden"
+                                        onMouseEnter={() => setIsLanguageMenuHovered(true)}
+                                        onMouseLeave={() => setIsLanguageMenuHovered(false)}
+                                    >
+                                        {isLanguageMenuHovered ? (
+                                            <ChevronLeft className="mr-2 h-4 w-4" />
+                                        ) : (
+                                            <Languages className="mr-2 h-4 w-4" />
+                                        )}
+                                        <span>{t('language.switchLanguage')}</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent
+                                        onMouseEnter={() => setIsLanguageMenuHovered(true)}
+                                        onMouseLeave={() => setIsLanguageMenuHovered(false)}
+                                    >
+                                        <DropdownMenuItem
+                                            onClick={() => handleChangeLanguage('fr')}
+                                            disabled={isChangingLanguage}
+                                            className={cn(
+                                                "cursor-pointer",
+                                                i18n.language === 'fr' && "bg-primary/10 text-primary font-medium"
+                                            )}
+                                        >
+                                            <span className="mr-2">🇫🇷</span>
+                                            Français
+                                            {i18n.language === 'fr' && <Check className="ml-auto h-4 w-4" />}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => handleChangeLanguage('en')}
+                                            disabled={isChangingLanguage}
+                                            className={cn(
+                                                "cursor-pointer",
+                                                i18n.language === 'en' && "bg-primary/10 text-primary font-medium"
+                                            )}
+                                        >
+                                            <span className="mr-2">🇬🇧</span>
+                                            English
+                                            {i18n.language === 'en' && <Check className="ml-auto h-4 w-4" />}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+
                                 {/* Display mode submenu */}
                                 {onDisplayModeChange && (
+                                    <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger
+                                            className="cursor-pointer [&>svg:last-child]:hidden"
+                                            onMouseEnter={() => setIsDisplayMenuHovered(true)}
+                                            onMouseLeave={() => setIsDisplayMenuHovered(false)}
+                                        >
+                                            {isDisplayMenuHovered ? (
+                                                <ChevronLeft className="mr-2 h-4 w-4" />
+                                            ) : (
+                                                <Eye className="mr-2 h-4 w-4" />
+                                            )}
+                                            <span>{t('display.title')}</span>
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuSubContent
+                                            onMouseEnter={() => setIsDisplayMenuHovered(true)}
+                                            onMouseLeave={() => setIsDisplayMenuHovered(false)}
+                                        >
+                                            <DropdownMenuItem
+                                                onClick={() => onDisplayModeChange('extended')}
+                                                className={cn(
+                                                    "cursor-pointer",
+                                                    displayMode === 'extended' && "bg-primary/10 text-primary font-medium"
+                                                )}
+                                            >
+                                                {t('display.extended')}
+                                                {displayMode === 'extended' && <Check className="ml-auto h-4 w-4" />}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => onDisplayModeChange('compact')}
+                                                className={cn(
+                                                    "cursor-pointer",
+                                                    displayMode === 'compact' && "bg-primary/10 text-primary font-medium"
+                                                )}
+                                            >
+                                                {t('display.compact')}
+                                                {displayMode === 'compact' && <Check className="ml-auto h-4 w-4" />}
+                                            </DropdownMenuItem>
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
+                                )}
+
+                                {/* Theme submenu */}
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger
+                                        className="cursor-pointer [&>svg:last-child]:hidden"
+                                        onMouseEnter={() => setIsThemeMenuHovered(true)}
+                                        onMouseLeave={() => setIsThemeMenuHovered(false)}
+                                    >
+                                        {isThemeMenuHovered ? (
+                                            <ChevronLeft className="mr-2 h-4 w-4" />
+                                        ) : (
+                                            <Palette className="mr-2 h-4 w-4" />
+                                        )}
+                                        <span>{t('settings.theme')}</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent
+                                        onMouseEnter={() => setIsThemeMenuHovered(true)}
+                                        onMouseLeave={() => setIsThemeMenuHovered(false)}
+                                    >
+                                        <DropdownMenuItem
+                                            onClick={onToggleTheme}
+                                            className={cn(
+                                                "cursor-pointer",
+                                                theme === 'light' && "bg-primary/10 text-primary font-medium"
+                                            )}
+                                        >
+                                            <Sun className="mr-2 h-4 w-4" />
+                                            {t('settings.lightTheme')}
+                                            {theme === 'light' && <Check className="ml-auto h-4 w-4" />}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={onToggleTheme}
+                                            className={cn(
+                                                "cursor-pointer",
+                                                theme === 'dark' && "bg-primary/10 text-primary font-medium"
+                                            )}
+                                        >
+                                            <Moon className="mr-2 h-4 w-4" />
+                                            {t('settings.darkTheme')}
+                                            {theme === 'dark' && <Check className="ml-auto h-4 w-4" />}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+
+                                {/* Export submenu */}
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger
+                                        className="cursor-pointer [&>svg:last-child]:hidden"
+                                        onMouseEnter={() => setIsExportMenuHovered(true)}
+                                        onMouseLeave={() => setIsExportMenuHovered(false)}
+                                    >
+                                        {isExportMenuHovered ? (
+                                            <ChevronLeft className="mr-2 h-4 w-4" />
+                                        ) : (
+                                            <Download className="mr-2 h-4 w-4" />
+                                        )}
+                                        <span>{t('export.title')}</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent
+                                        onMouseEnter={() => setIsExportMenuHovered(true)}
+                                        onMouseLeave={() => setIsExportMenuHovered(false)}
+                                    >
+                                        <DropdownMenuItem
+                                            onClick={handleExportCSV}
+                                            className="cursor-pointer"
+                                        >
+                                            <FileText className="mr-2 h-4 w-4" />
+                                            {t('export.csv')}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={handleExportExcel}
+                                            className="cursor-pointer"
+                                        >
+                                            <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                            {t('export.excel')}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+
+                                {/* Settings submenu - Admin only */}
+                                {isAdmin() && (
                                     <>
+                                        <DropdownMenuSeparator />
                                         <DropdownMenuSub>
                                             <DropdownMenuSubTrigger
                                                 className="cursor-pointer [&>svg:last-child]:hidden"
-                                                onMouseEnter={() => setIsDisplayMenuHovered(true)}
-                                                onMouseLeave={() => setIsDisplayMenuHovered(false)}
+                                                onMouseEnter={() => setIsSettingsMenuHovered(true)}
+                                                onMouseLeave={() => setIsSettingsMenuHovered(false)}
                                             >
-                                                {isDisplayMenuHovered ? (
+                                                {isSettingsMenuHovered ? (
                                                     <ChevronLeft className="mr-2 h-4 w-4" />
                                                 ) : (
-                                                    <Eye className="mr-2 h-4 w-4" />
+                                                    <Settings className="mr-2 h-4 w-4" />
                                                 )}
-                                                <span>{t('display.title')}</span>
+                                                <span>{t('settings.admin')}</span>
                                             </DropdownMenuSubTrigger>
                                             <DropdownMenuSubContent
-                                                onMouseEnter={() => setIsDisplayMenuHovered(true)}
-                                                onMouseLeave={() => setIsDisplayMenuHovered(false)}
+                                                onMouseEnter={() => setIsSettingsMenuHovered(true)}
+                                                onMouseLeave={() => setIsSettingsMenuHovered(false)}
                                             >
                                                 <DropdownMenuItem
-                                                    onClick={() => onDisplayModeChange('extended')}
-                                                    className={cn(
-                                                        "cursor-pointer",
-                                                        displayMode === 'extended' && "bg-primary/10 text-primary font-medium"
-                                                    )}
+                                                    onClick={onShowInterface}
+                                                    className="cursor-pointer"
                                                 >
-                                                    {displayMode === 'extended' && <Check className="mr-2 h-4 w-4" />}
-                                                    {displayMode !== 'extended' && <span className="mr-6" />}
-                                                    {t('display.extended')}
+                                                    <Palette className="mr-2 h-4 w-4" />
+                                                    {t('settings.interface')}
+                                                    <MoreHorizontal className="ml-auto h-4 w-4 opacity-50" />
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
-                                                    onClick={() => onDisplayModeChange('compact')}
-                                                    className={cn(
-                                                        "cursor-pointer",
-                                                        displayMode === 'compact' && "bg-primary/10 text-primary font-medium"
-                                                    )}
+                                                    onClick={onShowUsers}
+                                                    className="cursor-pointer"
                                                 >
-                                                    {displayMode === 'compact' && <Check className="mr-2 h-4 w-4" />}
-                                                    {displayMode !== 'compact' && <span className="mr-6" />}
-                                                    {t('display.compact')}
+                                                    <Users className="mr-2 h-4 w-4" />
+                                                    {t('navigation.users')}
+                                                    <MoreHorizontal className="ml-auto h-4 w-4 opacity-50" />
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={onShowLists}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <List className="mr-2 h-4 w-4" />
+                                                    {t('navigation.lists')}
+                                                    <MoreHorizontal className="ml-auto h-4 w-4 opacity-50" />
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={onShowLabels}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <Tag className="mr-2 h-4 w-4" />
+                                                    {t('navigation.labels')}
+                                                    <MoreHorizontal className="ml-auto h-4 w-4 opacity-50" />
                                                 </DropdownMenuItem>
                                             </DropdownMenuSubContent>
                                         </DropdownMenuSub>
-                                        <DropdownMenuSeparator />
                                     </>
                                 )}
+
+                                <DropdownMenuSeparator />
 
                                 <DropdownMenuItem onClick={onLogout} className="text-destructive focus:text-destructive">
                                     <LogOut className="mr-2 h-4 w-4" />

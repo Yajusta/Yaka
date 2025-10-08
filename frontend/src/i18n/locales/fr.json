@@ -408,7 +408,9 @@
         "notifications": "Notifications",
         "appearance": "Apparence",
         "language": "Langue",
-        "theme": "Changer le thème",
+        "theme": "Thème",
+        "lightTheme": "Thème clair",
+        "darkTheme": "Thème sombre",
         "timezone": "Fuseau horaire",
         "dateFormat": "Format de date",
         "timeFormat": "Format d'heure",
@@ -432,6 +434,16 @@
         "compact": "Compact",
         "extendedDescription": "Affichage complet avec tous les détails",
         "compactDescription": "Affichage réduit avec titre et icônes uniquement"
+    },
+    "export": {
+        "title": "Export",
+        "csv": "CSV (.csv)",
+        "excel": "Excel (.xlsx)",
+        "success": "Export réussi",
+        "error": "Erreur d'export",
+        "csvDownloaded": "Fichier CSV téléchargé avec succès sous le nom de \"{{filename}}\"",
+        "excelDownloaded": "Fichier Excel téléchargé avec succès sous le nom de \"{{filename}}\"",
+        "errorMessage": "Une erreur est survenue lors de l'export"
     },
     "errors": {
         "networkError": "Erreur réseau",

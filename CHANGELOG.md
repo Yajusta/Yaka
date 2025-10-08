@@ -3,6 +3,8 @@
 ## v1.2.2 (2025-10-08)
 
 - [NEW] Possibilité de réduire les colonnes.
+- [NEW] Affichage compact.
+- [NEW] Export.
 
 ## v1.2.1 (2025-10-07)
 
