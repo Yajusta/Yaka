@@ -15,7 +15,7 @@
 ## Frontend
 
 [ ] Séparer la page "invite" et la page "reset-password".
-[ ] Titre de la page dynamique.
+[x] Titre de la page dynamique.
 
 ## Backend
 

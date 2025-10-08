@@ -4,7 +4,9 @@
 
 - [NEW] Possibilité de réduire les colonnes.
 - [NEW] Affichage compact.
-- [NEW] Export.
+- [NEW] Export CSV / Excel.
+- [UX] Modification de l'emplacement des paramètres dans le menu.
+- [UX] Titre de la page lié au nom du tableau.
 
 ## v1.2.1 (2025-10-07)
 
