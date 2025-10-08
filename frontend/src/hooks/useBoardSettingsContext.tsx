@@ -79,6 +79,15 @@ export const BoardSettingsProvider = ({ children }: BoardSettingsProviderProps) 
     fetchBoardTitle();
   }, []);
 
+  // Mettre à jour le titre de la page HTML quand le titre du board change
+  useEffect(() => {
+    if (boardTitle && boardTitle !== 'Yaka (Yet Another Kanban App)') {
+      document.title = `Yaka - ${boardTitle}`;
+    } else {
+      document.title = 'Yaka';
+    }
+  }, [boardTitle]);
+
   const value: BoardSettingsContextType = {
     boardTitle,
     loading,

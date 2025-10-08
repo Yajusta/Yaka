@@ -252,7 +252,10 @@
         "loadingError": "Une erreur s'est produite lors du chargement de la gestion des listes. Veuillez fermer cette fenêtre et réessayer.",
         "contactAdmin": "Contactez un administrateur pour créer des listes",
         "createCardInList": "Créer une nouvelle carte dans cette liste",
-        "updatePriorityError": "Impossible de mettre à jour la priorité de la carte"
+        "updatePriorityError": "Impossible de mettre à jour la priorité de la carte",
+        "collapse": "Réduire",
+        "expand": "Étendre",
+        "columnOptions": "Options de la colonne"
     },
     "label": {
         "name": "Nom",
@@ -405,7 +408,9 @@
         "notifications": "Notifications",
         "appearance": "Apparence",
         "language": "Langue",
-        "theme": "Changer le thème",
+        "theme": "Thème",
+        "lightTheme": "Thème clair",
+        "darkTheme": "Thème sombre",
         "timezone": "Fuseau horaire",
         "dateFormat": "Format de date",
         "timeFormat": "Format d'heure",
@@ -422,6 +427,23 @@
     "boardSettings": {
         "loadError": "Erreur lors du chargement du titre du tableau",
         "updateError": "Erreur lors de la mise à jour du titre"
+    },
+    "display": {
+        "title": "Affichage",
+        "extended": "Étendu",
+        "compact": "Compact",
+        "extendedDescription": "Affichage complet avec tous les détails",
+        "compactDescription": "Affichage réduit avec titre et icônes uniquement"
+    },
+    "export": {
+        "title": "Export",
+        "csv": "CSV (.csv)",
+        "excel": "Excel (.xlsx)",
+        "success": "Export réussi",
+        "error": "Erreur d'export",
+        "csvDownloaded": "Fichier CSV téléchargé avec succès sous le nom de \"{{filename}}\"",
+        "excelDownloaded": "Fichier Excel téléchargé avec succès sous le nom de \"{{filename}}\"",
+        "errorMessage": "Une erreur est survenue lors de l'export"
     },
     "errors": {
         "networkError": "Erreur réseau",

@@ -19,6 +19,7 @@ export interface KanbanList {
     order: number;
     created_at: string;
     updated_at?: string;
+    is_collapsed?: boolean; // UI-only state, not persisted to backend
 }
 
 export interface Card {

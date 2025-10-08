@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.2.2 (2025-10-08)
+
+- [NEW] Possibilité de réduire les colonnes.
+- [NEW] Affichage compact.
+- [NEW] Export CSV / Excel.
+- [UX] Modification de l'emplacement des paramètres dans le menu.
+- [UX] Titre de la page lié au nom du tableau.
+
 ## v1.2.1 (2025-10-07)
 
 - [NEW] Saisie et modification des tâches par la voix (nécessite un accès à une API de LLM OpenAI ou similaire).

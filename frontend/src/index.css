@@ -820,3 +820,26 @@
 .priority-low:hover:not(.no-drag-effect) {
   transform: translateY(-2px);
 }
+
+/* Display mode transitions */
+.card-extended,
+.card-compact {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Compact mode styles - remove max-height constraint to allow dynamic height */
+.card-compact {
+  /* Allow cards to grow with content */
+  min-height: auto;
+}
+
+.card-extended {
+  /* Extended mode keeps default behavior */
+  min-height: auto;
+}
+
+/* Smooth transition for card content */
+.card-compact>*>*>*,
+.card-extended>*>*>* {
+  transition: opacity 0.2s ease-in-out;
+}

@@ -13,6 +13,7 @@ dependencies = [
     "fastapi==0.104.1",
     "httpx>=0.28.1",
     "openai>=2.1.0",
+    "openpyxl>=3.1.5",
     "pydantic[email]==2.5.0",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.1.0",

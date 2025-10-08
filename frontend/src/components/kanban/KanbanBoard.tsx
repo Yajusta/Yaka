@@ -9,6 +9,7 @@ import { ArchiveManager } from '../admin/ArchiveManager';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { KanbanColumn } from './KanbanColumn';
 import { CardItem } from './index';
+import { DisplayMode } from '../../hooks/useDisplayMode';
 
 
 interface KanbanBoardProps {
@@ -19,6 +20,7 @@ interface KanbanBoardProps {
     onCreateCard?: (listId: number) => void;
     refreshTrigger?: number; // Prop pour forcer le rechargement des listes
     isAnyModalOpen?: boolean; // Prop pour masquer le TrashZone quand une modale est ouverte
+    displayMode?: DisplayMode;
 }
 
 const TrashZone = ({
@@ -76,7 +78,8 @@ export const KanbanBoard = ({
     onCardMove,
     onCreateCard,
     refreshTrigger,
-    isAnyModalOpen = false
+    isAnyModalOpen = false,
+    displayMode = 'extended'
 }: KanbanBoardProps) => {
     const { t } = useTranslation();
     const [activeCard, setActiveCard] = useState<CardType | null>(null);
@@ -192,6 +195,19 @@ export const KanbanBoard = ({
     const [showArchiveManager, setShowArchiveManager] = useState<boolean>(false);
     const boardRef = useRef<HTMLDivElement>(null);
     const lastDropUpdateTsRef = useRef<number>(0);
+    const [collapsedLists, setCollapsedLists] = useState<Set<number>>(() => {
+        // Initialize from localStorage
+        const stored = localStorage.getItem('yaka-collapsed-lists');
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                return new Set(parsed);
+            } catch (e) {
+                console.error('Failed to parse collapsed lists from localStorage:', e);
+            }
+        }
+        return new Set();
+    });
 
     // Event listener global pour suivre la position de la souris pendant le drag
     useEffect(() => {
@@ -220,6 +236,21 @@ export const KanbanBoard = ({
         };
     }, [activeCard]);
 
+    // Function to toggle collapsed state
+    const handleToggleCollapse = (listId: number) => {
+        setCollapsedLists(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(listId)) {
+                newSet.delete(listId);
+            } else {
+                newSet.add(listId);
+            }
+            // Persist to localStorage
+            localStorage.setItem('yaka-collapsed-lists', JSON.stringify(Array.from(newSet)));
+            return newSet;
+        });
+    };
+
     // Fetch lists on component mount and when refreshTrigger changes
     useEffect(() => {
         const fetchLists = async () => {
@@ -227,7 +258,12 @@ export const KanbanBoard = ({
                 setListsLoading(true);
                 setListsError(null);
                 const fetchedLists = await listsApi.getLists();
-                setLists(fetchedLists);
+                // Apply collapsed state from localStorage
+                const listsWithCollapsed = fetchedLists.map(list => ({
+                    ...list,
+                    is_collapsed: collapsedLists.has(list.id)
+                }));
+                setLists(listsWithCollapsed);
             } catch (error) {
                 console.error('Error fetching lists:', error);
                 setListsError(t('list.loadError'));
@@ -237,7 +273,7 @@ export const KanbanBoard = ({
         };
 
         fetchLists();
-    }, [refreshTrigger]);
+    }, [refreshTrigger, collapsedLists]);
 
     const getCardsForList = (listId: number): CardType[] => {
         return cards.filter(card => card.list_id === listId);
@@ -252,10 +288,18 @@ export const KanbanBoard = ({
         const containerWidth = boardRef.current.clientWidth; // Largeur intérieure sans padding
         const padding = 64; // Padding du conteneur (p-4 = 16px * 2)
         const gap = 12; // Gap CSS réel (0.75rem = 12px)
-        const availableWidth = containerWidth - padding - (lists.length - 1) * gap;
 
-        // Largeur par colonne si on utilise tout l'espace disponible
-        const widthPerColumn = Math.floor(availableWidth / lists.length);
+        // Calculate space taken by collapsed columns
+        const collapsedWidth = 60; // Width of collapsed column
+        const numCollapsed = lists.filter(list => list.is_collapsed).length;
+        const numExpanded = lists.length - numCollapsed;
+        const collapsedSpace = numCollapsed * collapsedWidth;
+
+        // Calculate available width for expanded columns
+        const availableWidth = containerWidth - padding - (lists.length - 1) * gap - collapsedSpace;
+
+        // Largeur par colonne si on utilise tout l'espace disponible (only for expanded columns)
+        const widthPerColumn = numExpanded > 0 ? Math.floor(availableWidth / numExpanded) : 280;
 
         let optimalWidth = 280;
         let shouldCenter = false;
@@ -382,6 +426,15 @@ export const KanbanBoard = ({
 
         columnElements?.forEach((columnElement) => {
             const element = columnElement as HTMLElement;
+            const listIdStr = element.getAttribute('data-list-id');
+            if (!listIdStr) return;
+
+            const listId = parseInt(listIdStr, 10);
+            const list = lists.find(l => l.id === listId);
+
+            // Skip collapsed columns for drop detection
+            if (list?.is_collapsed) return;
+
             const rect = element.getBoundingClientRect();
 
             // Vérifier si la souris est dans cette colonne
@@ -691,23 +744,6 @@ export const KanbanBoard = ({
             }
         }
 
-        // Get final mouse position from the event
-        let finalClientX: number | null = null;
-        let finalClientY: number | null = null;
-
-        if (event.activatorEvent) {
-            if ('touches' in event.activatorEvent) {
-                const touch = (event.activatorEvent as TouchEvent).changedTouches?.[0];
-                if (touch) {
-                    finalClientX = touch.clientX;
-                    finalClientY = touch.clientY;
-                }
-            } else {
-                finalClientX = (event.activatorEvent as MouseEvent).clientX;
-                finalClientY = (event.activatorEvent as MouseEvent).clientY;
-            }
-        }
-
         // Mark this card as just dropped to keep it invisible
         setJustDroppedCardId(activeId);
 
@@ -838,15 +874,16 @@ export const KanbanBoard = ({
                     }}>
                         {lists.map(list => {
                             const listCards = getCardsForList(list.id);
+                            const columnWidth = list.is_collapsed ? 60 : optimalColumnWidth;
                             return (
                                 <div
                                     key={list.id}
                                     className="kanban-list-column"
                                     style={{
-                                        minWidth: '280px',
-                                        maxWidth: '480px',
-                                        width: `${optimalColumnWidth}px`,
-                                        flex: `0 0 ${optimalColumnWidth}px`
+                                        minWidth: list.is_collapsed ? '60px' : '280px',
+                                        maxWidth: list.is_collapsed ? '60px' : '480px',
+                                        width: `${columnWidth}px`,
+                                        flex: `0 0 ${columnWidth}px`
                                     }}
                                 >
                                     <KanbanColumn
@@ -863,6 +900,8 @@ export const KanbanBoard = ({
                                         hiddenCardId={hiddenCardId}
                                         activeCardSize={activeCardSize}
                                         originalPositions={originalPositions}
+                                        onToggleCollapse={handleToggleCollapse}
+                                        displayMode={displayMode}
                                     />
                                 </div>
                             );
@@ -895,6 +934,7 @@ export const KanbanBoard = ({
                                     isInTrashZone={isOverTrash}
                                     onUpdate={() => { }}
                                     onDelete={(id) => onCardDelete(id)}
+                                    displayMode={displayMode}
                                 />
                             </div>
                         </div>

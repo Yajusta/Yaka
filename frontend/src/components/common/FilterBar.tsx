@@ -141,7 +141,7 @@ export const FilterBar = ({
     };
 
     return (
-        <GlassmorphicCard className="border-b border-border/50 rounded-none rounded-t-lg py-0">
+        <GlassmorphicCard className="border-b border-border/50 rounded-none py-0">
             <div className="p-4">
                 {/* Main filter row */}
                 <div className="flex items-center justify-between">
