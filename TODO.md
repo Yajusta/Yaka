@@ -10,7 +10,7 @@
 [ ] Définir l'utilisateur par défaut dans les variables d'environnement.
 [ ] Export au format Excel de toutes les tâches.
 [x] Pouvoir "réduire" un colonne (qui ne sert pas souvent).
-[ ] Option pour réduire toutes les tâches (vue globale).
+[x] Option pour réduire toutes les tâches (vue compacte).
 
 ## Frontend
 

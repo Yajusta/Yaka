@@ -9,6 +9,7 @@ import { ArchiveManager } from '../admin/ArchiveManager';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { KanbanColumn } from './KanbanColumn';
 import { CardItem } from './index';
+import { DisplayMode } from '../../hooks/useDisplayMode';
 
 
 interface KanbanBoardProps {
@@ -19,6 +20,7 @@ interface KanbanBoardProps {
     onCreateCard?: (listId: number) => void;
     refreshTrigger?: number; // Prop pour forcer le rechargement des listes
     isAnyModalOpen?: boolean; // Prop pour masquer le TrashZone quand une modale est ouverte
+    displayMode?: DisplayMode;
 }
 
 const TrashZone = ({
@@ -76,7 +78,8 @@ export const KanbanBoard = ({
     onCardMove,
     onCreateCard,
     refreshTrigger,
-    isAnyModalOpen = false
+    isAnyModalOpen = false,
+    displayMode = 'extended'
 }: KanbanBoardProps) => {
     const { t } = useTranslation();
     const [activeCard, setActiveCard] = useState<CardType | null>(null);
@@ -741,23 +744,6 @@ export const KanbanBoard = ({
             }
         }
 
-        // Get final mouse position from the event
-        let finalClientX: number | null = null;
-        let finalClientY: number | null = null;
-
-        if (event.activatorEvent) {
-            if ('touches' in event.activatorEvent) {
-                const touch = (event.activatorEvent as TouchEvent).changedTouches?.[0];
-                if (touch) {
-                    finalClientX = touch.clientX;
-                    finalClientY = touch.clientY;
-                }
-            } else {
-                finalClientX = (event.activatorEvent as MouseEvent).clientX;
-                finalClientY = (event.activatorEvent as MouseEvent).clientY;
-            }
-        }
-
         // Mark this card as just dropped to keep it invisible
         setJustDroppedCardId(activeId);
 
@@ -915,6 +901,7 @@ export const KanbanBoard = ({
                                         activeCardSize={activeCardSize}
                                         originalPositions={originalPositions}
                                         onToggleCollapse={handleToggleCollapse}
+                                        displayMode={displayMode}
                                     />
                                 </div>
                             );
@@ -947,6 +934,7 @@ export const KanbanBoard = ({
                                     isInTrashZone={isOverTrash}
                                     onUpdate={() => { }}
                                     onDelete={(id) => onCardDelete(id)}
+                                    displayMode={displayMode}
                                 />
                             </div>
                         </div>

@@ -14,6 +14,8 @@ import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { AssigneeChanger } from './AssigneeChanger';
 import { CardHistoryModal } from './CardHistoryModal';
 import { PriorityChanger } from './PriorityChanger';
+import { DisplayMode } from '../../hooks/useDisplayMode';
+import { cn } from '../../lib/utils';
 
 interface CardItemProps {
     card: Card;
@@ -24,6 +26,7 @@ interface CardItemProps {
     isJustDropped?: boolean;
     isHidden?: boolean;
     isInTrashZone?: boolean;
+    displayMode?: DisplayMode;
 }
 
 export const CardItem = ({
@@ -34,7 +37,8 @@ export const CardItem = ({
     isActiveCard = false,
     isJustDropped = false,
     isHidden = false,
-    isInTrashZone = false
+    isInTrashZone = false,
+    displayMode = 'extended'
 }: CardItemProps) => {
     const { user: currentUser } = useAuth();
     const currentUserId = currentUser?.id ?? null;
@@ -51,6 +55,9 @@ export const CardItem = ({
     const { t } = useTranslation();
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [showCommentsModal, setShowCommentsModal] = useState(false);
+
+    // Check if we're in compact mode
+    const isCompact = displayMode === 'compact';
 
     const {
         attributes,
@@ -183,35 +190,35 @@ export const CardItem = ({
             {...dragProps}
             onDoubleClick={handleDoubleClick}
             variant={canDrag ? "interactive" : "default"}
-            className={`group ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default no-drag-effect'} border-2 ${priorityGlowClass} ${draggingClasses} ${hiddenClass} ${trashClass} ${isInTrashZone ? 'card-trash-active border-destructive' : ''}`}
+            className={`group ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default no-drag-effect'} border-2 ${priorityGlowClass} ${draggingClasses} ${hiddenClass} ${trashClass} ${isInTrashZone ? 'card-trash-active border-destructive' : ''} ${isCompact ? 'card-compact' : 'card-extended'}`}
         >
-            <CardContent>
+            <CardContent className={isCompact ? 'px-2' : ''} style={isCompact ? { paddingTop: '2px', paddingBottom: '2px' } : undefined}>
                 <div>
                     {/* Header with title and actions */}
-                    <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-semibold text-sm leading-tight flex-1 text-foreground">
+                    <div className={cn("flex items-start justify-between", isCompact ? "gap-1" : "gap-2")}>
+                        <h3 className={cn("font-semibold leading-tight flex-1 text-foreground", isCompact ? "text-xs" : "text-sm")}>
                             {card.title}
                         </h3>
                         {canViewActions && (
-                            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className={cn("flex opacity-0 group-hover:opacity-100 transition-opacity duration-200", isCompact ? "space-x-0.5" : "space-x-1")}>
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-7 w-7 p-0 hover:bg-primary/10"
+                                    className={cn("p-0 hover:bg-primary/10", isCompact ? "h-5 w-5" : "h-7 w-7")}
                                     onClick={handleEdit}
                                     title={t('card.editCard')}
                                 >
-                                    <Edit className="h-3.5 w-3.5" />
+                                    <Edit className={isCompact ? "h-3 w-3" : "h-3.5 w-3.5"} />
                                 </Button>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="h-7 w-7 p-0 hover:bg-muted"
+                                            className={cn("p-0 hover:bg-muted", isCompact ? "h-5 w-5" : "h-7 w-7")}
                                             title={t('common.actions')}
                                         >
-                                            <MoreHorizontal className="h-3.5 w-3.5" />
+                                            <MoreHorizontal className={isCompact ? "h-3 w-3" : "h-3.5 w-3.5"} />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-40">
@@ -242,15 +249,15 @@ export const CardItem = ({
                         )}
                     </div>
 
-                    {/* Description */}
-                    {card.description && (
+                    {/* Description - hidden in compact mode */}
+                    {!isCompact && card.description && (
                         <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                             {card.description}
                         </p>
                     )}
 
-                    {/* Labels */}
-                    {card.labels && card.labels.length > 0 && (
+                    {/* Labels - hidden in compact mode */}
+                    {!isCompact && card.labels && card.labels.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                             {card.labels.map(label => (
                                 <Badge
@@ -269,108 +276,110 @@ export const CardItem = ({
                         </div>
                     )}
 
-                    {/* Footer */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                        <div className="flex items-center space-x-2">
-                            <PriorityChanger card={card} onPriorityChange={handlePriorityChange} disabled={!canModifyCard} />
+                    {/* Footer - hidden in compact mode */}
+                    {!isCompact && (
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                            <div className="flex items-center space-x-2">
+                                <PriorityChanger card={card} onPriorityChange={handlePriorityChange} disabled={!canModifyCard} />
 
-                            {card.due_date && (() => {
-                                const dueDateStatus = getDueDateStatus(card.due_date);
-                                const isOverdue = dueDateStatus === 'overdue';
-                                const isUpcoming = dueDateStatus === 'upcoming';
+                                {card.due_date && (() => {
+                                    const dueDateStatus = getDueDateStatus(card.due_date);
+                                    const isOverdue = dueDateStatus === 'overdue';
+                                    const isUpcoming = dueDateStatus === 'upcoming';
 
-                                const dateClasses = `flex items-center transition-colors relative ${isOverdue
-                                    ? 'text-red-800 hover:text-red-900 px-2 py-1 rounded-md border-2 border-red-400 overflow-hidden'
-                                    : isUpcoming
-                                        ? 'text-orange-600 hover:text-orange-700 bg-orange-50/50 px-2 py-1 rounded-md border border-orange-200'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                    }`;
+                                    const dateClasses = `flex items-center transition-colors relative ${isOverdue
+                                        ? 'text-red-800 hover:text-red-900 px-2 py-1 rounded-md border-2 border-red-400 overflow-hidden'
+                                        : isUpcoming
+                                            ? 'text-orange-600 hover:text-orange-700 bg-orange-50/50 px-2 py-1 rounded-md border border-orange-200'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                        }`;
 
-                                const Icon = isOverdue ? AlertCircle : isUpcoming ? AlertTriangle : CalendarDays;
+                                    const Icon = isOverdue ? AlertCircle : isUpcoming ? AlertTriangle : CalendarDays;
 
-                                return (
-                                    <div
-                                        className={dateClasses}
-                                        title={t('card.dueDate')}
-                                    >
-                                        {isOverdue && (
-                                            <div className="absolute inset-0 bg-red-500/20 animate-pulse"></div>
-                                        )}
-                                        <div className="relative z-10 flex items-center">
-                                            <Icon className={`h-3 w-3 mr-1 ${isOverdue ? 'text-red-800' : isUpcoming ? 'text-orange-600' : 'text-muted-foreground'}`} />
-                                            <span className="text-xs font-medium">{formatDate(card.due_date)}</span>
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-                            {totalItems > 0 && (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <div className="flex items-center gap-2 ml-1 cursor-pointer" title={t('card.checklistProgress')}>
-                                            <div className="relative h-5 w-5">
-                                                <svg className="h-5 w-5 text-muted-foreground" viewBox="0 0 36 36">
-                                                    <path
-                                                        className="text-muted-foreground/20"
-                                                        strokeWidth="4"
-                                                        stroke="currentColor"
-                                                        fill="none"
-                                                        pathLength="100"
-                                                        d="M18 2 a 16 16 0 1 0 0 32 a 16 16 0 1 0 0 -32"
-                                                    />
-                                                    <path
-                                                        className="text-primary"
-                                                        strokeWidth="4"
-                                                        strokeLinecap="round"
-                                                        stroke="currentColor"
-                                                        fill="none"
-                                                        pathLength="100"
-                                                        strokeDasharray={`${progress} ${100 - progress}`}
-                                                        transform="scale(-1,1) translate(-36,0)"
-                                                        d="M18 2 a 16 16 0 1 0 0 32 a 16 16 0 1 0 0 -32"
-                                                    />
-                                                </svg>
+                                    return (
+                                        <div
+                                            className={dateClasses}
+                                            title={t('card.dueDate')}
+                                        >
+                                            {isOverdue && (
+                                                <div className="absolute inset-0 bg-red-500/20 animate-pulse"></div>
+                                            )}
+                                            <div className="relative z-10 flex items-center">
+                                                <Icon className={`h-3 w-3 mr-1 ${isOverdue ? 'text-red-800' : isUpcoming ? 'text-orange-600' : 'text-muted-foreground'}`} />
+                                                <span className="text-xs font-medium">{formatDate(card.due_date)}</span>
                                             </div>
-                                            <span className="text-xs text-muted-foreground">{doneItems} / {totalItems}</span>
                                         </div>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" className="w-72 p-0 bg-background border border-border" sideOffset={5}>
-                                        <div className="p-3 space-y-2">
-                                            <div className="text-sm font-medium text-foreground">
-                                                {t('card.checklist')} ({doneItems}/{totalItems})
+                                    );
+                                })()}
+                                {totalItems > 0 && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <div className="flex items-center gap-2 ml-1 cursor-pointer" title={t('card.checklistProgress')}>
+                                                <div className="relative h-5 w-5">
+                                                    <svg className="h-5 w-5 text-muted-foreground" viewBox="0 0 36 36">
+                                                        <path
+                                                            className="text-muted-foreground/20"
+                                                            strokeWidth="4"
+                                                            stroke="currentColor"
+                                                            fill="none"
+                                                            pathLength="100"
+                                                            d="M18 2 a 16 16 0 1 0 0 32 a 16 16 0 1 0 0 -32"
+                                                        />
+                                                        <path
+                                                            className="text-primary"
+                                                            strokeWidth="4"
+                                                            strokeLinecap="round"
+                                                            stroke="currentColor"
+                                                            fill="none"
+                                                            pathLength="100"
+                                                            strokeDasharray={`${progress} ${100 - progress}`}
+                                                            transform="scale(-1,1) translate(-36,0)"
+                                                            d="M18 2 a 16 16 0 1 0 0 32 a 16 16 0 1 0 0 -32"
+                                                        />
+                                                    </svg>
+                                                </div>
+                                                <span className="text-xs text-muted-foreground">{doneItems} / {totalItems}</span>
                                             </div>
-                                            <div className="space-y-1 max-h-64 overflow-y-auto">
-                                                {card.items?.map((item) => (
-                                                    <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border">
-                                                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${item.is_done ? 'bg-primary border-primary' : 'border-muted-foreground'}`}>
-                                                            {item.is_done && (
-                                                                <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                                                    <path d="M5 13l4 4L19 7" />
-                                                                </svg>
-                                                            )}
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start" className="w-72 p-0 bg-background border border-border" sideOffset={5}>
+                                            <div className="p-3 space-y-2">
+                                                <div className="text-sm font-medium text-foreground">
+                                                    {t('card.checklist')} ({doneItems}/{totalItems})
+                                                </div>
+                                                <div className="space-y-1 max-h-64 overflow-y-auto">
+                                                    {card.items?.map((item) => (
+                                                        <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border">
+                                                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${item.is_done ? 'bg-primary border-primary' : 'border-muted-foreground'}`}>
+                                                                {item.is_done && (
+                                                                    <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                                                        <path d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                )}
+                                                            </div>
+                                                            <span className={`text-sm ${item.is_done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                                                                {item.text}
+                                                            </span>
                                                         </div>
-                                                        <span className={`text-sm ${item.is_done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
-                                                            {item.text}
-                                                        </span>
-                                                    </div>
-                                                ))}
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
-                            <div className={`flex items-center gap-1 cursor-pointer transition-opacity duration-200 ${totalComments > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                }`} title={t('card.comments')} onClick={() => setShowCommentsModal(true)}>
-                                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                                {totalComments > 0 && (
-                                    <span className="text-xs text-muted-foreground">{totalComments}</span>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 )}
+                                <div className={`flex items-center gap-1 cursor-pointer transition-opacity duration-200 ${totalComments > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                    }`} title={t('card.comments')} onClick={() => setShowCommentsModal(true)}>
+                                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                    {totalComments > 0 && (
+                                        <span className="text-xs text-muted-foreground">{totalComments}</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className={`flex items-center ml-auto ${card.assignee ? "opacity-100" : "opacity-0 group-hover:opacity-100 transition-opacity duration-200"} ${isCurrentUserAssigned ? 'bg-primary text-primary-foreground rounded-md px-2 py-1 -mx-2 -my-1 shadow-sm' : ''}`}>
+                                <AssigneeChanger card={card} onAssigneeChange={handleAssigneeChange} isCurrentUserAssigned={isCurrentUserAssigned} disabled={!canModifyCard} />
                             </div>
                         </div>
-
-                        <div className={`flex items-center ml-auto ${card.assignee ? "opacity-100" : "opacity-0 group-hover:opacity-100 transition-opacity duration-200"} ${isCurrentUserAssigned ? 'bg-primary text-primary-foreground rounded-md px-2 py-1 -mx-2 -my-1 shadow-sm' : ''}`}>
-                            <AssigneeChanger card={card} onAssigneeChange={handleAssigneeChange} isCurrentUserAssigned={isCurrentUserAssigned} disabled={!canModifyCard} />
-                        </div>
-                    </div>
+                    )}
                 </div>
             </CardContent>
 

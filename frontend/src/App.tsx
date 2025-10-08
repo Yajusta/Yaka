@@ -21,6 +21,7 @@ import { usePermissions } from './hooks/usePermissions';
 import { useTheme } from './hooks/useTheme.tsx';
 import { useUserLanguage } from './hooks/useUserLanguage';
 import { UsersProvider, useUsers } from './hooks/useUsers';
+import { useDisplayMode } from './hooks/useDisplayMode';
 import './index.css';
 import { cardService, labelService } from './services/api.tsx';
 import { Card, Label } from './types/index.ts';
@@ -41,6 +42,7 @@ const KanbanApp = () => {
     const { theme, toggleTheme } = useTheme();
     const { toast } = useToast();
     const permissions = usePermissions(user);
+    const { displayMode, setDisplayMode } = useDisplayMode();
 
     const notifyPermissionDenied = () => {
         toast({
@@ -387,6 +389,8 @@ const KanbanApp = () => {
                     onShowInterface={handleShowInterface}
                     onToggleTheme={toggleTheme}
                     onLogout={handleLogout}
+                    displayMode={displayMode}
+                    onDisplayModeChange={setDisplayMode}
                 />
 
                 <FilterBar
@@ -409,6 +413,7 @@ const KanbanApp = () => {
                     onCreateCard={permissions.canCreateCard ? (listId) => handleCreateCard(listId) : undefined}
                     refreshTrigger={listsRefreshTrigger}
                     isAnyModalOpen={isAnyModalOpen}
+                    displayMode={displayMode}
                 />
 
                 <CardForm

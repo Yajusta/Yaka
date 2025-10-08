@@ -14,6 +14,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { DisplayMode } from '../../hooks/useDisplayMode';
 
 interface KanbanColumnProps {
     id: string;
@@ -30,6 +31,7 @@ interface KanbanColumnProps {
     activeCardSize?: { width: number; height: number } | null;
     originalPositions?: Map<string, DOMRect>;
     onToggleCollapse?: (listId: number) => void;
+    displayMode?: DisplayMode;
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
@@ -46,7 +48,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     hiddenCardId,
     activeCardSize,
     originalPositions,
-    onToggleCollapse
+    onToggleCollapse,
+    displayMode = 'extended'
 }) => {
     const { t } = useTranslation();
     const { setNodeRef } = useDroppable({
@@ -195,7 +198,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 <div
                     ref={containerRef}
                     className={cn(
-                        "flex-1 p-4 space-y-3 overflow-y-auto",
+                        "flex-1 p-4 overflow-y-auto",
+                        displayMode === 'compact' ? "space-y-1" : "space-y-3",
                         isDragging && "sortable-context-dragging"
                     )}
                     style={{
@@ -266,6 +270,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                                             isActiveCard={false}
                                             isJustDropped={card.id === justDroppedCardId}
                                             isHidden={false}
+                                            displayMode={displayMode}
                                         />
                                     </div>
                                 );

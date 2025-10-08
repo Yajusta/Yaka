@@ -1,6 +1,6 @@
 import { Button } from '../ui/button';
-
-import { List, LogOut, Moon, Palette, Settings, Sun, Tag, User, Users } from 'lucide-react';
+import * as React from 'react';
+import { Check, ChevronLeft, Eye, List, LogOut, Moon, Palette, Settings, Sun, Tag, User, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useBoardSettings } from '../../hooks/useBoardSettingsContext';
 import { UserRole, UserRoleValue } from '../../types';
@@ -10,10 +10,15 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
     DropdownMenuTrigger
 } from '../ui/dropdown-menu';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import LanguageSelector from './LanguageSelector';
+import { DisplayMode } from '../../hooks/useDisplayMode';
+import { cn } from '../../lib/utils';
 
 interface User {
     id: number;
@@ -31,6 +36,8 @@ interface HeaderProps {
     onShowInterface: () => void;
     onToggleTheme: () => void;
     onLogout: () => void;
+    displayMode?: DisplayMode;
+    onDisplayModeChange?: (mode: DisplayMode) => void;
 }
 
 export const Header = ({
@@ -41,10 +48,13 @@ export const Header = ({
     onShowLists,
     onShowInterface,
     onToggleTheme,
-    onLogout
+    onLogout,
+    displayMode = 'extended',
+    onDisplayModeChange
 }: HeaderProps) => {
     const { boardTitle, loading } = useBoardSettings();
     const { t } = useTranslation();
+    const [isDisplayMenuHovered, setIsDisplayMenuHovered] = React.useState(false);
 
     const getUserInitials = (): string => {
         if (!user) {
@@ -95,7 +105,7 @@ export const Header = ({
     const isAdmin = (): boolean => user?.role === UserRole.ADMIN;
 
     return (
-        <GlassmorphicCard className="border-b border-border/50 rounded-none shadow-sm py-0">
+        <GlassmorphicCard className="border-b border-border/50 !rounded-none shadow-sm py-0">
             <div className="px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
@@ -202,6 +212,55 @@ export const Header = ({
                                     </div>
                                 </div>
                                 <DropdownMenuSeparator />
+
+                                {/* Display mode submenu */}
+                                {onDisplayModeChange && (
+                                    <>
+                                        <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger
+                                                className="cursor-pointer [&>svg:last-child]:hidden"
+                                                onMouseEnter={() => setIsDisplayMenuHovered(true)}
+                                                onMouseLeave={() => setIsDisplayMenuHovered(false)}
+                                            >
+                                                {isDisplayMenuHovered ? (
+                                                    <ChevronLeft className="mr-2 h-4 w-4" />
+                                                ) : (
+                                                    <Eye className="mr-2 h-4 w-4" />
+                                                )}
+                                                <span>{t('display.title')}</span>
+                                            </DropdownMenuSubTrigger>
+                                            <DropdownMenuSubContent
+                                                onMouseEnter={() => setIsDisplayMenuHovered(true)}
+                                                onMouseLeave={() => setIsDisplayMenuHovered(false)}
+                                            >
+                                                <DropdownMenuItem
+                                                    onClick={() => onDisplayModeChange('extended')}
+                                                    className={cn(
+                                                        "cursor-pointer",
+                                                        displayMode === 'extended' && "bg-primary/10 text-primary font-medium"
+                                                    )}
+                                                >
+                                                    {displayMode === 'extended' && <Check className="mr-2 h-4 w-4" />}
+                                                    {displayMode !== 'extended' && <span className="mr-6" />}
+                                                    {t('display.extended')}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => onDisplayModeChange('compact')}
+                                                    className={cn(
+                                                        "cursor-pointer",
+                                                        displayMode === 'compact' && "bg-primary/10 text-primary font-medium"
+                                                    )}
+                                                >
+                                                    {displayMode === 'compact' && <Check className="mr-2 h-4 w-4" />}
+                                                    {displayMode !== 'compact' && <span className="mr-6" />}
+                                                    {t('display.compact')}
+                                                </DropdownMenuItem>
+                                            </DropdownMenuSubContent>
+                                        </DropdownMenuSub>
+                                        <DropdownMenuSeparator />
+                                    </>
+                                )}
+
                                 <DropdownMenuItem onClick={onLogout} className="text-destructive focus:text-destructive">
                                     <LogOut className="mr-2 h-4 w-4" />
                                     <span>{t('auth.logout')}</span>

@@ -426,6 +426,13 @@
         "loadError": "Erreur lors du chargement du titre du tableau",
         "updateError": "Erreur lors de la mise à jour du titre"
     },
+    "display": {
+        "title": "Affichage",
+        "extended": "Étendu",
+        "compact": "Compact",
+        "extendedDescription": "Affichage complet avec tous les détails",
+        "compactDescription": "Affichage réduit avec titre et icônes uniquement"
+    },
     "errors": {
         "networkError": "Erreur réseau",
         "serverError": "Erreur serveur",

@@ -426,6 +426,13 @@
         "loadError": "Error loading board title",
         "updateError": "Error updating board title"
     },
+    "display": {
+        "title": "Display",
+        "extended": "Extended",
+        "compact": "Compact",
+        "extendedDescription": "Full display with all details",
+        "compactDescription": "Compact display with title and icons only"
+    },
     "errors": {
         "networkError": "Network error",
         "serverError": "Server error",
