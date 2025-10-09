@@ -1,12 +1,13 @@
 # Changelog
 
-## v1.2.2 (2025-10-08)
+## v1.2.3 (2025-10-09)
 
 - [NEW] Possibilité de réduire les colonnes.
 - [NEW] Affichage compact.
 - [NEW] Export CSV / Excel.
 - [UX] Modification de l'emplacement des paramètres dans le menu.
 - [UX] Titre de la page lié au nom du tableau.
+- Modifications mineures d'UX.
 
 ## v1.2.1 (2025-10-07)
 

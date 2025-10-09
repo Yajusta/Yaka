@@ -2,7 +2,7 @@ import { closestCenter, DndContext, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ArrowDown, ArrowUp, GripVertical, Minus, Trash2, X } from 'lucide-react';
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../hooks/use-toast.tsx';
 import { useAuth } from '../../hooks/useAuth';
@@ -113,6 +113,10 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
     const [loading, setLoading] = useState<boolean>(false);
     const [checklist, setChecklist] = useState<{ id?: number; text: string; is_done: boolean; position: number }[]>([]);
     const [newItemText, setNewItemText] = useState<string>('');
+
+    // Refs pour gérer le focus
+    const titleInputRef = useRef<HTMLInputElement>(null);
+    const submitButtonRef = useRef<HTMLButtonElement>(null);
 
     // Helper function to check if a field has changed
     const getFieldChangeInfo = (fieldName: string): { isChanged: boolean; tooltipContent: string } => {
@@ -346,6 +350,27 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
         }
     }, [lists, formData.list_id]);
 
+    // Gérer le focus selon le contexte d'ouverture
+    useEffect(() => {
+        if (isOpen && !isViewOnly) {
+            // Petit délai pour s'assurer que le dialogue est complètement rendu
+            const timer = setTimeout(() => {
+                // Si c'est une nouvelle carte sans données pré-remplies ou avec proposedChanges (voix)
+                // ET que le titre est vide -> focus sur le champ titre
+                if (!card && !formData.title) {
+                    titleInputRef.current?.focus();
+                }
+                // Si c'est une édition de carte OU une création avec données pré-remplies (voix)
+                // -> focus sur le bouton de validation
+                else if (card || (initialData && initialData.title) || proposedChanges) {
+                    submitButtonRef.current?.focus();
+                }
+            }, 100);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, card, formData.title, initialData, proposedChanges, isViewOnly]);
+
     const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
 
@@ -577,6 +602,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
                             tooltipContent={getFieldChangeInfo('title').tooltipContent}
                         >
                             <Input
+                                ref={titleInputRef}
                                 id="title"
                                 value={formData.title}
                                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
@@ -827,7 +853,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
                                     <Button type="button" variant="outline" onClick={onClose}>
                                         {t('common.cancel')}
                                     </Button>
-                                    <Button type="submit" disabled={loading}>
+                                    <Button ref={submitButtonRef} type="submit" disabled={loading}>
                                         {loading ? t('common.saving') : (card ? t('common.update') : t('common.create'))}
                                     </Button>
                                 </>
