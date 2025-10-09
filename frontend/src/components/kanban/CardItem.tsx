@@ -16,6 +16,8 @@ import { CardHistoryModal } from './CardHistoryModal';
 import { PriorityChanger } from './PriorityChanger';
 import { DisplayMode } from '../../hooks/useDisplayMode';
 import { cn } from '../../lib/utils';
+import { cardItemsService } from '../../services/api.tsx';
+import { useToast } from '../../hooks/use-toast';
 
 interface CardItemProps {
     card: Card;
@@ -49,10 +51,12 @@ export const CardItem = ({
     const canModifyCard = permissions.canModifyCard(card);
     const canComment = permissions.canCommentOnCard;
     const canDrag = permissions.canMoveCard(card);
+    const canToggleChecklistItems = permissions.canToggleCardItem(card);
 
     // Determine if the user can view actions (edit, delete buttons)
     const canViewActions = canModifyCard;
     const { t } = useTranslation();
+    const { toast } = useToast();
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [showCommentsModal, setShowCommentsModal] = useState(false);
 
@@ -162,6 +166,37 @@ export const CardItem = ({
 
     const handleAssigneeChange = (updatedCard: Card) => {
         onUpdate(updatedCard, 'update');
+    };
+
+    const handleToggleChecklistItem = async (itemId: number, currentState: boolean) => {
+        if (!canToggleChecklistItems) {
+            toast({
+                title: t('common.error'),
+                description: t('common.permissionDenied'),
+                variant: 'destructive'
+            });
+            return;
+        }
+
+        try {
+            const updatedItem = await cardItemsService.updateItem(itemId, { is_done: !currentState });
+
+            // Update the card with the new item state
+            const updatedCard = {
+                ...card,
+                items: card.items?.map(item =>
+                    item.id === itemId ? { ...item, is_done: updatedItem.is_done } : item
+                )
+            };
+
+            onUpdate(updatedCard, 'update');
+        } catch (error: any) {
+            toast({
+                title: t('common.error'),
+                description: error.response?.data?.detail || t('card.updateChecklistItemError'),
+                variant: 'destructive'
+            });
+        }
     };
 
     const trashClass = isInTrashZone
@@ -348,7 +383,17 @@ export const CardItem = ({
                                                 </div>
                                                 <div className="space-y-1 max-h-64 overflow-y-auto">
                                                     {card.items?.map((item) => (
-                                                        <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border">
+                                                        <div
+                                                            key={item.id}
+                                                            className={`flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border ${canToggleChecklistItems ? 'cursor-pointer hover:bg-muted transition-colors' : 'cursor-default'}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (canToggleChecklistItems) {
+                                                                    handleToggleChecklistItem(item.id, item.is_done);
+                                                                }
+                                                            }}
+                                                            title={canToggleChecklistItems ? t('card.toggleChecklistItem') : undefined}
+                                                        >
                                                             <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${item.is_done ? 'bg-primary border-primary' : 'border-muted-foreground'}`}>
                                                                 {item.is_done && (
                                                                     <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">

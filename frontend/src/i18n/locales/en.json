@@ -193,7 +193,8 @@
         "priorityUpdated": "Priority updated",
         "priorityUpdatedDescription": "The priority of card \"{{cardTitle}}\" is now \"{{priority}}\".",
         "toggleChecklistItem": "Toggle checklist item",
-        "dropItem": "Drop item"
+        "dropItem": "Drop item",
+        "updateChecklistItemError": "Error updating checklist item"
     },
     "list": {
         "title": "Title",

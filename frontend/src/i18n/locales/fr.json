@@ -193,7 +193,8 @@
         "priorityUpdated": "Priorité mise à jour",
         "priorityUpdatedDescription": "La priorité de la carte \"{{cardTitle}}\" est maintenant \"{{priority}}\".",
         "toggleChecklistItem": "Cocher / décocher l'élément",
-        "dropItem": "Supprimer l'élément"
+        "dropItem": "Supprimer l'élément",
+        "updateChecklistItemError": "Erreur lors de la mise à jour de l'élément de la checklist"
     },
     "list": {
         "title": "Titre",
