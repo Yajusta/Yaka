@@ -21,6 +21,7 @@
 
 [ ] Rate limiting sur l'authentification.
 [ ] Tokens d'invitation/réinitialisation sans expiration
+[x] Modifier le prompt pour faire bien attention au changement de colonne.
 
 ### Tech
 

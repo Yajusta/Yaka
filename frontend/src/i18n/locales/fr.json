@@ -271,8 +271,8 @@
         "nameTooLong": "Le nom est trop long",
         "descriptionTooLong": "La description est trop longue",
         "invalidColor": "Couleur invalide",
-        "labelManagement": "Gestion des libellés",
-        "noLabels": "Aucun libellé créé pour le moment"
+        "labelManagement": "Gestion des étiquettes",
+        "noLabels": "Aucune étiquette créée pour le moment"
     },
     "user": {
         "name": "Nom",

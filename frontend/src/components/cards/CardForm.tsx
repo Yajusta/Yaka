@@ -316,6 +316,10 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
                     }
                 } else {
                     // Utiliser initialData si fourni, sinon valeurs par défaut
+                    // Si list_id est -1, utiliser la première liste disponible
+                    const effectiveListId = initialData?.list_id ?? defaultListId ?? -1;
+                    const finalListId = effectiveListId > 0 ? effectiveListId : (lists[0]?.id || -1);
+
                     setFormData({
                         title: initialData?.title || '',
                         description: initialData?.description || '',
@@ -323,7 +327,7 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
                         priority: initialData?.priority || CardPriority.MEDIUM,
                         assignee_id: initialData?.assignee_id ?? (shouldEnforceSelfAssignment ? currentUserId ?? null : null),
                         label_ids: initialData?.label_ids || [],
-                        list_id: initialData?.list_id ?? defaultListId ?? -1 // Utiliser -1 par défaut
+                        list_id: finalListId
                     });
                     setChecklist(initialData?.checklist || []);
                 }
@@ -331,6 +335,16 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
             run();
         }
     }, [isOpen, card, loadData, proposedChanges]);
+
+    // Update list_id if it's invalid and lists are loaded
+    useEffect(() => {
+        if (lists.length > 0 && formData.list_id <= 0) {
+            setFormData(prev => ({
+                ...prev,
+                list_id: lists[0].id
+            }));
+        }
+    }, [lists, formData.list_id]);
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
@@ -352,13 +366,16 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
         try {
             // Sanitize payload to match backend schema types (priority mapping delegated to shared util)
 
+            // Si list_id est -1 ou invalide, utiliser la première liste disponible
+            const effectiveListId = formData.list_id > 0 ? formData.list_id : (lists[0]?.id || formData.list_id);
+
             const basePayload = {
                 title: formData.title,
                 description: formData.description?.trim() === '' ? null : formData.description,
                 due_date: formData.due_date && formData.due_date !== '' ? formData.due_date : null,
                 priority: mapPriorityToBackend(formData.priority),
                 assignee_id: typeof formData.assignee_id === 'number' ? formData.assignee_id : null,
-                list_id: formData.list_id
+                list_id: effectiveListId
             };
 
             const labelIds = Array.isArray(formData.label_ids) ? formData.label_ids.map(Number) : [];

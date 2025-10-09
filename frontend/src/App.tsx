@@ -308,11 +308,24 @@ const KanbanApp = () => {
         setDefaultListIdForNewCard(null);
     };
 
-    const handleCardSave = async (): Promise<void> => {
+    const handleCardSave = async (card?: Card): Promise<void> => {
         setShowCardForm(false);
         setEditingCard(null);
         setDefaultListIdForNewCard(null);
-        // Reload cards to get updated data
+        // If a card is provided, update it in state immediately (optimistic update)
+        if (card) {
+            setAllCards(prev => {
+                const existingCard = prev.find(c => c.id === card.id);
+                if (existingCard) {
+                    // Update existing card
+                    return prev.map(c => c.id === card.id ? card : c);
+                } else {
+                    // Add new card
+                    return [...prev, card];
+                }
+            });
+        }
+        // Reload cards to get updated data from server
         await loadCards();
     };
 

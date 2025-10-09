@@ -182,6 +182,7 @@ Dans les deux cas :
 - Essaye de voir s'il y a des libellés pertinents en fonction du contexte, mais sans en inventer. Ils sont factultatifs.
 - Ne mets jamais 2 fois le même libellé.
 - Ne mets jamais 2 fois le même élément dans la checklist.
+- Essaye de trouver la liste la plus appropriée pour la tâche. Exemple: si l'utilisateur dit qu'il a effectué une action sur une tâche et qu'il existe une liste "tâches en cours", il faut aussi modifier la liste à laquelle la tâche est affectée.
 
 Dans le cas d'une mise à jour: 
 - Utilise l'ID de la tâche existante et ne modfie que les parties nécessaires (il ne faut pas modifier le titre ou la description si c'est pour mettre un titre ou une description équivalente).
