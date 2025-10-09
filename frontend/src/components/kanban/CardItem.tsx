@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
-import { Card } from '../../types/index';
+import { Card, CardComment } from '../../types/index';
 import { CommentsForm } from '../cards/CommentsForm';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -165,6 +165,15 @@ export const CardItem = ({
     };
 
     const handleAssigneeChange = (updatedCard: Card) => {
+        onUpdate(updatedCard, 'update');
+    };
+
+    const handleCommentsChange = (comments: CardComment[]) => {
+        // Update the card with the new comments
+        const updatedCard = {
+            ...card,
+            comments
+        };
         onUpdate(updatedCard, 'update');
     };
 
@@ -440,6 +449,7 @@ export const CardItem = ({
                 isOpen={showCommentsModal}
                 onClose={() => setShowCommentsModal(false)}
                 canAdd={canComment}
+                onCommentsChange={handleCommentsChange}
             />
         </GlassmorphicCard>
     );

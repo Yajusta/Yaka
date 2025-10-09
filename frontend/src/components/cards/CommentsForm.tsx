@@ -15,9 +15,10 @@ interface CommentsFormProps {
     isOpen: boolean;
     onClose: () => void;
     canAdd?: boolean;
+    onCommentsChange?: (comments: CardComment[]) => void;
 }
 
-const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true }: CommentsFormProps) => {
+const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true, onCommentsChange }: CommentsFormProps) => {
     const { t } = useTranslation();
     const { toast } = useToast();
     const { user: currentUser } = useAuth();
@@ -32,6 +33,7 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true }: CommentsFormPr
         try {
             const cardComments = await cardCommentsService.getComments(cardId);
             setComments(cardComments);
+            onCommentsChange?.(cardComments);
         } catch (error: any) {
             toast({
                 title: t('common.error'),
@@ -39,6 +41,7 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true }: CommentsFormPr
                 variant: "destructive"
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [cardId, toast, t]);
 
     useEffect(() => {
@@ -62,8 +65,10 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true }: CommentsFormPr
         setLoading(true);
         try {
             const newComment = await cardCommentsService.createComment(cardId, text);
-            setComments(prev => [newComment, ...prev]);
+            const updatedComments = [newComment, ...comments];
+            setComments(updatedComments);
             setNewCommentText('');
+            onCommentsChange?.(updatedComments);
             toast({ title: t('card.commentAdded'), variant: "success" });
         } catch (error: any) {
             toast({
@@ -102,9 +107,11 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true }: CommentsFormPr
         setLoading(true);
         try {
             const updatedComment = await cardCommentsService.updateComment(editingCommentId, text);
-            setComments(prev => prev.map(c => c.id === editingCommentId ? updatedComment : c));
+            const updatedComments = comments.map(c => c.id === editingCommentId ? updatedComment : c);
+            setComments(updatedComments);
             setEditingCommentId(null);
             setEditingCommentText('');
+            onCommentsChange?.(updatedComments);
             toast({ title: t('card.commentUpdated'), variant: "success" });
         } catch (error: any) {
             toast({
@@ -125,7 +132,9 @@ const CommentsForm = ({ cardId, isOpen, onClose, canAdd = true }: CommentsFormPr
         setLoading(true);
         try {
             await cardCommentsService.deleteComment(commentId);
-            setComments(prev => prev.filter(c => c.id !== commentId));
+            const updatedComments = comments.filter(c => c.id !== commentId);
+            setComments(updatedComments);
+            onCommentsChange?.(updatedComments);
             toast({ title: t('card.commentDeleted'), variant: "success" });
         } catch (error: any) {
             toast({
