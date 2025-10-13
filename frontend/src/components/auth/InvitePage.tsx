@@ -71,8 +71,9 @@ const InvitePage = () => {
         setError('');
 
         try {
-            // Utiliser directement l'API si authService ne fonctionne pas
-            await api.post('/users/set-password', {
+            // Utiliser l'endpoint approprié selon qu'on a un board_uid ou non
+            const endpoint = boardUid ? `/board/${boardUid}/users/set-password` : '/users/set-password';
+            await api.post(endpoint, {
                 token,
                 password
             });
