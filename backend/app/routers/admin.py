@@ -135,7 +135,7 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
 
 
 @router.get("/boards")
-async def list_boards():
+async def list_boards(authorized: bool = Depends(verify_admin_api_key)):
     """List all existing boards."""
     import os
 
