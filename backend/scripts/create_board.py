@@ -70,6 +70,13 @@ def create_board_database(board_uid: str, admin_email: Optional[str] = None):
             try:
                 from app.models import User, UserRole
                 from app.services import user as user_service
+                from app.utils.demo_reset import initialize_default_data, create_demo_data
+
+                # Initialize default board data (lists, labels, and initial task)
+                print(f"🔧 Initializing default board data...")
+                initialize_default_data(db)
+                create_demo_data(db)
+                print(f"✓ Default board data initialized (lists, labels, and initial task)")
 
                 # Send automatic invitation
                 invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN, board_uid)

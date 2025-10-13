@@ -102,6 +102,15 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
                 db = SessionLocal()
 
                 try:
+                    # Initialize default board data (lists, labels, and initial task)
+                    from ..utils.demo_reset import initialize_default_data, create_demo_data
+
+                    # Create default admin user and settings
+                    initialize_default_data(db)
+
+                    # Create demo data (lists, labels, and initial configuration task)
+                    create_demo_data(db)
+
                     # Send automatic invitation
                     invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN, board_uid)
                     result["invitation_sent"] = str(True)
@@ -117,6 +126,8 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
                         db.delete(default_admin)
                         db.commit()
                         result["default_admin_removed"] = str(True)
+
+                    result["default_data_initialized"] = str(True)
 
                 except Exception as e:
                     db.rollback()
