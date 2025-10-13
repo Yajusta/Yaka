@@ -4,6 +4,8 @@
 
 - [NEW] Gestion des bases de données multiples.
 - [FIX] Enregistrement des positions de cartes.
+- [CHANGE] Clean tests.
+- [CHORES] Update dependencies.
 
 ## v1.2.3 (2025-10-09)
 
