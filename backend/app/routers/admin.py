@@ -8,6 +8,7 @@ from typing import List
 
 from ..multi_database import db_manager
 from ..database import Base
+from ..utils.validators import validate_email_format
 from sqlalchemy import create_engine
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -16,6 +17,7 @@ security = HTTPBearer()
 
 class CreateBoardRequest(BaseModel):
     board_uid: str
+    admin_email: str | None = None
 
 
 class BoardInfo(BaseModel):
@@ -47,6 +49,7 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
     Requires a valid admin API key.
     """
     board_uid = request.board_uid
+    admin_email = request.admin_email
 
     # Validate board UID (alphanumeric and hyphens only, 1-50 characters)
     import re
@@ -55,6 +58,14 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
         raise HTTPException(
             status_code=400,
             detail="Board UID must contain only alphanumeric characters and hyphens, with length between 1 and 50",
+        )
+
+    # Validate admin email if provided
+    email_error = validate_email_format(admin_email)
+    if email_error:
+        raise HTTPException(
+            status_code=400,
+            detail=email_error,
         )
 
     # Check if board already exists
@@ -73,12 +84,48 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
             # Initialize alembic_version
             db_manager._initialize_alembic_version(engine)
 
-            return {
+            result = {
                 "message": f"Board '{board_uid}' created successfully",
                 "board_uid": board_uid,
                 "database_path": db_path,
                 "access_url": f"/board/{board_uid}/",
             }
+
+            # Handle admin email logic if provided
+            if admin_email:
+                from ..models import User, UserRole
+                from ..services import user as user_service
+
+                # Create a session to handle database operations
+                from sqlalchemy.orm import sessionmaker
+                SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+                db = SessionLocal()
+
+                try:
+                    # Send automatic invitation
+                    invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN)
+                    result["invitation_sent"] = str(True)
+                    result["invited_email"] = admin_email
+                    result["invitation_token"] = str(invited_user.invite_token)
+
+                    # Remove default admin "admin@yaka.local"
+                    default_admin = db.query(User).filter(
+                        User.email == "admin@yaka.local"
+                    ).first()
+
+                    if default_admin:
+                        db.delete(default_admin)
+                        db.commit()
+                        result["default_admin_removed"] = str(True)
+
+                except Exception as e:
+                    db.rollback()
+                    # Log the error but don't fail the board creation
+                    result["invitation_warning"] = f"Board created but invitation failed: {str(e)}"
+                finally:
+                    db.close()
+
+            return result
         finally:
             # Always dispose the engine to release the database lock
             engine.dispose()
