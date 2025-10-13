@@ -103,7 +103,7 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
 
                 try:
                     # Send automatic invitation
-                    invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN)
+                    invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN, board_uid)
                     result["invitation_sent"] = str(True)
                     result["invited_email"] = admin_email
                     result["invitation_token"] = str(invited_user.invite_token)

@@ -5,6 +5,7 @@ import os
 import smtplib
 from email.message import EmailMessage
 from pathlib import Path
+from typing import Optional
 from venv import logger
 
 from dotenv import load_dotenv
@@ -67,7 +68,7 @@ def send_mail(to: str, subject: str, html_body: str, plain_body: str = ""):
 import urllib.parse
 
 
-def send_invitation(email: str, display_name: str | None, token: str, board_uid: str | None = None):
+def send_invitation(email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None):
     encoded_token = urllib.parse.quote_plus(token)
     if board_uid:
         link = f"{INVITE_BASE_URL}/board/{board_uid}?token={encoded_token}"
@@ -79,7 +80,7 @@ def send_invitation(email: str, display_name: str | None, token: str, board_uid:
     send_mail(to=email, subject=subject, html_body=html, plain_body=plain)
 
 
-def send_password_reset(email: str, display_name: str | None, token: str, board_uid: str | None = None):
+def send_password_reset(email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None):
     encoded_token = urllib.parse.quote_plus(token)
     if board_uid:
         link = f"{PASSWORD_RESET_BASE_URL}/board/{board_uid}?token={encoded_token}&reset=true"

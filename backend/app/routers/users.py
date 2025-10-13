@@ -1,7 +1,7 @@
 """Routeur pour la gestion des utilisateurs."""
 
 import contextlib
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -16,8 +16,13 @@ from ..utils.dependencies import get_current_active_user, require_admin
 
 class InvitePayload(BaseModel):
     email: str
-    display_name: str | None = None
+    display_name: Optional[str] = None
     role: UserRole = UserRole.VISITOR
+    board_uid: Optional[str] = None
+
+
+class ResendInvitationPayload(BaseModel):
+    board_uid: Optional[str] = None
 
 
 router = APIRouter(prefix="/users", tags=["utilisateurs"])
@@ -93,7 +98,7 @@ async def invite_user(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Un utilisateur avec cet email existe déjà"
             )
         return user_service.invite_user(
-            db=db, email=payload.email, display_name=payload.display_name, role=payload.role
+            db=db, email=payload.email, display_name=payload.display_name, role=payload.role, board_uid=payload.board_uid
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
@@ -160,7 +165,7 @@ async def update_user_language(
 
 
 @router.post("/{user_id}/resend-invitation", response_model=UserResponse)
-async def resend_invitation(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+async def resend_invitation(user_id: int, payload: ResendInvitationPayload, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Renvoyer une invitation à un utilisateur existant (Admin uniquement)."""
     db_user = user_service.get_user(db, user_id=user_id)
     if db_user is None:
@@ -205,7 +210,7 @@ async def resend_invitation(user_id: int, db: Session = Depends(get_db), current
     with contextlib.suppress(Exception):
         from ..services import email as email_service
 
-        email_service.send_invitation(email=db_user.email, display_name=db_user.display_name, token=new_token)
+        email_service.send_invitation(email=db_user.email, display_name=db_user.display_name, token=new_token, board_uid=payload.board_uid)
     return db_user
 
 

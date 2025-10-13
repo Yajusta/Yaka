@@ -72,7 +72,7 @@ def create_board_database(board_uid: str, admin_email: Optional[str] = None):
                 from app.services import user as user_service
 
                 # Send automatic invitation
-                invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN)
+                invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN, board_uid)
                 print(f"✓ Invitation sent to {admin_email}")
                 print(f"  Token: {invited_user.invite_token}")
 

@@ -47,7 +47,7 @@ async def request_password_reset(request: PasswordResetRequest, db: Session = De
     """Demander une réinitialisation de mot de passe."""
     from ..services import user as user_service
 
-    user_service.request_password_reset(db, request.email)
+    user_service.request_password_reset(db, request.email, request.board_uid)
     return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé"}
 
 

@@ -111,6 +111,7 @@ class PasswordResetRequest(BaseModel):
     """Schéma pour demander une réinitialisation de mot de passe."""
 
     email: str
+    board_uid: Optional[str] = None
 
     @field_validator("email")
     @classmethod
