@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api.tsx';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -13,6 +13,7 @@ const InvitePage = () => {
     const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { uid: boardUid } = useParams();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -79,9 +80,8 @@ const InvitePage = () => {
 
             // Rediriger vers la page de connexion du board actuel après 5 secondes
             setTimeout(() => {
-                const boardUid = window.location.pathname.match(/^\/board\/([^\/]+)/);
-                if (boardUid && boardUid[1]) {
-                    navigate(`/board/${boardUid[1]}/login`);
+                if (boardUid) {
+                    navigate(`/board/${boardUid}/login`);
                 } else {
                     navigate('/login');
                 }
