@@ -22,11 +22,19 @@ class TestAdminRoutes:
     def temp_data_dir(self):
         """Create a temporary directory for test databases."""
         import tempfile
+        from app.multi_database import _engines
 
         with tempfile.TemporaryDirectory() as temp_dir:
             old_base_path = db_manager.base_path
             db_manager.base_path = temp_dir
             yield temp_dir
+            
+            # Dispose all engines to release database locks before cleanup
+            for engine in list(_engines.values()):
+                if hasattr(engine, 'dispose'):
+                    engine.dispose()
+            _engines.clear()
+            
             db_manager.base_path = old_base_path
 
     @pytest.fixture
@@ -349,11 +357,19 @@ class TestAdminRoutesEdgeCases:
     def temp_data_dir(self):
         """Create a temporary directory for test databases."""
         import tempfile
+        from app.multi_database import _engines
 
         with tempfile.TemporaryDirectory() as temp_dir:
             old_base_path = db_manager.base_path
             db_manager.base_path = temp_dir
             yield temp_dir
+            
+            # Dispose all engines to release database locks before cleanup
+            for engine in list(_engines.values()):
+                if hasattr(engine, 'dispose'):
+                    engine.dispose()
+            _engines.clear()
+            
             db_manager.base_path = old_base_path
 
     @pytest.fixture

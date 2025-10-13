@@ -16,7 +16,10 @@ from app.services.card import create_card, move_card, get_cards
 from app.schemas.card import CardCreate, CardMoveRequest, CardFilter
 
 # Configuration de la base de données de test
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_card_positions.db"
+TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
+os.makedirs(TEST_DB_DIR, exist_ok=True)
+TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_card_positions.db")
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

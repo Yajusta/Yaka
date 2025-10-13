@@ -66,18 +66,22 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
         db_path = db_manager.get_database_path(board_uid)
         engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
 
-        # Create all tables
-        Base.metadata.create_all(bind=engine)
+        try:
+            # Create all tables
+            Base.metadata.create_all(bind=engine)
 
-        # Initialize alembic_version
-        db_manager._initialize_alembic_version(engine)
+            # Initialize alembic_version
+            db_manager._initialize_alembic_version(engine)
 
-        return {
-            "message": f"Board '{board_uid}' created successfully",
-            "board_uid": board_uid,
-            "database_path": db_path,
-            "access_url": f"/board/{board_uid}/",
-        }
+            return {
+                "message": f"Board '{board_uid}' created successfully",
+                "board_uid": board_uid,
+                "database_path": db_path,
+                "access_url": f"/board/{board_uid}/",
+            }
+        finally:
+            # Always dispose the engine to release the database lock
+            engine.dispose()
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating board: {str(e)}")

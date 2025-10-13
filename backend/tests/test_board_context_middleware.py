@@ -113,11 +113,11 @@ class TestBoardContextMiddleware:
         request = self.create_mock_request("/board/nonexistent-board/auth/login")
         call_next = self.create_mock_call_next()
 
-        with pytest.raises(HTTPException) as exc_info:
-            await middleware.dispatch(request, call_next)
+        # This should return a JSONResponse with 401 status code
+        response = await middleware.dispatch(request, call_next)
 
-        assert exc_info.value.status_code == 401
-        assert "not found or access denied" in str(exc_info.value.detail)
+        assert response.status_code == 401
+        assert "not found or access denied" in response.body.decode()
 
     @pytest.mark.asyncio
     async def test_ignore_invalid_board_uid(self, middleware):
@@ -178,11 +178,11 @@ class TestBoardContextMiddleware:
         request = self.create_mock_request("/board/nonexistent-board/cards")
         call_next = self.create_mock_call_next()
 
-        # This should catch ValueError and convert to HTTPException
-        with pytest.raises(HTTPException) as exc_info:
-            await middleware.dispatch(request, call_next)
-
-        assert exc_info.value.status_code == 401
+        # This should return a JSONResponse with 401 status code
+        response = await middleware.dispatch(request, call_next)
+        
+        assert response.status_code == 401
+        assert "not found or access denied" in response.body.decode()
 
     def test_board_database_exists_true(self, middleware, create_test_database):
         """Test _board_database_exists returns True for existing database."""

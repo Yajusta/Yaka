@@ -14,7 +14,8 @@ from sqlalchemy.orm import Session, sessionmaker
 # Allow tests to import the application package
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app.database import Base, get_db
+from app.database import Base
+from app.multi_database import get_dynamic_db
 from app.models.user import UserRole
 from app.schemas import KanbanListCreate, UserCreate
 from app.services.board_settings import initialize_default_settings
@@ -55,7 +56,7 @@ def build_test_app(integration_session_factory: sessionmaker) -> Callable[..., F
             finally:
                 db.close()
 
-        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_dynamic_db] = override_get_db
         return app
 
     return _build

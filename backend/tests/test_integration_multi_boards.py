@@ -6,8 +6,7 @@ from unittest.mock import patch
 import pytest
 from httpx import AsyncClient
 
-from tests.conftest import async_client_factory, build_test_app
-from app.routers import admin_router, auth_router, cards_router
+from app.routers import admin_router, auth_router, cards_router, users_router
 from app.multi_database import db_manager
 
 
@@ -41,24 +40,23 @@ class TestMultiBoardIntegration:
         return {"Authorization": f"Bearer {mock_api_key}"}
 
     @pytest.fixture
-    def app_with_all_routers(self):
-        """Create app with all necessary routers."""
-        return build_test_app(
+    async def client(self, async_client_factory):
+        """Create async client with all routers."""
+        async with async_client_factory(
             admin_router,
             auth_router,
-            cards_router
-        )
-
-    @pytest.fixture
-    async def client(self, app_with_all_routers):
-        """Create async client with all routers."""
-        async with async_client_factory(app_with_all_routers) as client:
+            cards_router,
+            users_router
+        ) as client:
             yield client
 
     @pytest.mark.asyncio
-    async def test_complete_board_lifecycle(self, client, temp_data_dir, set_api_key_env, auth_headers):
+    async def test_complete_board_lifecycle(self, client, temp_data_dir, set_api_key_env, auth_headers, seed_admin_user):
         """Test complete lifecycle: create -> access -> delete."""
         board_uid = "integration-test-board"
+
+        # Seed admin user first
+        seed_admin_user()
 
         # 1. Create board via admin API
         create_response = await client.post(
@@ -77,20 +75,31 @@ class TestMultiBoardIntegration:
         board_uids = [board["board_uid"] for board in boards_data["boards"]]
         assert board_uid in board_uids
 
-        # 3. Create user and authenticate for the board
+        # 3. Login as admin to create users
+        admin_login_response = await client.post(
+            "/auth/login",
+            data={"username": "admin@yaka.local", "password": "Admin123"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert admin_login_response.status_code == 200
+        admin_token_data = admin_login_response.json()
+        admin_token = admin_token_data["access_token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # 4. Create user and authenticate for the board
         user_data = {
             "email": f"user@{board_uid}.com",
-            "password": "testpassword123",
+            "password": "TestPassword123",
             "display_name": "Test User",
             "role": "editor",
             "language": "en"
         }
 
         # Register user (uses default database, but we'll simulate board-specific)
-        register_response = await client.post("/users", json=user_data)
-        assert register_response.status_code == 201
+        register_response = await client.post("/users/", json=user_data, headers=admin_headers)
+        assert register_response.status_code == 200
 
-        # Login to get token
+        # 5. Login as the new user to get token
         login_response = await client.post(
             "/auth/login",
             data={"username": user_data["email"], "password": user_data["password"]},
@@ -101,11 +110,11 @@ class TestMultiBoardIntegration:
         token = token_data["access_token"]
         board_headers = {"Authorization": f"Bearer {token}"}
 
-        # 4. Test board-specific routes work (simulated by checking auth)
+        # 6. Test board-specific routes work (simulated by checking auth)
         # Note: In a real scenario, this would access /board/{board_uid}/auth/me
         # For this test, we verify the middleware would handle board context correctly
 
-        # 5. Test that board-specific card operations would work
+        # 7. Test that board-specific card operations would work
         # (This is a simplified test since we can't easily test the actual board isolation)
         card_data = {
             "title": f"Test Card for {board_uid}",
@@ -113,16 +122,16 @@ class TestMultiBoardIntegration:
             "list_id": 1  # This would need to be created per board
         }
 
-        # 6. Delete board
+        # 8. Delete board
         delete_response = await client.delete(
             f"/admin/boards/{board_uid}",
             headers=auth_headers
         )
         assert delete_response.status_code == 200
         delete_data = delete_response.json()
-        assert f"Board '{board_uid}' deleted successfully" in delete_data["message"]
+        assert f"Board '{board_uid}' archived successfully" in delete_data["message"]
 
-        # 7. Verify board no longer exists
+        # 9. Verify board no longer exists
         info_response = await client.get(f"/admin/boards/{board_uid}")
         assert info_response.status_code == 200
         info_data = info_response.json()
@@ -312,7 +321,7 @@ class TestMultiBoardIntegration:
             assert info_response.json()["exists"] is False
 
     @pytest.mark.asyncio
-    async def test_error_recovery_after_invalid_operations(self, client, set_api_key_env, auth_headers):
+    async def test_error_recovery_after_invalid_operations(self, client, temp_data_dir, set_api_key_env, auth_headers):
         """Test error recovery after invalid operations."""
         # Try to create board with invalid UID
         invalid_uid = "invalid board name"
@@ -357,9 +366,15 @@ class TestMultiBoardSecurity:
     """Security tests for multi-board functionality."""
 
     @pytest.fixture
-    def client(self):
-        """Create a test client."""
-        return TestClient(app)
+    async def client(self, async_client_factory):
+        """Create an async test client."""
+        async with async_client_factory(
+            admin_router,
+            auth_router,
+            cards_router,
+            users_router
+        ) as client:
+            yield client
 
     @pytest.mark.asyncio
     async def test_no_api_key_service_unavailable(self, client):
@@ -374,6 +389,16 @@ class TestMultiBoardSecurity:
             )
             assert response.status_code == 503
             assert "not configured" in response.json()["detail"]
+
+    @pytest.fixture
+    def temp_data_dir(self):
+        """Create a temporary directory for test databases."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp_dir:
+            old_base_path = db_manager.base_path
+            db_manager.base_path = temp_dir
+            yield temp_dir
+            db_manager.base_path = old_base_path
 
     @pytest.mark.asyncio
     async def test_api_key_rotation_simulation(self, client, temp_data_dir):

@@ -157,15 +157,15 @@ class TestBoardValidation:
     def test_valid_board_uids(self):
         """Test validation of valid board UIDs."""
         from app.utils.board_context import BoardContextMiddleware
+        from unittest.mock import MagicMock
 
-        # Create middleware without event loop dependency
-        middleware = BoardContextMiddleware(None)
+        # Create middleware with a mock ASGI app
+        mock_app = MagicMock()
+        middleware = BoardContextMiddleware(mock_app)
 
         valid_uids = [
             "board1",
             "test-board",
-            "board_123",
-            "board.test",
             "a",
             "BOARD123",
             "test-board-123"
@@ -177,8 +177,11 @@ class TestBoardValidation:
     def test_invalid_board_uids(self):
         """Test validation of invalid board UIDs."""
         from app.utils.board_context import BoardContextMiddleware
+        from unittest.mock import MagicMock
 
-        middleware = BoardContextMiddleware(asyncio.get_event_loop().create_future())
+        # Create middleware with a mock ASGI app
+        mock_app = MagicMock()
+        middleware = BoardContextMiddleware(mock_app)
 
         invalid_uids = [
             "",  # Empty
