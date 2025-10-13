@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..services.llm_service import LLMService
 
-from ..database import get_db
+from ..multi_database import get_dynamic_db as get_db
 from ..models import User
 from ..models.response_model import ChecklistItem, Label, Priority, ResponseModel
 from ..utils.dependencies import get_current_active_user

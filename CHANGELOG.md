@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0 (2025-10-13)
+
+- [NEW] Gestion des bases de données multiples.
+- [FIX] Enregistrement des positions de cartes.
+
 ## v1.2.3 (2025-10-09)
 
 - [NEW] Possibilité de réduire les colonnes.

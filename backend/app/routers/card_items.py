@@ -5,7 +5,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from ..database import get_db
+from ..multi_database import get_dynamic_db as get_db
 from ..models import CardItem, User
 from ..schemas.card_item import CardItemCreate, CardItemResponse, CardItemUpdate
 from ..services import card as card_service

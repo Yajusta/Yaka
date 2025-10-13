@@ -77,9 +77,14 @@ const InvitePage = () => {
             });
             setSuccess(true);
 
-            // Rediriger vers la page de connexion après 5 secondes
+            // Rediriger vers la page de connexion du board actuel après 5 secondes
             setTimeout(() => {
-                navigate('/login');
+                const boardUid = window.location.pathname.match(/^\/board\/([^\/]+)/);
+                if (boardUid && boardUid[1]) {
+                    navigate(`/board/${boardUid[1]}/login`);
+                } else {
+                    navigate('/login');
+                }
             }, 5 * 1000);
         } catch (err: any) {
             console.error('Erreur lors de la définition du mot de passe:', err);

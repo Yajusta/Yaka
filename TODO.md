@@ -11,6 +11,7 @@
 [x] Export au format Excel de toutes les tâches.
 [x] Pouvoir "réduire" un colonne (qui ne sert pas souvent).
 [x] Option pour réduire toutes les tâches (vue compacte).
+[ ] Import en masse.
 
 ## Frontend
 

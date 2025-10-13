@@ -3,7 +3,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from ..database import get_db
+from ..multi_database import get_dynamic_db as get_db
 from ..schemas import CardHistoryCreate, CardHistoryResponse
 from ..services import card_history as card_history_service
 from ..utils.dependencies import get_current_active_user

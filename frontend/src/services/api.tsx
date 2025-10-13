@@ -5,49 +5,83 @@ import { User, Card, Label, Filters, CreateCardData, UpdateCardData, CreateLabel
 // Utiliser la variable d'environnement si disponible, sinon la valeur par défaut
 const API_BASE_URL = (window as any).API_BASE_URL || 'http://localhost:8000';
 
-const api: AxiosInstance = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+// Obtenir le board_uid depuis l'URL courante
+const getBoardUidFromUrl = (): string | null => {
+    const path = window.location.pathname;
+    const match = path.match(/^\/board\/([^\/]+)/);
+    return match ? match[1] : null;
+};
+
+// Créer l'instance API avec configuration dynamique
+const createApiInstance = (): AxiosInstance => {
+    const boardUid = getBoardUidFromUrl();
+    const baseUrl = boardUid ? `${API_BASE_URL}/board/${boardUid}` : API_BASE_URL;
+
+    return axios.create({
+        baseURL: baseUrl,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+};
 
 // Intercepteur pour ajouter le token d'authentification
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
-
-// Intercepteur pour gérer les erreurs d'authentification
-api.interceptors.response.use(
-    (response: AxiosResponse) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            // Clear auth artifacts
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-
-            const path = window.location.pathname || '';
-            const onPublicAuthPage = path.startsWith('/login') || path.startsWith('/invite');
-            const alreadyRedirecting = sessionStorage.getItem('auth_redirecting') === '1';
-
-            if (!onPublicAuthPage && !alreadyRedirecting) {
-                try { sessionStorage.setItem('auth_redirecting', '1'); } catch { }
-                window.location.href = '/login';
+const setupInterceptors = (apiInstance: AxiosInstance) => {
+    apiInstance.interceptors.request.use(
+        (config) => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
             }
-            // If we're already on login/invite, don't redirect again; let the page render the form
+            return config;
+        },
+        (error) => {
+            return Promise.reject(error);
         }
-        return Promise.reject(error);
-    }
-);
+    );
+
+    // Intercepteur pour gérer les erreurs d'authentification
+    apiInstance.interceptors.response.use(
+        (response: AxiosResponse) => response,
+        (error) => {
+            if (error.response?.status === 401) {
+                // Clear auth artifacts
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+
+                const path = window.location.pathname || '';
+                const onPublicAuthPage = path.startsWith('/login') || path.startsWith('/invite');
+                const alreadyRedirecting = sessionStorage.getItem('auth_redirecting') === '1';
+
+                if (!onPublicAuthPage && !alreadyRedirecting) {
+                    try { sessionStorage.setItem('auth_redirecting', '1'); } catch { }
+                    const boardUid = getBoardUidFromUrl();
+                    if (boardUid) {
+                        window.location.href = `/board/${boardUid}/login`;
+                    } else {
+                        window.location.href = '/login';
+                    }
+                }
+            }
+            return Promise.reject(error);
+        }
+    );
+};
+
+// Créer l'instance API avec les intercepteurs configurés
+const createApiInstanceWithInterceptors = (): AxiosInstance => {
+    const instance = createApiInstance();
+    setupInterceptors(instance);
+    return instance;
+};
+
+// Fonction pour obtenir l'instance API courante
+export const getApiInstance = (): AxiosInstance => {
+    return createApiInstanceWithInterceptors();
+};
+
+// Exporter une instance par défaut pour compatibilité
+const api: AxiosInstance = getApiInstance();
 
 // Services d'authentification
 export const authService = {
@@ -56,7 +90,8 @@ export const authService = {
         formData.append('username', email);
         formData.append('password', password);
 
-        const response = await api.post<{ access_token: string }>('/auth/login', formData, {
+        const apiInstance = getApiInstance();
+        const response = await apiInstance.post<{ access_token: string }>('/auth/login', formData, {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
@@ -66,7 +101,7 @@ export const authService = {
         localStorage.setItem('token', access_token);
 
         // Récupérer les informations utilisateur
-        const userResponse = await api.get<User>('/auth/me');
+        const userResponse = await apiInstance.get<User>('/auth/me');
         const userData = userResponse.data;
         localStorage.setItem('user', JSON.stringify(userData));
 
@@ -86,11 +121,11 @@ export const authService = {
     async logout(): Promise<void> {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        await api.post('/auth/logout');
+        await getApiInstance().post('/auth/logout');
     },
 
     async getCurrentUser(): Promise<User> {
-        const response = await api.get<User>('/auth/me');
+        const response = await getApiInstance().get<User>('/auth/me');
         const userData = response.data;
 
         // Set the language from user preferences
@@ -162,11 +197,11 @@ export const authService = {
 
     async requestPasswordReset(email: string): Promise<void> {
         // Calls backend endpoint that returns a generic message regardless of existence
-        await api.post('/auth/request-password-reset', { email });
+        await getApiInstance().post('/auth/request-password-reset', { email });
     },
 
     async checkAIFeatures(): Promise<{ ai_available: boolean }> {
-        const response = await api.get<{ ai_available: boolean }>('/auth/ai-features');
+        const response = await getApiInstance().get<{ ai_available: boolean }>('/auth/ai-features');
         return response.data;
     }
 };
@@ -178,37 +213,37 @@ export const userService = {
     },
 
     async createUser(userData: Partial<User>): Promise<User> {
-        const response = await api.post<User>('/users', userData);
+        const response = await getApiInstance().post<User>('/users', userData);
         resetUsersCache(); // Reset cache after creating user
         return response.data;
     },
 
     async inviteUser(payload: { email: string; display_name?: string; role?: string }) {
-        const response = await api.post<User>('/users/invite', { email: payload.email, display_name: payload.display_name, role: payload.role });
+        const response = await getApiInstance().post<User>('/users/invite', { email: payload.email, display_name: payload.display_name, role: payload.role });
         resetUsersCache(); // Reset cache after inviting user
         return response.data;
     },
 
     async resendInvitation(userId: number) {
-        const response = await api.post<User>(`/users/${userId}/resend-invitation`);
+        const response = await getApiInstance().post<User>(`/users/${userId}/resend-invitation`);
         resetUsersCache(); // Reset cache after resending invitation
         return response.data;
     },
 
     async updateUser(userId: number, userData: Partial<User>): Promise<User> {
-        const response = await api.put<User>(`/users/${userId}`, userData);
+        const response = await getApiInstance().put<User>(`/users/${userId}`, userData);
         resetUsersCache(); // Reset cache after updating user
         return response.data;
     },
 
     async updateLanguage(language: string): Promise<User> {
-        const response = await api.put<User>('/users/me/language', { language });
+        const response = await getApiInstance().put<User>('/users/me/language', { language });
         resetUsersCache(); // Reset cache after updating language
         return response.data;
     },
 
     async deleteUser(userId: number): Promise<void> {
-        await api.delete(`/users/${userId}`);
+        await getApiInstance().delete(`/users/${userId}`);
         resetUsersCache(); // Reset cache after deleting user
     },
 
@@ -237,7 +272,7 @@ async function getUsersCached(): Promise<User[]> {
     if (usersInFlight) {
         return usersInFlight;
     }
-    usersInFlight = api.get<User[]>('/users/').then((response) => {
+    usersInFlight = getApiInstance().get<User[]>('/users/').then((response) => {
         usersCache = response.data;
         usersCacheTime = Date.now();
         usersInFlight = null;
@@ -259,18 +294,18 @@ export const cardService = {
             }
         });
 
-        const response = await api.get<Card[]>(`/cards/?${params.toString()}`);
+        const response = await getApiInstance().get<Card[]>(`/cards/?${params.toString()}`);
         return response.data;
     },
 
     async getArchivedCards(): Promise<Card[]> {
-        const response = await api.get<Card[]>('/cards/archived');
+        const response = await getApiInstance().get<Card[]>('/cards/archived');
         return response.data;
     },
 
     async getCard(cardId: number): Promise<Card | null> {
         try {
-            const response = await api.get<Card>(`/cards/${cardId}`);
+            const response = await getApiInstance().get<Card>(`/cards/${cardId}`);
             return response.data;
         } catch (error: any) {
             if (error.response?.status === 404) {
@@ -281,27 +316,27 @@ export const cardService = {
     },
 
     async createCard(cardData: CreateCardData): Promise<Card> {
-        const response = await api.post<Card>('/cards/', cardData);
+        const response = await getApiInstance().post<Card>('/cards/', cardData);
         return response.data;
     },
 
     async updateCard(cardId: number, cardData: UpdateCardData): Promise<Card> {
-        const response = await api.put<Card>(`/cards/${cardId}`, cardData);
+        const response = await getApiInstance().put<Card>(`/cards/${cardId}`, cardData);
         return response.data;
     },
 
     async archiveCard(cardId: number): Promise<Card> {
-        const response = await api.patch<Card>(`/cards/${cardId}/archive`);
+        const response = await getApiInstance().patch<Card>(`/cards/${cardId}/archive`);
         return response.data;
     },
 
     async unarchiveCard(cardId: number): Promise<Card> {
-        const response = await api.patch<Card>(`/cards/${cardId}/unarchive`);
+        const response = await getApiInstance().patch<Card>(`/cards/${cardId}/unarchive`);
         return response.data;
     },
 
     async deleteCard(cardId: number): Promise<void> {
-        await api.delete(`/cards/${cardId}`);
+        await getApiInstance().delete(`/cards/${cardId}`);
     },
 
     async moveCard(cardId: number, sourceListId: number, targetListId: number, position?: number): Promise<Card> {
@@ -310,7 +345,7 @@ export const cardService = {
             target_list_id: targetListId,
             position: position
         };
-        const response = await api.patch<Card>(`/cards/${cardId}/move`, moveRequest);
+        const response = await getApiInstance().patch<Card>(`/cards/${cardId}/move`, moveRequest);
         return response.data;
     }
 };
@@ -318,34 +353,34 @@ export const cardService = {
 // Services pour les libellés
 export const labelService = {
     async getLabels(): Promise<Label[]> {
-        const response = await api.get<Label[]>('/labels/');
+        const response = await getApiInstance().get<Label[]>('/labels/');
         return response.data;
     },
 
     async createLabel(labelData: CreateLabelData): Promise<Label> {
-        const response = await api.post<Label>('/labels/', labelData);
+        const response = await getApiInstance().post<Label>('/labels/', labelData);
         return response.data;
     },
 
     async updateLabel(labelId: number, labelData: UpdateLabelData): Promise<Label> {
-        const response = await api.put<Label>(`/labels/${labelId}`, labelData);
+        const response = await getApiInstance().put<Label>(`/labels/${labelId}`, labelData);
         return response.data;
     },
 
     async deleteLabel(labelId: number): Promise<void> {
-        await api.delete(`/labels/${labelId}`);
+        await getApiInstance().delete(`/labels/${labelId}`);
     }
 };
 
 // Services pour les paramètres du tableau
 export const boardSettingsService = {
     async getBoardTitle(): Promise<{ title: string }> {
-        const response = await api.get<{ title: string }>('/board-settings/title');
+        const response = await getApiInstance().get<{ title: string }>('/board-settings/title');
         return response.data;
     },
 
     async updateBoardTitle(title: string): Promise<{ title: string }> {
-        const response = await api.put('/board-settings/title', { title });
+        const response = await getApiInstance().put('/board-settings/title', { title });
         const boardSetting = response.data;
         return { title: boardSetting.setting_value || title };
     }
@@ -354,7 +389,7 @@ export const boardSettingsService = {
 // Services pour les éléments de checklist
 export const cardItemsService = {
     async getItems(cardId: number): Promise<CardChecklistItem[]> {
-        const response = await api.get<CardChecklistItem[]>(`/card-items/card/${cardId}`);
+        const response = await getApiInstance().get<CardChecklistItem[]>(`/card-items/card/${cardId}`);
         return response.data;
     },
     async createItem(cardId: number, text: string, position?: number, is_done: boolean = false): Promise<CardChecklistItem> {
@@ -362,34 +397,34 @@ export const cardItemsService = {
         if (typeof position === 'number') {
             payload.position = position;
         }
-        const response = await api.post<CardChecklistItem>('/card-items/', payload);
+        const response = await getApiInstance().post<CardChecklistItem>('/card-items/', payload);
         return response.data;
     },
     async updateItem(itemId: number, data: Partial<Pick<CardChecklistItem, 'text' | 'is_done' | 'position'>>): Promise<CardChecklistItem> {
-        const response = await api.put<CardChecklistItem>(`/card-items/${itemId}`, data);
+        const response = await getApiInstance().put<CardChecklistItem>(`/card-items/${itemId}`, data);
         return response.data;
     },
     async deleteItem(itemId: number): Promise<void> {
-        await api.delete(`/card-items/${itemId}`);
+        await getApiInstance().delete(`/card-items/${itemId}`);
     }
 };
 
 // Services pour les commentaires
 export const cardCommentsService = {
     async getComments(cardId: number): Promise<CardComment[]> {
-        const response = await api.get<CardComment[]>(`/card-comments/card/${cardId}`);
+        const response = await getApiInstance().get<CardComment[]>(`/card-comments/card/${cardId}`);
         return response.data;
     },
     async createComment(cardId: number, comment: string): Promise<CardComment> {
-        const response = await api.post<CardComment>('/card-comments/', { card_id: cardId, comment });
+        const response = await getApiInstance().post<CardComment>('/card-comments/', { card_id: cardId, comment });
         return response.data;
     },
     async updateComment(commentId: number, comment: string): Promise<CardComment> {
-        const response = await api.put<CardComment>(`/card-comments/${commentId}`, { comment });
+        const response = await getApiInstance().put<CardComment>(`/card-comments/${commentId}`, { comment });
         return response.data;
     },
     async deleteComment(commentId: number): Promise<void> {
-        await api.delete(`/card-comments/${commentId}`);
+        await getApiInstance().delete(`/card-comments/${commentId}`);
     }
 };
 
