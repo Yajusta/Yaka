@@ -23,6 +23,7 @@
 [ ] Rate limiting sur l'authentification.
 [ ] Tokens d'invitation/réinitialisation sans expiration
 [x] Modifier le prompt pour faire bien attention au changement de colonne.
+[x] Modifer "due_date" du format response pour être compatble avec plus de modèles.
 
 ### Tech
 
