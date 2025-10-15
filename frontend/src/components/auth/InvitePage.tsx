@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api.tsx';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -13,6 +13,7 @@ const InvitePage = () => {
     const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { uid: boardUid } = useParams();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -70,16 +71,21 @@ const InvitePage = () => {
         setError('');
 
         try {
-            // Utiliser directement l'API si authService ne fonctionne pas
-            await api.post('/users/set-password', {
+            // Utiliser l'endpoint approprié selon qu'on a un board_uid ou non
+            const endpoint = boardUid ? `/board/${boardUid}/users/set-password` : '/users/set-password';
+            await api.post(endpoint, {
                 token,
                 password
             });
             setSuccess(true);
 
-            // Rediriger vers la page de connexion après 5 secondes
+            // Rediriger vers la page de connexion du board actuel après 5 secondes
             setTimeout(() => {
-                navigate('/login');
+                if (boardUid) {
+                    navigate(`/board/${boardUid}/login`);
+                } else {
+                    navigate('/login');
+                }
             }, 5 * 1000);
         } catch (err: any) {
             console.error('Erreur lors de la définition du mot de passe:', err);

@@ -66,8 +66,13 @@ const LoginForm = () => {
 
         try {
             await login(email, password);
-            // Rediriger vers la page d'accueil après une connexion réussie
-            navigate('/', { replace: true });
+            // Rediriger vers la page d'accueil du board actuel après une connexion réussie
+            const boardUid = window.location.pathname.match(/^\/board\/([^\/]+)/);
+            if (boardUid && boardUid[1]) {
+                navigate(`/board/${boardUid[1]}`, { replace: true });
+            } else {
+                navigate('/', { replace: true });
+            }
         } catch (error: any) {
             setError(error.response?.data?.detail || t('auth.loginError'));
         } finally {

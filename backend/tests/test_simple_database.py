@@ -51,10 +51,12 @@ def test_simple_database_setup():
         
     finally:
         db.close()
+        # Dispose of the engine to release the file lock
+        engine.dispose()
     
     # Clean up
-    if os.path.exists("data/test_yaka.db"):
-        os.remove("data/test_yaka.db")
+    if os.path.exists("tests/data/test_yaka.db"):
+        os.remove("tests/data/test_yaka.db")
 
 
 if __name__ == "__main__":

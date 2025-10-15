@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from ..database import get_db
+from ..multi_database import get_dynamic_db as get_db
 from ..models import User
 from ..services import export_service
 from ..utils.dependencies import get_current_active_user

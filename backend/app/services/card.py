@@ -95,9 +95,12 @@ def create_card(db: Session, card: CardCreate, created_by: int) -> Card:
         _shift_positions_for_insertion(db, target_list_id, card.position)
         position = card.position
     else:
-        # Pas de position spécifiée - ajouter à la fin
-        max_position = db.query(func.max(Card.position)).filter(Card.list_id == target_list_id).scalar()
-        position = (max_position or 0) + 1
+        # Pas de position spécifiée - ajouter à la fin (uniquement les cartes non archivées)
+        max_position = db.query(func.max(Card.position)).filter(
+            Card.list_id == target_list_id,
+            Card.is_archived == False
+        ).scalar()
+        position = (max_position + 1) if max_position is not None else 0
 
     db_card = Card(
         title=card.title,
@@ -117,6 +120,12 @@ def create_card(db: Session, card: CardCreate, created_by: int) -> Card:
 
     db.add(db_card)
     db.commit()
+    db.refresh(db_card)
+
+    # Normaliser les positions dans la liste pour qu'elles soient séquentielles
+    _normalize_positions_in_list(db, target_list_id)
+
+    # Rafraîchir la carte pour obtenir sa nouvelle position normalisée
     db.refresh(db_card)
 
     # Créer une entrée d'historique pour la création de la carte
@@ -316,8 +325,14 @@ def delete_card(db: Session, card_id: int) -> bool:
     if not db_card:
         return False
 
+    list_id = db_card.list_id
+
     db.delete(db_card)
     db.commit()
+
+    # Normaliser les positions dans la liste pour qu'elles soient séquentielles
+    _normalize_positions_in_list(db, list_id)
+
     return True
 
 
@@ -346,31 +361,46 @@ def move_card(
         # Réorganisation dans la même liste - utiliser la position fournie ou mettre à la fin
         target_position = getattr(move_request, "position", None)
         if target_position is None:
-            # Pas de position spécifiée, mettre à la fin
-            max_position = db.query(func.max(Card.position)).filter(Card.list_id == new_list_id).scalar()
-            target_position = (max_position or 0) + 1
+            # Pas de position spécifiée, mettre à la fin (uniquement les cartes non archivées)
+            max_position = db.query(func.max(Card.position)).filter(
+                Card.list_id == new_list_id,
+                Card.is_archived == False
+            ).scalar()
+            target_position = (max_position + 1) if max_position is not None else 0
 
         _reorder_cards_in_same_list(db, card_id, old_position, target_position, new_list_id)
+
+        # Normaliser les positions dans la liste pour qu'elles soient séquentielles
+        _normalize_positions_in_list(db, new_list_id)
+
+        # Rafraîchir la carte pour obtenir sa nouvelle position normalisée
+        db.refresh(db_card)
     else:
         # Déplacement vers une autre liste
-        # 1. Compacter les positions dans l'ancienne liste
-        _compact_positions_after_removal(db, old_list_id, old_position)
-
-        # 2. Déterminer la position dans la nouvelle liste
+        # 1. Déterminer la position dans la nouvelle liste
         target_position = getattr(move_request, "position", None)
         if target_position is None:
-            # Pas de position spécifiée, mettre à la fin
-            max_position = db.query(func.max(Card.position)).filter(Card.list_id == new_list_id).scalar()
-            target_position = (max_position or 0) + 1
+            # Pas de position spécifiée, mettre à la fin (uniquement les cartes non archivées)
+            max_position = db.query(func.max(Card.position)).filter(
+                Card.list_id == new_list_id,
+                Card.is_archived == False
+            ).scalar()
+            target_position = (max_position + 1) if max_position is not None else 0
         else:
             # Décaler les cartes existantes dans la liste de destination
             _shift_positions_for_insertion(db, new_list_id, target_position)
 
-        # 3. Mettre à jour la carte
+        # 2. Mettre à jour la carte
         db_card.list_id = new_list_id
-    db_card.position = target_position
-    db.commit()
-    db.refresh(db_card)
+        db_card.position = target_position
+        db.commit()
+
+        # 3. Normaliser les positions dans les DEUX listes
+        _normalize_positions_in_list(db, old_list_id)
+        _normalize_positions_in_list(db, new_list_id)
+
+        # Rafraîchir la carte pour obtenir sa nouvelle position normalisée
+        db.refresh(db_card)
 
     # Créer une entrée d'historique pour le déplacement si les listes sont différentes
     if moved_by and old_list_id != new_list_id:
@@ -396,29 +426,68 @@ def _reorder_cards_in_same_list(db: Session, card_id: int, old_position: int, ne
         return
 
     if new_position > old_position:
-        # Déplacer vers le bas : décaler les cartes entre old_position+1 et new_position vers le haut
+        # Déplacer vers le bas : décaler les cartes non archivées entre old_position+1 et new_position vers le haut
         db.query(Card).filter(
-            Card.list_id == list_id, Card.position > old_position, Card.position <= new_position, Card.id != card_id
+            Card.list_id == list_id,
+            Card.position > old_position,
+            Card.position <= new_position,
+            Card.id != card_id,
+            Card.is_archived == False
         ).update({Card.position: Card.position - 1})
+        db.commit()  # Commit des décalages avant de mettre à jour la carte déplacée
+
+        # Mettre à jour la position de la carte déplacée
+        db.query(Card).filter(Card.id == card_id).update({Card.position: new_position})
     else:
-        # Déplacer vers le haut : décaler les cartes entre new_position et old_position-1 vers le bas
+        # Déplacer vers le haut : décaler les cartes non archivées entre new_position et old_position-1 vers le bas
         db.query(Card).filter(
-            Card.list_id == list_id, Card.position >= new_position, Card.position < old_position, Card.id != card_id
+            Card.list_id == list_id,
+            Card.position >= new_position,
+            Card.position < old_position,
+            Card.id != card_id,
+            Card.is_archived == False
         ).update({Card.position: Card.position + 1})
+        db.commit()  # Commit des décalages avant de mettre à jour la carte déplacée
+
+        # Mettre à jour la position de la carte déplacée
+        db.query(Card).filter(Card.id == card_id).update({Card.position: new_position})
+
+    db.commit()
 
 
 def _compact_positions_after_removal(db: Session, list_id: int, removed_position: int):
     """Compacter les positions après suppression d'une carte."""
-    db.query(Card).filter(Card.list_id == list_id, Card.position > removed_position).update(
-        {Card.position: Card.position - 1}
-    )
+    db.query(Card).filter(
+        Card.list_id == list_id,
+        Card.position > removed_position,
+        Card.is_archived == False
+    ).update({Card.position: Card.position - 1})
+    db.commit()
 
 
 def _shift_positions_for_insertion(db: Session, list_id: int, insert_position: int):
     """Décaler les positions pour faire de la place à une nouvelle carte."""
-    db.query(Card).filter(Card.list_id == list_id, Card.position >= insert_position).update(
-        {Card.position: Card.position + 1}
-    )
+    db.query(Card).filter(
+        Card.list_id == list_id,
+        Card.position >= insert_position,
+        Card.is_archived == False
+    ).update({Card.position: Card.position + 1})
+    db.commit()
+
+
+def _normalize_positions_in_list(db: Session, list_id: int):
+    """Normaliser les positions des cartes non archivées dans une liste pour qu'elles soient séquentielles (0, 1, 2, ...)."""
+    # Récupérer uniquement les cartes non archivées de la liste triées par position actuelle
+    cards = db.query(Card).filter(
+        Card.list_id == list_id,
+        Card.is_archived == False
+    ).order_by(Card.position).all()
+
+    # Mettre à jour les positions pour qu'elles soient séquentielles en commençant à 0
+    for new_position, card in enumerate(cards):
+        card.position = new_position
+
+    db.commit()
 
 
 def bulk_move_cards(db: Session, bulk_move_request: BulkCardMoveRequest) -> List[Card]:
@@ -428,9 +497,12 @@ def bulk_move_cards(db: Session, bulk_move_request: BulkCardMoveRequest) -> List
     if not cards:
         return []
 
-    # Obtenir la position maximale dans la liste de destination
-    max_position = db.query(func.max(Card.position)).filter(Card.list_id == bulk_move_request.target_list_id).scalar()
-    next_position = (max_position or 0) + 1
+    # Obtenir la position maximale dans la liste de destination (uniquement les cartes non archivées)
+    max_position = db.query(func.max(Card.position)).filter(
+        Card.list_id == bulk_move_request.target_list_id,
+        Card.is_archived == False
+    ).scalar()
+    next_position = (max_position + 1) if max_position is not None else 0
 
     # Déplacer toutes les cartes vers la liste de destination
     for i, card in enumerate(cards):
@@ -438,6 +510,9 @@ def bulk_move_cards(db: Session, bulk_move_request: BulkCardMoveRequest) -> List
         card.position = next_position + i
 
     db.commit()
+
+    # Normaliser les positions dans la liste de destination pour qu'elles soient séquentielles
+    _normalize_positions_in_list(db, bulk_move_request.target_list_id)
 
     # Rafraîchir toutes les cartes
     for card in cards:

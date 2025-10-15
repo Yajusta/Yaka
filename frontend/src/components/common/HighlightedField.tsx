@@ -11,7 +11,7 @@ interface HighlightedFieldProps {
 
 /**
  * Composant wrapper qui met en évidence les champs modifiés avec une bordure verte,
- * un fond teinté, une animation pulse et un petit indicateur dans le coin.
+ * un fond teinté, une animation pulse douce et un petit indicateur dans le coin.
  * Affiche une tooltip avec l'ancienne valeur au survol.
  */
 export const HighlightedField = ({ isChanged, tooltipContent, children, className = '' }: HighlightedFieldProps) => {
@@ -24,11 +24,16 @@ export const HighlightedField = ({ isChanged, tooltipContent, children, classNam
             <Tooltip>
                 <TooltipTrigger asChild>
                     <div className={`relative ${className}`}>
-                        <div className="[&>*]:border-2 [&>*]:border-green-500 [&>*]:ring-2 [&>*]:ring-green-200 [&>*]:bg-green-50/30 [&>*]:dark:bg-green-950/20 animate-pulse-slow">
-                            {children}
+                        <div className="relative rounded-md">
+                            {/* Bordure animée en arrière-plan */}
+                            <div className="absolute inset-0 rounded-md border-2 border-green-500 bg-green-50/20 dark:bg-green-950/20 animate-pulse-slow pointer-events-none" />
+                            {/* Contenu avec styles appliqués */}
+                            <div className="relative [&>*]:!border-green-500 [&>*]:!ring-2 [&>*]:!ring-green-200/50 [&>*]:dark:!ring-green-800/50">
+                                {children}
+                            </div>
                         </div>
                         {/* Petit indicateur visuel dans le coin */}
-                        <div className="absolute -top-2 -right-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-md">
+                        <div className="absolute -top-2 -right-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
                             <Pencil className="w-3 h-3 text-white" />
                         </div>
                     </div>

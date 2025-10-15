@@ -5,7 +5,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from ..database import get_db
+from ..multi_database import get_dynamic_db as get_db
 from ..models import User
 from ..schemas import LabelCreate, LabelResponse, LabelUpdate
 from ..services import label as label_service

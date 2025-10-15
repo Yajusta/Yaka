@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
-import { Card } from '../../types/index';
+import { Card, CardComment } from '../../types/index';
 import { CommentsForm } from '../cards/CommentsForm';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -165,6 +165,15 @@ export const CardItem = ({
     };
 
     const handleAssigneeChange = (updatedCard: Card) => {
+        onUpdate(updatedCard, 'update');
+    };
+
+    const handleCommentsChange = (comments: CardComment[]) => {
+        // Update the card with the new comments
+        const updatedCard = {
+            ...card,
+            comments
+        };
         onUpdate(updatedCard, 'update');
     };
 
@@ -394,9 +403,9 @@ export const CardItem = ({
                                                             }}
                                                             title={canToggleChecklistItems ? t('card.toggleChecklistItem') : undefined}
                                                         >
-                                                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${item.is_done ? 'bg-primary border-primary' : 'border-muted-foreground'}`}>
+                                                            <div className={`w-4 h-4 min-w-4 min-h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${item.is_done ? 'bg-primary border-primary' : 'border-muted-foreground'}`}>
                                                                 {item.is_done && (
-                                                                    <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                                                    <svg className="w-2.5 h-2.5 text-primary-foreground flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                                                                         <path d="M5 13l4 4L19 7" />
                                                                     </svg>
                                                                 )}
@@ -440,6 +449,7 @@ export const CardItem = ({
                 isOpen={showCommentsModal}
                 onClose={() => setShowCommentsModal(false)}
                 canAdd={canComment}
+                onCommentsChange={handleCommentsChange}
             />
         </GlassmorphicCard>
     );

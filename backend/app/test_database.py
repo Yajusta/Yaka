@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from .database import Base
 
 # SQLite database file used for tests
-TEST_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "test_yaka.db")
+TEST_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "tests", "data", "test_yaka.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
 
 # Dedicated SQLAlchemy engine for tests

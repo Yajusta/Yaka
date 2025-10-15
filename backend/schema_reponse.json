@@ -42,9 +42,8 @@
       }
     },
     "due_date": {
-      "description": "Date limite de la tâche.",
-      "type": "string",
-      "format": "date"
+      "description": "Date limite de la tâche au format \"yyyy-mm-dd\".",
+      "type": "string"
     },
     "list_id": {
       "description": "Identifiant de la liste à laquelle appartient la tâche.",

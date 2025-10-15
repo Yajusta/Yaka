@@ -80,7 +80,7 @@ def create_user(db: Session, user: UserCreate) -> User:
     return db_user
 
 
-def invite_user(db: Session, email: str, display_name: str | None, role: UserRole) -> User:
+def invite_user(db: Session, email: str, display_name: str | None, role: UserRole, board_uid: Optional[str] = None) -> User:
     """Creer un utilisateur en tant qu'invite et envoyer un email d'invitation."""
     invite_token = secrets.token_urlsafe(32)
     invited_at = get_system_timezone_datetime()
@@ -104,7 +104,7 @@ def invite_user(db: Session, email: str, display_name: str | None, role: UserRol
     db.refresh(db_user)
 
     try:
-        email_service.send_invitation(email=normalized_email, display_name=display_name, token=invite_token)
+        email_service.send_invitation(email=normalized_email, display_name=display_name, token=invite_token, board_uid=board_uid)
     except Exception as exc:
         print(f"ERROR: Erreur lors de l'envoi de l'email d'invitation a {normalized_email}: {exc}")
     return db_user
@@ -175,7 +175,7 @@ def set_password_from_invite(db: Session, user: User, password: str) -> bool:
     return True
 
 
-def request_password_reset(db: Session, email: str) -> bool:
+def request_password_reset(db: Session, email: str, board_uid: Optional[str] = None) -> bool:
     """Demander une réinitialisation de mot de passe."""
     user = get_user_by_email(db, email)
     if not user or user.status != UserStatus.ACTIVE:
@@ -189,7 +189,7 @@ def request_password_reset(db: Session, email: str) -> bool:
     db.commit()
 
     with contextlib.suppress(Exception):
-        email_service.send_password_reset(email=email, display_name=user.display_name, token=reset_token)
+        email_service.send_password_reset(email=email, display_name=user.display_name, token=reset_token, board_uid=board_uid)
     return True
 
 

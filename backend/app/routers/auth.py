@@ -1,14 +1,16 @@
 """Routeur pour l'authentification."""
 
 from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from ..database import get_db
-from ..schemas import UserResponse, PasswordResetRequest
+
+from ..multi_database import get_dynamic_db as get_db
+from ..schemas import PasswordResetRequest, UserResponse
 from ..services import user as user_service
-from ..utils.security import Token, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from ..utils.dependencies import get_current_active_user
+from ..utils.security import ACCESS_TOKEN_EXPIRE_MINUTES, Token, create_access_token
 
 router = APIRouter(prefix="/auth", tags=["authentification"])
 
@@ -45,7 +47,7 @@ async def request_password_reset(request: PasswordResetRequest, db: Session = De
     """Demander une réinitialisation de mot de passe."""
     from ..services import user as user_service
 
-    user_service.request_password_reset(db, request.email)
+    user_service.request_password_reset(db, request.email, request.board_uid)
     return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé"}
 
 
@@ -53,6 +55,7 @@ async def request_password_reset(request: PasswordResetRequest, db: Session = De
 async def check_ai_features():
     """Vérifie si les fonctionnalités IA sont disponibles."""
     import os
+
     from dotenv import load_dotenv
 
     load_dotenv(override=True)

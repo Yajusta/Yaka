@@ -8,6 +8,7 @@ from .lists import router as lists_router
 from .board_settings import router as board_settings_router
 from .card_items import router as card_items_router
 from .card_history import router as card_history_router
+from .admin import router as admin_router
 
 __all__ = [
     "auth_router",
@@ -18,4 +19,5 @@ __all__ = [
     "board_settings_router",
     "card_items_router",
     "card_history_router",
+    "admin_router",
 ]

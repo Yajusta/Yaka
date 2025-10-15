@@ -34,6 +34,7 @@ interface Filters {
 }
 
 const KanbanApp = () => {
+    // Extraire le board_uid depuis l'URL
     const { t } = useTranslation();
     const [showUsersManager, setShowUsersManager] = useState(false);
     const [showListManager, setShowListManager] = useState(false);
@@ -482,8 +483,11 @@ const AppContent = () => {
     if (isPublicRoute) {
         return (
             <Routes>
-                <Route path="/invite" element={<InvitePage />} />
                 <Route path="/login" element={<LoginForm />} />
+                <Route path="/invite" element={<InvitePage />} />
+                <Route path="/invite/board/:uid" element={<InvitePage />} />
+                <Route path="/board/:uid/login" element={<LoginForm />} />
+                <Route path="/board/:uid/invite" element={<InvitePage />} />
             </Routes>
         );
     }
@@ -495,7 +499,12 @@ const AppContent = () => {
     }
 
     // Routes protégées (nécessitent une authentification)
-    return <KanbanApp />;
+    return (
+        <Routes>
+            <Route path="/board/:uid" element={<KanbanApp />} />
+            <Route path="/*" element={<KanbanApp />} />
+        </Routes>
+    );
 };
 
 const App = () => {
