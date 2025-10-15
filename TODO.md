@@ -12,6 +12,8 @@
 [x] Pouvoir "réduire" un colonne (qui ne sert pas souvent).
 [x] Option pour réduire toutes les tâches (vue compacte).
 [ ] Import en masse.
+[ ] Faire un vocabulaire spécifique.
+[ ] Chiffrer les données.
 
 ## Frontend
 
@@ -24,6 +26,7 @@
 [ ] Tokens d'invitation/réinitialisation sans expiration
 [x] Modifier le prompt pour faire bien attention au changement de colonne.
 [x] Modifer "due_date" du format response pour être compatble avec plus de modèles.
+[ ] Mettre à jour toutes les bases de données au démarrage.
 
 ### Tech
 

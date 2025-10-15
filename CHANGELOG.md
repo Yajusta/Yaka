@@ -1,11 +1,12 @@
 # Changelog
 
-## 1.3.0 (2025-10-13)
+## 1.3.1 (2025-10-15)
 
 - [NEW] Gestion des bases de données multiples.
 - [FIX] Enregistrement des positions de cartes.
 - [CHANGE] Clean tests.
 - [CHORES] Update dependencies.
+- [FIX] Edition du titre.
 
 ## v1.2.3 (2025-10-09)
 

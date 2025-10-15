@@ -369,7 +369,8 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
 
             return () => clearTimeout(timer);
         }
-    }, [isOpen, card, formData.title, initialData, proposedChanges, isViewOnly]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, isViewOnly]);
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
