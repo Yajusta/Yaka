@@ -127,7 +127,9 @@ def create_demo_data(db_session):
     # Define labels according to language
     if default_language == "en":
         list_names = ["📝 To do", "🔄 In progress", "✅ Done"]
-        list_descriptions = ["Tasks to be started", "Tasks currently in progress", "Completed tasks"]
+        list_descriptions = ["Tasks to be started", 
+                            "Tasks currently in progress. If a task with multiple subtasks have at least one subtask done but not all, it should be in the \"In progress\" list.", 
+                            "Completed tasks. If a task with multiple subtasks have all subtask done, it should be in the \"Done\" list."]
         label_name = "Important"
         label_description = "High priority tasks requiring immediate attention"
         card_title = "Configure Yaka"
@@ -142,7 +144,9 @@ def create_demo_data(db_session):
         ]
     else:
         list_names = ["📝 A faire", "🔄 En cours", "✅ Terminé"]
-        list_descriptions = ["Tâches en attente de démarrage", "Tâches en cours de réalisation", "Tâches terminées"]
+        list_descriptions = ["Tâches en attente de démarrage", 
+                            "Tâches en cours de réalisation. Si une tâche avec plusieurs sous-tâches a au moins une sous-tâche terminée mais pas toutes, elle doit être dans la liste \"En cours\".", 
+                            "Tâches terminées. Si une tâche avec plusieurs sous-tâches a toutes les sous-tâches terminées, elle doit être dans la liste \"Terminé\"."]
         label_name = "Important"
         label_description = "Tâches prioritaires nécessitant une attention immédiate"
         card_title = "Configurer Yaka"

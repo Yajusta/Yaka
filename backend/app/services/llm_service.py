@@ -155,6 +155,7 @@ Les "priorités" peuvent être aussi appelées "niveaux de priorité" ou "import
 ```
 
 La "tâche" peut aussi être appelée "élément", "item", "carte", "chose à faire" ou "action".
+Les éléments de la checklist peuvent aussi être appelés "sous-tâches", "étapes", "items", "subtasks" ou "actions".
 
 5. **Libellés possibles :**
 ```json
