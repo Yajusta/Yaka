@@ -117,6 +117,8 @@ class TestModelImports:
             "CardComment",
             "CardHistory",
             "ViewScope",
+            "GlobalDictionary",
+            "PersonalDictionary",
         ]
 
         assert set(__all__) == set(expected_all)

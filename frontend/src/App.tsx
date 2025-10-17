@@ -509,7 +509,6 @@ const AppContent = () => {
             <Routes>
                 <Route path="/login" element={<LoginForm />} />
                 <Route path="/invite" element={<InvitePage />} />
-                <Route path="/invite/board/:uid" element={<InvitePage />} />
                 <Route path="/board/:uid/login" element={<LoginForm />} />
                 <Route path="/board/:uid/invite" element={<InvitePage />} />
             </Routes>

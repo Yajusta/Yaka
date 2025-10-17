@@ -71,7 +71,7 @@ import urllib.parse
 def send_invitation(email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None):
     encoded_token = urllib.parse.quote_plus(token)
     if board_uid:
-        link = f"{INVITE_BASE_URL}/board/{board_uid}?token={encoded_token}"
+        link = f"{BASE_URL}/board/{board_uid}/invite?token={encoded_token}"
     else:
         link = f"{INVITE_BASE_URL}?token={encoded_token}"
     subject = "Invitation à rejoindre Yaka (Yet Another Kanban App)"
@@ -83,7 +83,7 @@ def send_invitation(email: str, display_name: Optional[str], token: str, board_u
 def send_password_reset(email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None):
     encoded_token = urllib.parse.quote_plus(token)
     if board_uid:
-        link = f"{PASSWORD_RESET_BASE_URL}/board/{board_uid}?token={encoded_token}&reset=true"
+        link = f"{BASE_URL}/board/{board_uid}/invite?token={encoded_token}&reset=true"
     else:
         link = f"{PASSWORD_RESET_BASE_URL}?token={encoded_token}&reset=true"
     subject = "Réinitialisation de votre mot de passe Yaka (Yet Another Kanban App)"
