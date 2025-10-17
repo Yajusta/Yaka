@@ -11,6 +11,8 @@ import { FilterBar } from './components/common/FilterBar.tsx';
 import { Footer } from './components/common/Footer.tsx';
 import { Header } from './components/common/Header.tsx';
 import LabelManager from './components/common/LabelManager.tsx';
+import GlobalDictionaryManager from './components/common/GlobalDictionaryManager.tsx';
+import PersonalDictionaryManager from './components/common/PersonalDictionaryManager.tsx';
 import UsersManager from './components/common/UsersManager';
 import { KanbanBoard } from './components/kanban/KanbanBoard.tsx';
 import { Toaster } from './components/ui/sonner';
@@ -66,11 +68,13 @@ const KanbanApp = () => {
     const [showCardForm, setShowCardForm] = useState<boolean>(false);
     const [editingCard, setEditingCard] = useState<Card | null>(null);
     const [showLabelManager, setShowLabelManager] = useState<boolean>(false);
+    const [showGlobalDictionary, setShowGlobalDictionary] = useState<boolean>(false);
+    const [showPersonalDictionary, setShowPersonalDictionary] = useState<boolean>(false);
     const [listsRefreshTrigger, setListsRefreshTrigger] = useState<number>(0);
     const [defaultListIdForNewCard, setDefaultListIdForNewCard] = useState<number | null>(null);
 
     // Calculer si une modale est ouverte pour masquer le TrashZone
-    const isAnyModalOpen = showCardForm || showLabelManager || showListManager || showUsersManager || showInterfaceDialog;
+    const isAnyModalOpen = showCardForm || showLabelManager || showListManager || showUsersManager || showInterfaceDialog || showGlobalDictionary || showPersonalDictionary;
 
     // Load initial data (cards + labels) - only when user changes, not filters
     useEffect(() => {
@@ -354,6 +358,14 @@ const KanbanApp = () => {
         setShowLabelManager(true);
     };
 
+    const handleShowGlobalDictionary = (): void => {
+        setShowGlobalDictionary(true);
+    };
+
+    const handleShowPersonalDictionary = (): void => {
+        setShowPersonalDictionary(true);
+    };
+
     const handleShowLists = (): void => {
         setShowListManager(true);
     };
@@ -399,6 +411,8 @@ const KanbanApp = () => {
                     theme={theme}
                     onShowUsers={handleShowUsers}
                     onShowLabels={handleShowLabels}
+                    onShowGlobalDictionary={handleShowGlobalDictionary}
+                    onShowPersonalDictionary={handleShowPersonalDictionary}
                     onShowLists={handleShowLists}
                     onShowInterface={handleShowInterface}
                     onToggleTheme={toggleTheme}
@@ -442,6 +456,16 @@ const KanbanApp = () => {
                 <LabelManager
                     isOpen={showLabelManager}
                     onClose={() => setShowLabelManager(false)}
+                />
+
+                <GlobalDictionaryManager
+                    isOpen={showGlobalDictionary}
+                    onClose={() => setShowGlobalDictionary(false)}
+                />
+
+                <PersonalDictionaryManager
+                    isOpen={showPersonalDictionary}
+                    onClose={() => setShowPersonalDictionary(false)}
                 />
 
                 <ListManager

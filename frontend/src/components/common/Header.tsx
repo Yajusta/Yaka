@@ -1,6 +1,6 @@
 import { Button } from '../ui/button';
 import * as React from 'react';
-import { Check, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, Sun, Tag, Users } from 'lucide-react';
+import { BookOpen, Check, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, Sun, Tag, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useBoardSettings } from '../../hooks/useBoardSettingsContext';
 import { UserRole, UserRoleValue, User, ViewScope } from '../../types';
@@ -27,6 +27,8 @@ interface HeaderProps {
     theme: 'light' | 'dark';
     onShowUsers: () => void;
     onShowLabels: () => void;
+    onShowGlobalDictionary: () => void;
+    onShowPersonalDictionary: () => void;
     onShowLists: () => void;
     onShowInterface: () => void;
     onToggleTheme: () => void;
@@ -40,6 +42,8 @@ export const Header = ({
     theme,
     onShowUsers,
     onShowLabels,
+    onShowGlobalDictionary,
+    onShowPersonalDictionary,
     onShowLists,
     onShowInterface,
     onToggleTheme,
@@ -55,6 +59,7 @@ export const Header = ({
     const [isThemeMenuHovered, setIsThemeMenuHovered] = React.useState(false);
     const [isExportMenuHovered, setIsExportMenuHovered] = React.useState(false);
     const [isSettingsMenuHovered, setIsSettingsMenuHovered] = React.useState(false);
+    const [isPersonalDictionaryHovered, setIsPersonalDictionaryHovered] = React.useState(false);
     const [isChangingLanguage, setIsChangingLanguage] = React.useState(false);
 
     const handleExportCSV = async () => {
@@ -401,12 +406,30 @@ export const Header = ({
                                         <DropdownMenuItem
                                             onClick={handleExportExcel}
                                             className="cursor-pointer"
-                                        >
+                                            >
                                             <FileSpreadsheet className="mr-2 h-4 w-4" />
                                             {t('export.excel')}
                                         </DropdownMenuItem>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
+                                {/* Personal Dictionary Menu Item - available for editors and above */}
+                                {user?.role && (user.role === UserRole.EDITOR || user.role === UserRole.SUPERVISOR || user.role === UserRole.ADMIN) && (
+                                    <>
+                                        <DropdownMenuItem
+                                            onClick={onShowPersonalDictionary}
+                                            className="cursor-pointer"
+                                            onMouseEnter={() => setIsPersonalDictionaryHovered(true)}
+                                            onMouseLeave={() => setIsPersonalDictionaryHovered(false)}
+                                        >
+                                            {isPersonalDictionaryHovered ? (
+                                                <MoreHorizontal className="mr-2 h-4 w-4" />
+                                            ) : (
+                                                <BookOpen className="mr-2 h-4 w-4" />
+                                            )}
+                                            {t('dictionary.personalDictionary')}
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
 
                                 {/* Settings submenu - Admin only */}
                                 {isAdmin() && (
@@ -461,10 +484,19 @@ export const Header = ({
                                                     {t('navigation.labels')}
                                                     <MoreHorizontal className="ml-auto h-4 w-4 opacity-50" />
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={onShowGlobalDictionary}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <BookOpen className="mr-2 h-4 w-4" />
+                                                    {t('dictionary.globalDictionary')}
+                                                    <MoreHorizontal className="ml-auto h-4 w-4 opacity-50" />
+                                                </DropdownMenuItem>
                                             </DropdownMenuSubContent>
                                         </DropdownMenuSub>
                                     </>
                                 )}
+
 
                                 <DropdownMenuSeparator />
 

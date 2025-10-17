@@ -57,6 +57,19 @@ export interface Label {
     updated_at: string;
 }
 
+export interface GlobalDictionaryEntry {
+    id: number;
+    term: string;
+    definition: string;
+}
+
+export interface PersonalDictionaryEntry {
+    id: number;
+    user_id: number;
+    term: string;
+    definition: string;
+}
+
 // CardChecklistItem est défini plus bas pour éviter les références circulaires
 
 export interface Filters {

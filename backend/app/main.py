@@ -19,6 +19,8 @@ from .routers.card_items import router as card_items_router
 from .routers.export import router as export_router
 from .routers.voice_control import router as voice_control_router
 from .routers import admin_router
+from .routers.global_dictionary import router as global_dictionary_router
+from .routers.personal_dictionary import router as personal_dictionary_router
 from .services.board_settings import initialize_default_settings
 from .services.email import FROM_ADDRESS, SMTP_HOST, SMTP_USER
 from .services.user import create_admin_user
@@ -254,6 +256,8 @@ app.include_router(card_items_router)
 app.include_router(card_comments_router)
 app.include_router(export_router)
 app.include_router(voice_control_router)
+app.include_router(global_dictionary_router)
+app.include_router(personal_dictionary_router)
 
 # Include admin router (global, no board prefix)
 app.include_router(admin_router)
@@ -270,6 +274,8 @@ app.include_router(card_items_router, prefix="/board/{board_uid}")
 app.include_router(card_comments_router, prefix="/board/{board_uid}")
 app.include_router(export_router, prefix="/board/{board_uid}")
 app.include_router(voice_control_router, prefix="/board/{board_uid}")
+app.include_router(global_dictionary_router, prefix="/board/{board_uid}")
+app.include_router(personal_dictionary_router, prefix="/board/{board_uid}")
 
 
 @app.get("/")

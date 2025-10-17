@@ -109,6 +109,9 @@ class User(Base):
     created_labels: Mapped[List["Label"]] = relationship("Label", back_populates="creator")
     card_comments: Mapped[List["CardComment"]] = relationship("CardComment", back_populates="user")
     card_actions: Mapped[List["CardHistory"]] = relationship("CardHistory", back_populates="user")
+    personal_dictionary_entries: Mapped[List["PersonalDictionary"]] = relationship(
+        "PersonalDictionary", back_populates="user"
+    )
 
     PROTECTED_FIELDS = {"id", "created_at"}
 
@@ -118,3 +121,4 @@ if TYPE_CHECKING:
     from .card_comment import CardComment
     from .card_history import CardHistory
     from .label import Label
+    from .personal_dictionary import PersonalDictionary

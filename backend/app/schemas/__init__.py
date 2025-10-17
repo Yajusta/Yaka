@@ -36,6 +36,18 @@ from .kanban_list import (
     ListDeletionRequest,
     ListReorderRequest,
 )
+from .global_dictionary import (
+    GlobalDictionaryBase,
+    GlobalDictionaryCreate,
+    GlobalDictionaryUpdate,
+    GlobalDictionaryResponse,
+)
+from .personal_dictionary import (
+    PersonalDictionaryBase,
+    PersonalDictionaryCreate,
+    PersonalDictionaryUpdate,
+    PersonalDictionaryResponse,
+)
 
 __all__ = [
     "UserBase",
@@ -69,4 +81,12 @@ __all__ = [
     "KanbanListResponse",
     "ListDeletionRequest",
     "ListReorderRequest",
+    "GlobalDictionaryBase",
+    "GlobalDictionaryCreate",
+    "GlobalDictionaryUpdate",
+    "GlobalDictionaryResponse",
+    "PersonalDictionaryBase",
+    "PersonalDictionaryCreate",
+    "PersonalDictionaryUpdate",
+    "PersonalDictionaryResponse",
 ]

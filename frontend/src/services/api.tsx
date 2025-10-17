@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { User, Card, Label, Filters, CreateCardData, UpdateCardData, CreateLabelData, UpdateLabelData, CardChecklistItem, CardComment, ViewScope } from '../types';
+import { User, Card, Label, Filters, CreateCardData, UpdateCardData, CreateLabelData, UpdateLabelData, CardChecklistItem, CardComment, ViewScope, GlobalDictionaryEntry, PersonalDictionaryEntry } from '../types';
 
 // Configuration de base d'Axios
 // Utiliser la variable d'environnement si disponible, sinon la valeur par défaut
@@ -430,6 +430,52 @@ export const cardCommentsService = {
     },
     async deleteComment(commentId: number): Promise<void> {
         await getApiInstance().delete(`/card-comments/${commentId}`);
+    }
+};
+
+// Services for global dictionary
+export const globalDictionaryService = {
+    async getEntries(): Promise<GlobalDictionaryEntry[]> {
+        const response = await getApiInstance().get<GlobalDictionaryEntry[]>('/global-dictionary/');
+        return response.data;
+    },
+    async getEntry(entryId: number): Promise<GlobalDictionaryEntry> {
+        const response = await getApiInstance().get<GlobalDictionaryEntry>(`/global-dictionary/${entryId}`);
+        return response.data;
+    },
+    async createEntry(entry: { term: string; definition: string }): Promise<GlobalDictionaryEntry> {
+        const response = await getApiInstance().post<GlobalDictionaryEntry>('/global-dictionary/', entry);
+        return response.data;
+    },
+    async updateEntry(entryId: number, entry: { term?: string; definition?: string }): Promise<GlobalDictionaryEntry> {
+        const response = await getApiInstance().put<GlobalDictionaryEntry>(`/global-dictionary/${entryId}`, entry);
+        return response.data;
+    },
+    async deleteEntry(entryId: number): Promise<void> {
+        await getApiInstance().delete(`/global-dictionary/${entryId}`);
+    }
+};
+
+// Services for personal dictionary
+export const personalDictionaryService = {
+    async getEntries(): Promise<PersonalDictionaryEntry[]> {
+        const response = await getApiInstance().get<PersonalDictionaryEntry[]>('/personal-dictionary/');
+        return response.data;
+    },
+    async getEntry(entryId: number): Promise<PersonalDictionaryEntry> {
+        const response = await getApiInstance().get<PersonalDictionaryEntry>(`/personal-dictionary/${entryId}`);
+        return response.data;
+    },
+    async createEntry(entry: { term: string; definition: string }): Promise<PersonalDictionaryEntry> {
+        const response = await getApiInstance().post<PersonalDictionaryEntry>('/personal-dictionary/', entry);
+        return response.data;
+    },
+    async updateEntry(entryId: number, entry: { term?: string; definition?: string }): Promise<PersonalDictionaryEntry> {
+        const response = await getApiInstance().put<PersonalDictionaryEntry>(`/personal-dictionary/${entryId}`, entry);
+        return response.data;
+    },
+    async deleteEntry(entryId: number): Promise<void> {
+        await getApiInstance().delete(`/personal-dictionary/${entryId}`);
     }
 };
 

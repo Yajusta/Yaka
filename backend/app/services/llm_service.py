@@ -10,8 +10,10 @@ from sqlalchemy.orm import selectinload
 from ..database import SessionLocal
 from ..models.card import Card, CardPriority
 from ..models.card_item import CardItem
+from ..models.global_dictionary import GlobalDictionary
 from ..models.kanban_list import KanbanList
 from ..models.label import Label
+from ..models.personal_dictionary import PersonalDictionary
 from ..models.response_model import ResponseModel
 from ..models.user import User, UserStatus
 
@@ -171,9 +173,14 @@ Les éléments de la checklist peuvent aussi être appelés "sous-tâches", "ét
 
 Le "libellé" peut aussi être appelé "étiquette", "flag" ou "tag".
 
-6. **Date et heure actuelles :** {datetime.now().strftime("%Y-%m-%d %H:%M")}
+6. **Vocabulaire spécifique (pour mieux comprendre le contexte et corriger les erreurs de transcription) :**
+```json
+{get_vocabulary(user_dict)}
+```
 
-7. **Utilisateur actuel, qui fait la demande :**
+7. **Date et heure actuelles :** {datetime.now().strftime("%Y-%m-%d %H:%M")}
+
+8. **Utilisateur actuel, qui fait la demande :**
 ```json
 {user_context}
 ```
@@ -190,6 +197,7 @@ Dans les deux cas :
 - Essaye de voir s'il y a des libellés pertinents en fonction du contexte, mais sans en inventer. Ils sont factultatifs.
 - Ne mets jamais 2 fois le même libellé.
 - Ne mets jamais 2 fois le même élément dans la checklist.
+- Quand tu comprends qu'un élement de la demande correspond à un terme du dictionnaire, utilise le terme tel qu'il est écrit dans le dictionnaire.
 
 Dans le cas d'une mise à jour: 
 - Utilise l'ID de la tâche existante et ne modfie que les parties nécessaires (il ne faut pas modifier le titre ou la description si c'est pour mettre un titre ou une description équivalente).
@@ -299,6 +307,30 @@ def get_labels() -> str:
             {"label_id": label.id, "label_name": label.name, "label_description": label.description}
             for label in labels
         ]
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    finally:
+        db.close()
+
+
+def get_vocabulary(user_context: Optional[Dict] = None) -> str:
+    """Retourne le vocabulaire combiné (global + personnel de l'utilisateur)."""
+    db = SessionLocal()
+    try:
+        # Get global dictionary entries
+        global_entries = db.query(GlobalDictionary).all()
+        result = [{"term": entry.term, "definition": entry.definition} for entry in global_entries]
+
+        # Get personal dictionary entries if user context is provided
+        if user_context and "user_id" in user_context:
+            user_id = user_context["user_id"]
+            personal_entries = db.query(PersonalDictionary).filter(PersonalDictionary.user_id == user_id).all()
+            result.extend(
+                [
+                    {"term": entry.term, "definition": entry.definition}
+                    for entry in personal_entries
+                ]
+            )
+
         return json.dumps(result, ensure_ascii=False, indent=2)
     finally:
         db.close()

@@ -2,7 +2,8 @@
 
 ## 1.3.2 (2025-10-15)
 
-- [NEW] Périmètre de vue.
+- [NEW] Périmètre de vue (qui peut voir quoi).
+- [NEW] Gestion de dictionnaire personnel pour aider l'IA dans sa compréhension.
 - [UX] Précision sur l'utilité des descriptions (listes et libellés)
 
 ## 1.3.1 (2025-10-15)

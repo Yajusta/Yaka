@@ -277,6 +277,26 @@
         "descriptionHint": "Descriptions are important for AI to understand the purpose and usage of these labels",
         "noLabels": "No labels created yet"
     },
+    "dictionary": {
+        "term": "Term",
+        "definition": "Definition",
+        "globalDictionary": "Global dictionary",
+        "personalDictionary": "Personal dictionary",
+        "newEntry": "New entry",
+        "editEntry": "Edit entry",
+        "deleteEntry": "Delete entry",
+        "entryCreated": "Entry created",
+        "entryUpdated": "Entry updated",
+        "entryDeleted": "Entry deleted",
+        "termRequired": "Term is required",
+        "termTooLong": "Term is too long (32 characters maximum)",
+        "definitionRequired": "Definition is required",
+        "definitionTooLong": "Definition is too long (250 characters maximum)",
+        "confirmDeleteEntry": "Are you sure you want to delete this entry?",
+        "noEntries": "No entries yet",
+        "globalHint": "The global dictionary helps the AI better understand terms specific to your organization. These definitions are accessible to all users and used when analyzing voice requests.",
+        "personalHint": "Your personal dictionary allows you to add terms specific to your context. These definitions are only visible to you and complement the global dictionary during your interactions with the AI."
+    },
     "user": {
         "name": "Name",
         "email": "Email",

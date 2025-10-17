@@ -277,6 +277,26 @@
         "descriptionHint": "Les descriptions sont importantes pour que l'IA comprenne le but et l'utilisation de ces étiquettes",
         "noLabels": "Aucune étiquette créée pour le moment"
     },
+    "dictionary": {
+        "term": "Terme",
+        "definition": "Définition",
+        "globalDictionary": "Dictionnaire global",
+        "personalDictionary": "Dictionnaire personnel",
+        "newEntry": "Nouvelle entrée",
+        "editEntry": "Modifier l'entrée",
+        "deleteEntry": "Supprimer l'entrée",
+        "entryCreated": "Entrée créée",
+        "entryUpdated": "Entrée mise à jour",
+        "entryDeleted": "Entrée supprimée",
+        "termRequired": "Le terme est requis",
+        "termTooLong": "Le terme est trop long (32 caractères maximum)",
+        "definitionRequired": "La définition est requise",
+        "definitionTooLong": "La définition est trop longue (250 caractères maximum)",
+        "confirmDeleteEntry": "Êtes-vous sûr de vouloir supprimer cette entrée ?",
+        "noEntries": "Aucune entrée pour le moment",
+        "globalHint": "Le dictionnaire global permet à l'IA de mieux comprendre les termes spécifiques à votre organisation. Ces définitions sont accessibles à tous les utilisateurs et utilisées lors de l'analyse des demandes vocales.",
+        "personalHint": "Votre dictionnaire personnel permet d'ajouter des termes spécifiques à votre contexte. Ces définitions ne sont visibles que par vous et complètent le dictionnaire global lors de vos interactions avec l'IA."
+    },
     "user": {
         "name": "Nom",
         "email": "Email",

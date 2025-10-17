@@ -14,7 +14,7 @@
 [x] Pouvoir "réduire" un colonne (qui ne sert pas souvent).
 [x] Option pour réduire toutes les tâches (vue compacte).
 [ ] Import en masse.
-[ ] Faire un vocabulaire spécifique.
+[x] Faire un vocabulaire spécifique.
 [ ] Chiffrer les données.
 [x] Périmètre des cartes visibles.
 
