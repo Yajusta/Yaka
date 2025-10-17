@@ -3,7 +3,7 @@
 ## 1.3.2 (2025-10-15)
 
 - [NEW] Périmètre de vue.
-
+- [UX] Précision sur l'utilité des descriptions (listes et libellés)
 
 ## 1.3.1 (2025-10-15)
 

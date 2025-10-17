@@ -190,6 +190,9 @@ const LabelManager = ({ isOpen, onClose }: LabelManagerProps) => {
                                     </div>
 
                                     <div className="space-y-2">
+                                        <div className="text-sm text-blue-600 mb-2 p-3 bg-blue-50 rounded-md border border-blue-200">
+                                            ℹ️ {t('label.descriptionHint')}
+                                        </div>
                                         <Label htmlFor="description">{t('label.description')}</Label>
                                         <textarea
                                             id="description"

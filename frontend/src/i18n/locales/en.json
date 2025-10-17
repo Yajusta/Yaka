@@ -232,6 +232,7 @@
         "reorderError": "Reordering error",
         "loading": "Loading lists...",
         "dragAndDropHint": "Use the handle to drag and reorder lists",
+        "descriptionHint": "Descriptions are important for AI to understand which cards should go in these lists",
         "noLists": "No lists created yet",
         "deletingInProgress": "Deleting in progress...",
         "deletingDescription": "Please wait while cards are moved and the list is deleted",
@@ -273,6 +274,7 @@
         "descriptionTooLong": "Description is too long",
         "invalidColor": "Invalid color",
         "labelManagement": "Label management",
+        "descriptionHint": "Descriptions are important for AI to understand the purpose and usage of these labels",
         "noLabels": "No labels created yet"
     },
     "user": {

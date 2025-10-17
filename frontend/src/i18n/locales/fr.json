@@ -232,6 +232,7 @@
         "reorderError": "Erreur de réorganisation",
         "loading": "Chargement des listes...",
         "dragAndDropHint": "Utilisez la poignée pour glisser et réorganiser les listes",
+        "descriptionHint": "Les descriptions sont importantes pour que l'IA comprenne les cartes qui doivent aller dans ces listes",
         "noLists": "Aucune liste créée pour le moment",
         "deletingInProgress": "Suppression en cours...",
         "deletingDescription": "Veuillez patienter pendant le déplacement des cartes et la suppression de la liste",
@@ -273,6 +274,7 @@
         "descriptionTooLong": "La description est trop longue",
         "invalidColor": "Couleur invalide",
         "labelManagement": "Gestion des étiquettes",
+        "descriptionHint": "Les descriptions sont importantes pour que l'IA comprenne le but et l'utilisation de ces étiquettes",
         "noLabels": "Aucune étiquette créée pour le moment"
     },
     "user": {

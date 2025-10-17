@@ -165,6 +165,9 @@ const SortableListItem = ({
                                     )}
                                 </div>
                                 <div>
+                                    <div className="text-sm text-blue-600 mb-2 p-2 bg-blue-50 rounded-md border border-blue-200">
+                                        ℹ️ {t('list.descriptionHint')}
+                                    </div>
                                     <textarea
                                         value={editingDescription}
                                         onChange={(e) => onEditingDescriptionChange(e.target.value)}
@@ -707,6 +710,9 @@ const ListManagerContent = ({ isOpen, onClose, onListsUpdated }: ListManagerProp
                                         </div>
 
                                         <div className="space-y-2">
+                                            <div className="text-sm text-blue-600 mb-2 p-3 bg-blue-50 rounded-md border border-blue-200">
+                                                ℹ️ {t('list.descriptionHint')}
+                                            </div>
                                             <Label htmlFor="description">{t('list.description')}</Label>
                                             <textarea
                                                 id="description"
