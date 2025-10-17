@@ -564,7 +564,7 @@
     },
     "voice": {
         "title": "Voice control",
-        "description": "Express your request in english, we'll take care of the rest",
+        "description": "Express your request **in english**, we'll take care of the rest",
         "placeholder": "Your request will appear here...",
         "start": "Start listening",
         "stop": "Stop",

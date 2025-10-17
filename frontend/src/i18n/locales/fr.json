@@ -564,7 +564,7 @@
     },
     "voice": {
         "title": "Pilotage par la voix",
-        "description": "Exprimez votre demande en français, on s'occupe du reste",
+        "description": "Exprimez votre demande **en français**, on s'occupe du reste",
         "placeholder": "Votre demande apparaîtra ici...",
         "start": "Démarrer l'écoute",
         "stop": "Arrêter",
