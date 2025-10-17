@@ -13,12 +13,13 @@ async def test_invite_and_set_password(async_client_factory, seed_admin_user, lo
     # Capturer le token d'invitation envoyé par email
     captured = {}
 
-    def fake_send_invitation(email, display_name, token):
+    def fake_send_invitation(email, display_name, token, board_uid=None):
         captured["email"] = email
         captured["display_name"] = display_name
         captured["token"] = token
 
-    # Patcher l'envoi d'email
+    # Patcher l'envoi d'email aux deux endroits (module source et référence dans user.py)
+    monkeypatch.setattr("app.services.email.send_invitation", fake_send_invitation)
     monkeypatch.setattr("app.services.user.email_service.send_invitation", fake_send_invitation)
 
     async with async_client_factory(auth_router, users_router) as client:
