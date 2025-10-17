@@ -66,7 +66,7 @@
         "noSensitiveInfo": "Do not enter sensitive information",
         "resetPasswordDialogTitle": "Reset password",
         "resetPasswordDialogDescription": "Enter your email address and we'll send you a link to reset your password",
-        "resetPasswordSuccess": "Password reset email sent successfully",
+        "resetPasswordSuccess": "If this account exists and is valid, it will receive an email in the next few minutes",
         "resetPasswordError": "Error resetting password",
         "emailPlaceholder": "Enter your email",
         "sendResetLink": "Send reset link",
