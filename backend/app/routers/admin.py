@@ -103,29 +103,20 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
 
                 try:
                     # Initialize default board data (lists, labels, and initial task)
-                    from ..utils.demo_reset import initialize_default_settings, create_demo_board_content
+                    from ..services.board_settings import initialize_default_settings
+                    from ..utils.demo_reset import create_demo_board_content
 
-                    # Create default admin user and settings
+                    # Initialize board settings
                     initialize_default_settings(db)
 
-                    # Create demo board content (lists, labels, and initial configuration task)
-                    create_demo_board_content(db)
-
-                    # Send automatic invitation
+                    # Send automatic invitation (this creates the admin user)
                     invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN, board_uid)
                     result["invitation_sent"] = str(True)
                     result["invited_email"] = admin_email
                     result["invitation_token"] = str(invited_user.invite_token)
 
-                    # Remove default admin "admin@yaka.local"
-                    default_admin = db.query(User).filter(
-                        User.email == "admin@yaka.local"
-                    ).first()
-
-                    if default_admin:
-                        db.delete(default_admin)
-                        db.commit()
-                        result["default_admin_removed"] = str(True)
+                    # Create demo board content (lists, labels, and initial configuration task) with the invited admin user
+                    create_demo_board_content(db, admin_user=invited_user)
 
                     result["default_data_initialized"] = str(True)
 

@@ -203,12 +203,13 @@ def create_demo_task(db_session, todo_list, important_label, admin_user):
     return config_card
 
 
-def create_demo_board_content(db_session):
+def create_demo_board_content(db_session, admin_user=None):
     """Create demo board content: lists, labels and sample task."""
     print("Creating demo board content...")
 
     # Get admin user
-    admin_user = get_user_by_email(db_session, "admin@yaka.local")
+    if admin_user is None:
+        admin_user = get_user_by_email(db_session, "admin@yaka.local")
     if not admin_user:
         print("Error: Admin user not found")
         return

@@ -70,28 +70,23 @@ def create_board_database(board_uid: str, admin_email: Optional[str] = None):
             try:
                 from app.models import User, UserRole
                 from app.services import user as user_service
-                from app.utils.demo_reset import initialize_default_settings, create_demo_board_content
+                from app.services.board_settings import initialize_default_settings
+                from app.utils.demo_reset import create_demo_board_content
 
-                # Initialize default board data (lists, labels, and initial task)
-                print(f"🔧 Initializing default board data...")
+                # Initialize board settings
+                print(f"Initializing board settings...")
                 initialize_default_settings(db)
-                create_demo_board_content(db)
-                print(f"✓ Default board data initialized (lists, labels, and initial task)")
+                print(f"Board settings initialized")
 
-                # Send automatic invitation
+                # Send automatic invitation (this creates the admin user)
                 invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN, board_uid)
-                print(f"✓ Invitation sent to {admin_email}")
+                print(f"Invitation sent to {admin_email}")
                 print(f"  Token: {invited_user.invite_token}")
 
-                # Remove default admin "admin@yaka.local"
-                default_admin = db.query(User).filter(
-                    User.email == "admin@yaka.local"
-                ).first()
-
-                if default_admin:
-                    db.delete(default_admin)
-                    db.commit()
-                    print(f"✓ Default admin 'admin@yaka.local' removed")
+                # Create demo board content with the invited admin user
+                print(f"Creating demo board content...")
+                create_demo_board_content(db, admin_user=invited_user)
+                print(f"Demo board content created (lists, labels, and initial task)")
 
             except Exception as e:
                 db.rollback()
