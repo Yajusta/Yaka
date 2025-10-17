@@ -3,12 +3,19 @@
 import logging
 import os
 import smtplib
+import urllib.parse
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Optional
-from venv import logger
 
 from dotenv import load_dotenv
+
+from .email_templates import (
+    get_invitation_html,
+    get_invitation_plain,
+    get_password_reset_html,
+    get_password_reset_plain,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,28 +72,33 @@ def send_mail(to: str, subject: str, html_body: str, plain_body: str = ""):
         raise e
 
 
-import urllib.parse
-
-
 def send_invitation(email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None):
     encoded_token = urllib.parse.quote_plus(token)
     if board_uid:
-        link = f"{BASE_URL}/board/{board_uid}/invite?token={encoded_token}"
+        invite_link = f"{BASE_URL}/board/{board_uid}/invite?token={encoded_token}"
+        board_url = f"{BASE_URL}/board/{board_uid}"
     else:
-        link = f"{INVITE_BASE_URL}?token={encoded_token}"
-    subject = "Invitation à rejoindre Yaka (Yet Another Kanban App)"
-    html = f"<p>Bonjour {display_name or 'Utilisateur'},</p><p>Vous avez été invité à rejoindre Yaka (Yet Another Kanban App). Cliquez <a href=\"{link}\">ici</a> pour définir votre mot de passe et activer votre compte.</p><br/><p>Si le lien ne s'affiche pas correctement, copiez-collez-le dans votre navigateur : </p><br/><p>{link}</p><br/><br/><p>Par la suite, vous pourrez vous connecter à l'application avec votre email et le mot de passe que vous aurez défini à l'adresse suivante : <br/> {BASE_URL}</p>"
-    plain = f"Bonjour {display_name or 'Utilisateur'},\n\nVous avez été invité à rejoindre Yaka (Yet Another Kanban App). Visitez {link} pour définir votre mot de passe et activer votre compte.\n\nPar la suite, vous pourrez vous connecter à l'application avec votre email et le mot de passe que vous aurez défini à l'adresse suivante : {BASE_URL}"
+        invite_link = f"{INVITE_BASE_URL}?token={encoded_token}"
+        board_url = BASE_URL
+    
+    name = display_name or "User"
+    subject = "Invitation to Join Yaka (Yet Another Kanban App)"
+    html = get_invitation_html(name, invite_link, board_url)
+    plain = get_invitation_plain(name, invite_link, board_url)
     send_mail(to=email, subject=subject, html_body=html, plain_body=plain)
 
 
 def send_password_reset(email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None):
     encoded_token = urllib.parse.quote_plus(token)
     if board_uid:
-        link = f"{BASE_URL}/board/{board_uid}/invite?token={encoded_token}&reset=true"
+        reset_link = f"{BASE_URL}/board/{board_uid}/invite?token={encoded_token}&reset=true"
+        board_url = f"{BASE_URL}/board/{board_uid}"
     else:
-        link = f"{PASSWORD_RESET_BASE_URL}?token={encoded_token}&reset=true"
-    subject = "Réinitialisation de votre mot de passe Yaka (Yet Another Kanban App)"
-    html = f"<p>Bonjour {display_name or 'Utilisateur'},</p><p>Vous avez demandé une réinitialisation de votre mot de passe. Cliquez <a href=\"{link}\">ici</a> pour définir un nouveau mot de passe.</p><p>Si le lien ne s'affiche pas correctement, copiez-collez-le dans votre navigateur : <br/>{link}</p><p>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>"
-    plain = f"Bonjour {display_name or 'Utilisateur'},\n\nVous avez demandé une réinitialisation de votre mot de passe. Visitez {link} pour définir un nouveau mot de passe.\n\nSi vous n'avez pas demandé cette réinitialisation, ignorez cet email."
+        reset_link = f"{PASSWORD_RESET_BASE_URL}?token={encoded_token}&reset=true"
+        board_url = BASE_URL
+    
+    name = display_name or "User"
+    subject = "Password Reset - Yaka (Yet Another Kanban App)"
+    html = get_password_reset_html(name, reset_link, board_url)
+    plain = get_password_reset_plain(name, reset_link, board_url)
     send_mail(to=email, subject=subject, html_body=html, plain_body=plain)

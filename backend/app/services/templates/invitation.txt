@@ -1,0 +1,20 @@
+Hello {{DISPLAY_NAME}},
+
+You've been invited to join a Yaka board!
+
+To get started, you'll need to set up your account by creating a password. Please visit the following link:
+
+{{INVITE_LINK}}
+
+IMPORTANT: Bookmark Your Board
+===============================
+Once your account is activated, you can access your board at:
+
+{{BOARD_URL}}
+
+Pro tip: Save this URL in your browser bookmarks for easy access!
+
+---
+This is an automated message. Please do not reply to this email.
+Yaka - Yet Another Kanban App
+
