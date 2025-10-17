@@ -75,12 +75,12 @@ class CardResponse(CardBase):
 class CardFilter(BaseModel):
     """Schéma pour les filtres de cartes."""
 
-    list_id: Optional[int] = Field(None, description="ID de la liste Kanban")
-    assignee_id: Optional[int] = Field(None, description="ID de l'utilisateur assigné")
-    priority: Optional[CardPriority] = Field(None, description="Priorité de la carte")
-    label_id: Optional[int] = Field(None, description="ID de l'étiquette")
-    search: Optional[str] = Field(None, description="Terme de recherche")
-    include_archived: bool = Field(False, description="Inclure les cartes archivées")
+    list_id: Optional[int] = Field(default=None, description="ID de la liste Kanban")
+    assignee_id: Optional[int] = Field(default=None, description="ID de l'utilisateur assigné")
+    priority: Optional[CardPriority] = Field(default=None, description="Priorité de la carte")
+    label_id: Optional[int] = Field(default=None, description="ID de l'étiquette")
+    search: Optional[str] = Field(default=None, description="Terme de recherche")
+    include_archived: bool = Field(default=False, description="Inclure les cartes archivées")
 
 
 class CardMoveRequest(BaseModel):

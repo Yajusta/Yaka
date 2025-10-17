@@ -76,7 +76,7 @@ async def read_cards(
         search=search,
         include_archived=include_archived,
     )
-    return card_service.get_cards(db, filters=filters, skip=skip, limit=limit)
+    return card_service.get_cards(db, filters=filters, skip=skip, limit=limit, user=current_user)
 
 
 @router.get("/archived", response_model=List[CardResponse])
@@ -87,7 +87,7 @@ async def read_archived_cards(
     current_user: User = Depends(get_current_active_user),
 ):
     """Récupérer la liste des cartes archivées."""
-    return card_service.get_archived_cards(db, skip=skip, limit=limit)
+    return card_service.get_archived_cards(db, skip=skip, limit=limit, user=current_user)
 
 
 @router.post("/", response_model=CardResponse)
@@ -110,6 +110,11 @@ async def read_card(
     db_card = card_service.get_card(db, card_id=card_id)
     if db_card is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
+    
+    # Check view scope permissions
+    if not card_service.can_access_card(current_user, db_card):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès non autorisé à cette carte")
+    
     return db_card
 
 

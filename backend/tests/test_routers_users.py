@@ -12,7 +12,7 @@ from pydantic import ValidationError
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.database import Base
-from app.models.user import User, UserRole, UserStatus
+from app.models.user import User, UserRole, UserStatus, ViewScope
 from app.routers.users import InvitePayload
 from app.routers.users import create_user as create_user_route
 from app.routers.users import delete_user as delete_user_route
@@ -592,6 +592,198 @@ class TestUsersRouter:
 
                     # The exception should propagate since read_users doesn't have error handling
                     assert "Database error" in str(exc_info.value)
+
+    def test_read_users_includes_view_scope(self, db_session, admin_user, regular_user):
+        """Test that GET /users/ endpoint returns view_scope for each user."""
+        from app.models.user import ViewScope
+        
+        # Set different view scopes for users
+        admin_user.view_scope = ViewScope.ALL
+        regular_user.view_scope = ViewScope.MINE_ONLY
+        db_session.commit()
+        
+        # Call the endpoint as admin
+        result = asyncio.run(read_users(0, 100, db_session, admin_user))
+        
+        # Verify we got users back
+        assert len(result) >= 2
+        
+        # Find our test users in the result
+        admin_result = next((u for u in result if u["id"] == admin_user.id), None)
+        regular_result = next((u for u in result if u["id"] == regular_user.id), None)
+        
+        assert admin_result is not None
+        assert regular_result is not None
+        
+        # Verify view_scope is present and correct
+        assert "view_scope" in admin_result
+        assert admin_result["view_scope"] == ViewScope.ALL
+        
+        assert "view_scope" in regular_result
+        assert regular_result["view_scope"] == ViewScope.MINE_ONLY
+
+
+class TestViewScopeUpdate:
+    """Tests for view scope update endpoint."""
+    
+    def test_update_user_view_scope_admin_success(self, db_session, admin_user, regular_user):
+        """Test that admin can update another user's view scope."""
+        from app.routers.users import update_user_view_scope
+        from app.schemas import ViewScopeUpdate
+        from app.models.user import ViewScope
+        
+        # Update regular user's view scope
+        view_scope_update = ViewScopeUpdate(view_scope=ViewScope.MINE_ONLY)
+        
+        result = asyncio.run(
+            update_user_view_scope(
+                regular_user.id, 
+                view_scope_update, 
+                db_session, 
+                admin_user
+            )
+        )
+        
+        assert result.id == regular_user.id
+        assert result.view_scope == ViewScope.MINE_ONLY
+        
+        # Verify in database
+        db_session.refresh(regular_user)
+        assert regular_user.view_scope == ViewScope.MINE_ONLY
+    
+    def test_update_user_view_scope_self_success(self, db_session, regular_user):
+        """Test that user can update their own view scope."""
+        from app.routers.users import update_user_view_scope
+        from app.schemas import ViewScopeUpdate
+        from app.models.user import ViewScope
+        
+        # Update user's own view scope
+        view_scope_update = ViewScopeUpdate(view_scope=ViewScope.UNASSIGNED_PLUS_MINE)
+        
+        result = asyncio.run(
+            update_user_view_scope(
+                regular_user.id, 
+                view_scope_update, 
+                db_session, 
+                regular_user
+            )
+        )
+        
+        assert result.id == regular_user.id
+        assert result.view_scope == ViewScope.UNASSIGNED_PLUS_MINE
+        
+        # Verify in database
+        db_session.refresh(regular_user)
+        assert regular_user.view_scope == ViewScope.UNASSIGNED_PLUS_MINE
+    
+    def test_update_user_view_scope_forbidden(self, db_session, admin_user, regular_user):
+        """Test that regular user cannot update another user's view scope."""
+        from app.routers.users import update_user_view_scope
+        from app.schemas import ViewScopeUpdate
+        from app.models.user import ViewScope
+        from fastapi import HTTPException
+        
+        # Try to update admin's view scope as regular user
+        view_scope_update = ViewScopeUpdate(view_scope=ViewScope.MINE_ONLY)
+        
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(
+                update_user_view_scope(
+                    admin_user.id, 
+                    view_scope_update, 
+                    db_session, 
+                    regular_user
+                )
+            )
+        
+        assert exc_info.value.status_code == 403
+        assert "Seuls les administrateurs" in str(exc_info.value.detail)
+    
+    def test_update_user_view_scope_user_not_found(self, db_session, admin_user):
+        """Test updating view scope for non-existent user."""
+        from app.routers.users import update_user_view_scope
+        from app.schemas import ViewScopeUpdate
+        from app.models.user import ViewScope
+        from fastapi import HTTPException
+        
+        # Try to update non-existent user
+        view_scope_update = ViewScopeUpdate(view_scope=ViewScope.MINE_ONLY)
+        
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(
+                update_user_view_scope(
+                    99999,  # Non-existent user ID
+                    view_scope_update, 
+                    db_session, 
+                    admin_user
+                )
+            )
+        
+        assert exc_info.value.status_code == 404
+        assert "Utilisateur non trouvé" in str(exc_info.value.detail)
+    
+    def test_update_user_view_scope_all_scopes(self, db_session, admin_user, regular_user):
+        """Test updating view scope to all possible values."""
+        from app.routers.users import update_user_view_scope
+        from app.schemas import ViewScopeUpdate
+        from app.models.user import ViewScope
+        
+        scopes_to_test = [
+            ViewScope.ALL,
+            ViewScope.UNASSIGNED_PLUS_MINE,
+            ViewScope.MINE_ONLY
+        ]
+        
+        for scope in scopes_to_test:
+            view_scope_update = ViewScopeUpdate(view_scope=scope)
+            
+            result = asyncio.run(
+                update_user_view_scope(
+                    regular_user.id, 
+                    view_scope_update, 
+                    db_session, 
+                    admin_user
+                )
+            )
+            
+            assert result.view_scope == scope
+            
+            # Verify in database
+            db_session.refresh(regular_user)
+            assert regular_user.view_scope == scope
+    
+    def test_update_user_view_scope_same_value(self, db_session, admin_user, regular_user):
+        """Test updating view scope to the same value."""
+        from app.routers.users import update_user_view_scope
+        from app.schemas import ViewScopeUpdate
+        from app.models.user import ViewScope
+        
+        # Set initial view scope
+        regular_user.view_scope = ViewScope.ALL
+        db_session.commit()
+        
+        # Update to the same value
+        view_scope_update = ViewScopeUpdate(view_scope=ViewScope.ALL)
+        
+        result = asyncio.run(
+            update_user_view_scope(
+                regular_user.id, 
+                view_scope_update, 
+                db_session, 
+                admin_user
+            )
+        )
+        
+        assert result.view_scope == ViewScope.ALL
+    
+    def test_update_user_view_scope_invalid_enum(self, db_session, admin_user, regular_user):
+        """Test updating view scope with invalid enum value (should be caught by Pydantic)."""
+        from app.schemas import ViewScopeUpdate
+        from pydantic import ValidationError
+        
+        # Try to create ViewScopeUpdate with invalid value
+        with pytest.raises(ValidationError):
+            ViewScopeUpdate(view_scope="invalid_scope")
 
 
 # Import needed for tests

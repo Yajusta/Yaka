@@ -369,6 +369,23 @@
         "admin": "Administrator",
         "guest": "Guest"
     },
+    "viewScope": {
+        "title": "View Scope",
+        "all": "All cards",
+        "unassigned_plus_mine": "Assigned cards + unassigned",
+        "mine_only": "Assigned cards only",
+        "description": {
+            "all": "See all cards on the board",
+            "unassigned_plus_mine": "See unassigned cards and cards assigned to him",
+            "mine_only": "See only cards assigned to him"
+        },
+        "permissions": {
+            "mine": "Cards assigned to him",
+            "unassigned": "Unassigned cards",
+            "others": "Cards assigned to others"
+        },
+        "currentOption": "Current option"
+    },
     "filter": {
         "all": "All",
         "mine": "Mine",

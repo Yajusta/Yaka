@@ -116,6 +116,7 @@ class TestModelImports:
             "CardItem",
             "CardComment",
             "CardHistory",
+            "ViewScope",
         ]
 
         assert set(__all__) == set(expected_all)
@@ -259,7 +260,7 @@ class TestModelImports:
         """Test la gestion des imports manquants."""
         with pytest.raises(ImportError):
             # Essayer d'importer un modèle qui n'existe pas
-            from app.models import NonExistentModel
+            from app.models import NonExistentModel  # type: ignore[attr-defined]
 
     def test_submodule_imports(self):
         """Test que les sous-modules peuvent être importés individuellement."""

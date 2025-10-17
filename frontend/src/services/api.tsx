@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { User, Card, Label, Filters, CreateCardData, UpdateCardData, CreateLabelData, UpdateLabelData, CardChecklistItem, CardComment } from '../types';
+import { User, Card, Label, Filters, CreateCardData, UpdateCardData, CreateLabelData, UpdateLabelData, CardChecklistItem, CardComment, ViewScope } from '../types';
 
 // Configuration de base d'Axios
 // Utiliser la variable d'environnement si disponible, sinon la valeur par défaut
@@ -239,6 +239,11 @@ export const userService = {
     async updateLanguage(language: string): Promise<User> {
         const response = await getApiInstance().put<User>('/users/me/language', { language });
         resetUsersCache(); // Reset cache after updating language
+        return response.data;
+    },
+    async updateViewScope(userId: number, viewScope: ViewScope): Promise<User> {
+        const response = await getApiInstance().put<User>(`/users/${userId}/view-scope`, { view_scope: viewScope });
+        resetUsersCache(); // Reset cache after updating view scope
         return response.data;
     },
 

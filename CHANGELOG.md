@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.2 (2025-10-15)
+
+- [NEW] Périmètre de vue.
+
+
 ## 1.3.1 (2025-10-15)
 
 - [NEW] Gestion des bases de données multiples.

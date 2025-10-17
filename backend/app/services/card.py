@@ -5,7 +5,7 @@ from typing import List, Optional
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload
 
-from ..models import Card, CardComment, CardPriority, KanbanList, Label, User
+from ..models import Card, CardComment, CardPriority, KanbanList, Label, User, ViewScope, UserRole
 from ..schemas import (
     BulkCardMoveRequest,
     CardCreate,
@@ -18,6 +18,56 @@ from ..schemas import (
 from . import card_history as card_history_service
 
 
+def apply_view_scope_filter(query, user: User):
+    """
+    Apply view scope filter to card query based on user's view_scope setting.
+    Admin users can see all cards regardless of their view scope.
+    """
+    # # Admin users can see all cards
+    # if user.role == UserRole.ADMIN:
+    #     return query
+    
+    # Apply view scope filter
+    if user.view_scope == ViewScope.ALL:
+        # No filtering needed
+        return query
+    elif user.view_scope == ViewScope.UNASSIGNED_PLUS_MINE:
+        # Show unassigned cards + cards assigned to current user
+        return query.filter(
+            or_(
+                Card.assignee_id.is_(None),
+                Card.assignee_id == user.id
+            )
+        )
+    elif user.view_scope == ViewScope.MINE_ONLY:
+        # Show only cards assigned to current user
+        return query.filter(Card.assignee_id == user.id)
+    else:
+        # Default to all cards for safety
+        return query
+
+
+def can_access_card(user: User, card: Card) -> bool:
+    """
+    Check if user can access a specific card based on their view scope.
+    Admin users can access all cards.
+    """
+    # Admin users can access all cards
+    if user.role == UserRole.ADMIN:
+        return True
+    
+    # Check view scope permissions
+    if user.view_scope == ViewScope.ALL:
+        return True
+    elif user.view_scope == ViewScope.UNASSIGNED_PLUS_MINE:
+        return card.assignee_id is None or card.assignee_id == user.id
+    elif user.view_scope == ViewScope.MINE_ONLY:
+        return card.assignee_id == user.id
+    else:
+        # Default to allow access for safety
+        return True
+
+
 def get_card(db: Session, card_id: int) -> Optional[Card]:
     """Récupérer une carte par son ID avec ses relations."""
     card = db.query(Card).filter(Card.id == card_id).first()
@@ -27,9 +77,13 @@ def get_card(db: Session, card_id: int) -> Optional[Card]:
     return card
 
 
-def get_cards(db: Session, filters: CardFilter, skip: int = 0, limit: int = 100) -> List[Card]:
+def get_cards(db: Session, filters: CardFilter, skip: int = 0, limit: int = 100, user: Optional[User] = None) -> List[Card]:
     """Récupérer une liste de cartes avec filtres."""
     query = db.query(Card)
+    
+    # Apply view scope filter if user is provided
+    if user:
+        query = apply_view_scope_filter(query, user)
 
     # Filtrer les cartes archivées si nécessaire
     if not filters.include_archived:
@@ -68,9 +122,15 @@ def get_cards(db: Session, filters: CardFilter, skip: int = 0, limit: int = 100)
     return cards
 
 
-def get_archived_cards(db: Session, skip: int = 0, limit: int = 100) -> List[Card]:
+def get_archived_cards(db: Session, skip: int = 0, limit: int = 100, user: Optional[User] = None) -> List[Card]:
     """Récupérer les cartes archivées."""
-    return db.query(Card).filter(Card.is_archived == True).offset(skip).limit(limit).all()
+    query = db.query(Card).filter(Card.is_archived == True)
+    
+    # Apply view scope filter if user is provided
+    if user:
+        query = apply_view_scope_filter(query, user)
+    
+    return query.offset(skip).limit(limit).all()
 
 
 def create_card(db: Session, card: CardCreate, created_by: int) -> Card:

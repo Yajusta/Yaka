@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ..models.user import UserRole, UserStatus
+from ..models.user import UserRole, UserStatus, ViewScope
 
 
 def _validate_email(value: str | None) -> str | None:
@@ -52,6 +52,7 @@ class UserBase(BaseModel):
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
     role: UserRole = UserRole.VISITOR
     language: Optional[str] = Field("fr", description="Langue préférée (fr, en, etc.)")
+    view_scope: ViewScope = ViewScope.ALL
 
 
 class UserCreate(UserBase):
@@ -79,6 +80,7 @@ class UserUpdate(BaseModel):
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
     role: Optional[UserRole] = None
     language: Optional[str] = Field(None, description="Langue préférée (fr, en, etc.)")
+    view_scope: Optional[ViewScope] = None
     password: Optional[str] = Field(None, min_length=8, max_length=128)
 
     @field_validator("password")
@@ -92,6 +94,12 @@ class LanguageUpdate(BaseModel):
     """Schéma pour la mise à jour de la langue uniquement."""
 
     language: str = Field(..., description="Langue préférée (fr, en, etc.)")
+
+
+class ViewScopeUpdate(BaseModel):
+    """Schema for updating view scope only."""
+
+    view_scope: ViewScope = Field(..., description="View scope for card access permissions")
 
 
 class SetPasswordPayload(BaseModel):
@@ -138,6 +146,8 @@ class UserListItem(BaseModel):
     display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
     role: Optional[UserRole] = UserRole.VISITOR
     status: Optional[UserStatus] = None
+    view_scope: Optional[ViewScope] = ViewScope.ALL
+    invited_at: Optional[datetime] = None
     # email est optionnel ici : les non-admins recevront une liste sans email
     email: Optional[str] = None
 

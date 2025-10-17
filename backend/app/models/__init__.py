@@ -7,12 +7,13 @@ from .card_history import CardHistory
 from .card_item import CardItem
 from .kanban_list import KanbanList
 from .label import Label
-from .user import User, UserRole, UserStatus
+from .user import User, UserRole, UserStatus, ViewScope
 
 __all__ = [
     "User",
     "UserRole",
     "UserStatus",
+    "ViewScope",
     "Label",
     "Card",
     "CardPriority",

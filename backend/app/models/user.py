@@ -43,6 +43,14 @@ class UserStatus(enum.Enum):
     DELETED = "deleted"
 
 
+class ViewScope(enum.Enum):
+    """View scope enumeration for card access permissions."""
+
+    ALL = "all"  # User can see all cards
+    UNASSIGNED_PLUS_MINE = "unassigned_plus_mine"  # User can see unassigned cards + their assigned cards
+    MINE_ONLY = "mine_only"  # User can only see their assigned cards
+
+
 class User(Base):
     """User data model."""
 
@@ -63,6 +71,11 @@ class User(Base):
         nullable=False,
     )
     language: Mapped[Optional[str]] = mapped_column(String(2), nullable=True, server_default="fr")
+    view_scope: Mapped[ViewScope] = mapped_column(
+        Enum(ViewScope, native_enum=False, values_callable=lambda obj: [e.value for e in obj], length=25),
+        default=ViewScope.ALL,
+        nullable=False,
+    )
     invite_token: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
     invited_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(

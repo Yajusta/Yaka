@@ -1,12 +1,19 @@
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import React from 'react';
 
+export enum ViewScope {
+    ALL = 'all',
+    UNASSIGNED_PLUS_MINE = 'unassigned_plus_mine',
+    MINE_ONLY = 'mine_only'
+}
+
 export interface User {
     id: number;
     username?: string;
     email: string;
     display_name?: string;
     role?: UserRoleValue;
+    view_scope?: ViewScope;
     language?: string;
     created_at: string;
     updated_at?: string;

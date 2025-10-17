@@ -10,6 +10,7 @@ from .user import (
     PasswordResetRequest,
     UserListItem,
     LanguageUpdate,
+    ViewScopeUpdate,
 )
 from .label import LabelBase, LabelCreate, LabelUpdate, LabelResponse
 from .card import (
@@ -46,6 +47,7 @@ __all__ = [
     "UserListItem",
     "UserLogin",
     "LanguageUpdate",
+    "ViewScopeUpdate",
     "LabelBase",
     "LabelCreate",
     "LabelUpdate",

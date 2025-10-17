@@ -5,7 +5,7 @@ import { useToast } from '../../hooks/use-toast.tsx';
 import { useAuth } from '../../hooks/useAuth';
 import { AppUser, useUsers } from '../../hooks/useUsers';
 import { userService } from '../../services/api';
-import { UserRole, UserRoleValue } from '../../types';
+import { UserRole, UserRoleValue, ViewScope } from '../../types';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';
@@ -44,6 +44,39 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
         return roleLabelMap.get(value as UserRoleValue) || t('role.visitor');
     };
 
+    const viewScopeOptions = useMemo(() => ([
+        { 
+            value: ViewScope.MINE_ONLY, 
+            label: t('viewScope.mine_only'), 
+            description: t('viewScope.description.mine_only'),
+            permissions: {
+                mine: true,
+                unassigned: false,
+                others: false
+            }
+        },
+        { 
+            value: ViewScope.UNASSIGNED_PLUS_MINE, 
+            label: t('viewScope.unassigned_plus_mine'), 
+            description: t('viewScope.description.unassigned_plus_mine'),
+            permissions: {
+                mine: true,
+                unassigned: true,
+                others: false
+            }
+        },
+        { 
+            value: ViewScope.ALL, 
+            label: t('viewScope.all'), 
+            description: t('viewScope.description.all'),
+            permissions: {
+                mine: true,
+                unassigned: true,
+                others: true
+            }
+        },
+    ]), [t]);
+    
     const getRoleIcon = (role: UserRoleValue) => {
         switch (role) {
             case UserRole.ADMIN:
@@ -92,6 +125,47 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
             default:
                 return permissions;
         }
+    };
+
+    const getViewScopeIcon = (viewScope?: ViewScope | string) => {
+        // Icône personnalisée avec 1 trait horizontal
+        const OneLine = () => (
+            <svg className="h-full w-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="4" y1="12" x2="20" y2="12" />
+            </svg>
+        );
+        
+        // Icône personnalisée avec 2 traits horizontaux
+        const TwoLines = () => (
+            <svg className="h-full w-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="4" y1="9" x2="20" y2="9" />
+                <line x1="4" y1="15" x2="20" y2="15" />
+            </svg>
+        );
+        
+        // Icône personnalisée avec 3 traits horizontaux
+        const ThreeLines = () => (
+            <svg className="h-full w-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="4" y1="7" x2="20" y2="7" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="17" x2="20" y2="17" />
+            </svg>
+        );
+
+        switch (viewScope) {
+            case ViewScope.MINE_ONLY:
+                return OneLine;
+            case ViewScope.UNASSIGNED_PLUS_MINE:
+                return TwoLines;
+            case ViewScope.ALL:
+            default:
+                return ThreeLines;
+        }
+    };
+
+    const getViewScopeLabel = (viewScope?: ViewScope | string): string => {
+        const option = viewScopeOptions.find(opt => opt.value === viewScope);
+        return option?.label || t('viewScope.all');
     };
 
 
@@ -234,6 +308,29 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
         }
     };
 
+    const handleChangeViewScope = async (userId: number, newViewScope: ViewScope) => {
+        const targetUser = users.find((existing) => existing.id === userId);
+        if (targetUser?.view_scope === newViewScope) {
+            return;
+        }
+        try {
+            await userService.updateViewScope(userId, newViewScope);
+            await refresh();
+            toast({
+                title: 'Périmètre de vue mis à jour',
+                variant: 'success'
+            });
+        } catch (e: any) {
+            console.error('Erreur update user view scope', e);
+            const errorMessage = e?.response?.data?.detail || 'Erreur lors de la mise à jour du périmètre de vue';
+            toast({
+                title: t('common.error'),
+                description: errorMessage,
+                variant: 'destructive'
+            });
+        }
+    };
+
     const handleCancelEdit = () => {
         setEditingUser(null);
         setEditingDisplayName('');
@@ -268,9 +365,10 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                 <div className="text-sm text-muted-foreground">{t('user.noPermission')}</div>
                             ) : (
                                 <div className="border rounded-lg overflow-hidden">
-                                    <div className="grid grid-cols-[1fr_1fr_auto_auto_auto] gap-2 p-3 bg-muted/50 font-medium text-sm">
+                                    <div className="grid grid-cols-[1fr_1fr_auto_auto_auto_auto] gap-2 p-3 bg-muted/50 font-medium text-sm">
                                         <div className="min-w-0">{t('user.name')}</div>
                                         <div className="min-w-0">{t('user.email')}</div>
+                                        <div></div>
                                         <div></div>
                                         <div></div>
                                         <div></div>
@@ -278,7 +376,7 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                     <div className="divide-y">
                                         <TooltipProvider>
                                             {users.map(u => (
-                                                <div key={u.id} className="group grid grid-cols-[1fr_1fr_auto_auto_auto] gap-2 p-3 items-center hover:bg-muted/30">
+                                                <div key={u.id} className="group grid grid-cols-[1fr_1fr_auto_auto_auto_auto] gap-2 p-3 items-center hover:bg-muted/30">
                                                     <div className="font-medium min-w-0 truncate">
                                                         {u.display_name || t('user.noName')}
                                                     </div>
@@ -295,6 +393,21 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                             </TooltipTrigger>
                                                             <TooltipContent>
                                                                 <p>{getRoleLabel(u.role)}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </div>
+                                                    <div className="flex justify-center">
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <div className="h-4 w-4 text-muted-foreground cursor-help">
+                                                                    {(() => {
+                                                                        const ViewScopeIconComponent = getViewScopeIcon(u.view_scope);
+                                                                        return <ViewScopeIconComponent />;
+                                                                    })()}
+                                                                </div>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>{getViewScopeLabel(u.view_scope)}</p>
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     </div>
@@ -450,6 +563,63 @@ export default function UsersManager({ isOpen, onClose }: { isOpen: boolean; onC
                                                                                         </div>
                                                                                     </TooltipContent>
                                                                                 </Tooltip>
+                                                                            );
+                                                                        })}
+                                                                    </DropdownMenuSubContent>
+                                                                </DropdownMenuSub>
+                                                                <DropdownMenuSub>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <DropdownMenuSubTrigger
+                                                                                className="flex items-center gap-2"
+                                                                            >
+                                                                                <Eye className="h-4 w-4" />
+                                                                                <span className="flex-1">{t('viewScope.title')}</span>
+                                                                            </DropdownMenuSubTrigger>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            <p>Modifier le périmètre de vue des cartes</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                    <DropdownMenuSubContent className="w-64">
+                                                                        {viewScopeOptions.map((option) => {
+                                                                            const ViewScopeIconComponent = getViewScopeIcon(option.value);
+                                                                            return (
+                                                                            <Tooltip key={option.value}>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <div>
+                                                                                        <DropdownMenuItem
+                                                                                            onClick={() => handleChangeViewScope(u.id, option.value)}
+                                                                                            disabled={u.view_scope === option.value}
+                                                                                            className="flex items-center gap-2"
+                                                                                        >
+                                                                                            <div className="h-3.5 w-3.5 flex items-center justify-center">
+                                                                                                <ViewScopeIconComponent />
+                                                                                            </div>
+                                                                                            <span>{option.label}</span>
+                                                                                            {u.view_scope === option.value && <Check className="ml-auto h-3.5 w-3.5 text-primary" />}
+                                                                                        </DropdownMenuItem>
+                                                                                    </div>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent side="right" className="p-3 bg-popover border-border">
+                                                                                    <div className="flex flex-col gap-2">
+                                                                                        <div className="flex flex-col gap-1">
+                                                                                            <div className="flex items-center gap-2 text-xs">
+                                                                                                {option.permissions.mine ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                                <span className="text-muted-foreground">{t('viewScope.permissions.mine')}</span>
+                                                                                            </div>
+                                                                                            <div className="flex items-center gap-2 text-xs">
+                                                                                                {option.permissions.unassigned ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                                <span className="text-muted-foreground">{t('viewScope.permissions.unassigned')}</span>
+                                                                                            </div>
+                                                                                            <div className="flex items-center gap-2 text-xs">
+                                                                                                {option.permissions.others ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-red-600" />}
+                                                                                                <span className="text-muted-foreground">{t('viewScope.permissions.others')}</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
                                                                             );
                                                                         })}
                                                                     </DropdownMenuSubContent>

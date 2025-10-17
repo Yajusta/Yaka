@@ -369,6 +369,23 @@
         "admin": "Administrateur",
         "guest": "Invité"
     },
+    "viewScope": {
+        "title": "Périmètre de vue",
+        "all": "Toutes les cartes",
+        "unassigned_plus_mine": "Cartes assignées + sans assignation",
+        "mine_only": "Cartes assignées uniquement",
+        "description": {
+            "all": "Voir toutes les cartes du tableau",
+            "unassigned_plus_mine": "Voir les cartes non assignées et celles qui lui sont assignées",
+            "mine_only": "Voir uniquement les cartes qui lui sont assignées"
+        },
+        "permissions": {
+            "mine": "Les cartes qui lui sont assignées",
+            "unassigned": "Les cartes sans assignation",
+            "others": "Les cartes assignées à d'autres"
+        },
+        "currentOption": "Option actuelle"
+    },
     "filter": {
         "all": "Tous",
         "mine": "Les miens",

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..multi_database import get_dynamic_db as get_db
 from ..models import User, UserRole, UserStatus
-from ..schemas import LanguageUpdate, SetPasswordPayload, UserCreate, UserListItem, UserResponse, UserUpdate
+from ..schemas import LanguageUpdate, SetPasswordPayload, UserCreate, UserListItem, UserResponse, UserUpdate, ViewScopeUpdate
 from ..services import user as user_service
 from ..utils.dependencies import get_current_active_user, require_admin
 
@@ -50,6 +50,8 @@ async def read_users(
             "display_name": u.display_name,
             "role": u.role,
             "status": u.status,
+            "view_scope": u.view_scope,
+            "invited_at": u.invited_at,
             # Par défaut, ne pas exposer l'email aux non-admins
             "email": u.email if current_user.role == UserRole.ADMIN else None,
         }
@@ -251,3 +253,32 @@ async def set_password(payload: SetPasswordPayload, db: Session = Depends(get_db
         return {"message": "Mot de passe défini avec succès"}
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Impossible de définir le mot de passe")
+
+
+@router.put("/{user_id}/view-scope", response_model=UserResponse)
+async def update_user_view_scope(
+    user_id: int,
+    view_scope_update: ViewScopeUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Update user's view scope (Admin only or self-update)."""
+    # Check permissions: admin can update anyone, users can only update themselves
+    if current_user.role != UserRole.ADMIN and current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Seuls les administrateurs peuvent modifier le périmètre de vue des autres utilisateurs"
+        )
+    
+    # Get target user
+    target_user = user_service.get_user(db, user_id)
+    if not target_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
+    
+    # Update view scope
+    user_update = UserUpdate.model_construct(view_scope=view_scope_update.view_scope)
+    updated_user = user_service.update_user(db, user_id, user_update)
+    if not updated_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
+    
+    return updated_user

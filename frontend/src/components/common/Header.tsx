@@ -1,9 +1,9 @@
 import { Button } from '../ui/button';
 import * as React from 'react';
-import { Check, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, Sun, Tag, User, Users } from 'lucide-react';
+import { Check, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, Sun, Tag, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useBoardSettings } from '../../hooks/useBoardSettingsContext';
-import { UserRole, UserRoleValue } from '../../types';
+import { UserRole, UserRoleValue, User, ViewScope } from '../../types';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import {
     DropdownMenu,
@@ -21,13 +21,6 @@ import { cn } from '../../lib/utils';
 import { exportApi } from '../../services/exportApi';
 import { useToast } from '../../hooks/use-toast';
 import { authService, userService } from '../../services/api';
-
-interface User {
-    id: number;
-    display_name?: string;
-    email: string;
-    role?: UserRoleValue;
-}
 
 interface HeaderProps {
     user: User;
@@ -153,6 +146,19 @@ export const Header = ({
         }
     };
 
+    const getViewScopeLabel = (viewScope?: ViewScope) => {
+        switch (viewScope) {
+            case ViewScope.ALL:
+                return t('viewScope.all');
+            case ViewScope.UNASSIGNED_PLUS_MINE:
+                return t('viewScope.unassigned_plus_mine');
+            case ViewScope.MINE_ONLY:
+                return t('viewScope.mine_only');
+            default:
+                return t('viewScope.all');
+        }
+    };
+
     const getRoleIndicatorClass = (role?: UserRoleValue) => {
         switch (role) {
             case UserRole.ADMIN:
@@ -224,6 +230,12 @@ export const Header = ({
                                                 `} />
                                             <p className="text-xs text-muted-foreground">
                                                 {getRoleLabel(user?.role)}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center mt-1">
+                                            <Eye className="w-3 h-3 mr-2 text-muted-foreground" />
+                                            <p className="text-xs text-muted-foreground">
+                                                {getViewScopeLabel(user?.view_scope)}
                                             </p>
                                         </div>
                                     </div>

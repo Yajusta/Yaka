@@ -52,8 +52,8 @@ class TestAdminRoutes:
         """Create authorization headers for API requests."""
         return {"Authorization": f"Bearer {api_key}"}
 
-    def test_list_boards_no_auth_required(self, client, temp_data_dir):
-        """Test that listing boards does not require authentication."""
+    def test_list_boards_auth_required(self, client, temp_data_dir):
+        """Test that listing boards requires authentication."""
         # Create a test database
         board_uid = "test-board"
         db_path = os.path.join(temp_data_dir, f"{board_uid}.db")
@@ -66,22 +66,7 @@ class TestAdminRoutes:
 
         response = client.get("/admin/boards")
 
-        assert response.status_code == 200
-        data = response.json()
-        assert "boards" in data
-        assert len(data["boards"]) >= 1
-
-        # Check that our test board is listed
-        board_uids = [board["board_uid"] for board in data["boards"]]
-        assert board_uid in board_uids
-
-    def test_list_boards_empty_directory(self, client, temp_data_dir):
-        """Test listing boards when no boards exist."""
-        response = client.get("/admin/boards")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["boards"] == []
+        assert response.status_code == 403
 
     def test_get_board_info_existing(self, client, temp_data_dir):
         """Test getting info for an existing board."""

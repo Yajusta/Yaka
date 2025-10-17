@@ -126,6 +126,13 @@ class LLMService:
         Returns:
             Les instructions formatées pour le LLM
         """
+        
+        # Parse user context to extract user_id for view scope filtering
+        user_dict = {}
+        try:
+            user_dict = json.loads(user_context) if user_context else {}
+        except json.JSONDecodeError:
+            user_dict = {}
 
         instructions = f"""
 ### CONTEXTE EXISTANT ###
@@ -151,7 +158,7 @@ Les "priorités" peuvent être aussi appelées "niveaux de priorité" ou "import
 
 4.  **Tâches déjà existantes (pour éviter les doublons et comprendre le contexte) :**
 ```json
-{get_tasks()}
+{get_tasks(user_dict)}
 ```
 
 La "tâche" peut aussi être appelée "élément", "item", "carte", "chose à faire" ou "action".
@@ -221,19 +228,28 @@ def get_users() -> str:
         db.close()
 
 
-def get_tasks() -> str:
+def get_tasks(user_context: Optional[Dict] = None) -> str:
     """Retourne les tâches existantes depuis la base de données."""
     db = SessionLocal()
     try:
-        # Utiliser selectinload pour charger les items et labels en une seule requête supplémentaire
-        # au lieu d'une requête par carte (évite le N+1 problem)
-        cards = (
+        # Build base query
+        query = (
             db.query(Card)
             .join(KanbanList)
             .options(selectinload(Card.items), selectinload(Card.labels), selectinload(Card.assignee))
             .filter(Card.is_archived == False)
-            .all()
         )
+        
+        # Apply view scope filtering if user context is provided
+        if user_context and 'user_id' in user_context:
+            user_id = user_context['user_id']
+            user = db.query(User).filter(User.id == user_id).first()
+            if user:
+                # Import here to avoid circular imports
+                from . import card as card_service
+                query = card_service.apply_view_scope_filter(query, user)
+        
+        cards = query.all()
         result = []
         for card in cards:
             # Construire la checklist à partir des card_items
