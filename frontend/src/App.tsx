@@ -502,7 +502,8 @@ const AppContent = () => {
 
     // Routes qui ne nécessitent pas d'authentification
     const publicRoutes = ['/invite', '/login'];
-    const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route));
+    const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route)) 
+        || location.pathname.match(/^\/board\/[^\/]+\/(invite|login)/);
 
     if (isPublicRoute) {
         return (

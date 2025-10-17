@@ -86,7 +86,11 @@ const LoginForm = () => {
         setResetLoading(true);
 
         try {
-            await authService.requestPasswordReset(resetEmail);
+            // Extraire le board_uid de l'URL si présent
+            const boardUidMatch = window.location.pathname.match(/^\/board\/([^\/]+)/);
+            const boardUid = boardUidMatch ? boardUidMatch[1] : undefined;
+            
+            await authService.requestPasswordReset(resetEmail, boardUid);
             setResetSuccess(true);
         } catch (error: any) {
             setResetError(error.response?.data?.detail || t('auth.resetPasswordError'));

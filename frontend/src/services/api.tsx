@@ -195,9 +195,9 @@ export const authService = {
     }
     ,
 
-    async requestPasswordReset(email: string): Promise<void> {
+    async requestPasswordReset(email: string, boardUid?: string): Promise<void> {
         // Calls backend endpoint that returns a generic message regardless of existence
-        await getApiInstance().post('/auth/request-password-reset', { email });
+        await getApiInstance().post('/auth/request-password-reset', { email, board_uid: boardUid });
     },
 
     async checkAIFeatures(): Promise<{ ai_available: boolean }> {
