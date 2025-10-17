@@ -103,13 +103,13 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
 
                 try:
                     # Initialize default board data (lists, labels, and initial task)
-                    from ..utils.demo_reset import initialize_default_data, create_demo_data
+                    from ..utils.demo_reset import initialize_default_settings, create_demo_board_content
 
                     # Create default admin user and settings
-                    initialize_default_data(db)
+                    initialize_default_settings(db)
 
-                    # Create demo data (lists, labels, and initial configuration task)
-                    create_demo_data(db)
+                    # Create demo board content (lists, labels, and initial configuration task)
+                    create_demo_board_content(db)
 
                     # Send automatic invitation
                     invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN, board_uid)

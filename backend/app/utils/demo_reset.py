@@ -108,57 +108,20 @@ def create_demo_users(db_session):
     return created_users
 
 
-def create_demo_data(db_session):
-    """Create demo data: users, lists, labels and tasks."""
-    print("Creating demo data...")
-
-    # Get admin user
-    admin_user = get_user_by_email(db_session, "admin@yaka.local")
-    if not admin_user:
-        print("Error: Admin user not found")
-        return
-
-    # Create demo users with different roles
-    demo_users = create_demo_users(db_session)
-
-    # Determine default language
+def create_demo_lists(db_session):
+    """Create default kanban lists for demo boards."""
     default_language = os.getenv("DEFAULT_LANGUAGE", "fr")
 
-    # Define labels according to language
     if default_language == "en":
         list_names = ["📝 To do", "🔄 In progress", "✅ Done"]
         list_descriptions = ["Tasks to be started", 
                             "Tasks currently in progress. If a task with multiple subtasks have at least one subtask done but not all, it should be in the \"In progress\" list.", 
                             "Completed tasks. If a task with multiple subtasks have all subtask done, it should be in the \"Done\" list."]
-        label_name = "Important"
-        label_description = "High priority tasks requiring immediate attention"
-        card_title = "Configure Yaka"
-        card_description = "Initial configuration of the Yaka application"
-        checklist_items = [
-            "Install Yaka",
-            "Create a new administrator",
-            "Delete the default administrator",
-            "Modify the lists",
-            "Add tasks",
-            "Invite other people",
-        ]
     else:
         list_names = ["📝 A faire", "🔄 En cours", "✅ Terminé"]
         list_descriptions = ["Tâches en attente de démarrage", 
                             "Tâches en cours de réalisation. Si une tâche avec plusieurs sous-tâches a au moins une sous-tâche terminée mais pas toutes, elle doit être dans la liste \"En cours\".", 
                             "Tâches terminées. Si une tâche avec plusieurs sous-tâches a toutes les sous-tâches terminées, elle doit être dans la liste \"Terminé\"."]
-        label_name = "Important"
-        label_description = "Tâches prioritaires nécessitant une attention immédiate"
-        card_title = "Configurer Yaka"
-        card_description = "Configuration initiale de l'application Yaka"
-        checklist_items = [
-            "Installer Yaka",
-            "Créer un nouvel administrateur",
-            "Supprimer l'administrateur par défaut",
-            "Modifier les listes",
-            "Ajouter des tâches",
-            "Inviter d'autres personnes",
-        ]
 
     # Create the 3 lists
     todo_list_data = KanbanListCreate(name=list_names[0], description=list_descriptions[0], order=1)
@@ -170,9 +133,53 @@ def create_demo_data(db_session):
     done_list_data = KanbanListCreate(name=list_names[2], description=list_descriptions[2], order=3)
     done_list = create_list(db_session, done_list_data)
 
+    return todo_list, in_progress_list, done_list
+
+
+def create_demo_labels(db_session, admin_user_id):
+    """Create default labels for demo boards."""
+    default_language = os.getenv("DEFAULT_LANGUAGE", "fr")
+
+    if default_language == "en":
+        label_name = "Important"
+        label_description = "High priority tasks requiring immediate attention"
+    else:
+        label_name = "Important"
+        label_description = "Tâches prioritaires nécessitant une attention immédiate"
+
     # Create "Important" label with red color
     label_data = LabelCreate(name=label_name, color="#940000", description=label_description)
-    important_label = create_label(db_session, label_data, admin_user.id)
+    important_label = create_label(db_session, label_data, admin_user_id)
+    
+    return important_label
+
+
+def create_demo_task(db_session, todo_list, important_label, admin_user):
+    """Create a sample configuration task for demo boards."""
+    default_language = os.getenv("DEFAULT_LANGUAGE", "fr")
+
+    if default_language == "en":
+        card_title = "Configure Yaka"
+        card_description = "Initial configuration of the Yaka application"
+        checklist_items = [
+            "Install Yaka",
+            "Create a new administrator",
+            "Delete the default administrator",
+            "Modify the lists",
+            "Add tasks",
+            "Invite other people",
+        ]
+    else:
+        card_title = "Configurer Yaka"
+        card_description = "Configuration initiale de l'application Yaka"
+        checklist_items = [
+            "Installer Yaka",
+            "Créer un nouvel administrateur",
+            "Supprimer l'administrateur par défaut",
+            "Modifier les listes",
+            "Ajouter des tâches",
+            "Inviter d'autres personnes",
+        ]
 
     # Create configuration task in "To do" list
     card_data = CardCreate(
@@ -192,6 +199,41 @@ def create_demo_data(db_session):
         is_done = i == 0
         item_data = CardItemCreate(card_id=config_card.id, text=item_text, is_done=is_done, position=i + 1)
         create_card_item(db_session, item_data)
+
+    return config_card
+
+
+def create_demo_board_content(db_session):
+    """Create demo board content: lists, labels and sample task."""
+    print("Creating demo board content...")
+
+    # Get admin user
+    admin_user = get_user_by_email(db_session, "admin@yaka.local")
+    if not admin_user:
+        print("Error: Admin user not found")
+        return
+
+    # Create lists
+    todo_list, in_progress_list, done_list = create_demo_lists(db_session)
+
+    # Create labels
+    important_label = create_demo_labels(db_session, admin_user.id)
+
+    # Create sample task
+    create_demo_task(db_session, todo_list, important_label, admin_user)
+
+    print("Demo board content created successfully!")
+
+
+def create_demo_data(db_session):
+    """Create complete demo data: users, lists, labels and tasks."""
+    print("Creating demo data...")
+
+    # Create demo users with different roles
+    demo_users = create_demo_users(db_session)
+
+    # Create board content (lists, labels, and sample task)
+    create_demo_board_content(db_session)
 
     print("Demo data created successfully!")
 

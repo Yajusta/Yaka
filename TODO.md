@@ -4,7 +4,7 @@
 
 [ ] Déplacement horizontal quand il y a un scroll.
 [ ] Reconnaissance vocale Edge mobile.
-[ ] Quand on crée les colonnes par défaut, il ne faut pas créer les utilisateurs par défaut si on n'est pas en mode "demo".
+[x] Quand on crée les colonnes par défaut, il ne faut pas créer les utilisateurs par défaut si on n'est pas en mode "demo".
 
 ## Features
 
