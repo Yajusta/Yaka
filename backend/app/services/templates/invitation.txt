@@ -6,7 +6,7 @@ To get started, you'll need to set up your account by creating a password. Pleas
 
 {{INVITE_LINK}}
 
-IMPORTANT: Bookmark Your Board
+IMPORTANT: Bookmark your board
 ===============================
 Once your account is activated, you can access your board at:
 
