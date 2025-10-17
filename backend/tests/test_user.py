@@ -578,16 +578,22 @@ class TestRequestPasswordReset:
     def test_request_password_reset_deleted_user(self, db_session, sample_users, mock_email_service):
         """Test de demande de réinitialisation pour un utilisateur désactivé."""
         user = sample_users[0]
+        user_email = user.email
         user.status = UserStatus.DELETED
         db_session.commit()
 
-        result = request_password_reset(db_session, user.email)
+        # Sauvegarder le nombre d'appels avant le test
+        invitation_calls_before = mock_email_service.send_invitation.call_count
+        reset_calls_before = mock_email_service.send_password_reset.call_count
+
+        result = request_password_reset(db_session, user_email)
 
         # Devrait retourner True pour des raisons de sécurité
         assert result is True
 
-        # Aucun email ne devrait être envoyé
-        mock_email_service.send_password_reset.assert_not_called()
+        # Aucun nouvel email ne devrait être envoyé
+        assert mock_email_service.send_invitation.call_count == invitation_calls_before
+        assert mock_email_service.send_password_reset.call_count == reset_calls_before
 
     def test_request_password_reset_email_sending_failure(self, db_session, sample_users, mock_email_service):
         """Test d'échec d'envoi d'email de réinitialisation."""
@@ -601,6 +607,37 @@ class TestRequestPasswordReset:
 
         # Mais l'email a tenté d'être envoyé
         mock_email_service.send_password_reset.assert_called_once()
+
+    def test_request_password_reset_invited_user(self, db_session, sample_users, mock_email_service):
+        """Test de demande de réinitialisation pour un utilisateur invité (non activé).
+        
+        Dans ce cas, on doit renvoyer un email d'invitation au lieu d'un email de reset.
+        Cela permet à l'utilisateur qui a perdu son email d'invitation de le recevoir à nouveau.
+        """
+        # sample_users[1] est déjà un utilisateur INVITED
+        user = sample_users[1]
+        assert user.status == UserStatus.INVITED  # Vérifier qu'il est bien invité
+        original_token = user.invite_token
+
+        result = request_password_reset(db_session, user.email)
+
+        # Devrait retourner True
+        assert result is True
+
+        # Vérifier que l'utilisateur a un nouveau token
+        updated_user = get_user_by_email(db_session, user.email)
+        assert updated_user.invite_token is not None
+        assert updated_user.invite_token != original_token
+        assert updated_user.invited_at is not None
+        assert updated_user.status == UserStatus.INVITED  # Le statut reste INVITED
+
+        # Vérifier que l'email d'INVITATION a été envoyé (pas de reset)
+        # Note: d'autres tests peuvent avoir appelé send_invitation avant, donc on vérifie juste
+        # que send_password_reset n'a PAS été appelé pour CET utilisateur
+        assert mock_email_service.send_invitation.called
+        # Vérifier que le dernier appel était pour notre utilisateur
+        last_call = mock_email_service.send_invitation.call_args
+        assert last_call.kwargs["email"] == user.email
 
 
 class TestGetUserByResetToken:

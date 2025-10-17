@@ -176,20 +176,53 @@ def set_password_from_invite(db: Session, user: User, password: str) -> bool:
 
 
 def request_password_reset(db: Session, email: str, board_uid: Optional[str] = None) -> bool:
-    """Demander une réinitialisation de mot de passe."""
+    """Demander une réinitialisation de mot de passe.
+    
+    Si l'utilisateur est INVITED (n'a pas encore validé son invitation), 
+    renvoie un email d'invitation au lieu d'un email de reset.
+    Si l'utilisateur est ACTIVE, envoie un email de reset password.
+    Pour tous les autres cas (inexistant, DELETED), retourne True sans rien faire
+    pour des raisons de sécurité (ne pas révéler l'existence ou non de l'utilisateur).
+    """
     user = get_user_by_email(db, email)
-    if not user or user.status != UserStatus.ACTIVE:
-        # Ne pas révéler si l'utilisateur existe ou non pour des raisons de sécurité
+    
+    # Cas 1: Utilisateur inexistant ou supprimé - Ne rien faire pour des raisons de sécurité
+    if not user or user.status == UserStatus.DELETED:
         return True
-
-    reset_token = secrets.token_urlsafe(32)
-    user.invite_token = reset_token  # Réutiliser le champ invite_token pour la réinitialisation
-    user.invited_at = get_system_timezone_datetime()
-
-    db.commit()
-
-    with contextlib.suppress(Exception):
-        email_service.send_password_reset(email=email, display_name=user.display_name, token=reset_token, board_uid=board_uid)
+    
+    # Cas 2: Utilisateur invité mais pas encore actif - Renvoyer l'email d'invitation
+    if user.status == UserStatus.INVITED:
+        invite_token = secrets.token_urlsafe(32)
+        user.invite_token = invite_token
+        user.invited_at = get_system_timezone_datetime()
+        db.commit()
+        
+        with contextlib.suppress(Exception):
+            email_service.send_invitation(
+                email=email,
+                display_name=user.display_name,
+                token=invite_token,
+                board_uid=board_uid
+            )
+        return True
+    
+    # Cas 3: Utilisateur actif - Envoyer l'email de réinitialisation de mot de passe
+    if user.status == UserStatus.ACTIVE:
+        reset_token = secrets.token_urlsafe(32)
+        user.invite_token = reset_token  # Réutiliser le champ invite_token pour la réinitialisation
+        user.invited_at = get_system_timezone_datetime()
+        db.commit()
+        
+        with contextlib.suppress(Exception):
+            email_service.send_password_reset(
+                email=email,
+                display_name=user.display_name,
+                token=reset_token,
+                board_uid=board_uid
+            )
+        return True
+    
+    # Sécurité: retourner True pour tous les autres cas
     return True
 
 
