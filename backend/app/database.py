@@ -9,7 +9,12 @@ from typing import Generator
 SQLALCHEMY_DATABASE_URL = "sqlite:///./data/yaka.db"
 
 # Default engine
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False, "timeout": 30},
+    pool_pre_ping=True,
+    pool_recycle=3600,
+)
 
 # Default session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

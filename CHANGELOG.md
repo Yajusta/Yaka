@@ -3,6 +3,7 @@
 ## 1.3.3 (2025-10-18)
 
 - [CHANGE] Les migrations Alembic s'appliquent maintenant à toutes les bases de données du répertoire `data` au démarrage du serveur.
+- [CHANGE] Meilleur gestion de la concurrence des bases.
 
 ## 1.3.2 (2025-10-15)
 

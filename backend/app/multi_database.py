@@ -9,7 +9,7 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 from contextvars import ContextVar
 
 # Context variable pour stocker l'identifiant du board courant
-current_board_uid: ContextVar[Optional[str]] = ContextVar('current_board_uid', default=None)
+current_board_uid: ContextVar[Optional[str]] = ContextVar("current_board_uid", default=None)
 
 # Cache des moteurs et sessions
 _engines: Dict[str, Any] = {}
@@ -44,7 +44,9 @@ class MultiDatabaseManager:
 
             engine = create_engine(
                 f"sqlite:///{db_path}",
-                connect_args={"check_same_thread": False}
+                connect_args={"check_same_thread": False, "timeout": 30},
+                pool_pre_ping=True,
+                pool_recycle=3600,
             )
             _engines[board_uid] = engine
 
@@ -54,11 +56,7 @@ class MultiDatabaseManager:
         """Récupère ou crée un session maker pour un board."""
         if board_uid not in _sessions:
             engine = self.get_engine(board_uid)
-            _sessions[board_uid] = sessionmaker(
-                autocommit=False,
-                autoflush=False,
-                bind=engine
-            )
+            _sessions[board_uid] = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         return _sessions[board_uid]
 
     def _initialize_alembic_version(self, engine: Any):
@@ -124,6 +122,7 @@ def get_engine_for_board(board_uid: Optional[str] = None) -> Any:
     if board_uid is None:
         # Moteur par défaut pour la rétrocompatibilité
         from .database import engine
+
         return engine
 
     return db_manager.get_engine(board_uid)
@@ -137,6 +136,7 @@ def get_session_for_board(board_uid: Optional[str] = None) -> sessionmaker:
     if board_uid is None:
         # Session par défaut pour la rétrocompatibilité
         from .database import SessionLocal
+
         return SessionLocal
 
     return db_manager.get_session_local(board_uid)
@@ -158,6 +158,7 @@ def get_board_db(board_uid: Optional[str] = None) -> Generator[Session, None, No
     if board_uid is None:
         # Session par défaut pour la rétrocompatibilité
         from .database import get_db
+
         db_gen = get_db()
         db = next(db_gen)
         try:
@@ -184,6 +185,7 @@ def get_dynamic_db() -> Generator[Session, None, None]:
     if board_uid is None:
         # Fallback vers la base par défaut
         from .database import get_db
+
         yield from get_db()
     else:
         session_local = get_session_for_board(board_uid)
