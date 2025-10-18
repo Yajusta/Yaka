@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.3 (2025-10-18)
+
+- [CHANGE] Les migrations Alembic s'appliquent maintenant à toutes les bases de données du répertoire `data` au démarrage du serveur.
+
 ## 1.3.2 (2025-10-15)
 
 - [NEW] Périmètre de vue (qui peut voir quoi).

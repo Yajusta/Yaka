@@ -102,66 +102,104 @@ def ensure_database_exists():
 
 
 # Exécuter les migrations Alembic au démarrage si nécessaire
-def run_migrations():
-    """Exécute les migrations Alembic uniquement si nécessaire."""
+def run_migrations_for_database(db_path: str, db_name: str):
+    """Exécute les migrations Alembic pour une base de données spécifique."""
     try:
+        from sqlalchemy import create_engine as create_db_engine
         from sqlalchemy import inspect, text
 
+        # Créer un moteur pour cette base de données spécifique
+        db_url = f"sqlite:///{db_path}"
+        db_engine = create_db_engine(db_url, connect_args={"check_same_thread": False})
+
         # Vérifier si la table alembic_version existe
-        inspector = inspect(engine)
+        inspector = inspect(db_engine)
         tables = inspector.get_table_names()
 
         if "alembic_version" not in tables:
-            print("Table alembic_version non trouvée...")
+            print(f"[{db_name}] Table alembic_version non trouvée...")
 
             # Vérifier si les tables principales existent déjà
             main_tables = ["users", "cards", "lists", "labels"]
             if existing_main_tables := [t for t in main_tables if t in tables]:
-                print(f"Tables existantes détectées: {existing_main_tables}")
-                print("Initialisation d'alembic_version à la version précédente...")
+                print(f"[{db_name}] Tables existantes détectées: {existing_main_tables}")
+                print(f"[{db_name}] Initialisation d'alembic_version à la version précédente...")
 
                 # Créer la table alembic_version et l'initialiser à la version avant le language
-                with engine.connect() as conn:
+                with db_engine.connect() as conn:
                     conn.execute(text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)"))
                     conn.execute(text("INSERT INTO alembic_version (version_num) VALUES ('756429e64d69')"))
                     conn.commit()
 
             else:
-                print("Base de données vide, exécution de toutes les migrations...")
+                print(f"[{db_name}] Base de données vide, exécution de toutes les migrations...")
+
             # Maintenant exécuter les migrations manquantes
             alembic_cfg = Config("alembic.ini")
+            alembic_cfg.set_main_option("sqlalchemy.url", db_url)
             command.upgrade(alembic_cfg, "head")
         else:
             # Vérifier si on est à la dernière version
-            with engine.connect() as conn:
-                upgrade_if_needed(conn, text)
+            with db_engine.connect() as conn:
+                upgrade_if_needed(conn, text, db_url, db_name)
+
+        # Fermer le moteur
+        db_engine.dispose()
+
     except Exception as e:
-        print(f"Erreur lors de la vérification des migrations: {e}")
+        print(f"[{db_name}] Erreur lors de la vérification des migrations: {e}")
         # En cas d'erreur, on essaie quand même d'exécuter les migrations
         try:
-            print("Tentative d'exécution des migrations...")
+            print(f"[{db_name}] Tentative d'exécution des migrations...")
+            from sqlalchemy import create_engine as create_db_engine
+
+            db_url = f"sqlite:///{db_path}"
             alembic_cfg = Config("alembic.ini")
+            alembic_cfg.set_main_option("sqlalchemy.url", db_url)
             command.upgrade(alembic_cfg, "head")
         except Exception as e2:
-            print(f"Erreur lors de l'exécution des migrations: {e2}")
+            print(f"[{db_name}] Erreur lors de l'exécution des migrations: {e2}")
 
 
-def upgrade_if_needed(conn, text):
+def upgrade_if_needed(conn, text, db_url: str, db_name: str):
     result = conn.execute(text("SELECT version_num FROM alembic_version"))
     current_version = result.scalar()
 
     # Obtenir la dernière version disponible
     alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", db_url)
     from alembic.script import ScriptDirectory
 
     script = ScriptDirectory.from_config(alembic_cfg)
     latest_version = script.get_current_head()
 
     if current_version != latest_version:
-        print(f"Migration nécessaire: {current_version} -> {latest_version}")
+        print(f"[{db_name}] Migration nécessaire: {current_version} -> {latest_version}")
         command.upgrade(alembic_cfg, "head")
     else:
-        print(f"Base de données à jour (version {current_version})")
+        print(f"[{db_name}] Base de données à jour (version {current_version})")
+
+
+def run_migrations():
+    """Exécute les migrations Alembic pour toutes les bases de données .db du répertoire data."""
+    import glob
+    import os
+
+    # Trouver tous les fichiers .db dans le répertoire data
+    db_files = glob.glob("./data/*.db")
+
+    if not db_files:
+        print("Aucune base de données trouvée dans le répertoire data")
+        return
+
+    print(f"Migration de {len(db_files)} base(s) de données trouvée(s)...")
+
+    for db_path in db_files:
+        db_name = os.path.basename(db_path)
+        print(f"\n{'='*60}")
+        print(f"Migration de: {db_name}")
+        print(f"{'='*60}")
+        run_migrations_for_database(db_path, db_name)
 
 
 # S'assurer que la base de données existe avant les migrations
