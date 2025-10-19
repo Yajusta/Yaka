@@ -187,9 +187,9 @@ export const Header = ({
     const isAdmin = (): boolean => user?.role === UserRole.ADMIN;
 
     return (
-        <GlassmorphicCard className="border-b border-border/50 !rounded-none shadow-sm py-0">
-            <div className="px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
+        <GlassmorphicCard className="border-b border-border/50 !rounded-none shadow-sm py-0 w-full">
+            <div className="px-2 sm:px-4 md:px-6 lg:px-8 w-full">
+                <div className="flex items-center justify-between h-16 w-full">
                     {/* Logo */}
                     <div className="flex items-center space-x-3">
                         <img

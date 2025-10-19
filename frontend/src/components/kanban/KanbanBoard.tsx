@@ -816,7 +816,7 @@ export const KanbanBoard = ({
     // Show loading state
     if (listsLoading) {
         return (
-            <div className="flex-1 p-4 bg-background min-h-0 relative flex items-center justify-center">
+            <div className="flex-1 p-2 sm:p-4 bg-background min-h-0 relative flex items-center justify-center w-full">
                 <div className="flex items-center space-x-2 text-muted-foreground">
                     <Loader2 className="h-6 w-6 animate-spin" />
                     <span>{t('list.loading')}</span>
@@ -828,7 +828,7 @@ export const KanbanBoard = ({
     // Show error state
     if (listsError) {
         return (
-            <div className="flex-1 p-4 bg-background min-h-0 relative flex items-center justify-center">
+            <div className="flex-1 p-2 sm:p-4 bg-background min-h-0 relative flex items-center justify-center w-full">
                 <div className="text-center">
                     <p className="text-destructive mb-2">{listsError}</p>
                     <button
@@ -845,7 +845,7 @@ export const KanbanBoard = ({
     // Show empty state if no lists
     if (lists.length === 0) {
         return (
-            <div className="flex-1 p-4 bg-background min-h-0 relative flex items-center justify-center">
+            <div className="flex-1 p-2 sm:p-4 bg-background min-h-0 relative flex items-center justify-center w-full">
                 <div className="text-center text-muted-foreground">
                     <p>{t('list.noLists')}</p>
                     <p className="text-sm mt-1">{t('list.contactAdmin')}</p>
@@ -857,7 +857,7 @@ export const KanbanBoard = ({
     return (
         <div
             ref={boardRef}
-            className="flex-1 p-4 bg-background min-h-0 relative overflow-hidden"
+            className="flex-1 p-2 sm:p-4 bg-background min-h-0 relative overflow-hidden w-full"
         >
             <DndContext
                 sensors={sensors}

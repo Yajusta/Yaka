@@ -141,13 +141,13 @@ export const FilterBar = ({
     };
 
     return (
-        <GlassmorphicCard className="border-b border-border/50 rounded-none py-0">
-            <div className="p-4">
+        <GlassmorphicCard className="border-b border-border/50 rounded-none py-0 w-full">
+            <div className="p-2 sm:p-4 w-full">
                 {/* Main filter row */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1">
+                <div className="flex items-center justify-between w-full gap-2">
+                    <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
                         {/* Search */}
-                        <div className="relative flex-1 max-w-md">
+                        <div className="relative flex-1 max-w-md min-w-0">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                             <Input
                                 ref={searchInputRef}
@@ -165,21 +165,21 @@ export const FilterBar = ({
                             variant="outline"
                             onClick={() => setShowFilters(!showFilters)}
                             className={cn(
-                                "transition-all duration-200",
+                                "transition-all duration-200 flex-shrink-0",
                                 hasActiveFilters() && "border-primary text-primary bg-primary/5"
                             )}
                         >
-                            <Filter className="h-4 w-4 mr-2" />
-                            {t('common.filters')}
+                            <Filter className="h-4 w-4 md:mr-2" />
+                            <span className="hidden md:inline">{t('common.filters')}</span>
                             {hasActiveFilters() && (
-                                <Badge variant="secondary" className="ml-2 bg-primary text-primary-foreground">
+                                <Badge variant="secondary" className="ml-1 md:ml-2 bg-primary text-primary-foreground">
                                     {getActiveFilterCount()}
                                 </Badge>
                             )}
                             {showFilters ? (
-                                <ChevronUp className="h-4 w-4 ml-2" />
+                                <ChevronUp className="h-4 w-4 ml-1 md:ml-2" />
                             ) : (
-                                <ChevronDown className="h-4 w-4 ml-2" />
+                                <ChevronDown className="h-4 w-4 ml-1 md:ml-2" />
                             )}
                         </Button>
 
@@ -198,18 +198,18 @@ export const FilterBar = ({
                         {aiAvailable && (
                             <Button
                                 onClick={() => setShowVoiceDialog(true)}
-                                className="bg-green-500 hover:bg-green-600 text-white hover:text-white border-green-600 dark:bg-green-500 dark:hover:bg-green-600 dark:text-white dark:hover:text-white dark:border-green-600 transition-all duration-200 shadow-sm"
+                                className="bg-green-500 hover:bg-green-600 text-white hover:text-white border-green-600 dark:bg-green-500 dark:hover:bg-green-600 dark:text-white dark:hover:text-white dark:border-green-600 transition-all duration-200 shadow-sm flex-shrink-0"
                             >
-                                <Mic className="h-4 w-4 mr-2" />
-                                {t('voice.title')}
+                                <Mic className="h-4 w-4 md:mr-2" />
+                                <span className="hidden md:inline">{t('voice.title')}</span>
                             </Button>
                         )}
 
                         {/* Create card button */}
                         {canCreateCard && (
-                            <Button onClick={onCreateCard} className="bg-primary hover:bg-primary/90 shadow-sm">
-                                <Plus className="h-4 w-4 mr-2" />
-                                {t('card.newCard')}
+                            <Button onClick={onCreateCard} className="bg-primary hover:bg-primary/90 shadow-sm flex-shrink-0">
+                                <Plus className="h-4 w-4 md:mr-2" />
+                                <span className="hidden md:inline">{t('card.newCard')}</span>
                             </Button>
                         )}
                     </div>

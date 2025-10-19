@@ -404,8 +404,8 @@ const KanbanApp = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 app-loaded">
-            <div className="flex flex-col min-h-screen">
+        <div className="min-h-screen w-full bg-gradient-to-br from-background via-background to-muted/20 app-loaded overflow-x-hidden">
+            <div className="flex flex-col min-h-screen w-full">
                 <Header
                     user={user}
                     theme={theme}

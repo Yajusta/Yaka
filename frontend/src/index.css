@@ -194,6 +194,8 @@
   /* Base styles to prevent FOUC */
   html {
     font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   body {
@@ -205,6 +207,10 @@
     -moz-osx-font-smoothing: grayscale;
     background-color: #fafbfc;
     color: #1a202c;
+    width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
   }
 
   /* Ensure stylesheets are loaded before content is displayed */
@@ -220,7 +226,10 @@
   }
 
   #root {
-    margin: auto;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
   }
 }
 
