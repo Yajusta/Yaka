@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from openai import BadRequestError, OpenAI
 from sqlalchemy.orm import selectinload
 
-from ..database import SessionLocal
+from ..multi_database import get_board_db
 from ..models.card import Card, CardPriority
 from ..models.card_item import CardItem
 from ..models.global_dictionary import GlobalDictionary
@@ -128,7 +128,7 @@ class LLMService:
         Returns:
             Les instructions formatées pour le LLM
         """
-        
+
         # Parse user context to extract user_id for view scope filtering
         user_dict = {}
         try:
@@ -216,30 +216,23 @@ Génère UN SEUL objet JSON représentant la tâche en respectant le format dema
 
 def get_lists() -> str:
     """Retourne les statuts possibles depuis la base de données."""
-    db = SessionLocal()
-    try:
+    with get_board_db() as db:
         lists = db.query(KanbanList).order_by(KanbanList.order).all()
         result = [{"list_id": lst.id, "list_name": lst.name, "list_description": lst.description} for lst in lists]
         return json.dumps(result, ensure_ascii=False, indent=2)
-    finally:
-        db.close()
 
 
 def get_users() -> str:
     """Retourne les utilisateurs actifs depuis la base de données."""
-    db = SessionLocal()
-    try:
+    with get_board_db() as db:
         users = db.query(User).filter(User.status != UserStatus.DELETED).all()
         result = [{"user_id": user.id, "user_name": user.display_name or user.email} for user in users]
         return json.dumps(result, ensure_ascii=False, indent=2)
-    finally:
-        db.close()
 
 
 def get_tasks(user_context: Optional[Dict] = None) -> str:
     """Retourne les tâches existantes depuis la base de données."""
-    db = SessionLocal()
-    try:
+    with get_board_db() as db:
         # Build base query
         query = (
             db.query(Card)
@@ -247,16 +240,17 @@ def get_tasks(user_context: Optional[Dict] = None) -> str:
             .options(selectinload(Card.items), selectinload(Card.labels), selectinload(Card.assignee))
             .filter(Card.is_archived == False)
         )
-        
+
         # Apply view scope filtering if user context is provided
-        if user_context and 'user_id' in user_context:
-            user_id = user_context['user_id']
+        if user_context and "user_id" in user_context:
+            user_id = user_context["user_id"]
             user = db.query(User).filter(User.id == user_id).first()
             if user:
                 # Import here to avoid circular imports
                 from . import card as card_service
+
                 query = card_service.apply_view_scope_filter(query, user)
-        
+
         cards = query.all()
         result = []
         for card in cards:
@@ -289,8 +283,6 @@ def get_tasks(user_context: Optional[Dict] = None) -> str:
             }
             result.append(task)
         return json.dumps(result, ensure_ascii=False, indent=2)
-    finally:
-        db.close()
 
 
 def get_priorities() -> str:
@@ -300,22 +292,18 @@ def get_priorities() -> str:
 
 def get_labels() -> str:
     """Retourne les libellés depuis la base de données."""
-    db = SessionLocal()
-    try:
+    with get_board_db() as db:
         labels = db.query(Label).all()
         result = [
             {"label_id": label.id, "label_name": label.name, "label_description": label.description}
             for label in labels
         ]
         return json.dumps(result, ensure_ascii=False, indent=2)
-    finally:
-        db.close()
 
 
 def get_vocabulary(user_context: Optional[Dict] = None) -> str:
     """Retourne le vocabulaire combiné (global + personnel de l'utilisateur)."""
-    db = SessionLocal()
-    try:
+    with get_board_db() as db:
         # Get global dictionary entries
         global_entries = db.query(GlobalDictionary).all()
         result = [{"term": entry.term, "definition": entry.definition} for entry in global_entries]
@@ -324,13 +312,6 @@ def get_vocabulary(user_context: Optional[Dict] = None) -> str:
         if user_context and "user_id" in user_context:
             user_id = user_context["user_id"]
             personal_entries = db.query(PersonalDictionary).filter(PersonalDictionary.user_id == user_id).all()
-            result.extend(
-                [
-                    {"term": entry.term, "definition": entry.definition}
-                    for entry in personal_entries
-                ]
-            )
+            result.extend([{"term": entry.term, "definition": entry.definition} for entry in personal_entries])
 
         return json.dumps(result, ensure_ascii=False, indent=2)
-    finally:
-        db.close()

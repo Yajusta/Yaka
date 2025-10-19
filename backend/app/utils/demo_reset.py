@@ -2,7 +2,8 @@
 
 import os
 
-from app.database import Base, engine
+from app.database import Base
+from app.multi_database import get_board_db
 from app.models import BoardSettings, Card, CardComment, CardHistory, CardItem, KanbanList, Label, User, UserRole
 from app.models.card import CardPriority
 from app.schemas.card import CardCreate
@@ -17,19 +18,19 @@ from app.services.kanban_list import create_list
 from app.services.label import create_label
 from app.services.user import create_admin_user, create_user, get_user_by_email
 from app.utils.demo_mode import is_demo_mode
-from sqlalchemy.orm import sessionmaker
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def initialize_default_data(db_session=None):
     """Initialize default data: admin user and settings (without demo data)."""
     if db_session is None:
-        db_session = SessionLocal()
-        should_close = True
+        with get_board_db() as db_session:
+            return _initialize_default_data_impl(db_session)
     else:
-        should_close = False
+        return _initialize_default_data_impl(db_session)
 
+
+def _initialize_default_data_impl(db_session):
+    """Implementation of initialize_default_data."""
     try:
         # Check and create administrator user if needed
         admin_user = get_user_by_email(db_session, "admin@yaka.local")
@@ -48,9 +49,6 @@ def initialize_default_data(db_session=None):
         if db_session:
             db_session.rollback()
         return False
-    finally:
-        if should_close and db_session:
-            db_session.close()
 
 
 def create_demo_users(db_session):
@@ -114,14 +112,18 @@ def create_demo_lists(db_session):
 
     if default_language == "en":
         list_names = ["📝 To do", "🔄 In progress", "✅ Done"]
-        list_descriptions = ["Tasks to be started", 
-                            "Tasks currently in progress. If a task with multiple subtasks have at least one subtask done but not all, it should be in the \"In progress\" list.", 
-                            "Completed tasks. If a task with multiple subtasks have all subtask done, it should be in the \"Done\" list."]
+        list_descriptions = [
+            "Tasks to be started",
+            'Tasks currently in progress. If a task with multiple subtasks have at least one subtask done but not all, it should be in the "In progress" list.',
+            'Completed tasks. If a task with multiple subtasks have all subtask done, it should be in the "Done" list.',
+        ]
     else:
         list_names = ["📝 A faire", "🔄 En cours", "✅ Terminé"]
-        list_descriptions = ["Tâches en attente de démarrage", 
-                            "Tâches en cours de réalisation. Si une tâche avec plusieurs sous-tâches a au moins une sous-tâche terminée mais pas toutes, elle doit être dans la liste \"En cours\".", 
-                            "Tâches terminées. Si une tâche avec plusieurs sous-tâches a toutes les sous-tâches terminées, elle doit être dans la liste \"Terminé\"."]
+        list_descriptions = [
+            "Tâches en attente de démarrage",
+            'Tâches en cours de réalisation. Si une tâche avec plusieurs sous-tâches a au moins une sous-tâche terminée mais pas toutes, elle doit être dans la liste "En cours".',
+            'Tâches terminées. Si une tâche avec plusieurs sous-tâches a toutes les sous-tâches terminées, elle doit être dans la liste "Terminé".',
+        ]
 
     # Create the 3 lists
     todo_list_data = KanbanListCreate(name=list_names[0], description=list_descriptions[0], order=1)
@@ -150,7 +152,7 @@ def create_demo_labels(db_session, admin_user_id):
     # Create "Important" label with red color
     label_data = LabelCreate(name=label_name, color="#940000", description=label_description)
     important_label = create_label(db_session, label_data, admin_user_id)
-    
+
     return important_label
 
 
@@ -248,15 +250,13 @@ def reset_database():
 
     print("Resetting database in demo mode...")
 
-    db = SessionLocal()
-    try:
-        delete_all_data(db)
-    except Exception as e:
-        print(f"Error during reset: {e}")
-        db.rollback()
-        raise
-    finally:
-        db.close()
+    with get_board_db() as db:
+        try:
+            delete_all_data(db)
+        except Exception as e:
+            print(f"Error during reset: {e}")
+            db.rollback()
+            raise
 
 
 def delete_all_data(db):
@@ -273,7 +273,6 @@ def delete_all_data(db):
     db.query(CardHistory).delete()
 
     # Delete many-to-many relationships between cards and labels
-    from app.database import engine
     from sqlalchemy import text
 
     db.execute(text("DELETE FROM card_labels"))
@@ -301,28 +300,26 @@ def setup_fresh_database():
     """Configure a fresh database with base data (used on first startup)."""
     print("Configuring fresh database...")
 
-    db = SessionLocal()
-    try:
-        # Check if database is already configured
-        from app.models import User
+    with get_board_db() as db:
+        try:
+            # Check if database is already configured
+            from app.models import User
 
-        if get_user_by_email(db, "admin@yaka.local"):
-            print("Database already configured, no action needed")
-            return
+            if get_user_by_email(db, "admin@yaka.local"):
+                print("Database already configured, no action needed")
+                return
 
-        # Empty database, initialize base data
-        initialize_default_data(db)
+            # Empty database, initialize base data
+            initialize_default_data(db)
 
-        # Add demo data
-        create_demo_data(db)
-        print("Database configured successfully!")
+            # Add demo data
+            create_demo_data(db)
+            print("Database configured successfully!")
 
-    except Exception as e:
-        print(f"Error during configuration: {e}")
-        db.rollback()
-        raise
-    finally:
-        db.close()
+        except Exception as e:
+            print(f"Error during configuration: {e}")
+            db.rollback()
+            raise
 
 
 if __name__ == "__main__":

@@ -10,7 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-from .database import Base, SessionLocal, engine
+from .database import Base, engine
+from .multi_database import get_board_db
 from .utils.board_context import BoardContextMiddleware
 from .models import BoardSettings, Card, KanbanList, Label, User
 from .routers import auth_router, board_settings_router, cards_router, labels_router, lists_router, users_router
@@ -32,8 +33,7 @@ from .utils.demo_reset import reset_database, setup_fresh_database
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Gestion du cycle de vie de l'application FastAPI."""
     # Événement de démarrage
-    db = SessionLocal()
-    try:
+    with get_board_db() as db:
         # Vérifier s'il y a déjà des données dans la base
         from .models import User
 
@@ -45,8 +45,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             # Base de données vide ou nouvellement créée, configurer avec les données de base
             print("Base de donnees vide detectee, configuration initiale...")
             setup_fresh_database()
-    finally:
-        db.close()
 
     # Afficher la configuration d'envoi d'emails utilisée au démarrage
     print(f"Mail config: FROM_ADDRESS={FROM_ADDRESS}, SMTP_USER={SMTP_USER or 'None'}, SMTP_HOST={SMTP_HOST}")
