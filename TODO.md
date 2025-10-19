@@ -15,6 +15,7 @@
 ## Frontend
 
 [ ] Séparer la page "invite" et la page "reset-password".
+[ ] Revoir le menu de paramètres.
 
 ## Backend
 
@@ -25,3 +26,4 @@
 ### Tech
 
 [ ] Synchro par websocket.
+[ ] Faire une application smartphone.

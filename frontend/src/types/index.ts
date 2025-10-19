@@ -35,11 +35,11 @@ export interface Card {
     description: string;
     priority: string;
     assignee_id: number | null;
+    assignee_name?: string | null; // Nom de l'utilisateur assigné (null si pas d'assigné)
     label_id: number | null;
     colonne: string;
     list_id: number;
     due_date?: string;
-    assignee?: User;
     labels?: Label[];
     kanban_list?: KanbanList;
     created_at: string;

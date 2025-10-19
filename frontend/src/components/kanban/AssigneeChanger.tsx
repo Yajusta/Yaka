@@ -53,11 +53,11 @@ export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssign
     if (disabled) {
         return (
             <div className="flex items-center space-x-1 text-muted-foreground" title={t('card.changeAssignee')}>
-                {card.assignee ? (
+                {card.assignee_id ? (
                     <>
                         <UserIcon className={`h-3 w-3 ${isCurrentUserAssigned ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
                         <span className={`text-xs font-medium ${isCurrentUserAssigned ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
-                            {card.assignee.display_name}
+                            {card.assignee_name || "-"}
                         </span>
                     </>
                 ) : (
@@ -73,11 +73,11 @@ export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssign
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <div className="flex items-center space-x-1 cursor-pointer" title={t('card.changeAssignee')}>
-                    {card.assignee ? (
+                    {card.assignee_id ? (
                         <>
                             <UserIcon className={`h-3 w-3 ${isCurrentUserAssigned ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
                             <span className={`text-xs font-medium ${isCurrentUserAssigned ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
-                                {card.assignee.display_name}
+                                {card.assignee_name || "-"}
                             </span>
                         </>
                     ) : (

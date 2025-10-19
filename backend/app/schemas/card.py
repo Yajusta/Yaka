@@ -3,13 +3,12 @@
 from datetime import date, datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from ..models.card import CardPriority
 from .card_comment import CardCommentResponse
 from .card_item import CardItemResponse
 from .label import LabelResponse
-from .user import UserResponse
 
 
 class CardBase(BaseModel):
@@ -66,10 +65,17 @@ class CardResponse(CardBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     labels: List[LabelResponse] = Field(default_factory=list)
-    creator: Optional[UserResponse] = None
-    assignee: Optional[UserResponse] = None
+    assignee_name: Optional[str] = Field(default=None, description="Nom de l'utilisateur assigné")
     items: List[CardItemResponse] = Field(default_factory=list)
     comments: List[CardCommentResponse] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def extract_assignee_name(cls, data):
+        """Extrait le display_name depuis la relation assignee."""
+        if hasattr(data, "assignee") and data.assignee:
+            data.assignee_name = getattr(data.assignee, "display_name", None)
+        return data
 
 
 class CardFilter(BaseModel):

@@ -169,10 +169,10 @@ export const ArchiveManager = ({
                                                         <span>{t('archive.archivedOn', { date: formatDate(card.updated_at) })}</span>
                                                     </div>
 
-                                                    {card.assignee && (
+                                                    {card.assignee_id && (
                                                         <div className="flex items-center gap-1">
                                                             <User className="h-3 w-3" />
-                                                            <span>{card.assignee.display_name}</span>
+                                                            <span>{card.assignee_name || "-"}</span>
                                                         </div>
                                                     )}
                                                 </div>

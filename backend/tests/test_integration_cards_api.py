@@ -378,7 +378,7 @@ async def test_card_update_assigns_and_labels(
         card_payload = create_response.json()
         card_id = card_payload["id"]
         assert card_payload["labels"] == []
-        assert card_payload["assignee"] is None
+        assert card_payload["assignee_name"] is None  # Pas d'assigné = None
 
         update_response = await client.put(
             f"/cards/{card_id}",
@@ -388,7 +388,8 @@ async def test_card_update_assigns_and_labels(
         assert update_response.status_code == 200
         updated_card = update_response.json()
         assert [label["id"] for label in updated_card["labels"]] == [label_id]
-        assert updated_card["assignee"]["id"] == teammate_id
+        assert updated_card["assignee_id"] == teammate_id
+        assert updated_card["assignee_name"] is not None  # Should have the teammate's name
 
         clear_response = await client.put(
             f"/cards/{card_id}",
@@ -398,7 +399,7 @@ async def test_card_update_assigns_and_labels(
         assert clear_response.status_code == 200
         cleared_card = clear_response.json()
         assert cleared_card["labels"] == []
-        assert cleared_card["assignee"] is None
+        assert cleared_card["assignee_name"] is None  # Pas d'assigné = None
         history_response = await client.get(
             f"/cards/{card_id}/history",
             headers=owner_headers,
@@ -411,7 +412,7 @@ async def test_card_update_assigns_and_labels(
         descriptions = [entry["description"] for entry in history_entries if entry["action"] == "assignee_change"]
         assert any("Teammate" in desc or "personne" in desc for desc in descriptions)
 
-        assert cleared_card["assignee"] is None
+        assert cleared_card["assignee_name"] is None  # Pas d'assigné = None
 
 
 @pytest.mark.asyncio

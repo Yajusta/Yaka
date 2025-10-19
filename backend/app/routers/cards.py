@@ -110,11 +110,11 @@ async def read_card(
     db_card = card_service.get_card(db, card_id=card_id)
     if db_card is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
-    
+
     # Check view scope permissions
     if not card_service.can_access_card(current_user, db_card):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès non autorisé à cette carte")
-    
+
     return db_card
 
 

@@ -44,7 +44,7 @@ export const CardItem = ({
 }: CardItemProps) => {
     const { user: currentUser } = useAuth();
     const currentUserId = currentUser?.id ?? null;
-    const isCurrentUserAssigned = currentUserId !== null && (card.assignee_id === currentUserId || card.assignee?.id === currentUserId);
+    const isCurrentUserAssigned = currentUserId !== null && card.assignee_id === currentUserId;
 
     // Use the permissions hook for proper role-based access control
     const permissions = usePermissions(currentUser);
@@ -429,7 +429,7 @@ export const CardItem = ({
                                 </div>
                             </div>
 
-                            <div className={`flex items-center ml-auto ${card.assignee ? "opacity-100" : "opacity-0 group-hover:opacity-100 transition-opacity duration-200"} ${isCurrentUserAssigned ? 'bg-primary text-primary-foreground rounded-md px-2 py-1 -mx-2 -my-1 shadow-sm' : ''}`}>
+                            <div className={`flex items-center ml-auto ${card.assignee_id ? "opacity-100" : "opacity-0 group-hover:opacity-100 transition-opacity duration-200"} ${isCurrentUserAssigned ? 'bg-primary text-primary-foreground rounded-md px-2 py-1 -mx-2 -my-1 shadow-sm' : ''}`}>
                                 <AssigneeChanger card={card} onAssigneeChange={handleAssigneeChange} isCurrentUserAssigned={isCurrentUserAssigned} disabled={!canModifyCard} />
                             </div>
                         </div>

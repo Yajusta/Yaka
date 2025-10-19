@@ -80,7 +80,7 @@ def send_invitation(email: str, display_name: Optional[str], token: str, board_u
     else:
         invite_link = f"{INVITE_BASE_URL}?token={encoded_token}"
         board_url = BASE_URL
-    
+
     name = display_name or "User"
     subject = "Invitation to Join Yaka (Yet Another Kanban App)"
     html = get_invitation_html(name, invite_link, board_url)
@@ -96,9 +96,9 @@ def send_password_reset(email: str, display_name: Optional[str], token: str, boa
     else:
         reset_link = f"{PASSWORD_RESET_BASE_URL}?token={encoded_token}&reset=true"
         board_url = BASE_URL
-    
+
     name = display_name or "User"
-    subject = "Password Reset - Yaka (Yet Another Kanban App)"
+    subject = "Password reset - Yaka (Yet Another Kanban App)"
     html = get_password_reset_html(name, reset_link, board_url)
     plain = get_password_reset_plain(name, reset_link, board_url)
     send_mail(to=email, subject=subject, html_body=html, plain_body=plain)
