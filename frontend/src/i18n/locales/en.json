@@ -442,6 +442,7 @@
     "settings": {
         "general": "General",
         "account": "Account",
+        "userSettings": "Settings",
         "admin": "Admin settings",
         "privacy": "Privacy",
         "security": "Security",
@@ -505,7 +506,7 @@
     "language": {
         "french": "French",
         "english": "English",
-        "switchLanguage": "Switch language",
+        "switchLanguage": "Language",
         "switchToFrench": "Switch to French",
         "switchToEnglish": "Switch to English"
     },

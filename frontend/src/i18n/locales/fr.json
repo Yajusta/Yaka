@@ -442,7 +442,8 @@
     "settings": {
         "general": "Général",
         "account": "Compte",
-        "admin": "Paramètres administrateur",
+        "userSettings": "Paramètres",
+        "admin": "Administration",
         "privacy": "Confidentialité",
         "security": "Sécurité",
         "notifications": "Notifications",
@@ -505,7 +506,7 @@
     "language": {
         "french": "Français",
         "english": "Anglais",
-        "switchLanguage": "Changer de langue",
+        "switchLanguage": "Langue",
         "switchToFrench": "Passer en français",
         "switchToEnglish": "Passer en anglais"
     },

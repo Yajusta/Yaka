@@ -1,6 +1,6 @@
 import { Button } from '../ui/button';
 import * as React from 'react';
-import { BookOpen, Check, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, Sun, Tag, Users } from 'lucide-react';
+import { BookOpen, Check, ChevronDown, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, ShieldCheck, Sun, Tag, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useBoardSettings } from '../../hooks/useBoardSettingsContext';
 import { UserRole, UserRoleValue, User, ViewScope } from '../../types';
@@ -61,6 +61,7 @@ export const Header = ({
     const [isSettingsMenuHovered, setIsSettingsMenuHovered] = React.useState(false);
     const [isPersonalDictionaryHovered, setIsPersonalDictionaryHovered] = React.useState(false);
     const [isChangingLanguage, setIsChangingLanguage] = React.useState(false);
+    const [isUserSettingsExpanded, setIsUserSettingsExpanded] = React.useState(false);
 
     const handleExportCSV = async () => {
         try {
@@ -247,141 +248,10 @@ export const Header = ({
                                 </div>
                                 <DropdownMenuSeparator />
 
-                                {/* Language submenu */}
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger
-                                        className="cursor-pointer [&>svg:last-child]:hidden"
-                                        onMouseEnter={() => setIsLanguageMenuHovered(true)}
-                                        onMouseLeave={() => setIsLanguageMenuHovered(false)}
-                                    >
-                                        {isLanguageMenuHovered ? (
-                                            <ChevronLeft className="mr-2 h-4 w-4" />
-                                        ) : (
-                                            <Languages className="mr-2 h-4 w-4" />
-                                        )}
-                                        <span>{t('language.switchLanguage')}</span>
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent
-                                        onMouseEnter={() => setIsLanguageMenuHovered(true)}
-                                        onMouseLeave={() => setIsLanguageMenuHovered(false)}
-                                    >
-                                        <DropdownMenuItem
-                                            onClick={() => handleChangeLanguage('fr')}
-                                            disabled={isChangingLanguage}
-                                            className={cn(
-                                                "cursor-pointer",
-                                                i18n.language === 'fr' && "bg-primary/10 text-primary font-medium"
-                                            )}
-                                        >
-                                            <span className="mr-2">🇫🇷</span>
-                                            Français
-                                            {i18n.language === 'fr' && <Check className="ml-auto h-4 w-4" />}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            onClick={() => handleChangeLanguage('en')}
-                                            disabled={isChangingLanguage}
-                                            className={cn(
-                                                "cursor-pointer",
-                                                i18n.language === 'en' && "bg-primary/10 text-primary font-medium"
-                                            )}
-                                        >
-                                            <span className="mr-2">🇬🇧</span>
-                                            English
-                                            {i18n.language === 'en' && <Check className="ml-auto h-4 w-4" />}
-                                        </DropdownMenuItem>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-
-                                {/* Display mode submenu */}
-                                {onDisplayModeChange && (
-                                    <DropdownMenuSub>
-                                        <DropdownMenuSubTrigger
-                                            className="cursor-pointer [&>svg:last-child]:hidden"
-                                            onMouseEnter={() => setIsDisplayMenuHovered(true)}
-                                            onMouseLeave={() => setIsDisplayMenuHovered(false)}
-                                        >
-                                            {isDisplayMenuHovered ? (
-                                                <ChevronLeft className="mr-2 h-4 w-4" />
-                                            ) : (
-                                                <Eye className="mr-2 h-4 w-4" />
-                                            )}
-                                            <span>{t('display.title')}</span>
-                                        </DropdownMenuSubTrigger>
-                                        <DropdownMenuSubContent
-                                            onMouseEnter={() => setIsDisplayMenuHovered(true)}
-                                            onMouseLeave={() => setIsDisplayMenuHovered(false)}
-                                        >
-                                            <DropdownMenuItem
-                                                onClick={() => onDisplayModeChange('extended')}
-                                                className={cn(
-                                                    "cursor-pointer",
-                                                    displayMode === 'extended' && "bg-primary/10 text-primary font-medium"
-                                                )}
-                                            >
-                                                {t('display.extended')}
-                                                {displayMode === 'extended' && <Check className="ml-auto h-4 w-4" />}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() => onDisplayModeChange('compact')}
-                                                className={cn(
-                                                    "cursor-pointer",
-                                                    displayMode === 'compact' && "bg-primary/10 text-primary font-medium"
-                                                )}
-                                            >
-                                                {t('display.compact')}
-                                                {displayMode === 'compact' && <Check className="ml-auto h-4 w-4" />}
-                                            </DropdownMenuItem>
-                                        </DropdownMenuSubContent>
-                                    </DropdownMenuSub>
-                                )}
-
-                                {/* Theme submenu */}
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger
-                                        className="cursor-pointer [&>svg:last-child]:hidden"
-                                        onMouseEnter={() => setIsThemeMenuHovered(true)}
-                                        onMouseLeave={() => setIsThemeMenuHovered(false)}
-                                    >
-                                        {isThemeMenuHovered ? (
-                                            <ChevronLeft className="mr-2 h-4 w-4" />
-                                        ) : (
-                                            <Palette className="mr-2 h-4 w-4" />
-                                        )}
-                                        <span>{t('settings.theme')}</span>
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent
-                                        onMouseEnter={() => setIsThemeMenuHovered(true)}
-                                        onMouseLeave={() => setIsThemeMenuHovered(false)}
-                                    >
-                                        <DropdownMenuItem
-                                            onClick={onToggleTheme}
-                                            className={cn(
-                                                "cursor-pointer",
-                                                theme === 'light' && "bg-primary/10 text-primary font-medium"
-                                            )}
-                                        >
-                                            <Sun className="mr-2 h-4 w-4" />
-                                            {t('settings.lightTheme')}
-                                            {theme === 'light' && <Check className="ml-auto h-4 w-4" />}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            onClick={onToggleTheme}
-                                            className={cn(
-                                                "cursor-pointer",
-                                                theme === 'dark' && "bg-primary/10 text-primary font-medium"
-                                            )}
-                                        >
-                                            <Moon className="mr-2 h-4 w-4" />
-                                            {t('settings.darkTheme')}
-                                            {theme === 'dark' && <Check className="ml-auto h-4 w-4" />}
-                                        </DropdownMenuItem>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-
                                 {/* Export submenu */}
                                 <DropdownMenuSub>
                                     <DropdownMenuSubTrigger
-                                        className="cursor-pointer [&>svg:last-child]:hidden"
+                                        className="cursor-pointer [&>svg:last-child]:hidden [&_svg:not([class*='text-'])]:text-muted-foreground"
                                         onMouseEnter={() => setIsExportMenuHovered(true)}
                                         onMouseLeave={() => setIsExportMenuHovered(false)}
                                     >
@@ -406,28 +276,182 @@ export const Header = ({
                                         <DropdownMenuItem
                                             onClick={handleExportExcel}
                                             className="cursor-pointer"
-                                            >
+                                        >
                                             <FileSpreadsheet className="mr-2 h-4 w-4" />
                                             {t('export.excel')}
                                         </DropdownMenuItem>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
-                                {/* Personal Dictionary Menu Item - available for editors and above */}
-                                {user?.role && (user.role === UserRole.EDITOR || user.role === UserRole.SUPERVISOR || user.role === UserRole.ADMIN) && (
+
+                                {/* User Settings - Collapsible menu */}
+                                <DropdownMenuItem
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setIsUserSettingsExpanded(!isUserSettingsExpanded);
+                                    }}
+                                    onSelect={(e) => {
+                                        e.preventDefault();
+                                    }}
+                                    className="cursor-pointer gap-2"
+                                >
+                                    <Settings className="h-4 w-4" />
+                                    <span>{t('settings.userSettings')}</span>
+                                    <ChevronDown className={cn(
+                                        "ml-auto h-4 w-4 transition-transform",
+                                        isUserSettingsExpanded && "rotate-180"
+                                    )} />
+                                </DropdownMenuItem>
+
+                                {/* Collapsible settings items */}
+                                {isUserSettingsExpanded && (
                                     <>
-                                        <DropdownMenuItem
-                                            onClick={onShowPersonalDictionary}
-                                            className="cursor-pointer"
-                                            onMouseEnter={() => setIsPersonalDictionaryHovered(true)}
-                                            onMouseLeave={() => setIsPersonalDictionaryHovered(false)}
-                                        >
-                                            {isPersonalDictionaryHovered ? (
-                                                <MoreHorizontal className="mr-2 h-4 w-4" />
-                                            ) : (
-                                                <BookOpen className="mr-2 h-4 w-4" />
-                                            )}
-                                            {t('dictionary.personalDictionary')}
-                                        </DropdownMenuItem>
+                                        {/* Language submenu */}
+                                        <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger
+                                                className="cursor-pointer [&>svg:last-child]:hidden [&_svg:not([class*='text-'])]:text-muted-foreground pl-8"
+                                                onMouseEnter={() => setIsLanguageMenuHovered(true)}
+                                                onMouseLeave={() => setIsLanguageMenuHovered(false)}
+                                            >
+                                                {isLanguageMenuHovered ? (
+                                                    <ChevronLeft className="mr-2 h-4 w-4" />
+                                                ) : (
+                                                    <Languages className="mr-2 h-4 w-4" />
+                                                )}
+                                                <span>{t('language.switchLanguage')}</span>
+                                            </DropdownMenuSubTrigger>
+                                            <DropdownMenuSubContent
+                                                onMouseEnter={() => setIsLanguageMenuHovered(true)}
+                                                onMouseLeave={() => setIsLanguageMenuHovered(false)}
+                                            >
+                                                <DropdownMenuItem
+                                                    onClick={() => handleChangeLanguage('fr')}
+                                                    disabled={isChangingLanguage}
+                                                    className={cn(
+                                                        "cursor-pointer",
+                                                        i18n.language === 'fr' && "bg-primary/10 text-primary font-medium"
+                                                    )}
+                                                >
+                                                    <span className="mr-2">🇫🇷</span>
+                                                    Français
+                                                    {i18n.language === 'fr' && <Check className="ml-auto h-4 w-4" />}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => handleChangeLanguage('en')}
+                                                    disabled={isChangingLanguage}
+                                                    className={cn(
+                                                        "cursor-pointer",
+                                                        i18n.language === 'en' && "bg-primary/10 text-primary font-medium"
+                                                    )}
+                                                >
+                                                    <span className="mr-2">🇬🇧</span>
+                                                    English
+                                                    {i18n.language === 'en' && <Check className="ml-auto h-4 w-4" />}
+                                                </DropdownMenuItem>
+                                            </DropdownMenuSubContent>
+                                        </DropdownMenuSub>
+
+                                        {/* Display mode submenu */}
+                                        {onDisplayModeChange && (
+                                            <DropdownMenuSub>
+                                                <DropdownMenuSubTrigger
+                                                    className="cursor-pointer [&>svg:last-child]:hidden [&_svg:not([class*='text-'])]:text-muted-foreground pl-8"
+                                                    onMouseEnter={() => setIsDisplayMenuHovered(true)}
+                                                    onMouseLeave={() => setIsDisplayMenuHovered(false)}
+                                                >
+                                                    {isDisplayMenuHovered ? (
+                                                        <ChevronLeft className="mr-2 h-4 w-4" />
+                                                    ) : (
+                                                        <Eye className="mr-2 h-4 w-4" />
+                                                    )}
+                                                    <span>{t('display.title')}</span>
+                                                </DropdownMenuSubTrigger>
+                                                <DropdownMenuSubContent
+                                                    onMouseEnter={() => setIsDisplayMenuHovered(true)}
+                                                    onMouseLeave={() => setIsDisplayMenuHovered(false)}
+                                                >
+                                                    <DropdownMenuItem
+                                                        onClick={() => onDisplayModeChange('extended')}
+                                                        className={cn(
+                                                            "cursor-pointer",
+                                                            displayMode === 'extended' && "bg-primary/10 text-primary font-medium"
+                                                        )}
+                                                    >
+                                                        {t('display.extended')}
+                                                        {displayMode === 'extended' && <Check className="ml-auto h-4 w-4" />}
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() => onDisplayModeChange('compact')}
+                                                        className={cn(
+                                                            "cursor-pointer",
+                                                            displayMode === 'compact' && "bg-primary/10 text-primary font-medium"
+                                                        )}
+                                                    >
+                                                        {t('display.compact')}
+                                                        {displayMode === 'compact' && <Check className="ml-auto h-4 w-4" />}
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuSub>
+                                        )}
+
+                                        {/* Theme submenu */}
+                                        <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger
+                                                className="cursor-pointer [&>svg:last-child]:hidden [&_svg:not([class*='text-'])]:text-muted-foreground pl-8"
+                                                onMouseEnter={() => setIsThemeMenuHovered(true)}
+                                                onMouseLeave={() => setIsThemeMenuHovered(false)}
+                                            >
+                                                {isThemeMenuHovered ? (
+                                                    <ChevronLeft className="mr-2 h-4 w-4" />
+                                                ) : (
+                                                    <Palette className="mr-2 h-4 w-4" />
+                                                )}
+                                                <span>{t('settings.theme')}</span>
+                                            </DropdownMenuSubTrigger>
+                                            <DropdownMenuSubContent
+                                                onMouseEnter={() => setIsThemeMenuHovered(true)}
+                                                onMouseLeave={() => setIsThemeMenuHovered(false)}
+                                            >
+                                                <DropdownMenuItem
+                                                    onClick={onToggleTheme}
+                                                    className={cn(
+                                                        "cursor-pointer",
+                                                        theme === 'light' && "bg-primary/10 text-primary font-medium"
+                                                    )}
+                                                >
+                                                    <Sun className="mr-2 h-4 w-4" />
+                                                    {t('settings.lightTheme')}
+                                                    {theme === 'light' && <Check className="ml-auto h-4 w-4" />}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={onToggleTheme}
+                                                    className={cn(
+                                                        "cursor-pointer",
+                                                        theme === 'dark' && "bg-primary/10 text-primary font-medium"
+                                                    )}
+                                                >
+                                                    <Moon className="mr-2 h-4 w-4" />
+                                                    {t('settings.darkTheme')}
+                                                    {theme === 'dark' && <Check className="ml-auto h-4 w-4" />}
+                                                </DropdownMenuItem>
+                                            </DropdownMenuSubContent>
+                                        </DropdownMenuSub>
+
+                                        {/* Personal Dictionary Menu Item - available for editors and above */}
+                                        {user?.role && (user.role === UserRole.EDITOR || user.role === UserRole.SUPERVISOR || user.role === UserRole.ADMIN) && (
+                                            <DropdownMenuItem
+                                                onClick={onShowPersonalDictionary}
+                                                className="cursor-pointer pl-8"
+                                                onMouseEnter={() => setIsPersonalDictionaryHovered(true)}
+                                                onMouseLeave={() => setIsPersonalDictionaryHovered(false)}
+                                            >
+                                                {isPersonalDictionaryHovered ? (
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                ) : (
+                                                    <BookOpen className="h-4 w-4" />
+                                                )}
+                                                {t('dictionary.personalDictionary')}
+                                            </DropdownMenuItem>
+                                        )}
                                     </>
                                 )}
 
@@ -437,14 +461,14 @@ export const Header = ({
                                         <DropdownMenuSeparator />
                                         <DropdownMenuSub>
                                             <DropdownMenuSubTrigger
-                                                className="cursor-pointer [&>svg:last-child]:hidden"
+                                                className="cursor-pointer [&>svg:last-child]:hidden [&_svg:not([class*='text-'])]:text-muted-foreground"
                                                 onMouseEnter={() => setIsSettingsMenuHovered(true)}
                                                 onMouseLeave={() => setIsSettingsMenuHovered(false)}
                                             >
                                                 {isSettingsMenuHovered ? (
                                                     <ChevronLeft className="mr-2 h-4 w-4" />
                                                 ) : (
-                                                    <Settings className="mr-2 h-4 w-4" />
+                                                    <ShieldCheck className="mr-2 h-4 w-4" />
                                                 )}
                                                 <span>{t('settings.admin')}</span>
                                             </DropdownMenuSubTrigger>
