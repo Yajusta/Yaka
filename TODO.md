@@ -15,7 +15,7 @@
 ## Frontend
 
 [ ] Séparer la page "invite" et la page "reset-password".
-[ ] Revoir le menu de paramètres.
+[x] Revoir le menu de paramètres.
 
 ## Backend
 

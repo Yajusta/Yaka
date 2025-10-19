@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.4 (2025-10-19)
+
+- [UX] Réorganisation du menu de paramètres.
+- [FIX] Problème d'accès à la base de données multiple pour le service de voix.
+
 ## 1.3.3 (2025-10-18)
 
 - [CHANGE] Les migrations Alembic s'appliquent maintenant à toutes les bases de données du répertoire `data` au démarrage du serveur.
