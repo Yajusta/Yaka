@@ -1,35 +1,73 @@
-import { Card, Label } from '@shared/types';
+import { Card, Label, UpdateCardData, getPriorityIcon, getPriorityIconColor, UserRole } from '@shared/types';
 import {
   User,
-  ArrowUp,
-  ArrowDown,
-  Minus,
+  Shield,
+  Key,
+  PenTool,
+  Users,
+  MessageSquare,
+  Eye,
   CalendarDays,
   AlertCircle,
-  AlertTriangle,
-  MessageSquare
+  AlertTriangle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@shared/lib/utils';
+import { useState, useEffect, useRef } from 'react';
+import { cardService } from '@shared/services/api';
+import { useUsers } from '@shared/hooks/useUsers';
+import { useAuth } from '@shared/hooks/useAuth';
+import { useToast } from '@shared/hooks/use-toast';
 
 interface CardItemProps {
   card: Card;
   onClick?: () => void;
+  onUpdate?: (updatedCard: Card) => void;
 }
 
-const CardItem = ({ card, onClick }: CardItemProps) => {
+const CardItem = ({ card, onClick, onUpdate }: CardItemProps) => {
   const { t } = useTranslation();
+  const { toast } = useToast();
+  const { users } = useUsers();
+  const { user: currentUser } = useAuth();
+  const currentUserId = currentUser?.id ?? null;
+  const isCurrentUserAssigned = currentUserId !== null && card.assignee_id === currentUserId;
 
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return <ArrowUp className="w-4 h-4" />;
-      case 'medium':
-        return <Minus className="w-4 h-4" />;
-      case 'low':
-        return <ArrowDown className="w-4 h-4" />;
+  const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowPriorityDropdown(false);
+        setShowAssigneeDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const getUserRoleIcon = (role?: string) => {
+    switch (role) {
+      case UserRole.ADMIN:
+        return Key;
+      case UserRole.SUPERVISOR:
+        return Shield;
+      case UserRole.EDITOR:
+        return PenTool;
+      case UserRole.CONTRIBUTOR:
+        return Users;
+      case UserRole.COMMENTER:
+        return MessageSquare;
+      case UserRole.VISITOR:
+        return Eye;
       default:
-        return <Minus className="w-4 h-4" />;
+        return User;
     }
   };
 
@@ -95,6 +133,69 @@ const CardItem = ({ card, onClick }: CardItemProps) => {
     return 'normal';
   };
 
+  const handlePriorityChange = async (newPriority: 'low' | 'medium' | 'high') => {
+    if (newPriority === card.priority) {
+      setShowPriorityDropdown(false);
+      return;
+    }
+
+    const updatePayload: UpdateCardData = {
+      priority: newPriority,
+    };
+
+    try {
+      const updatedCard = await cardService.updateCard(card.id, updatePayload);
+      onUpdate?.(updatedCard);
+      setShowPriorityDropdown(false);
+      toast({
+        title: 'Priority updated',
+        description: `Card priority changed to ${newPriority}`,
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Failed to update priority", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update priority',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAssigneeChange = async (newAssigneeId: number | null) => {
+    if (newAssigneeId === card.assignee_id) {
+      setShowAssigneeDropdown(false);
+      return;
+    }
+
+    const updatePayload: UpdateCardData = {
+      assignee_id: newAssigneeId,
+    };
+
+    try {
+      const updatedCard = await cardService.updateCard(card.id, updatePayload);
+      onUpdate?.(updatedCard);
+      setShowAssigneeDropdown(false);
+
+      const userName = newAssigneeId
+        ? users.find(u => u.id === newAssigneeId)?.display_name || 'Unknown user'
+        : 'unassigned';
+
+      toast({
+        title: 'Assignee updated',
+        description: `Card assigned to ${userName}`,
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Failed to update assignee", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update assignee',
+        variant: "destructive",
+      });
+    }
+  };
+
   const priorityKey = normalizePriority(card.priority);
   const priorityGlowClass = {
     'high': 'priority-high',
@@ -111,6 +212,7 @@ const CardItem = ({ card, onClick }: CardItemProps) => {
 
   return (
     <div
+      ref={dropdownRef}
       onClick={onClick}
       className={cn(
         "mobile-card cursor-pointer bg-card border-2",
@@ -183,9 +285,48 @@ const CardItem = ({ card, onClick }: CardItemProps) => {
       {/* Footer: All metadata on same line */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
-          {/* Priority - icon only, round */}
-          <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${getPriorityClass(card.priority)}`}>
-            {getPriorityIcon(card.priority)}
+          {/* Priority - interactive dropdown */}
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowPriorityDropdown(!showPriorityDropdown);
+                setShowAssigneeDropdown(false);
+              }}
+              className={`flex items-center justify-center w-6 h-6 rounded-full border ${getPriorityClass(card.priority)} hover:opacity-80 transition-opacity`}
+            >
+              {(() => {
+                const Icon = getPriorityIcon(card.priority);
+                return <Icon className="w-4 h-4" />;
+              })()}
+            </button>
+
+            {showPriorityDropdown && (
+              <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]">
+                <div className="py-1">
+                  {(['high', 'medium', 'low'] as const).map((priority) => {
+                    const Icon = getPriorityIcon(priority);
+                    const iconColor = getPriorityIconColor(priority);
+                    const isSelected = priorityKey === priority;
+                    return (
+                      <button
+                        key={priority}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePriorityChange(priority);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2 hover:bg-gray-100 ${
+                          isSelected ? 'bg-gray-50 font-medium' : ''
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 ${iconColor}`} />
+                        <span className="capitalize">{priority}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Due Date with full text */}
@@ -213,18 +354,65 @@ const CardItem = ({ card, onClick }: CardItemProps) => {
           )}
         </div>
 
-        {/* Assignee */}
-        {card.assignee_name ? (
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <User className="w-3 h-3" />
-            <span className="truncate max-w-[80px] text-xs">{card.assignee_name}</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1 text-sm text-muted-foreground opacity-50">
-            <User className="w-3 h-3" />
-            <span className="italic text-xs">{t('card.unassign')}</span>
-          </div>
-        )}
+        {/* Assignee - interactive dropdown */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAssigneeDropdown(!showAssigneeDropdown);
+              setShowPriorityDropdown(false);
+            }}
+            className={`flex items-center gap-1 text-sm hover:opacity-80 transition-opacity ${
+              isCurrentUserAssigned
+                ? 'bg-primary text-primary-foreground rounded-md px-2 py-1 -mx-2 -my-1 shadow-sm'
+                : 'text-muted-foreground'
+            }`}
+          >
+            <User className={`w-3 h-3 ${isCurrentUserAssigned ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
+            {card.assignee_name ? (
+              <span className={`truncate max-w-[80px] text-xs ${isCurrentUserAssigned ? 'text-primary-foreground' : ''}`}>{card.assignee_name}</span>
+            ) : (
+              <span className="italic text-xs">{t('card.unassign')}</span>
+            )}
+          </button>
+
+          {showAssigneeDropdown && (
+            <div className="absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[140px] max-h-[200px] overflow-y-auto">
+              <div className="py-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAssigneeChange(null);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs flex items-center gap-2 hover:bg-gray-100"
+                >
+                  <span>{t('card.unassign')}</span>
+                </button>
+                {users
+                  .slice()
+                  .sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''))
+                  .map((user) => {
+                    const RoleIcon = getUserRoleIcon(user.role);
+                    return (
+                      <button
+                        key={user.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAssigneeChange(user.id);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2 hover:bg-gray-100 ${
+                        card.assignee_id === user.id ? 'bg-gray-50 font-medium' : ''
+                      }`}
+                      >
+                        <RoleIcon className="w-4 h-4 text-muted-foreground" />
+                        <span>{user.display_name}</span>
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

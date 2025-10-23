@@ -1,10 +1,10 @@
-import { User as UserIcon } from 'lucide-react';
+import { User as UserIcon, Shield, Key, PenTool, Users, MessageSquare, Eye } from 'lucide-react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@shared/hooks/use-toast';
 import { useUsers } from '@shared/hooks/useUsers';
 import { cardService } from '@shared/services/api';
-import { Card, UpdateCardData } from '@shared/types';
+import { Card, UpdateCardData, UserRole } from '@shared/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 interface AssigneeChangerProps {
@@ -18,6 +18,25 @@ export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssign
     const { t } = useTranslation();
     const { toast } = useToast();
     const { users } = useUsers();
+
+    const getRoleIcon = (role?: string) => {
+        switch (role) {
+            case UserRole.ADMIN:
+                return Key;
+            case UserRole.SUPERVISOR:
+                return Shield;
+            case UserRole.EDITOR:
+                return PenTool;
+            case UserRole.CONTRIBUTOR:
+                return Users;
+            case UserRole.COMMENTER:
+                return MessageSquare;
+            case UserRole.VISITOR:
+                return Eye;
+            default:
+                return UserIcon;
+        }
+    };
 
     const handleAssigneeChange = async (newAssigneeId: number | null) => {
         if (disabled) {
@@ -94,11 +113,15 @@ export const AssigneeChanger: React.FC<AssigneeChangerProps> = ({ card, onAssign
                 {users
                     .slice()
                     .sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''))
-                    .map((user) => (
-                        <DropdownMenuItem key={user.id} onSelect={() => handleAssigneeChange(user.id)}>
-                            {user.display_name}
-                        </DropdownMenuItem>
-                    ))}
+                    .map((user) => {
+                        const RoleIcon = getRoleIcon(user.role);
+                        return (
+                            <DropdownMenuItem key={user.id} onSelect={() => handleAssigneeChange(user.id)} className="flex items-center gap-2">
+                                <RoleIcon className="h-4 w-4 text-muted-foreground" />
+                                <span>{user.display_name}</span>
+                            </DropdownMenuItem>
+                        );
+                    })}
             </DropdownMenuContent>
         </DropdownMenu>
     );

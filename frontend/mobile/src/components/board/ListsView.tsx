@@ -6,9 +6,10 @@ interface ListsViewProps {
   lists: KanbanList[];
   cards: Card[];
   onCardClick?: (card: Card) => void;
+  onCardUpdate?: (updatedCard: Card) => void;
 }
 
-const ListsView = ({ lists, cards, onCardClick }: ListsViewProps) => {
+const ListsView = ({ lists, cards, onCardClick, onCardUpdate }: ListsViewProps) => {
   const { t } = useTranslation();
   // Group cards by list_id
   const cardsByList = cards.reduce((acc, card) => {
@@ -57,6 +58,7 @@ const ListsView = ({ lists, cards, onCardClick }: ListsViewProps) => {
                     key={card.id}
                     card={card}
                     onClick={() => onCardClick?.(card)}
+                    onUpdate={onCardUpdate}
                   />
                 ))
               ) : (

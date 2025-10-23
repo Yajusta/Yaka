@@ -68,6 +68,15 @@ const MainScreen = () => {
     console.log('Card clicked:', card);
   };
 
+  const handleCardUpdate = (updatedCard: Card) => {
+    // Update the card in the local state
+    setCards(prevCards =>
+      prevCards.map(card =>
+        card.id === updatedCard.id ? updatedCard : card
+      )
+    );
+  };
+
   const handleFilterClick = () => {
     // Placeholder: will open filters modal in future
     console.log('Filter clicked');
@@ -131,6 +140,7 @@ const MainScreen = () => {
           lists={lists}
           cards={cards}
           onCardClick={handleCardClick}
+          onCardUpdate={handleCardUpdate}
         />
       </main>
 

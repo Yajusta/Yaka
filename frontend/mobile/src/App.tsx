@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@shared/hooks/useAuth';
+import { UsersProvider } from '@shared/hooks/useUsers';
 import { useTheme } from '@shared/hooks/useTheme';
+import { Toaster } from './components/ui/sonner';
 import BoardConfigScreen from './screens/BoardConfigScreen';
 import LoginScreen from './screens/LoginScreen';
 import MainScreen from './screens/MainScreen';
@@ -60,7 +62,10 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppContent />
+        <UsersProvider>
+          <AppContent />
+          <Toaster />
+        </UsersProvider>
       </AuthProvider>
     </Router>
   );
