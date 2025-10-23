@@ -190,7 +190,7 @@ const MainScreen = () => {
       />
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto p-4 smooth-scroll" style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 'calc(60px + env(safe-area-inset-bottom))' }}>
+      <main className="flex-1 overflow-y-auto p-4 smooth-scroll" style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
         <ListsView
           lists={lists}
           cards={cards}

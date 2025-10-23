@@ -1,5 +1,6 @@
 import { KanbanList, Card } from '@shared/types';
 import { useTranslation } from 'react-i18next';
+import { useDisplayMode } from '@shared/hooks/useDisplayMode';
 import CardItem from './CardItem';
 
 interface ListsViewProps {
@@ -11,6 +12,59 @@ interface ListsViewProps {
 
 const ListsView = ({ lists, cards, onCardClick, onCardUpdate }: ListsViewProps) => {
   const { t } = useTranslation();
+  const { isCompact } = useDisplayMode();
+
+  // Helper functions for priority handling
+  const normalizePriority = (priority: string): 'low' | 'medium' | 'high' => {
+    if (!priority) {
+      return 'low';
+    }
+    const lower = String(priority).toLowerCase();
+    const normalized = lower.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+    if (normalized.includes('high') || normalized.includes('elev') || normalized.includes('eleve')) {
+      return 'high';
+    }
+    if (normalized.includes('medium') || normalized.includes('moy')) {
+      return 'medium';
+    }
+    if (normalized.includes('low') || normalized.includes('faibl') || normalized.includes('faible')) {
+      return 'low';
+    }
+
+    return 'low';
+  };
+
+  const getPriorityBorderClass = (priority: string) => {
+    const normalizedPriority = normalizePriority(priority);
+    switch (normalizedPriority) {
+      case 'high':
+        return 'border-l-4 border-l-destructive';
+      case 'medium':
+        return 'border-l-4 border-l-sky-600';
+      case 'low':
+        return 'border-l-4 border-l-muted-foreground';
+      default:
+        return 'border-l-4 border-l-muted-foreground';
+    }
+  };
+
+  // Compact card component
+  const CompactCardItem = ({ card, onClick }: { card: Card; onClick?: () => void }) => {
+    return (
+      <div
+        onClick={onClick}
+        className={`p-3 bg-card border border-border cursor-pointer hover:bg-muted/50 active:bg-muted transition-colors ${getPriorityBorderClass(
+          card.priority
+        )}`}
+      >
+        <h3 className="font-medium text-sm text-foreground truncate">
+          {card.title}
+        </h3>
+      </div>
+    );
+  };
+
   // Group cards by list_id
   const cardsByList = cards.reduce((acc, card) => {
     if (!acc[card.list_id]) {
@@ -51,15 +105,23 @@ const ListsView = ({ lists, cards, onCardClick, onCardUpdate }: ListsViewProps) 
               </div>
 
             {/* Cards */}
-            <div className="space-y-3">
+            <div className={isCompact ? "space-y-2" : "space-y-3"}>
               {listCards.length > 0 ? (
                 listCards.map((card) => (
-                  <CardItem
-                    key={card.id}
-                    card={card}
-                    onClick={() => onCardClick?.(card)}
-                    onUpdate={onCardUpdate}
-                  />
+                  isCompact ? (
+                    <CompactCardItem
+                      key={card.id}
+                      card={card}
+                      onClick={() => onCardClick?.(card)}
+                    />
+                  ) : (
+                    <CardItem
+                      key={card.id}
+                      card={card}
+                      onClick={() => onCardClick?.(card)}
+                      onUpdate={onCardUpdate}
+                    />
+                  )
                 ))
               ) : (
                 <div className="text-center py-8 text-muted-foreground">

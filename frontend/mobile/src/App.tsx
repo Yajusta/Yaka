@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@shared/hooks/useAuth';
 import { UsersProvider } from '@shared/hooks/useUsers';
+import { DisplayModeProvider } from '@shared/hooks/useDisplayMode';
 import { useTheme } from '@shared/hooks/useTheme';
 import { Toaster } from './components/ui/sonner';
 import BoardConfigScreen from './screens/BoardConfigScreen';
@@ -63,8 +64,10 @@ function App() {
     <Router>
       <AuthProvider>
         <UsersProvider>
-          <AppContent />
-          <Toaster />
+          <DisplayModeProvider>
+            <AppContent />
+            <Toaster />
+          </DisplayModeProvider>
         </UsersProvider>
       </AuthProvider>
     </Router>
