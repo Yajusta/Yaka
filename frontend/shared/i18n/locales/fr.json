@@ -629,6 +629,7 @@
         "cardLoadError": "Erreur lors du chargement de la carte",
         "processingError": "Erreur lors du traitement de l'instruction vocale",
         "microphoneError": "Impossible d'accéder au microphone",
+        "received": "Saisie vocale reçue",
         "whisper": {
             "title": "Reconnaissance locale (Whisper)",
             "description": "Reconnaissance vocale 100% locale dans votre navigateur",

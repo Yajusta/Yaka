@@ -6,12 +6,19 @@ import {
   Trash2,
   GripVertical,
   Plus,
-  ChevronDown
+  ChevronDown,
+  User,
+  Shield,
+  Key,
+  PenTool,
+  Users,
+  MessageSquare,
+  Eye
 } from 'lucide-react';
 import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Card, Label as LabelType, KanbanList, UpdateCardData, getPriorityIcon, getPriorityIconColor } from '@shared/types';
+import { Card, Label as LabelType, KanbanList, UpdateCardData, UserRole, getPriorityIcon, getPriorityIconColor } from '@shared/types';
 import { useAuth } from '@shared/hooks/useAuth';
 import { useUsers } from '@shared/hooks/useUsers';
 import { usePermissions } from '@shared/hooks/usePermissions';
@@ -19,6 +26,7 @@ import { useToast } from '@shared/hooks/use-toast';
 import { cardService, labelService, cardItemsService } from '@shared/services/api';
 import { listsApi } from '@shared/services/listsApi';
 import { mapPriorityFromBackend, mapPriorityToBackend } from '@shared/lib/priority';
+import { HighlightedField } from '../common/HighlightedField';
 
 interface CardDetailProps {
   card: Card;
@@ -26,9 +34,29 @@ interface CardDetailProps {
   onClose: () => void;
   onSave: (card: Card) => void;
   onDelete?: (cardId: number) => void;
+  initialData?: {
+    title?: string;
+    description?: string;
+    due_date?: string;
+    priority?: string;
+    assignee_id?: number | null;
+    label_ids?: number[];
+    list_id?: number;
+    checklist?: { id?: number; text: string; is_done: boolean; position: number }[];
+  };
+  proposedChanges?: {
+    title?: string;
+    description?: string;
+    due_date?: string;
+    priority?: string;
+    assignee_id?: number | null;
+    label_ids?: number[];
+    list_id?: number;
+    checklist?: { id?: number; text: string; is_done: boolean; position: number }[];
+  };
 }
 
-const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps) => {
+const CardDetail = ({ card, isOpen, onClose, onSave, onDelete, initialData, proposedChanges }: CardDetailProps) => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
@@ -52,6 +80,8 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
   const [loading, setLoading] = useState(false);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [showListDropdown, setShowListDropdown] = useState(false);
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   
   // Store original values to detect changes
   const [originalFormData, setOriginalFormData] = useState({
@@ -64,6 +94,18 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
     list_id: -1
   });
   const [originalChecklist, setOriginalChecklist] = useState<{ id?: number; text: string; is_done: boolean; position: number }[]>([]);
+  
+  // Store original values when proposedChanges is provided (for voice control)
+  const [originalValues, setOriginalValues] = useState<{
+    title?: string;
+    description?: string;
+    due_date?: string;
+    priority?: string;
+    assignee_id?: number | null;
+    label_ids?: number[];
+    list_id?: number;
+    checklist?: { id?: number; text: string; is_done: boolean; position: number }[];
+  }>({});
 
   const canEditCardContent = permissions.canModifyCardContent(card);
   const canEditCardMetadata = permissions.canModifyCardMetadata(card);
@@ -73,26 +115,153 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
 
   const isViewOnly = !canEditCard;
 
+  // Helper function to check if a field has changed (for voice control highlighting)
+  const getFieldChangeInfo = (fieldName: string): { isChanged: boolean; tooltipContent: string } => {
+    if (!proposedChanges) {
+      return { isChanged: false, tooltipContent: '' };
+    }
+
+    switch (fieldName) {
+      case 'title': {
+        const oldValue = originalValues.title || '';
+        const newValue = formData.title || '';
+        const isChanged = oldValue !== newValue && proposedChanges.title !== undefined;
+        return {
+          isChanged,
+          tooltipContent: t('voice.previousValue', { value: oldValue })
+        };
+      }
+      case 'description': {
+        const oldValue = originalValues.description || '';
+        const newValue = formData.description || '';
+        const isChanged = oldValue !== newValue && proposedChanges.description !== undefined;
+        return {
+          isChanged,
+          tooltipContent: t('voice.previousValue', { value: oldValue || t('common.empty') })
+        };
+      }
+      case 'due_date': {
+        const oldValue = originalValues.due_date || '';
+        const newValue = formData.due_date || '';
+        const isChanged = oldValue !== newValue && proposedChanges.due_date !== undefined;
+        return {
+          isChanged,
+          tooltipContent: t('voice.previousValue', { value: oldValue || t('common.none') })
+        };
+      }
+      case 'priority': {
+        const oldValue = originalValues.priority || '';
+        const newValue = formData.priority || '';
+        const isChanged = oldValue !== newValue && proposedChanges.priority !== undefined;
+        return {
+          isChanged,
+          tooltipContent: t('voice.previousValue', { value: oldValue ? t(`priority.${oldValue}`) : t('priority.medium') })
+        };
+      }
+      case 'assignee_id': {
+        const oldValue = originalValues.assignee_id;
+        const newValue = formData.assignee_id;
+        const isChanged = oldValue !== newValue && proposedChanges.assignee_id !== undefined;
+        const oldUser = users.find(u => u.id === oldValue);
+        return {
+          isChanged,
+          tooltipContent: t('voice.previousValue', { value: oldUser?.display_name || t('card.unassign') })
+        };
+      }
+      case 'labels': {
+        const oldIds = originalValues.label_ids || [];
+        const newIds = formData.label_ids || [];
+        const isChanged = JSON.stringify(oldIds.sort()) !== JSON.stringify(newIds.sort()) && proposedChanges.label_ids !== undefined;
+        const oldLabels = labels.filter(l => oldIds.includes(l.id)).map(l => l.name).join(', ');
+        return {
+          isChanged,
+          tooltipContent: t('voice.previousLabels', { labels: oldLabels || t('voice.noLabels') })
+        };
+      }
+      case 'list_id': {
+        const oldValue = originalValues.list_id;
+        const newValue = formData.list_id;
+        const isChanged = oldValue !== newValue && proposedChanges.list_id !== undefined;
+        const oldList = lists.find(l => l.id === oldValue);
+        return {
+          isChanged,
+          tooltipContent: t('voice.previousValue', { value: oldList?.name || t('common.unknown') })
+        };
+      }
+      default:
+        return { isChanged: false, tooltipContent: '' };
+    }
+  };
+
+  // Helper function to check if a checklist item has changed
+  const getChecklistItemChangeInfo = (item: { id?: number; text: string; is_done: boolean }, index: number): {
+    textChanged: boolean;
+    statusChanged: boolean;
+    textTooltip: string;
+    statusTooltip: string;
+    isNew: boolean;
+  } => {
+    if (!proposedChanges?.checklist || !originalValues.checklist) {
+      return { textChanged: false, statusChanged: false, textTooltip: '', statusTooltip: '', isNew: false };
+    }
+
+    // Find corresponding original item by id or position
+    const originalItem = item.id
+      ? originalValues.checklist.find(ci => ci.id === item.id)
+      : originalValues.checklist[index];
+
+    // If no original item found, this is a new item
+    if (!originalItem) {
+      return {
+        textChanged: true,
+        statusChanged: false,
+        textTooltip: t('voice.newItem'),
+        statusTooltip: '',
+        isNew: true
+      };
+    }
+
+    const textChanged = originalItem.text !== item.text;
+    const statusChanged = originalItem.is_done !== item.is_done;
+
+    return {
+      textChanged,
+      statusChanged,
+      textTooltip: t('voice.previousValue', { value: originalItem.text }),
+      statusTooltip: originalItem.is_done ? t('voice.wasChecked') : t('voice.wasUnchecked'),
+      isNew: false
+    };
+  };
+
   useEffect(() => {
     if (isOpen && card) {
       loadData();
     }
   }, [isOpen, card]);
 
-  // Close priority dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
+      
       if (showPriorityDropdown && !target.closest('.priority-dropdown-container')) {
         setShowPriorityDropdown(false);
       }
+      
+      if (showListDropdown && !target.closest('.list-dropdown-container')) {
+        setShowListDropdown(false);
+      }
+      
+      if (showAssigneeDropdown && !target.closest('.assignee-dropdown-container')) {
+        setShowAssigneeDropdown(false);
+      }
     };
 
-    if (showPriorityDropdown) {
+    if (showPriorityDropdown || showListDropdown || showAssigneeDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showPriorityDropdown]);
+  }, [showPriorityDropdown, showListDropdown, showAssigneeDropdown]);
 
   const loadData = async () => {
     try {
@@ -103,28 +272,100 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
       setLabels(labelsData);
       setLists(listsData);
 
-      // Load card data
-      const initialFormData = {
-        title: card.title || '',
-        description: card.description || '',
-        due_date: card.due_date || '',
-        priority: mapPriorityFromBackend(card.priority || ''),
-        assignee_id: card.assignee_id ?? null,
-        label_ids: card.labels?.map(l => l.id) || [],
-        list_id: card.list_id
-      };
-      setFormData(initialFormData);
-      setOriginalFormData(initialFormData);
+      // Check if this is a new card (id === 0)
+      const isNewCard = card.id === 0;
 
-      // Load checklist items
-      try {
-        const items = await cardItemsService.getItems(card.id);
-        const checklistItems = items.map(i => ({ id: i.id, text: i.text, is_done: i.is_done, position: i.position }));
-        setChecklist(checklistItems);
-        setOriginalChecklist(JSON.parse(JSON.stringify(checklistItems))); // Deep copy
-      } catch {
-        setChecklist([]);
-        setOriginalChecklist([]);
+      if (isNewCard && initialData) {
+        // Use initialData for new card
+        const initialFormData = {
+          title: initialData.title || '',
+          description: initialData.description || '',
+          due_date: initialData.due_date || '',
+          priority: initialData.priority || 'medium',
+          assignee_id: initialData.assignee_id ?? null,
+          label_ids: initialData.label_ids || [],
+          list_id: initialData.list_id || (listsData.length > 0 ? listsData[0].id : -1)
+        };
+        setFormData(initialFormData);
+        setOriginalFormData(initialFormData);
+        setChecklist(initialData.checklist || []);
+        setOriginalChecklist(initialData.checklist || []);
+      } else if (proposedChanges) {
+        // Store original values when proposedChanges is provided
+        setOriginalValues({
+          title: card.title || '',
+          description: card.description || '',
+          due_date: card.due_date || '',
+          priority: mapPriorityFromBackend(card.priority || ''),
+          assignee_id: card.assignee_id ?? null,
+          label_ids: card.labels?.map(l => l.id) || [],
+          list_id: card.list_id,
+          checklist: []
+        });
+
+        // Load existing items and store as original
+        try {
+          const items = await cardItemsService.getItems(card.id);
+          const originalItems = items.map(i => ({ id: i.id, text: i.text, is_done: i.is_done, position: i.position }));
+          setOriginalValues(prev => ({ ...prev, checklist: originalItems }));
+
+          // Apply proposed changes to checklist
+          if (proposedChanges.checklist) {
+            setChecklist(proposedChanges.checklist);
+          } else {
+            setChecklist(originalItems);
+          }
+          setOriginalChecklist(JSON.parse(JSON.stringify(originalItems)));
+        } catch {
+          setOriginalValues(prev => ({ ...prev, checklist: [] }));
+          setChecklist([]);
+          setOriginalChecklist([]);
+        }
+
+        // Apply proposed changes to form data
+        setFormData({
+          title: proposedChanges.title ?? (card.title || ''),
+          description: proposedChanges.description ?? (card.description || ''),
+          due_date: proposedChanges.due_date ?? (card.due_date || ''),
+          priority: proposedChanges.priority ?? mapPriorityFromBackend(card.priority || ''),
+          assignee_id: proposedChanges.assignee_id !== undefined ? proposedChanges.assignee_id : (card.assignee_id ?? null),
+          label_ids: proposedChanges.label_ids ?? (card.labels?.map(l => l.id) || []),
+          list_id: proposedChanges.list_id ?? card.list_id
+        });
+        
+        setOriginalFormData({
+          title: card.title || '',
+          description: card.description || '',
+          due_date: card.due_date || '',
+          priority: mapPriorityFromBackend(card.priority || ''),
+          assignee_id: card.assignee_id ?? null,
+          label_ids: card.labels?.map(l => l.id) || [],
+          list_id: card.list_id
+        });
+      } else {
+        // Load card data for existing card (normal edit mode)
+        const initialFormData = {
+          title: card.title || '',
+          description: card.description || '',
+          due_date: card.due_date || '',
+          priority: mapPriorityFromBackend(card.priority || ''),
+          assignee_id: card.assignee_id ?? null,
+          label_ids: card.labels?.map(l => l.id) || [],
+          list_id: card.list_id
+        };
+        setFormData(initialFormData);
+        setOriginalFormData(initialFormData);
+
+        // Load checklist items
+        try {
+          const items = await cardItemsService.getItems(card.id);
+          const checklistItems = items.map(i => ({ id: i.id, text: i.text, is_done: i.is_done, position: i.position }));
+          setChecklist(checklistItems);
+          setOriginalChecklist(JSON.parse(JSON.stringify(checklistItems))); // Deep copy
+        } catch {
+          setChecklist([]);
+          setOriginalChecklist([]);
+        }
       }
     } catch (error) {
       toast({
@@ -132,6 +373,25 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
         description: t('card.loadError'),
         variant: 'destructive'
       });
+    }
+  };
+
+  const getUserRoleIcon = (role?: string) => {
+    switch (role) {
+      case UserRole.ADMIN:
+        return Key;
+      case UserRole.SUPERVISOR:
+        return Shield;
+      case UserRole.EDITOR:
+        return PenTool;
+      case UserRole.CONTRIBUTOR:
+        return Users;
+      case UserRole.COMMENTER:
+        return MessageSquare;
+      case UserRole.VISITOR:
+        return Eye;
+      default:
+        return User;
     }
   };
 
@@ -180,17 +440,35 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
     setLoading(true);
 
     try {
-      const updatePayload: UpdateCardData = {
-        title: formData.title,
-        description: formData.description?.trim() === '' ? null : formData.description,
-        due_date: formData.due_date && formData.due_date !== '' ? formData.due_date : null,
-        priority: mapPriorityToBackend(formData.priority),
-        assignee_id: typeof formData.assignee_id === 'number' ? formData.assignee_id : null,
-        list_id: formData.list_id,
-        ...(formData.label_ids.length > 0 ? { label_ids: formData.label_ids } : {})
-      };
+      // Check if this is a new card (id === 0) or an existing card
+      const isNewCard = card.id === 0;
+      let savedCard: Card;
 
-      const savedCard = await cardService.updateCard(card.id, updatePayload);
+      if (isNewCard) {
+        // Create new card - ensure title is provided
+        const createPayload = {
+          title: formData.title || 'Nouvelle carte',
+          description: formData.description?.trim() === '' ? null : formData.description,
+          due_date: formData.due_date && formData.due_date !== '' ? formData.due_date : null,
+          priority: mapPriorityToBackend(formData.priority),
+          assignee_id: typeof formData.assignee_id === 'number' ? formData.assignee_id : null,
+          list_id: formData.list_id,
+          ...(formData.label_ids.length > 0 ? { label_ids: formData.label_ids } : {})
+        };
+        savedCard = await cardService.createCard(createPayload);
+      } else {
+        // Update existing card
+        const updatePayload: UpdateCardData = {
+          title: formData.title,
+          description: formData.description?.trim() === '' ? null : formData.description,
+          due_date: formData.due_date && formData.due_date !== '' ? formData.due_date : null,
+          priority: mapPriorityToBackend(formData.priority),
+          assignee_id: typeof formData.assignee_id === 'number' ? formData.assignee_id : null,
+          list_id: formData.list_id,
+          ...(formData.label_ids.length > 0 ? { label_ids: formData.label_ids } : {})
+        };
+        savedCard = await cardService.updateCard(card.id, updatePayload);
+      }
 
       // Update checklist items
       try {
@@ -214,7 +492,7 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
       onSave(savedCard);
       onClose();
       toast({
-        title: t('card.updateSuccess'),
+        title: isNewCard ? t('card.createSuccess') : t('card.updateSuccess'),
         variant: 'success'
       });
     } catch (error: any) {
@@ -360,7 +638,7 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
               <X className="w-6 h-6" />
             </button>
             <h2 className="text-lg font-bold text-foreground">
-              {isViewOnly ? t('card.viewCard') : t('card.editCard')}
+              {card.id === 0 ? t('card.newCard') : (isViewOnly ? t('card.viewCard') : t('card.editCard'))}
             </h2>
             {!isViewOnly ? (
               <button
@@ -380,47 +658,85 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-4 space-y-6 pb-safe">
           {/* List selector */}
-          <div className="space-y-2">
+          <div className="space-y-2 relative list-dropdown-container">
             <label className="text-sm font-medium text-foreground">{t('card.list')}</label>
-            <select
-              value={formData.list_id}
-              onChange={(e) => setFormData(prev => ({ ...prev, list_id: parseInt(e.target.value) }))}
-              disabled={isViewOnly}
-              className="w-full btn-touch bg-card border-2 border-border rounded-lg px-4 text-foreground disabled:opacity-50"
+            <HighlightedField
+              isChanged={getFieldChangeInfo('list_id').isChanged}
+              tooltipContent={getFieldChangeInfo('list_id').tooltipContent}
             >
-              {lists.map(list => (
-                <option key={list.id} value={list.id}>
-                  {list.name}
-                </option>
-              ))}
-            </select>
+              <button
+                type="button"
+                onClick={() => !isViewOnly && setShowListDropdown(!showListDropdown)}
+                disabled={isViewOnly}
+                className="w-full btn-touch bg-card border-2 border-border rounded-lg px-4 text-foreground disabled:opacity-50 flex items-center justify-between"
+              >
+                <span className="truncate">
+                  {lists.find(l => l.id === formData.list_id)?.name || t('card.selectList')}
+                </span>
+                <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0 ml-2" />
+              </button>
+            </HighlightedField>
+
+            {/* List dropdown */}
+            {showListDropdown && !isViewOnly && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-card border-2 border-border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                {lists.map((list) => {
+                  const isSelected = formData.list_id === list.id;
+                  return (
+                    <button
+                      key={list.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, list_id: list.id }));
+                        setShowListDropdown(false);
+                      }}
+                      className={`w-full px-4 py-3 text-left hover:bg-accent transition-colors ${
+                        isSelected ? 'bg-accent/50 font-medium' : ''
+                      }`}
+                    >
+                      <span className="text-sm">{list.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Title */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">{t('card.title')} *</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              required
-              readOnly={isViewOnly}
-              disabled={isViewOnly}
-              className="w-full btn-touch bg-card border-2 border-border rounded-lg px-4 text-foreground disabled:opacity-50"
-            />
+            <HighlightedField
+              isChanged={getFieldChangeInfo('title').isChanged}
+              tooltipContent={getFieldChangeInfo('title').tooltipContent}
+            >
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                required
+                readOnly={isViewOnly}
+                disabled={isViewOnly}
+                className="w-full btn-touch bg-card border-2 border-border rounded-lg px-4 text-foreground disabled:opacity-50"
+              />
+            </HighlightedField>
           </div>
 
           {/* Description */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">{t('card.description')}</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              rows={4}
-              readOnly={isViewOnly}
-              disabled={isViewOnly}
-              className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground disabled:opacity-50 resize-none"
-            />
+            <HighlightedField
+              isChanged={getFieldChangeInfo('description').isChanged}
+              tooltipContent={getFieldChangeInfo('description').tooltipContent}
+            >
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                rows={4}
+                readOnly={isViewOnly}
+                disabled={isViewOnly}
+                className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground disabled:opacity-50 resize-none"
+              />
+            </HighlightedField>
           </div>
 
           {/* Checklist */}
@@ -429,50 +745,64 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
             <div className="space-y-2">
               <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd} sensors={sensors}>
                 <SortableContext items={checklist.map(i => i.id ?? `new-${i.position}`)} strategy={verticalListSortingStrategy}>
-                  {checklist.map((item, index) => (
-                    <SortableItem key={item.id ?? `new-${item.position}`} id={item.id ?? `new-${item.position}`}>
-                      {({ attributes, listeners }: any) => (
-                        <div className="flex items-center gap-2">
-                          {!isViewOnly && (
-                            <div
-                              className="p-2 text-muted-foreground cursor-grab active:cursor-grabbing"
-                              {...attributes}
-                              {...listeners}
+                  {checklist.map((item, index) => {
+                    const changeInfo = getChecklistItemChangeInfo(item, index);
+                    return (
+                      <SortableItem key={item.id ?? `new-${item.position}`} id={item.id ?? `new-${item.position}`}>
+                        {({ attributes, listeners }: any) => (
+                          <div className="flex items-center gap-2">
+                            {!isViewOnly && (
+                              <div
+                                className="p-2 text-muted-foreground cursor-grab active:cursor-grabbing"
+                                {...attributes}
+                                {...listeners}
+                              >
+                                <GripVertical className="w-5 h-5" />
+                              </div>
+                            )}
+                            <HighlightedField
+                              isChanged={changeInfo.statusChanged}
+                              tooltipContent={changeInfo.statusTooltip}
                             >
-                              <GripVertical className="w-5 h-5" />
-                            </div>
-                          )}
-                          <input
-                            type="checkbox"
-                            className="h-5 w-5 rounded border-2 border-border"
-                            checked={item.is_done}
-                            onChange={() => toggleChecklistItem(index)}
-                            disabled={isViewOnly && !canToggleChecklistItems}
-                          />
-                          <input
-                            type="text"
-                            value={item.text}
-                            onChange={(e) => updateChecklistItemText(index, e.target.value)}
-                            className={`flex-1 bg-card border-2 border-border rounded-lg px-3 py-2 text-sm ${
-                              item.is_done ? 'line-through text-muted-foreground' : 'text-foreground'
-                            } disabled:opacity-50`}
-                            maxLength={64}
-                            readOnly={isViewOnly}
-                            disabled={isViewOnly}
-                          />
-                          {!isViewOnly && (
-                            <button
-                              type="button"
-                              onClick={() => deleteChecklistItem(index)}
-                              className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                              <input
+                                type="checkbox"
+                                className="h-5 w-5 rounded border-2 border-border"
+                                checked={item.is_done}
+                                onChange={() => toggleChecklistItem(index)}
+                                disabled={isViewOnly && !canToggleChecklistItems}
+                              />
+                            </HighlightedField>
+                            <HighlightedField
+                              isChanged={changeInfo.textChanged}
+                              tooltipContent={changeInfo.textTooltip}
+                              className="flex-1"
                             >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </SortableItem>
-                  ))}
+                              <input
+                                type="text"
+                                value={item.text}
+                                onChange={(e) => updateChecklistItemText(index, e.target.value)}
+                                className={`w-full bg-card border-2 border-border rounded-lg px-3 py-2 text-sm ${
+                                  item.is_done ? 'line-through text-muted-foreground' : 'text-foreground'
+                                } disabled:opacity-50`}
+                                maxLength={64}
+                                readOnly={isViewOnly}
+                                disabled={isViewOnly}
+                              />
+                            </HighlightedField>
+                            {!isViewOnly && (
+                              <button
+                                type="button"
+                                onClick={() => deleteChecklistItem(index)}
+                                className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </SortableItem>
+                    );
+                  })}
                 </SortableContext>
               </DndContext>
               {!isViewOnly && (
@@ -506,49 +836,59 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
           {/* Labels */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">{t('card.labels')}</label>
-            <div className="flex flex-wrap gap-2">
-              {labels.map(label => (
-                <button
-                  key={label.id}
-                  type="button"
-                  onClick={isViewOnly ? undefined : () => handleLabelToggle(label.id)}
-                  disabled={isViewOnly}
-                  className="px-3 py-1.5 text-sm font-medium border-2 rounded-lg transition-colors disabled:opacity-50"
-                  style={{
-                    backgroundColor: formData.label_ids.includes(label.id) ? label.color : 'transparent',
-                    borderColor: label.color,
-                    color: formData.label_ids.includes(label.id) ? '#ffffff' : label.color
-                  }}
-                >
-                  {label.name}
-                </button>
-              ))}
-            </div>
+            <HighlightedField
+              isChanged={getFieldChangeInfo('labels').isChanged}
+              tooltipContent={getFieldChangeInfo('labels').tooltipContent}
+            >
+              <div className="flex flex-wrap gap-2 p-2 rounded-lg">
+                {labels.map(label => (
+                  <button
+                    key={label.id}
+                    type="button"
+                    onClick={isViewOnly ? undefined : () => handleLabelToggle(label.id)}
+                    disabled={isViewOnly}
+                    className="px-3 py-1.5 text-sm font-medium border-2 rounded-lg transition-colors disabled:opacity-50"
+                    style={{
+                      backgroundColor: formData.label_ids.includes(label.id) ? label.color : 'transparent',
+                      borderColor: label.color,
+                      color: formData.label_ids.includes(label.id) ? '#ffffff' : label.color
+                    }}
+                  >
+                    {label.name}
+                  </button>
+                ))}
+              </div>
+            </HighlightedField>
           </div>
 
           {/* Priority */}
           <div className="space-y-2 relative priority-dropdown-container">
             <label className="text-sm font-medium text-foreground">{t('card.priority')}</label>
-            <button
-              type="button"
-              onClick={() => !isViewOnly && setShowPriorityDropdown(!showPriorityDropdown)}
-              disabled={isViewOnly}
-              className="w-full btn-touch bg-card border-2 border-border rounded-lg px-4 text-foreground disabled:opacity-50 flex items-center justify-between"
+            <HighlightedField
+              isChanged={getFieldChangeInfo('priority').isChanged}
+              tooltipContent={getFieldChangeInfo('priority').tooltipContent}
             >
-              <div className="flex items-center gap-2">
-                {(() => {
-                  const Icon = getPriorityIcon(formData.priority);
-                  const iconColor = getPriorityIconColor(formData.priority);
-                  return (
-                    <>
-                      <Icon className={`w-5 h-5 ${iconColor}`} />
-                      <span className="capitalize">{t(`priority.${formData.priority}`)}</span>
-                    </>
-                  );
-                })()}
-              </div>
-              <ChevronDown className="w-5 h-5 text-muted-foreground" />
-            </button>
+              <button
+                type="button"
+                onClick={() => !isViewOnly && setShowPriorityDropdown(!showPriorityDropdown)}
+                disabled={isViewOnly}
+                className="w-full btn-touch bg-card border-2 border-border rounded-lg px-4 text-foreground disabled:opacity-50 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const Icon = getPriorityIcon(formData.priority);
+                    const iconColor = getPriorityIconColor(formData.priority);
+                    return (
+                      <>
+                        <Icon className={`w-5 h-5 ${iconColor}`} />
+                        <span className="capitalize">{t(`priority.${formData.priority}`)}</span>
+                      </>
+                    );
+                  })()}
+                </div>
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </HighlightedField>
 
             {/* Priority dropdown */}
             {showPriorityDropdown && !isViewOnly && (
@@ -581,38 +921,100 @@ const CardDetail = ({ card, isOpen, onClose, onSave, onDelete }: CardDetailProps
           {/* Due Date */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">{t('card.dueDate')}</label>
-            <input
-              type="date"
-              value={formData.due_date}
-              onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
-              readOnly={isViewOnly}
-              disabled={isViewOnly}
-              className="w-full btn-touch bg-card border-2 border-border rounded-lg px-4 text-foreground disabled:opacity-50"
-            />
+            <HighlightedField
+              isChanged={getFieldChangeInfo('due_date').isChanged}
+              tooltipContent={getFieldChangeInfo('due_date').tooltipContent}
+            >
+              <input
+                type="date"
+                value={formData.due_date}
+                onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
+                readOnly={isViewOnly}
+                disabled={isViewOnly}
+                className="w-full btn-touch bg-card border-2 border-border rounded-lg px-4 text-foreground disabled:opacity-50"
+              />
+            </HighlightedField>
           </div>
 
           {/* Assignee */}
-          <div className="space-y-2">
+          <div className="space-y-2 relative assignee-dropdown-container">
             <label className="text-sm font-medium text-foreground">{t('card.assignee')}</label>
-            <select
-              value={formData.assignee_id?.toString() || 'none'}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                assignee_id: e.target.value === 'none' ? null : parseInt(e.target.value)
-              }))}
-              disabled={isViewOnly}
-              className="w-full btn-touch bg-card border-2 border-border rounded-lg px-4 text-foreground disabled:opacity-50"
+            <HighlightedField
+              isChanged={getFieldChangeInfo('assignee_id').isChanged}
+              tooltipContent={getFieldChangeInfo('assignee_id').tooltipContent}
             >
-              <option value="none">{t('card.unassign')}</option>
-              {users
-                .slice()
-                .sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''))
-                .map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.display_name}
-                  </option>
-                ))}
-            </select>
+              <button
+                type="button"
+                onClick={() => !isViewOnly && setShowAssigneeDropdown(!showAssigneeDropdown)}
+                disabled={isViewOnly}
+                className="w-full btn-touch bg-card border-2 border-border rounded-lg px-4 text-foreground disabled:opacity-50 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  {formData.assignee_id ? (
+                    (() => {
+                      const selectedUser = users.find(u => u.id === formData.assignee_id);
+                      if (selectedUser) {
+                        const RoleIcon = getUserRoleIcon(selectedUser.role);
+                        return (
+                          <>
+                            <RoleIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{selectedUser.display_name}</span>
+                          </>
+                        );
+                      }
+                      return <span className="italic truncate">{t('card.unassign')}</span>;
+                    })()
+                  ) : (
+                    <span className="italic truncate">{t('card.unassign')}</span>
+                  )}
+                </div>
+                <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0 ml-2" />
+              </button>
+            </HighlightedField>
+
+            {/* Assignee dropdown */}
+            {showAssigneeDropdown && !isViewOnly && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-card border-2 border-border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                {/* Unassign option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, assignee_id: null }));
+                    setShowAssigneeDropdown(false);
+                  }}
+                  className={`w-full px-4 py-3 text-left hover:bg-accent transition-colors ${
+                    !formData.assignee_id ? 'bg-accent/50 font-medium' : ''
+                  }`}
+                >
+                  <span className="text-sm italic">{t('card.unassign')}</span>
+                </button>
+                
+                {/* Users list */}
+                {users
+                  .slice()
+                  .sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''))
+                  .map(user => {
+                    const isSelected = formData.assignee_id === user.id;
+                    const RoleIcon = getUserRoleIcon(user.role);
+                    return (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, assignee_id: user.id }));
+                          setShowAssigneeDropdown(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left hover:bg-accent transition-colors flex items-center gap-2 ${
+                          isSelected ? 'bg-accent/50 font-medium' : ''
+                        }`}
+                      >
+                        <RoleIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-sm truncate">{user.display_name}</span>
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
           </div>
 
           {/* Delete button */}

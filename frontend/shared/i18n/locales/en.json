@@ -629,6 +629,7 @@
         "cardLoadError": "Error loading card",
         "processingError": "Error processing voice transcript",
         "microphoneError": "Unable to access microphone",
+        "received": "Voice input received",
         "whisper": {
             "title": "Local recognition (Whisper)",
             "description": "100% local voice recognition in your browser",

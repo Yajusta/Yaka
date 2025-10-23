@@ -11,6 +11,7 @@ import ListsView from '../components/board/ListsView';
 import BottomNav from '../components/navigation/BottomNav';
 import SettingsMenu from '../components/settings/SettingsMenu';
 import CardDetail from '../components/card/CardDetail';
+import VoiceInputDialog from '../components/voice/VoiceInputDialog';
 import { Loader2 } from 'lucide-react';
 
 const MainScreen = () => {
@@ -24,6 +25,8 @@ const MainScreen = () => {
   const [error, setError] = useState<string>('');
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [showVoiceInput, setShowVoiceInput] = useState<boolean>(false);
+  const [isCreatingNewCard, setIsCreatingNewCard] = useState<boolean>(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -80,7 +83,14 @@ const MainScreen = () => {
   };
 
   const handleCardSave = (savedCard: Card) => {
-    handleCardUpdate(savedCard);
+    // If it's a new card, add it to the list
+    if (isCreatingNewCard) {
+      setCards(prevCards => [...prevCards, savedCard]);
+      setIsCreatingNewCard(false);
+    } else {
+      // Otherwise update existing card
+      handleCardUpdate(savedCard);
+    }
   };
 
   const handleCardDelete = async (cardId: number) => {
@@ -98,13 +108,43 @@ const MainScreen = () => {
   };
 
   const handleVoiceClick = () => {
-    // Placeholder: will open voice input in future
-    console.log('Voice clicked');
+    setShowVoiceInput(true);
+  };
+
+  const handleVoiceCardSave = (savedCard: Card) => {
+    // Check if this is a new card or an update
+    const existingCard = cards.find(c => c.id === savedCard.id);
+    if (existingCard) {
+      // Update existing card
+      setCards(prevCards =>
+        prevCards.map(card =>
+          card.id === savedCard.id ? savedCard : card
+        )
+      );
+    } else {
+      // Add new card
+      setCards(prevCards => [...prevCards, savedCard]);
+    }
   };
 
   const handleNewCardClick = () => {
-    // Placeholder: will open new card form in future
-    console.log('New card clicked');
+    // Create a new card object with minimal data
+    const newCard: Card = {
+      id: 0, // Temporary ID, will be replaced by backend
+      title: '',
+      description: '',
+      priority: 'medium',
+      assignee_id: null,
+      label_id: null,
+      colonne: '',
+      list_id: lists.length > 0 ? lists[0].id : 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      labels: [],
+      items: []
+    };
+    setIsCreatingNewCard(true);
+    setSelectedCard(newCard);
   };
 
   if (!user) {
@@ -179,11 +219,22 @@ const MainScreen = () => {
         <CardDetail
           card={selectedCard}
           isOpen={!!selectedCard}
-          onClose={() => setSelectedCard(null)}
+          onClose={() => {
+            setSelectedCard(null);
+            setIsCreatingNewCard(false);
+          }}
           onSave={handleCardSave}
-          onDelete={handleCardDelete}
+          onDelete={isCreatingNewCard ? undefined : handleCardDelete}
         />
       )}
+
+      {/* Voice input dialog */}
+      <VoiceInputDialog
+        isOpen={showVoiceInput}
+        onClose={() => setShowVoiceInput(false)}
+        onCardSave={handleVoiceCardSave}
+        defaultListId={lists.length > 0 ? lists[0].id : undefined}
+      />
     </div>
   );
 };
