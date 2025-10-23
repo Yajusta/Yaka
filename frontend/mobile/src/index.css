@@ -185,15 +185,15 @@
 
   /* Priority badges */
   .priority-high {
-    @apply bg-destructive/20 text-destructive border-2 border-destructive/40;
+    @apply border-2 border-destructive;
   }
 
   .priority-medium {
-    @apply bg-warning/20 text-warning border-2 border-warning/40;
+    @apply border-2 border-sky-600;
   }
 
   .priority-low {
-    @apply bg-success/20 text-success border-2 border-success/40;
+    @apply border-2 border-muted-foreground/60;
   }
 
   /* Label badges */
