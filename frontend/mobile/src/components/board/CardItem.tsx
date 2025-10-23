@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   MessageSquare
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@shared/lib/utils';
 
 interface CardItemProps {
@@ -17,6 +18,7 @@ interface CardItemProps {
 }
 
 const CardItem = ({ card, onClick }: CardItemProps) => {
+  const { t } = useTranslation();
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
@@ -220,7 +222,7 @@ const CardItem = ({ card, onClick }: CardItemProps) => {
         ) : (
           <div className="flex items-center gap-1 text-sm text-muted-foreground opacity-50">
             <User className="w-3 h-3" />
-            <span className="italic text-xs">Non assignée</span>
+            <span className="italic text-xs">{t('card.unassign')}</span>
           </div>
         )}
       </div>

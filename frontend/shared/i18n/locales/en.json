@@ -24,6 +24,7 @@
         "apply": "Apply",
         "retry": "Retry",
         "refresh": "Refresh",
+        "continue": "Continue",
         "loadingData": "Loading data...",
         "noData": "No data available",
         "error": "Error",
@@ -36,7 +37,8 @@
         "saving": "Saving...",
         "unknownDate": "Unknown date",
         "empty": "Empty",
-        "none": "None"
+        "none": "None",
+        "menu": "Menu"
     },
     "auth": {
         "login": "Login",
@@ -202,6 +204,8 @@
         "cards": "Cards",
         "card_one": "{{count}} card",
         "card_other": "{{count}} cards",
+        "noCardsInList": "No cards in this list",
+        "noListsAvailable": "No lists available",
         "listManagement": "List management",
         "newList": "New list",
         "editList": "Edit list",
@@ -354,7 +358,8 @@
         "updateRoleError": "Cannot update role",
         "demoteToMember": "Demote to member",
         "promoteToAdmin": "Promote to admin",
-        "cannotChangeOwnRole": "You cannot change your own role"
+        "cannotChangeOwnRole": "You cannot change your own role",
+        "userMenu": "User menu"
     },
     "permissions": {
         "view": "View",
@@ -463,7 +468,8 @@
         "interfaceDescription": "Modify the title displayed on your Kanban board",
         "title": "Title",
         "enterBoardTitle": "Enter board title",
-        "titleUpdatedSuccess": "Title updated successfully!"
+        "titleUpdatedSuccess": "Title updated successfully!",
+        "comingSoon": "Settings coming soon"
     },
     "boardSettings": {
         "loadError": "Error loading board title",
@@ -550,6 +556,7 @@
         "setPasswordButton": "Set password"
     },
     "app": {
+        "name": "Yaka",
         "cardArchived": "Card archived",
         "cardArchivedDescription": "The card has been archived successfully",
         "undo": "Undo",
@@ -596,6 +603,7 @@
         "notSupportedDescription": "Your browser does not support voice recognition. Use the settings menu to choose a local mode (Whisper).",
         "notSupportedBrowser": "Browser mode unavailable",
         "switchToLocal": "Local recognition",
+        "input": "Voice input",
         "mode": {
             "browser": "🌐 Browser (native)",
             "whisperTiny": "💻 Local - Whisper tiny (~40 MB)",
@@ -635,5 +643,15 @@
             "noTranscriptDescription": "No text was transcribed. Please try again.",
             "switchToNative": "Back"
         }
+    },
+    "boardConfig": {
+        "title": "Board configuration",
+        "subtitle": "Connection configuration",
+        "apiUrl": "API URL",
+        "urlHelp": "Example: http://localhost:8000 or https://api.yaka.com",
+        "urlRequired": "The API URL is required",
+        "invalidUrl": "The provided URL is not valid",
+        "currentUrl": "API",
+        "info": "This URL will be used for all API requests"
     }
 }

@@ -20,7 +20,7 @@ const MainScreen = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [boardTitle, setBoardTitle] = useState<string>('Yaka');
+  const [boardTitle] = useState<string>('Yaka');
 
   useEffect(() => {
     const loadData = async () => {
@@ -109,7 +109,7 @@ const MainScreen = () => {
             onClick={() => window.location.reload()}
             className="btn-touch bg-primary text-primary-foreground px-6 rounded-lg"
           >
-            {t('common.retry', 'Réessayer')}
+            {t('common.retry')}
           </button>
         </div>
       </div>

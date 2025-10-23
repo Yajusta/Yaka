@@ -24,6 +24,7 @@
         "apply": "Appliquer",
         "retry": "Réessayer",
         "refresh": "Actualiser",
+        "continue": "Continuer",
         "loadingData": "Chargement des données...",
         "noData": "Aucune donnée disponible",
         "error": "Erreur",
@@ -36,7 +37,8 @@
         "saving": "Sauvegarde...",
         "unknownDate": "Date inconnue",
         "empty": "Vide",
-        "none": "Aucun"
+        "none": "Aucun",
+        "menu": "Menu"
     },
     "auth": {
         "login": "Connexion",
@@ -202,6 +204,8 @@
         "cards": "Cartes",
         "card_one": "{{count}} carte",
         "card_other": "{{count}} cartes",
+        "noCardsInList": "Aucune carte dans cette liste",
+        "noListsAvailable": "Aucune liste disponible",
         "listManagement": "Gestion des listes",
         "newList": "Nouvelle liste",
         "editList": "Modifier la liste",
@@ -354,7 +358,8 @@
         "updateRoleError": "Impossible de mettre à jour le rôle",
         "demoteToMember": "Rétrograder en membre",
         "promoteToAdmin": "Promouvoir en administrateur",
-        "cannotChangeOwnRole": "Vous ne pouvez pas changer votre propre rôle"
+        "cannotChangeOwnRole": "Vous ne pouvez pas changer votre propre rôle",
+        "userMenu": "Menu utilisateur"
     },
     "permissions": {
         "view": "Voir",
@@ -463,7 +468,8 @@
         "interfaceDescription": "Modifiez le titre affiché de votre tableau Kanban",
         "title": "Titre",
         "enterBoardTitle": "Entrez le titre du tableau",
-        "titleUpdatedSuccess": "Titre mis à jour avec succès !"
+        "titleUpdatedSuccess": "Titre mis à jour avec succès !",
+        "comingSoon": "Paramètres à venir"
     },
     "boardSettings": {
         "loadError": "Erreur lors du chargement du titre du tableau",
@@ -550,6 +556,7 @@
         "setPasswordButton": "Définir le mot de passe"
     },
     "app": {
+        "name": "Yaka",
         "cardArchived": "Carte archivée",
         "cardArchivedDescription": "La carte a été archivée avec succès",
         "undo": "Annuler",
@@ -596,6 +603,7 @@
         "notSupportedDescription": "Votre navigateur ne supporte pas la reconnaissance vocale. Utilisez le menu paramètres pour choisir un mode local (Whisper).",
         "notSupportedBrowser": "Mode navigateur non disponible",
         "switchToLocal": "Reconnaissance locale",
+        "input": "Saisie vocale",
         "mode": {
             "browser": "🌐 Navigateur (natif)",
             "whisperTiny": "💻 Local - Whisper tiny (~40 MB)",
@@ -635,5 +643,15 @@
             "noTranscriptDescription": "Aucun texte n'a été transcrit. Veuillez réessayer.",
             "switchToNative": "Retour"
         }
+    },
+    "boardConfig": {
+        "title": "Configuration du tableau",
+        "subtitle": "Configuration de la connexion",
+        "apiUrl": "URL de l'API",
+        "urlHelp": "Exemple: http://localhost:8000 ou https://api.yaka.com",
+        "urlRequired": "L'URL de l'API est requise",
+        "invalidUrl": "L'URL fournie n'est pas valide",
+        "currentUrl": "API",
+        "info": "Cette URL sera utilisée pour toutes les requêtes API"
     }
 }

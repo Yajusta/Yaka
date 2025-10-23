@@ -1,4 +1,5 @@
 import { KanbanList, Card } from '@shared/types';
+import { useTranslation } from 'react-i18next';
 import CardItem from './CardItem';
 
 interface ListsViewProps {
@@ -8,6 +9,7 @@ interface ListsViewProps {
 }
 
 const ListsView = ({ lists, cards, onCardClick }: ListsViewProps) => {
+  const { t } = useTranslation();
   // Group cards by list_id
   const cardsByList = cards.reduce((acc, card) => {
     if (!acc[card.list_id]) {
@@ -59,7 +61,7 @@ const ListsView = ({ lists, cards, onCardClick }: ListsViewProps) => {
                 ))
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-sm">Aucune carte dans cette liste</p>
+                  <p className="text-sm">{t('list.noCardsInList')}</p>
                 </div>
               )}
             </div>
@@ -69,7 +71,7 @@ const ListsView = ({ lists, cards, onCardClick }: ListsViewProps) => {
 
       {lists.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>Aucune liste disponible</p>
+          <p>{t('list.noListsAvailable')}</p>
         </div>
       )}
     </div>

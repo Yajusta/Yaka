@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User } from '@shared/types';
-import { User as UserIcon, Menu, X } from 'lucide-react';
+import { User as Menu } from 'lucide-react';
 
 interface BoardHeaderProps {
   boardTitle: string;
@@ -9,6 +9,7 @@ interface BoardHeaderProps {
 }
 
 const BoardHeader = ({ boardTitle, user, onMenuClick }: BoardHeaderProps) => {
+  const { t } = useTranslation();
   const getInitials = (name?: string, email?: string) => {
     if (name) {
       return name
@@ -29,7 +30,7 @@ const BoardHeader = ({ boardTitle, user, onMenuClick }: BoardHeaderProps) => {
       {/* Left: Menu button (placeholder for now) */}
       <button
         className="p-2 text-foreground hover:text-primary active:bg-accent rounded-lg transition-colors"
-        aria-label="Menu"
+        aria-label={t('common.menu')}
       >
         <Menu className="w-6 h-6" />
       </button>
@@ -43,7 +44,7 @@ const BoardHeader = ({ boardTitle, user, onMenuClick }: BoardHeaderProps) => {
       <button
         onClick={onMenuClick}
         className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-medium hover:bg-primary/90 active:bg-primary/80 transition-colors"
-        aria-label="User menu"
+        aria-label={t('user.userMenu')}
       >
         {getInitials(user.display_name, user.email)}
       </button>

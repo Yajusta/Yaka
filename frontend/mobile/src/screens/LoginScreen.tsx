@@ -51,7 +51,7 @@ const LoginScreen = () => {
             </div>
           </div>
           <h1 className="text-3xl font-bold text-foreground">
-            {t('app.name', 'Yaka')}
+            {t('app.name')}
           </h1>
           <p className="mt-2 text-muted-foreground">
             {t('auth.connectToAccount')}
@@ -117,7 +117,7 @@ const LoginScreen = () => {
         {/* API URL info */}
         <div className="text-center text-xs text-muted-foreground">
           <p>
-            {t('boardConfig.currentUrl', 'API')}: {localStorage.getItem('api_base_url') || 'Non configurée'}
+            {t('boardConfig.currentUrl')}: {localStorage.getItem('api_base_url') || t('common.none')}
           </p>
         </div>
       </div>

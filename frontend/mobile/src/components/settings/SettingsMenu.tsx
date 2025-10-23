@@ -28,12 +28,12 @@ const SettingsMenu = ({ isOpen, onClose, user, onLogout }: SettingsMenuProps) =>
         <div className="flex items-center justify-between p-4 border-b-2 border-border">
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            {t('navigation.settings', 'Paramètres')}
+            {t('navigation.settings')}
           </h2>
           <button
             onClick={onClose}
             className="p-2 text-muted-foreground hover:text-foreground active:bg-accent rounded-lg transition-colors"
-            aria-label={t('common.close', 'Fermer')}
+            aria-label={t('common.close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -49,14 +49,14 @@ const SettingsMenu = ({ isOpen, onClose, user, onLogout }: SettingsMenuProps) =>
             <p className="text-xs text-muted-foreground mt-1">{user.email}</p>
             {user.role && (
               <p className="text-xs text-muted-foreground mt-1 capitalize">
-                {t(`roles.${user.role}`, user.role)}
+                {t(`role.${user.role}`)}
               </p>
             )}
           </div>
 
           {/* Placeholder message */}
           <div className="text-center py-8 text-muted-foreground">
-            <p className="text-sm">{t('settings.comingSoon', 'Paramètres à venir')}</p>
+            <p className="text-sm">{t('settings.comingSoon')}</p>
           </div>
 
           {/* Logout button */}
@@ -68,7 +68,7 @@ const SettingsMenu = ({ isOpen, onClose, user, onLogout }: SettingsMenuProps) =>
             className="w-full btn-touch bg-destructive text-destructive-foreground font-medium rounded-lg hover:bg-destructive/90 active:bg-destructive/80 transition-colors flex items-center justify-center gap-2"
           >
             <LogOut className="w-5 h-5" />
-            {t('auth.logout', 'Déconnexion')}
+            {t('auth.logout')}
           </button>
         </div>
       </div>

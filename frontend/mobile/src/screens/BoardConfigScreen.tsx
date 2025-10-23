@@ -50,10 +50,10 @@ const BoardConfigScreen = () => {
             </div>
           </div>
           <h1 className="text-3xl font-bold text-foreground">
-            {t('app.name', 'Yaka')}
+            {t('app.name')}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            {t('boardConfig.subtitle', 'Configuration de la connexion')}
+            {t('boardConfig.subtitle')}
           </p>
         </div>
 
@@ -64,7 +64,7 @@ const BoardConfigScreen = () => {
               htmlFor="apiUrl"
               className="block text-sm font-medium text-foreground mb-2"
             >
-              {t('boardConfig.apiUrl', 'URL de l\'API')}
+              {t('boardConfig.apiUrl')}
             </label>
             <input
               id="apiUrl"
@@ -75,7 +75,7 @@ const BoardConfigScreen = () => {
               className="w-full px-4 py-3 bg-card border-2 border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             <p className="mt-2 text-xs text-muted-foreground">
-              {t('boardConfig.urlHelp', 'Exemple: http://localhost:8000 ou https://api.yaka.com')}
+              {t('boardConfig.urlHelp')}
             </p>
           </div>
 
@@ -89,13 +89,13 @@ const BoardConfigScreen = () => {
             type="submit"
             className="w-full btn-touch bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 active:bg-primary/80 transition-colors"
           >
-            {t('common.continue', 'Continuer')}
+            {t('common.continue')}
           </button>
         </form>
 
         {/* Info */}
         <div className="text-center text-xs text-muted-foreground">
-          <p>{t('boardConfig.info', 'Cette URL sera utilisée pour toutes les requêtes API')}</p>
+          <p>{t('boardConfig.info')}</p>
         </div>
       </div>
     </div>

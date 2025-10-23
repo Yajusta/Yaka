@@ -16,30 +16,30 @@ const BottomNav = ({ onFilterClick, onVoiceClick, onNewCardClick }: BottomNavPro
       <button
         onClick={onFilterClick}
         className="flex flex-col items-center justify-center btn-touch text-muted-foreground hover:text-primary active:text-primary transition-colors"
-        aria-label={t('common.filters', 'Filtres')}
+        aria-label={t('common.filters')}
       >
         <Filter className="w-6 h-6" />
-        <span className="text-xs mt-1">{t('common.filters', 'Filtres')}</span>
+        <span className="text-xs mt-1">{t('common.filters')}</span>
       </button>
 
       {/* Voice input button */}
       <button
         onClick={onVoiceClick}
         className="flex flex-col items-center justify-center btn-touch text-muted-foreground hover:text-primary active:text-primary transition-colors"
-        aria-label={t('voice.input', 'Saisie vocale')}
+        aria-label={t('voice.input')}
       >
         <Mic className="w-6 h-6" />
-        <span className="text-xs mt-1">{t('voice.input', 'Vocal')}</span>
+        <span className="text-xs mt-1">{t('voice.input')}</span>
       </button>
 
       {/* New card button */}
       <button
         onClick={onNewCardClick}
         className="flex flex-col items-center justify-center btn-touch bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 active:bg-primary/80 transition-colors shadow-lg"
-        aria-label={t('card.new', 'Nouvelle carte')}
+        aria-label={t('card.newCard')}
       >
         <Plus className="w-6 h-6" />
-        <span className="text-xs mt-1">{t('card.new', 'Nouvelle')}</span>
+        <span className="text-xs mt-1">{t('card.newCard')}</span>
       </button>
     </nav>
   );
