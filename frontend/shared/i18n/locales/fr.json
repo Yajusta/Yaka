@@ -196,7 +196,11 @@
         "priorityUpdatedDescription": "La priorité de la carte \"{{cardTitle}}\" est maintenant \"{{priority}}\".",
         "toggleChecklistItem": "Cocher / décocher l'élément",
         "dropItem": "Supprimer l'élément",
-        "updateChecklistItemError": "Erreur lors de la mise à jour de l'élément de la checklist"
+        "updateChecklistItemError": "Erreur lors de la mise à jour de l'élément de la checklist",
+        "unsavedChanges": "Modifications non enregistrées",
+        "unsavedChangesDescription": "Vous avez des modifications non enregistrées. Voulez-vous vraiment fermer sans enregistrer ?",
+        "discardChanges": "Ignorer les modifications",
+        "keepEditing": "Continuer la modification"
     },
     "list": {
         "title": "Titre",

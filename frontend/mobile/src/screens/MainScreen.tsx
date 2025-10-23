@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@shared/hooks/useAuth';
+import { useBoardSettings } from '@shared/hooks/useBoardSettings';
 import { listsApi } from '@shared/services/listsApi';
 import { cardService } from '@shared/services/api';
 import { KanbanList, Card } from '@shared/types';
@@ -9,18 +10,20 @@ import BoardHeader from '../components/board/BoardHeader';
 import ListsView from '../components/board/ListsView';
 import BottomNav from '../components/navigation/BottomNav';
 import SettingsMenu from '../components/settings/SettingsMenu';
+import CardDetail from '../components/card/CardDetail';
 import { Loader2 } from 'lucide-react';
 
 const MainScreen = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { boardTitle } = useBoardSettings();
   const [lists, setLists] = useState<KanbanList[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [boardTitle] = useState<string>('Yaka');
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -64,8 +67,7 @@ const MainScreen = () => {
   };
 
   const handleCardClick = (card: Card) => {
-    // Placeholder: will open card details in future
-    console.log('Card clicked:', card);
+    setSelectedCard(card);
   };
 
   const handleCardUpdate = (updatedCard: Card) => {
@@ -75,6 +77,19 @@ const MainScreen = () => {
         card.id === updatedCard.id ? updatedCard : card
       )
     );
+  };
+
+  const handleCardSave = (savedCard: Card) => {
+    handleCardUpdate(savedCard);
+  };
+
+  const handleCardDelete = async (cardId: number) => {
+    try {
+      await cardService.deleteCard(cardId);
+      setCards(prevCards => prevCards.filter(card => card.id !== cardId));
+    } catch (error: any) {
+      console.error('Error deleting card:', error);
+    }
   };
 
   const handleFilterClick = () => {
@@ -158,6 +173,17 @@ const MainScreen = () => {
         user={user}
         onLogout={handleLogout}
       />
+
+      {/* Card detail modal */}
+      {selectedCard && (
+        <CardDetail
+          card={selectedCard}
+          isOpen={!!selectedCard}
+          onClose={() => setSelectedCard(null)}
+          onSave={handleCardSave}
+          onDelete={handleCardDelete}
+        />
+      )}
     </div>
   );
 };

@@ -196,7 +196,11 @@
         "priorityUpdatedDescription": "The priority of card \"{{cardTitle}}\" is now \"{{priority}}\".",
         "toggleChecklistItem": "Toggle checklist item",
         "dropItem": "Drop item",
-        "updateChecklistItemError": "Error updating checklist item"
+        "updateChecklistItemError": "Error updating checklist item",
+        "unsavedChanges": "Unsaved changes",
+        "unsavedChangesDescription": "You have unsaved changes. Do you really want to close without saving?",
+        "discardChanges": "Discard changes",
+        "keepEditing": "Keep editing"
     },
     "list": {
         "title": "Title",
