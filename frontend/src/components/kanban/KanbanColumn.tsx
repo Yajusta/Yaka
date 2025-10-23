@@ -4,9 +4,9 @@ import { useDroppable } from '@dnd-kit/core';
 import { CardItem } from './CardItem';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { Button } from '../ui/button';
-import { cn } from '../../lib/utils';
-import { Card, KanbanList } from '../../types/index';
-import { useElasticTransition } from '../../hooks/useElasticTransition';
+import { cn } from '@shared/lib/utils';
+import { Card, KanbanList } from '@shared/types/index';
+import { useElasticTransition } from '@shared/hooks/useElasticTransition';
 import { Plus, MoreVertical, ChevronRight, ChevronLeft } from 'lucide-react';
 import {
     DropdownMenu,
@@ -14,7 +14,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { DisplayMode } from '../../hooks/useDisplayMode';
+import { DisplayMode } from '@shared/hooks/useDisplayMode';
 
 interface KanbanColumnProps {
     id: string;

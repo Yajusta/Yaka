@@ -16,17 +16,17 @@ import PersonalDictionaryManager from './components/common/PersonalDictionaryMan
 import UsersManager from './components/common/UsersManager';
 import { KanbanBoard } from './components/kanban/KanbanBoard.tsx';
 import { Toaster } from './components/ui/sonner';
-import { useToast } from './hooks/use-toast.tsx';
-import { AuthProvider, useAuth } from './hooks/useAuth.tsx';
-import { BoardSettingsProvider } from './hooks/useBoardSettingsContext';
-import { usePermissions } from './hooks/usePermissions';
-import { useTheme } from './hooks/useTheme.tsx';
-import { useUserLanguage } from './hooks/useUserLanguage';
-import { UsersProvider, useUsers } from './hooks/useUsers';
-import { useDisplayMode } from './hooks/useDisplayMode';
+import { useToast } from '@shared/hooks/use-toast.tsx';
+import { AuthProvider, useAuth } from '@shared/hooks/useAuth.tsx';
+import { BoardSettingsProvider } from '@shared/hooks/useBoardSettingsContext';
+import { usePermissions } from '@shared/hooks/usePermissions';
+import { useTheme } from '@shared/hooks/useTheme.tsx';
+import { useUserLanguage } from '@shared/hooks/useUserLanguage';
+import { UsersProvider, useUsers } from '@shared/hooks/useUsers';
+import { useDisplayMode } from '@shared/hooks/useDisplayMode';
 import './index.css';
-import { cardService, labelService } from './services/api.tsx';
-import { Card, Label } from './types/index.ts';
+import { cardService, labelService } from '@shared/services/api.tsx';
+import { Card, Label } from '@shared/types/index.ts';
 
 interface Filters {
     search: string;

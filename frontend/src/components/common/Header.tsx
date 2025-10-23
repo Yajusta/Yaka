@@ -2,8 +2,8 @@ import { Button } from '../ui/button';
 import * as React from 'react';
 import { BookOpen, Check, ChevronDown, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, ShieldCheck, Sun, Tag, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useBoardSettings } from '../../hooks/useBoardSettingsContext';
-import { UserRole, UserRoleValue, User, ViewScope } from '../../types';
+import { useBoardSettings } from '@shared/hooks/useBoardSettingsContext';
+import { UserRole, UserRoleValue, User, ViewScope } from '@shared/types';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import {
     DropdownMenu,
@@ -16,11 +16,11 @@ import {
     DropdownMenuTrigger
 } from '../ui/dropdown-menu';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
-import { DisplayMode } from '../../hooks/useDisplayMode';
-import { cn } from '../../lib/utils';
-import { exportApi } from '../../services/exportApi';
-import { useToast } from '../../hooks/use-toast';
-import { authService, userService } from '../../services/api';
+import { DisplayMode } from '@shared/hooks/useDisplayMode';
+import { cn } from '@shared/lib/utils';
+import { exportApi } from '@shared/services/exportApi';
+import { useToast } from '@shared/hooks/use-toast';
+import { authService, userService } from '@shared/services/api';
 
 interface HeaderProps {
     user: User;

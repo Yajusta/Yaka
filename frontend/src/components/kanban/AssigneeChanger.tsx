@@ -1,10 +1,10 @@
 import { User as UserIcon } from 'lucide-react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useToast } from '../../hooks/use-toast';
-import { useUsers } from '../../hooks/useUsers';
-import { cardService } from '../../services/api';
-import { Card, UpdateCardData } from '../../types';
+import { useToast } from '@shared/hooks/use-toast';
+import { useUsers } from '@shared/hooks/useUsers';
+import { cardService } from '@shared/services/api';
+import { Card, UpdateCardData } from '@shared/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 interface AssigneeChangerProps {

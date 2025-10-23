@@ -2,14 +2,14 @@ import { closestCenter, DndContext, DragEndEvent, DragOverEvent, DragOverlay, Dr
 import { Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { cn } from '../../lib/utils';
-import { listsApi } from '../../services/listsApi';
-import { Card as CardType, KanbanList } from '../../types/index';
+import { cn } from '@shared/lib/utils';
+import { listsApi } from '@shared/services/listsApi';
+import { Card as CardType, KanbanList } from '@shared/types/index';
 import { ArchiveManager } from '../admin/ArchiveManager';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { KanbanColumn } from './KanbanColumn';
 import { CardItem } from './index';
-import { DisplayMode } from '../../hooks/useDisplayMode';
+import { DisplayMode } from '@shared/hooks/useDisplayMode';
 
 
 interface KanbanBoardProps {

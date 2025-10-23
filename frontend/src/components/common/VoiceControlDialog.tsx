@@ -5,13 +5,13 @@ import { Textarea } from '../ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Mic, MicOff, Send, X, AlertTriangle, Settings, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { voiceControlService, VoiceControlResponse } from '../../services/voiceControlApi';
+import { voiceControlService, VoiceControlResponse } from '@shared/services/voiceControlApi';
 import CardForm from '../cards/CardForm';
-import { Card } from '../../types';
-import { cardService } from '../../services/api';
-import { useToast } from '../../hooks/use-toast';
-import { useAuth } from '../../hooks/useAuth';
-import { usePermissions } from '../../hooks/usePermissions';
+import { Card } from '@shared/types';
+import { cardService } from '@shared/services/api';
+import { useToast } from '@shared/hooks/use-toast';
+import { useAuth } from '@shared/hooks/useAuth';
+import { usePermissions } from '@shared/hooks/usePermissions';
 import { VoiceControlWhisperDialog } from './VoiceControlWhisperDialog';
 
 interface VoiceControlDialogProps {

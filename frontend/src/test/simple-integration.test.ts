@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { listsApi } from '../services/listsApi'
-import type { KanbanList } from '../types'
+import { listsApi } from '@shared/services/listsApi'
+import type { KanbanList } from '@shared/types'
 
 // Mock the API services
 vi.mock('../services/listsApi')

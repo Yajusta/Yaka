@@ -5,10 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../ui/badge';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { Search, Filter, X, Plus, ChevronDown, ChevronUp, Mic } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn } from '@shared/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { VoiceControlDialog } from './VoiceControlDialog';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '@shared/hooks/useAuth';
 
 interface User {
     id: number;

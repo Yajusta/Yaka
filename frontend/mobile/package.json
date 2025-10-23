@@ -1,0 +1,35 @@
+{
+  "name": "yaka-mobile",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.1",
+    "axios": "^1.12.0",
+    "i18next": "^25.5.2",
+    "react-i18next": "^15.7.3",
+    "i18next-browser-languagedetector": "^8.2.0",
+    "lucide-react": "^0.510.0",
+    "tailwindcss": "^4.1.7",
+    "@tailwindcss/vite": "^4.1.7",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "vite": "^6.3.5",
+    "vite-plugin-pwa": "^0.20.0",
+    "typescript": "^5.7.3"
+  },
+  "packageManager": "pnpm@10.4.1"
+}
+

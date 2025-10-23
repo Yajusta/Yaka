@@ -40,15 +40,15 @@ import {
     AlertTriangle,
     AlertCircle
 } from 'lucide-react';
-import { listsApi } from '../../services/listsApi';
-import { useToast } from '../../hooks/use-toast';
+import { listsApi } from '@shared/services/listsApi';
+import { useToast } from '@shared/hooks/use-toast';
 import {
     KanbanList,
     KanbanListCreate,
     KanbanListUpdate,
     UserRole
-} from '../../types';
-import { useAuth } from '../../hooks/useAuth';
+} from '@shared/types';
+import { useAuth } from '@shared/hooks/useAuth';
 import {
     validateListName,
     isListNameUnique,

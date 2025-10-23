@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { listsApi } from '../services/listsApi'
+import { listsApi } from '@shared/services/listsApi'
 
 // Mock the API services
 vi.mock('../services/listsApi')

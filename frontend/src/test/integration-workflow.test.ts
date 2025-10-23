@@ -6,9 +6,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 // import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 // import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 // import { BrowserRouter } from 'react-router-dom'
-// import { AuthProvider } from '../hooks/useAuth'
-import { listsApi } from '../services/listsApi'
-// import { cardsApi } from '../services/api'
+// import { AuthProvider } from '@shared/hooks/useAuth'
+import { listsApi } from '@shared/services/listsApi'
+// import { cardsApi } from '@shared/services/api'
 
 // Mock the API services
 vi.mock('../services/listsApi')

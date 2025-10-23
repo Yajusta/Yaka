@@ -1,5 +1,5 @@
 import { Badge } from './badge';
-import { cn } from '../../lib/utils';
+import { cn } from '@shared/lib/utils';
 
 interface StatusBadgeProps {
     status: 'a_faire' | 'en_cours' | 'termine';

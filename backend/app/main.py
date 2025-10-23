@@ -220,7 +220,7 @@ import os
 
 # En développement, autoriser localhost; en production, utiliser les variables d'environnement
 frontend_url = os.getenv("BASE_URL", "http://localhost:5173")
-allowed_origins = [frontend_url]
+allowed_origins = [frontend_url, "http://localhost:3001", "http://localhost:5173"]
 
 app.add_middleware(
     CORSMiddleware,

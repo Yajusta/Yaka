@@ -5,9 +5,9 @@ import { Label } from '../ui/label.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog.tsx';
 import { Trash2, Edit, Plus } from 'lucide-react';
-import { personalDictionaryService } from '../../services/api.tsx';
-import { useToast } from '../../hooks/use-toast.tsx';
-import { PersonalDictionaryEntry } from '../../types/index.ts';
+import { personalDictionaryService } from '@shared/services/api.tsx';
+import { useToast } from '@shared/hooks/use-toast.tsx';
+import { PersonalDictionaryEntry } from '@shared/types/index.ts';
 import { useTranslation } from 'react-i18next';
 
 interface PersonalDictionaryManagerProps {

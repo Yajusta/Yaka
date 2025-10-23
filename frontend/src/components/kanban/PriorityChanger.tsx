@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useToast } from '../../hooks/use-toast';
-import { useTranslatedLabels } from '../../hooks/useTranslatedLabels';
-import { cardService } from '../../services/api';
-import { Card, UpdateCardData, getPriorityIcon, getPriorityIconColor } from '../../types';
+import { useToast } from '@shared/hooks/use-toast';
+import { useTranslatedLabels } from '@shared/hooks/useTranslatedLabels';
+import { cardService } from '@shared/services/api';
+import { Card, UpdateCardData, getPriorityIcon, getPriorityIconColor } from '@shared/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { PriorityBadge } from '../ui/PriorityBadge';
 

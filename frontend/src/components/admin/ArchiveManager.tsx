@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, KanbanList } from '../../types/index';
+import { Card, KanbanList } from '@shared/types/index';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import { cardService } from '../../services/api';
-import { useToast } from '../../hooks/use-toast';
+import { cardService } from '@shared/services/api';
+import { useToast } from '@shared/hooks/use-toast';
 import { ArchiveRestore, Calendar, User, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';

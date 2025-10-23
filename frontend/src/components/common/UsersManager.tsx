@@ -1,11 +1,11 @@
 import { Check, Eye, Key, Mail, MessageSquare, MoreHorizontal, PenTool, RefreshCw, Shield, Trash2, User, Users, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useToast } from '../../hooks/use-toast.tsx';
-import { useAuth } from '../../hooks/useAuth';
-import { AppUser, useUsers } from '../../hooks/useUsers';
-import { userService } from '../../services/api';
-import { UserRole, UserRoleValue, ViewScope } from '../../types';
+import { useToast } from '@shared/hooks/use-toast.tsx';
+import { useAuth } from '@shared/hooks/useAuth';
+import { AppUser, useUsers } from '@shared/hooks/useUsers';
+import { userService } from '@shared/services/api';
+import { UserRole, UserRoleValue, ViewScope } from '@shared/types';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '../ui/dropdown-menu';

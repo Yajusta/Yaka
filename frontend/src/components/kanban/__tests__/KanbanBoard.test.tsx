@@ -3,11 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { KanbanBoard } from '../KanbanBoard'
 import { mockLists, mockCards, mockApiResponses } from '@/test/mocks'
-import * as listsApi from '@/services/listsApi'
-import * as cardsApi from '@/services/cardsApi'
+import * as listsApi from '@shared/services/listsApi'
+import * as cardsApi from '@shared/services/cardsApi'
 
 // Mock the API modules
-vi.mock('@/services/listsApi', () => ({
+vi.mock('@shared/services/listsApi', () => ({
   listsApi: {
     getLists: vi.fn(),
     createList: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock('@/services/listsApi', () => ({
   }
 }))
 
-vi.mock('@/services/cardsApi', () => ({
+vi.mock('@shared/services/cardsApi', () => ({
   cardsApi: {
     getCards: vi.fn(),
     createCard: vi.fn(),
