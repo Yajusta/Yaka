@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { User } from '@shared/types';
-import { User as Menu } from 'lucide-react';
 
 interface BoardHeaderProps {
   boardTitle: string;
@@ -27,13 +26,14 @@ const BoardHeader = ({ boardTitle, user, onMenuClick }: BoardHeaderProps) => {
 
   return (
     <header className="mobile-header">
-      {/* Left: Menu button (placeholder for now) */}
-      <button
-        className="p-2 text-foreground hover:text-primary active:bg-accent rounded-lg transition-colors"
-        aria-label={t('common.menu')}
-      >
-        <Menu className="w-6 h-6" />
-      </button>
+      {/* Left: App icon */}
+      <div className="flex items-center justify-center p-2">
+        <img
+          src="/icons/icon-48x48.png"
+          alt="App icon"
+          className="w-6 h-6"
+        />
+      </div>
 
       {/* Center: Board title */}
       <h1 className="text-lg font-bold text-foreground truncate px-4 flex-1 text-center">
