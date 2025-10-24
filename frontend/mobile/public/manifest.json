@@ -1,13 +1,26 @@
 {
-  "name": "Yaka Mobile - Yet Another Kanban App",
+  "name": "Yaka - Yet Another Kanban App",
   "short_name": "Yaka",
-  "description": "Mobile PWA for Yaka Kanban Board",
+  "description": "Mobile PWA for Yaka",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fafbfc",
   "theme_color": "#667eea",
   "orientation": "portrait-primary",
   "icons": [
+    {
+      "src": "/icons/icon-48x48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-70x70.png",
+      "sizes": "70x70",
+      "type": "image/png",
+      "purpose": "any"
+    },
+
     {
       "src": "/icons/icon-72x72.png",
       "sizes": "72x72",
@@ -21,14 +34,20 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-128x128.png",
-      "sizes": "128x128",
+      "src": "/icons/icon-120x120.png",
+      "sizes": "120x120",
       "type": "image/png",
       "purpose": "any"
     },
     {
       "src": "/icons/icon-144x144.png",
       "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-150x150.png",
+      "sizes": "150x150",
       "type": "image/png",
       "purpose": "any"
     },
@@ -45,8 +64,8 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-384x384.png",
-      "sizes": "384x384",
+      "src": "/icons/icon-310x310.png",
+      "sizes": "310x310",
       "type": "image/png",
       "purpose": "any"
     },
@@ -63,7 +82,7 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["productivity", "business"],
+  "categories": ["productivity", "kanban", "task management"],
   "lang": "fr",
   "dir": "ltr",
   "prefer_related_applications": false

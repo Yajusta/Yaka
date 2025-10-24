@@ -3,15 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@shared/hooks/useAuth';
 import { useBoardSettings } from '@shared/hooks/useBoardSettings';
+import { useUsers } from '@shared/hooks/useUsers';
 import { listsApi } from '@shared/services/listsApi';
 import { cardService } from '@shared/services/api';
-import { KanbanList, Card } from '@shared/types';
+import { labelService } from '@shared/services/api';
+import { KanbanList, Card, Label } from '@shared/types';
 import BoardHeader from '../components/board/BoardHeader';
 import ListsView from '../components/board/ListsView';
 import BottomNav from '../components/navigation/BottomNav';
 import SettingsMenu from '../components/settings/SettingsMenu';
 import CardDetail from '../components/card/CardDetail';
 import VoiceInputDialog from '../components/voice/VoiceInputDialog';
+import { FilterScreen } from './FilterScreen';
 import { Loader2 } from 'lucide-react';
 
 const MainScreen = () => {
@@ -19,46 +22,102 @@ const MainScreen = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { boardTitle } = useBoardSettings();
+  const { users, refresh: refreshUsers } = useUsers();
   const [lists, setLists] = useState<KanbanList[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
+  const [allCards, setAllCards] = useState<Card[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showVoiceInput, setShowVoiceInput] = useState<boolean>(false);
   const [isCreatingNewCard, setIsCreatingNewCard] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [filters, setFilters] = useState({
+    search: '',
+    assignee_id: null as number | null,
+    priority: null as string | null,
+    label_id: null as number | null,
+  });
+
+  const loadData = async (isRefresh = false) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      if (isRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError('');
+
+      // Load lists, cards and labels in parallel
+      const [listsData, cardsData, labelsData] = await Promise.all([
+        listsApi.getLists(),
+        cardService.getCards({}),
+        labelService.getLabels()
+      ]);
+
+      console.log('Loaded cards from API:', cardsData);
+
+      // Sort lists by order
+      const sortedLists = listsData.sort((a, b) => a.order - b.order);
+      setLists(sortedLists);
+      setAllCards(cardsData);
+      setLabels(labelsData);
+
+      // Refresh users list
+      refreshUsers();
+    } catch (err: any) {
+      console.error('Error loading data:', err);
+      setError(err.response?.data?.detail || t('app.loadDataError'));
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!user) {
-        navigate('/login');
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError('');
-
-        // Load lists and cards in parallel
-        const [listsData, cardsData] = await Promise.all([
-          listsApi.getLists(),
-          cardService.getCards({})
-        ]);
-
-        // Sort lists by order
-        const sortedLists = listsData.sort((a, b) => a.order - b.order);
-        setLists(sortedLists);
-        setCards(cardsData);
-      } catch (err: any) {
-        console.error('Error loading data:', err);
-        setError(err.response?.data?.detail || t('app.loadDataError'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadData();
-  }, [user, navigate, t]);
+  }, [user, navigate, t, refreshUsers]);
+
+  // Apply filters whenever filters or allCards change
+  useEffect(() => {
+    let filteredCards = allCards;
+
+    // Search filter
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      filteredCards = filteredCards.filter(card =>
+        card.title.toLowerCase().includes(searchTerm) ||
+        (card.description && card.description.toLowerCase().includes(searchTerm))
+      );
+    }
+
+    // Assignee filter
+    if (filters.assignee_id) {
+      filteredCards = filteredCards.filter(card => card.assignee_id === filters.assignee_id);
+    }
+
+    // Priority filter
+    if (filters.priority) {
+      filteredCards = filteredCards.filter(card => card.priority === filters.priority);
+    }
+
+    // Label filter
+    if (filters.label_id) {
+      filteredCards = filteredCards.filter(card =>
+        card.labels?.some(label => label.id === filters.label_id)
+      );
+    }
+
+    setCards(filteredCards);
+  }, [filters, allCards]);
 
   const handleLogout = async () => {
     try {
@@ -70,6 +129,7 @@ const MainScreen = () => {
   };
 
   const handleCardClick = (card: Card) => {
+    console.log('MainScreen handleCardClick called with card:', card);
     setSelectedCard(card);
   };
 
@@ -103,8 +163,11 @@ const MainScreen = () => {
   };
 
   const handleFilterClick = () => {
-    // Placeholder: will open filters modal in future
-    console.log('Filter clicked');
+    setShowFilters(true);
+  };
+
+  const handleFiltersChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
   };
 
   const handleVoiceClick = () => {
@@ -127,6 +190,8 @@ const MainScreen = () => {
     }
   };
 
+  // Pull to refresh handlers
+  
   const handleNewCardClick = () => {
     // Create a new card object with minimal data
     const newCard: Card = {
@@ -190,12 +255,14 @@ const MainScreen = () => {
       />
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto p-4 smooth-scroll" style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+      <main className="flex-1 overflow-hidden relative">
         <ListsView
           lists={lists}
           cards={cards}
           onCardClick={handleCardClick}
           onCardUpdate={handleCardUpdate}
+          onRefresh={() => loadData(true)}
+          isRefreshing={isRefreshing}
         />
       </main>
 
@@ -235,6 +302,17 @@ const MainScreen = () => {
         onCardSave={handleVoiceCardSave}
         defaultListId={lists.length > 0 ? lists[0].id : undefined}
       />
+
+      {/* Filter screen */}
+      {showFilters && (
+        <FilterScreen
+          onBack={() => setShowFilters(false)}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          users={users}
+          labels={labels}
+        />
+      )}
     </div>
   );
 };

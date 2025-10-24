@@ -5,17 +5,16 @@ import { useTranslation } from 'react-i18next';
 const BoardConfigScreen = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [apiUrl, setApiUrl] = useState<string>(
-    localStorage.getItem('api_base_url') || 'http://localhost:8000'
+  const [boardName, setBoardName] = useState<string>(
+    localStorage.getItem('board_name') || ''
   );
   const [error, setError] = useState<string>('');
 
-  const validateUrl = (url: string): boolean => {
-    try {
-      const urlObj = new URL(url);
-      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
-    } catch {
-      return false;
+  const resolveEndpoint = (name: string): string => {
+    if (name.trim().toLowerCase() === 'localhost') {
+      return 'http://localhost:8000';
+    } else {
+      return `https://yaka.yajusta.fr/api/board/${encodeURIComponent(name.trim())}`;
     }
   };
 
@@ -23,19 +22,16 @@ const BoardConfigScreen = () => {
     e.preventDefault();
     setError('');
 
-    if (!apiUrl.trim()) {
-      setError(t('boardConfig.urlRequired'));
+    if (!boardName.trim()) {
+      setError('Please enter a board name');
       return;
     }
 
-    if (!validateUrl(apiUrl)) {
-      setError(t('boardConfig.invalidUrl'));
-      return;
-    }
+    const resolvedEndpoint = resolveEndpoint(boardName);
 
-    // Remove trailing slash
-    const cleanUrl = apiUrl.trim().replace(/\/$/, '');
-    localStorage.setItem('api_base_url', cleanUrl);
+    // Store both the board name and the resolved endpoint
+    localStorage.setItem('board_name', boardName.trim());
+    localStorage.setItem('api_base_url', resolvedEndpoint);
     navigate('/login');
   };
 
@@ -45,9 +41,7 @@ const BoardConfigScreen = () => {
         {/* Logo */}
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="w-24 h-24 bg-primary rounded-2xl flex items-center justify-center">
-              <span className="text-4xl font-bold text-primary-foreground">Y</span>
-            </div>
+            <img src="/yaka.svg" alt="Yaka" className="w-32 h-32" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">
             {t('app.name')}
@@ -61,21 +55,21 @@ const BoardConfigScreen = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label
-              htmlFor="apiUrl"
+              htmlFor="boardName"
               className="block text-sm font-medium text-foreground mb-2"
             >
-              {t('boardConfig.apiUrl')}
+              Board name
             </label>
             <input
-              id="apiUrl"
+              id="boardName"
               type="text"
-              value={apiUrl}
-              onChange={(e) => setApiUrl(e.target.value)}
-              placeholder="https://api.yaka.example.com"
+              value={boardName}
+              onChange={(e) => setBoardName(e.target.value)}
+              placeholder="your-board-name"
               className="w-full px-4 py-3 bg-card border-2 border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             <p className="mt-2 text-xs text-muted-foreground">
-              {t('boardConfig.urlHelp')}
+              If your desktop access point is <br/>"https://yaka.yajusta.fr/board/your-board-name"<br/>enter "your-board-name" here.
             </p>
           </div>
 
@@ -93,10 +87,6 @@ const BoardConfigScreen = () => {
           </button>
         </form>
 
-        {/* Info */}
-        <div className="text-center text-xs text-muted-foreground">
-          <p>{t('boardConfig.info')}</p>
-        </div>
       </div>
     </div>
   );

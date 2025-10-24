@@ -46,9 +46,7 @@ const LoginScreen = () => {
         {/* Logo */}
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="w-24 h-24 bg-primary rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-4xl font-bold text-primary-foreground">Y</span>
-            </div>
+            <img src="/yaka.svg" alt="Yaka" className="w-32 h-32" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">
             {t('app.name')}
@@ -114,10 +112,10 @@ const LoginScreen = () => {
           </button>
         </form>
 
-        {/* API URL info */}
+        {/* Board name info */}
         <div className="text-center text-xs text-muted-foreground">
           <p>
-            {t('boardConfig.currentUrl')}: {localStorage.getItem('api_base_url') || t('common.none')}
+            Board: {localStorage.getItem('board_name') || 'Not configured'}
           </p>
         </div>
       </div>

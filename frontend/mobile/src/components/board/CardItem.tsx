@@ -89,15 +89,14 @@ const CardItem = ({ card, onClick, onUpdate }: CardItemProps) => {
       return 'low';
     }
     const lower = String(priority).toLowerCase();
-    const normalized = lower.normalize('NFD').replace(/\p{Diacritic}/gu, '');
 
-    if (normalized.includes('high') || normalized.includes('elev') || normalized.includes('eleve')) {
+    if (lower.includes('high') || lower.includes('elev') || lower.includes('eleve')) {
       return 'high';
     }
-    if (normalized.includes('medium') || normalized.includes('moy')) {
+    if (lower.includes('medium') || lower.includes('moy')) {
       return 'medium';
     }
-    if (normalized.includes('low') || normalized.includes('faibl') || normalized.includes('faible')) {
+    if (lower.includes('low') || lower.includes('faibl') || lower.includes('faible')) {
       return 'low';
     }
 
@@ -419,4 +418,3 @@ const CardItem = ({ card, onClick, onUpdate }: CardItemProps) => {
 };
 
 export default CardItem;
-

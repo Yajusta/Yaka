@@ -23,7 +23,7 @@ import { usePermissions } from '@shared/hooks/usePermissions';
 import { useTheme } from '@shared/hooks/useTheme.tsx';
 import { useUserLanguage } from '@shared/hooks/useUserLanguage';
 import { UsersProvider, useUsers } from '@shared/hooks/useUsers';
-import { useDisplayMode } from '@shared/hooks/useDisplayMode';
+import { DisplayModeProvider, useDisplayMode } from '@shared/hooks/useDisplayMode';
 import './index.css';
 import { cardService, labelService } from '@shared/services/api.tsx';
 import { Card, Label } from '@shared/types/index.ts';
@@ -536,10 +536,12 @@ const App = () => {
         <Router>
             <AuthProvider>
                 <BoardSettingsProvider>
-                    <UsersProvider>
-                        <AppContent />
-                        <Toaster />
-                    </UsersProvider>
+                    <DisplayModeProvider>
+                        <UsersProvider>
+                            <AppContent />
+                            <Toaster />
+                        </UsersProvider>
+                    </DisplayModeProvider>
                 </BoardSettingsProvider>
             </AuthProvider>
         </Router>

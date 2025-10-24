@@ -658,5 +658,10 @@
         "invalidUrl": "L'URL fournie n'est pas valide",
         "currentUrl": "API",
         "info": "Cette URL sera utilisée pour toutes les requêtes API"
+    },
+    "pullToRefresh": {
+        "refreshing": "Rafraîchissement...",
+        "releaseToRefresh": "Relâchez pour rafraîchir",
+        "pullToRefresh": "Tirez pour rafraîchir"
     }
 }

@@ -39,6 +39,7 @@ export interface Card {
     label_id: number | null;
     colonne: string;
     list_id: number;
+    position?: number; // Position de la carte dans la liste
     due_date?: string;
     labels?: Label[];
     kanban_list?: KanbanList;

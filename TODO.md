@@ -17,6 +17,14 @@
 [ ] Séparer la page "invite" et la page "reset-password".
 [x] Revoir le menu de paramètres.
 
+## Mobile
+
+[x] Pull down pour recharger.
+[ ] Reorder des cartes.
+[ ] Gestion d'un cache en cas de hors connexion.
+[ ] Faire un APK.
+
+
 ## Backend
 
 [ ] Rate limiting sur l'authentification.

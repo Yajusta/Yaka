@@ -2,15 +2,18 @@ import { KanbanList, Card } from '@shared/types';
 import { useTranslation } from 'react-i18next';
 import { useDisplayMode } from '@shared/hooks/useDisplayMode';
 import CardItem from './CardItem';
+import { PullToRefreshIndicator } from '../common/PullToRefreshIndicator';
 
 interface ListsViewProps {
   lists: KanbanList[];
   cards: Card[];
   onCardClick?: (card: Card) => void;
   onCardUpdate?: (updatedCard: Card) => void;
+  onRefresh?: () => Promise<void>;
+  isRefreshing?: boolean;
 }
 
-const ListsView = ({ lists, cards, onCardClick, onCardUpdate }: ListsViewProps) => {
+const ListsView = ({ lists, cards, onCardClick, onCardUpdate, onRefresh, isRefreshing = false }: ListsViewProps) => {
   const { t } = useTranslation();
   const { isCompact } = useDisplayMode();
 
@@ -20,15 +23,14 @@ const ListsView = ({ lists, cards, onCardClick, onCardUpdate }: ListsViewProps) 
       return 'low';
     }
     const lower = String(priority).toLowerCase();
-    const normalized = lower.normalize('NFD').replace(/\p{Diacritic}/gu, '');
 
-    if (normalized.includes('high') || normalized.includes('elev') || normalized.includes('eleve')) {
+    if (lower.includes('high') || lower.includes('elev') || lower.includes('eleve')) {
       return 'high';
     }
-    if (normalized.includes('medium') || normalized.includes('moy')) {
+    if (lower.includes('medium') || lower.includes('moy')) {
       return 'medium';
     }
-    if (normalized.includes('low') || normalized.includes('faibl') || normalized.includes('faible')) {
+    if (lower.includes('low') || lower.includes('faibl') || lower.includes('faible')) {
       return 'low';
     }
 
@@ -86,11 +88,16 @@ const ListsView = ({ lists, cards, onCardClick, onCardUpdate }: ListsViewProps) 
   });
 
   return (
-    <div className="space-y-6">
-      {lists.map((list) => {
-        const listCards = cardsByList[list.id] || [];
-        
-        return (
+    <PullToRefreshIndicator
+      onRefresh={onRefresh || (() => Promise.resolve())}
+      isRefreshing={isRefreshing}
+    >
+      <div className="flex-1 overflow-y-auto p-4 pt-20 pb-20">
+        <div className="space-y-6">
+          {lists.map((list) => {
+          const listCards = cardsByList[list.id] || [];
+
+          return (
           <div key={list.id} className="animate-fade-in">
             {/* List Header */}
             <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 pb-3 mb-3 border-b-2 border-border">
@@ -108,20 +115,21 @@ const ListsView = ({ lists, cards, onCardClick, onCardUpdate }: ListsViewProps) 
             <div className={isCompact ? "space-y-2" : "space-y-3"}>
               {listCards.length > 0 ? (
                 listCards.map((card) => (
-                  isCompact ? (
-                    <CompactCardItem
-                      key={card.id}
-                      card={card}
-                      onClick={() => onCardClick?.(card)}
-                    />
-                  ) : (
-                    <CardItem
-                      key={card.id}
-                      card={card}
-                      onClick={() => onCardClick?.(card)}
-                      onUpdate={onCardUpdate}
-                    />
-                  )
+                  <div key={card.id}>
+                    {/* Card */}
+                    {isCompact ? (
+                      <CompactCardItem
+                        card={card}
+                        onClick={() => onCardClick?.(card)}
+                      />
+                    ) : (
+                      <CardItem
+                        card={card}
+                        onClick={() => onCardClick?.(card)}
+                        onUpdate={onCardUpdate}
+                      />
+                    )}
+                  </div>
                 ))
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
@@ -138,9 +146,10 @@ const ListsView = ({ lists, cards, onCardClick, onCardUpdate }: ListsViewProps) 
           <p>{t('list.noListsAvailable')}</p>
         </div>
       )}
-    </div>
+        </div>
+      </div>
+    </PullToRefreshIndicator>
   );
 };
 
 export default ListsView;
-

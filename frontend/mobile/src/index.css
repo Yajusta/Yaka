@@ -132,8 +132,8 @@
     overflow-x: hidden;
     margin: 0;
     padding: 0;
-    /* Prevent pull-to-refresh on mobile */
-    overscroll-behavior-y: contain;
+    /* Allow pull-to-refresh on mobile */
+    overscroll-behavior-y: auto;
   }
 
   #root {
