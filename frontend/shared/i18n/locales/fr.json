@@ -435,7 +435,8 @@
         "allLabels": "Tous les libellés",
         "allPriorities": "Toutes les priorités",
         "allUsers": "Tous les utilisateurs",
-        "assigned": "Assigné"
+        "assigned": "Assigné",
+        "activeFilters": "Filtres actifs"
     },
     "sort": {
         "title": "Titre",

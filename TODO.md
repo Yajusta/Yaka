@@ -19,7 +19,6 @@
 
 ## Mobile
 
-[x] Pull down pour recharger.
 [ ] Reorder des cartes.
 [ ] Gestion d'un cache en cas de hors connexion.
 [ ] Faire un APK.

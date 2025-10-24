@@ -435,7 +435,8 @@
         "allLabels": "All labels",
         "allPriorities": "All priorities",
         "allUsers": "All users",
-        "assigned": "Assigned"
+        "assigned": "Assigned",
+        "activeFilters": "Active filters"
     },
     "sort": {
         "title": "Title",

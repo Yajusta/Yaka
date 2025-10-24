@@ -37,11 +37,12 @@ const MainScreen = () => {
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [filters, setFilters] = useState({
     search: '',
-    assignee_id: null as number | null,
-    priority: null as string | null,
-    label_id: null as number | null,
+    assignee_ids: null as number[] | null,
+    priorities: null as string[] | null,
+    label_ids: null as number[] | null,
   });
 
+  
   const loadData = async (isRefresh = false) => {
     if (!user) {
       navigate('/login');
@@ -63,8 +64,7 @@ const MainScreen = () => {
         labelService.getLabels()
       ]);
 
-      console.log('Loaded cards from API:', cardsData);
-
+      
       // Sort lists by order
       const sortedLists = listsData.sort((a, b) => a.order - b.order);
       setLists(sortedLists);
@@ -99,20 +99,24 @@ const MainScreen = () => {
       );
     }
 
-    // Assignee filter
-    if (filters.assignee_id) {
-      filteredCards = filteredCards.filter(card => card.assignee_id === filters.assignee_id);
-    }
-
-    // Priority filter
-    if (filters.priority) {
-      filteredCards = filteredCards.filter(card => card.priority === filters.priority);
-    }
-
-    // Label filter
-    if (filters.label_id) {
+    // Assignee filter (multiple)
+    if (filters.assignee_ids && filters.assignee_ids.length > 0) {
       filteredCards = filteredCards.filter(card =>
-        card.labels?.some(label => label.id === filters.label_id)
+        card.assignee_id && filters.assignee_ids!.includes(card.assignee_id)
+      );
+    }
+
+    // Priority filter (multiple)
+    if (filters.priorities && filters.priorities.length > 0) {
+      filteredCards = filteredCards.filter(card =>
+        filters.priorities!.includes(card.priority)
+      );
+    }
+
+    // Label filter (multiple)
+    if (filters.label_ids && filters.label_ids.length > 0) {
+      filteredCards = filteredCards.filter(card =>
+        card.labels?.some(label => filters.label_ids!.includes(label.id))
       );
     }
 
@@ -129,7 +133,6 @@ const MainScreen = () => {
   };
 
   const handleCardClick = (card: Card) => {
-    console.log('MainScreen handleCardClick called with card:', card);
     setSelectedCard(card);
   };
 
@@ -168,6 +171,16 @@ const MainScreen = () => {
 
   const handleFiltersChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
+  };
+
+  // Calculate active filters count for badge
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filters.search) count++;
+    if (filters.assignee_ids && filters.assignee_ids.length > 0) count++;
+    if (filters.priorities && filters.priorities.length > 0) count++;
+    if (filters.label_ids && filters.label_ids.length > 0) count++;
+    return count;
   };
 
   const handleVoiceClick = () => {
@@ -246,65 +259,68 @@ const MainScreen = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
-      {/* Header */}
-      <BoardHeader
-        boardTitle={boardTitle}
-        user={user}
-        onMenuClick={() => setShowSettings(true)}
-      />
+    <>
+      {!showFilters ? (
+        <div className="h-screen flex flex-col bg-background overflow-hidden">
+          {/* Header */}
+          <BoardHeader
+            boardTitle={boardTitle}
+            user={user}
+            onMenuClick={() => setShowSettings(true)}
+          />
 
-      {/* Main content */}
-      <main className="flex-1 overflow-hidden relative">
-        <ListsView
-          lists={lists}
-          cards={cards}
-          onCardClick={handleCardClick}
-          onCardUpdate={handleCardUpdate}
-          onRefresh={() => loadData(true)}
-          isRefreshing={isRefreshing}
-        />
-      </main>
+          {/* Main content */}
+          <main className="flex-1 overflow-hidden relative">
+            <ListsView
+              lists={lists}
+              cards={cards}
+              onCardClick={handleCardClick}
+              onCardUpdate={handleCardUpdate}
+              onRefresh={() => loadData(true)}
+              isRefreshing={isRefreshing}
+            />
+          </main>
 
-      {/* Bottom navigation */}
-      <BottomNav
-        onFilterClick={handleFilterClick}
-        onVoiceClick={handleVoiceClick}
-        onNewCardClick={handleNewCardClick}
-      />
+          {/* Bottom navigation */}
+          <BottomNav
+            onFilterClick={handleFilterClick}
+            onVoiceClick={handleVoiceClick}
+            onNewCardClick={handleNewCardClick}
+            activeFiltersCount={getActiveFiltersCount()}
+          />
 
-      {/* Settings menu */}
-      <SettingsMenu
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        user={user}
-        onLogout={handleLogout}
-      />
+          {/* Settings menu */}
+          <SettingsMenu
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+            user={user}
+            onLogout={handleLogout}
+          />
 
-      {/* Card detail modal */}
-      {selectedCard && (
-        <CardDetail
-          card={selectedCard}
-          isOpen={!!selectedCard}
-          onClose={() => {
-            setSelectedCard(null);
-            setIsCreatingNewCard(false);
-          }}
-          onSave={handleCardSave}
-          onDelete={isCreatingNewCard ? undefined : handleCardDelete}
-        />
-      )}
+          {/* Card detail modal */}
+          {selectedCard && (
+            <CardDetail
+              card={selectedCard}
+              isOpen={!!selectedCard}
+              onClose={() => {
+                setSelectedCard(null);
+                setIsCreatingNewCard(false);
+              }}
+              onSave={handleCardSave}
+              onDelete={isCreatingNewCard ? undefined : handleCardDelete}
+            />
+          )}
 
-      {/* Voice input dialog */}
-      <VoiceInputDialog
-        isOpen={showVoiceInput}
-        onClose={() => setShowVoiceInput(false)}
-        onCardSave={handleVoiceCardSave}
-        defaultListId={lists.length > 0 ? lists[0].id : undefined}
-      />
-
-      {/* Filter screen */}
-      {showFilters && (
+          {/* Voice input dialog */}
+          <VoiceInputDialog
+            isOpen={showVoiceInput}
+            onClose={() => setShowVoiceInput(false)}
+            onCardSave={handleVoiceCardSave}
+            defaultListId={lists.length > 0 ? lists[0].id : undefined}
+          />
+        </div>
+      ) : (
+        /* Filter screen as full page */
         <FilterScreen
           onBack={() => setShowFilters(false)}
           filters={filters}
@@ -313,7 +329,7 @@ const MainScreen = () => {
           labels={labels}
         />
       )}
-    </div>
+    </>
   );
 };
 
