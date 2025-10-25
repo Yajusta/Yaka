@@ -34,19 +34,54 @@ services:
     networks:
       - yaka-network
 
-  frontend:
+  frontend-desktop:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
         - DEMO_MODE=${DEMO_MODE:-false}
         - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
-    container_name: yaka-frontend
+        - BASE_URL=${BASE_URL:-http://localhost:3000}
+        - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
+    container_name: yaka-frontend-desktop
     ports:
       - "3000:80"
     environment:
       - DEMO_MODE=${DEMO_MODE:-false}
       - BASE_URL=${BASE_URL:-http://localhost:3000}
+      - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 300s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - yaka-network
+
+  frontend-mobile:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - DEMO_MODE=${DEMO_MODE:-false}
+        - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
+        - BASE_URL=${BASE_URL:-http://localhost:3000}
+        - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
+    container_name: yaka-frontend-mobile
+    ports:
+      - "3001:80"
+    volumes:
+      - ./frontend/mobile/public:/usr/share/nginx/html/mobile:ro
+    environment:
+      - DEMO_MODE=${DEMO_MODE:-false}
+      - BASE_URL=${BASE_URL:-http://localhost:3000}
+      - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
       - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
     depends_on:
       backend:

@@ -1,6 +1,6 @@
 import { Button } from '../ui/button';
 import * as React from 'react';
-import { BookOpen, Check, ChevronDown, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, ShieldCheck, Sun, Tag, Users } from 'lucide-react';
+import { BookOpen, Check, ChevronDown, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, ShieldCheck, Sun, Tag, Users, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useBoardSettings } from '@shared/hooks/useBoardSettingsContext';
 import { UserRole, UserRoleValue, User, ViewScope } from '@shared/types';
@@ -186,6 +186,24 @@ export const Header = ({
 
     const isAdmin = (): boolean => user?.role === UserRole.ADMIN;
 
+    // Check if user is on mobile browser
+    const isMobile = (): boolean => {
+        const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+        return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    };
+
+    // Get mobile URL with board path if applicable
+    const getMobileUrl = (): string => {
+        const currentPath = window.location.pathname;
+        const boardMatch = currentPath.match(/^\/board\/([^\/]+)(.*)$/);
+
+        if (boardMatch) {
+            return `${(window as any).BASE_URL_MOBILE}/board/${boardMatch[1]}${boardMatch[2]}`;
+        }
+
+        return (window as any).BASE_URL_MOBILE;
+    };
+
     return (
         <GlassmorphicCard className="border-b border-border/50 !rounded-none shadow-sm py-0 w-full">
             <div className="px-2 sm:px-4 md:px-6 lg:px-8 w-full">
@@ -247,6 +265,17 @@ export const Header = ({
                                     </div>
                                 </div>
                                 <DropdownMenuSeparator />
+
+                                {/* Mobile switch - only show on mobile browsers */}
+                                {isMobile() && (
+                                    <DropdownMenuItem
+                                        onClick={() => window.location.href = getMobileUrl()}
+                                        className="cursor-pointer"
+                                    >
+                                        <Smartphone className="mr-2 h-4 w-4" />
+                                        <span>{t('navigation.switchToMobile')}</span>
+                                    </DropdownMenuItem>
+                                )}
 
                                 {/* Export submenu */}
                                 <DropdownMenuSub>

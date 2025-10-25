@@ -86,7 +86,9 @@
         "settings": "Paramètres",
         "profile": "Profil",
         "help": "Aide",
-        "about": "À propos"
+        "about": "À propos",
+        "switchToMobile": "Basculer vers la version mobile",
+        "switchToDesktop": "Basculer vers la version desktop"
     },
     "card": {
         "title": "Titre",
