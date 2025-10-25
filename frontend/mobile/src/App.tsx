@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@shared/hooks/useAuth';
 import { UsersProvider } from '@shared/hooks/useUsers';
 import { DisplayModeProvider } from '@shared/hooks/useDisplayMode';
@@ -9,6 +9,41 @@ import BoardConfigScreen from './screens/BoardConfigScreen';
 import LoginScreen from './screens/LoginScreen';
 import MainScreen from './screens/MainScreen';
 import './index.css';
+
+// Board route handler - updates localStorage when board name is provided in URL
+const BoardRouteHandler = () => {
+  const { boardName } = useParams();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (boardName) {
+      // Resolve endpoint using the same logic as BoardConfigScreen
+      const resolveEndpoint = (name: string): string => {
+        const apiBaseUrl = (window as any).API_BASE_URL || 'http://localhost:8000';
+
+        if (name.trim().toLowerCase() === 'localhost') {
+          return apiBaseUrl;
+        } else {
+          return `${apiBaseUrl}/board/${encodeURIComponent(name.trim())}`;
+        }
+      };
+
+      // Update localStorage with the board name from URL
+      localStorage.setItem('board_name', boardName.trim());
+      localStorage.setItem('api_base_url', resolveEndpoint(boardName));
+
+      // Redirect to main app
+      window.location.href = '/';
+    }
+  }, [boardName, location.pathname]);
+
+  // Show loading while redirecting
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+  );
+};
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -46,6 +81,7 @@ const AppContent = () => {
     <Routes>
       <Route path="/config" element={<BoardConfigScreen />} />
       <Route path="/login" element={<LoginScreen />} />
+      <Route path="/board/:boardName" element={<BoardRouteHandler />} />
       <Route
         path="/"
         element={

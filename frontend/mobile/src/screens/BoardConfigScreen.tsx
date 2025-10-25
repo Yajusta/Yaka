@@ -1,20 +1,28 @@
-import { useState, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, FormEvent, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 const BoardConfigScreen = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [boardName, setBoardName] = useState<string>(
-    localStorage.getItem('board_name') || ''
-  );
+  const [searchParams] = useSearchParams();
+  const [boardName, setBoardName] = useState<string>('');
   const [error, setError] = useState<string>('');
 
+  // Initialize board name from localStorage or URL params
+  useEffect(() => {
+    const currentBoardName = localStorage.getItem('board_name') || '';
+    const prefilledName = searchParams.get('prefill') || currentBoardName;
+    setBoardName(prefilledName);
+  }, [searchParams]);
+
   const resolveEndpoint = (name: string): string => {
+    const apiBaseUrl = (window as any).API_BASE_URL || 'http://localhost:8000';
+
     if (name.trim().toLowerCase() === 'localhost') {
-      return 'http://localhost:8000';
+      return apiBaseUrl;
     } else {
-      return `https://yaka.yajusta.fr/api/board/${encodeURIComponent(name.trim())}`;
+      return `${apiBaseUrl}/board/${encodeURIComponent(name.trim())}`;
     }
   };
 

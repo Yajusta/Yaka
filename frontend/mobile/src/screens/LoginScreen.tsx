@@ -1,7 +1,8 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@shared/hooks/useAuth';
+import { boardSettingsService } from '@shared/services/api';
 import { Loader2, Settings } from 'lucide-react';
 
 const LoginScreen = () => {
@@ -12,6 +13,22 @@ const LoginScreen = () => {
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [boardTitle, setBoardTitle] = useState<string>('Yaka'); // Default fallback
+
+  // Fetch board title on component mount
+  useEffect(() => {
+    const fetchBoardTitle = async () => {
+      try {
+        const titleData = await boardSettingsService.getBoardTitle();
+        setBoardTitle(titleData.title);
+      } catch (error) {
+        console.error('Failed to fetch board title:', error);
+        // Keep default 'Yaka' title on error
+      }
+    };
+
+    fetchBoardTitle();
+  }, []);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,7 +46,12 @@ const LoginScreen = () => {
   };
 
   const handleConfigClick = () => {
-    navigate('/config');
+    const currentBoardName = localStorage.getItem('board_name') || '';
+    if (currentBoardName) {
+      navigate(`/config?prefill=${encodeURIComponent(currentBoardName)}`);
+    } else {
+      navigate('/config');
+    }
   };
 
   return (
@@ -49,7 +71,7 @@ const LoginScreen = () => {
             <img src="/yaka.svg" alt="Yaka" className="w-32 h-32" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">
-            {t('app.name')}
+            {boardTitle}
           </h1>
           <p className="mt-2 text-muted-foreground">
             {t('auth.connectToAccount')}

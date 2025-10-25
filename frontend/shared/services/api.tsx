@@ -14,6 +14,20 @@ const getBoardUidFromUrl = (): string | null => {
 
 // Créer l'instance API avec configuration dynamique
 const createApiInstance = (): AxiosInstance => {
+    // First, try to get the base URL from localStorage (set by mobile app config)
+    const storedBaseUrl = localStorage.getItem('api_base_url');
+
+    if (storedBaseUrl) {
+        // Use the stored base URL from mobile app configuration
+        return axios.create({
+            baseURL: storedBaseUrl,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+    }
+
+    // Fallback to URL-based detection for desktop/web app
     const boardUid = getBoardUidFromUrl();
     const baseUrl = boardUid ? `${API_BASE_URL}/board/${boardUid}` : API_BASE_URL;
 

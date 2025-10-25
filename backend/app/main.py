@@ -222,6 +222,17 @@ import os
 frontend_url = os.getenv("BASE_URL", "http://localhost:5173")
 allowed_origins = [frontend_url, "http://localhost:3001", "http://localhost:5173"]
 
+# Ajouter les origines pour les applications mobiles (PWA → APK)
+mobile_origins = os.getenv("MOBILE_ORIGINS", "capacitor://localhost,ionic://localhost,http://localhost").split(",")
+allowed_origins.extend(mobile_origins)
+
+# Ajouter file:// pour le développement mobile (uniquement si environnement de développement)
+if os.getenv("ENVIRONMENT", "production").lower() == "development":
+    allowed_origins.append("file://")
+
+# Log des origines autorisées pour le debug
+print(f"CORS: Origines autorisées: {allowed_origins}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
