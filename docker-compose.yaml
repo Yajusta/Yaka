@@ -19,6 +19,7 @@ services:
       - MODEL_TEMPERATURE=${MODEL_TEMPERATURE:-}
       - YAKA_ADMIN_API_KEY=${YAKA_ADMIN_API_KEY:-}
       - BASE_URL=${BASE_URL:-http://localhost:3000}
+      - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
       - DEMO_MODE=${DEMO_MODE:-false}
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-fr}
       - ENVIRONMENT=${ENVIRONMENT:-production}
@@ -38,6 +39,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: desktop-production
       args:
         - DEMO_MODE=${DEMO_MODE:-false}
         - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
@@ -68,6 +70,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: mobile-production
       args:
         - DEMO_MODE=${DEMO_MODE:-false}
         - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}

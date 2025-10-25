@@ -220,7 +220,14 @@ import os
 
 # En développement, autoriser localhost; en production, utiliser les variables d'environnement
 frontend_url = os.getenv("BASE_URL", "http://localhost:5173")
-allowed_origins = [frontend_url, "http://localhost:3001", "http://localhost:5173"]
+frontend_url_mobile = os.getenv("BASE_URL_MOBILE", "http://localhost:5173")
+allowed_origins = [
+    frontend_url,
+    frontend_url_mobile,
+    "http://localhost:3001",
+    "http://localhost:5173",
+    "http://localhost:4173",
+]
 
 # Ajouter les origines pour les applications mobiles (PWA → APK)
 mobile_origins = os.getenv("MOBILE_ORIGINS", "capacitor://localhost,ionic://localhost,http://localhost").split(",")

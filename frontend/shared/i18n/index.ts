@@ -15,6 +15,7 @@ const resources = {
     }
 };
 
+// Initialize i18n
 i18n
     .use(LanguageDetector)
     .use(initReactI18next)
@@ -23,11 +24,11 @@ i18n
         lng: undefined, // Laisser indéfini pour être déterminé dynamiquement
         fallbackLng: 'fr',
         debug: process.env.NODE_ENV === 'development',
-        
+
         interpolation: {
             escapeValue: false // React échappe déjà les valeurs
         },
-        
+
         detection: {
             order: ['localStorage', 'navigator', 'htmlTag'],
             caches: ['localStorage']
