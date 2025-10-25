@@ -30,7 +30,7 @@ const BottomNav = ({ onFilterClick, onVoiceClick, onNewCardClick, activeFiltersC
       {/* Voice input button */}
       <button
         onClick={onVoiceClick}
-        className="flex items-center justify-center btn-touch text-muted-foreground hover:text-primary active:text-primary transition-colors"
+        className="flex items-center justify-center btn-touch bg-green-500 hover:bg-green-600 text-white hover:text-white rounded-lg transition-colors shadow-lg"
         aria-label={t('voice.input')}
       >
         <Mic className="w-7 h-7" />
