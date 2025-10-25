@@ -32,6 +32,7 @@ const VoiceInputDialog = ({ isOpen, onClose, onCardSave, defaultListId }: VoiceI
   
   const recognitionRef = useRef<any>(null);
   const isListeningRef = useRef<boolean>(false);
+  const finalTranscriptRef = useRef<string>('');
 
   useEffect(() => {
     // Check if Web Speech API is available
@@ -54,19 +55,22 @@ const VoiceInputDialog = ({ isOpen, onClose, onCardSave, defaultListId }: VoiceI
         }
 
         let interimTranscript = '';
-        let finalTranscript = '';
 
-        // Process all results normally - the difference comes from continuous=true/false
-        for (let i = 0; i < event.results.length; i++) {
+        // Process ONLY NEW results starting from event.resultIndex
+        // This prevents processing the same results multiple times (crucial for mobile)
+        for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcriptPart = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += transcriptPart + ' ';
+            // Accumulate final results in the ref
+            finalTranscriptRef.current += transcriptPart + ' ';
           } else {
+            // Interim results are temporary and will be replaced
             interimTranscript += transcriptPart;
           }
         }
 
-        setTranscript(finalTranscript + interimTranscript);
+        // Combine accumulated final transcript with current interim transcript
+        setTranscript(finalTranscriptRef.current + interimTranscript);
       };
 
       recognition.onerror = (event: any) => {
@@ -134,6 +138,7 @@ const VoiceInputDialog = ({ isOpen, onClose, onCardSave, defaultListId }: VoiceI
   const startListening = () => {
     if (recognitionRef.current && !isListeningRef.current) {
       setTranscript('');
+      finalTranscriptRef.current = '';
       try {
         recognitionRef.current.start();
         isListeningRef.current = true;

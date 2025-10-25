@@ -121,9 +121,8 @@ export const authService = {
 
         // Set the language from user preferences
         if (userData.language) {
-            // Dynamically import i18n to avoid circular dependency
-            const i18n = await import('../i18n').then(module => module.default);
-            await i18n.changeLanguage(userData.language);
+            // Store language in localStorage for i18next detector
+            localStorage.setItem('i18nextLng', userData.language);
         }
 
         // Clear any redirect guard now that we're authenticated
@@ -144,9 +143,8 @@ export const authService = {
 
         // Set the language from user preferences
         if (userData.language) {
-            // Dynamically import i18n to avoid circular dependency
-            const i18n = await import('../i18n').then(module => module.default);
-            await i18n.changeLanguage(userData.language);
+            // Store language in localStorage for i18next detector
+            localStorage.setItem('i18nextLng', userData.language);
         }
 
         return userData;

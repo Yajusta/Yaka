@@ -2,8 +2,9 @@ import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@shared/hooks/useAuth';
-import { boardSettingsService } from '@shared/services/api';
+import { authService, boardSettingsService } from '@shared/services/api';
 import { Loader2, Settings } from 'lucide-react';
+import i18n from '@shared/i18n';
 
 const LoginScreen = () => {
   const { t } = useTranslation();
@@ -57,6 +58,13 @@ const LoginScreen = () => {
 
     try {
       await login(email, password);
+
+      // Apply user language setting immediately after login
+      const currentUser = authService.getCurrentUserFromStorage();
+      if (currentUser?.language) {
+        await i18n.changeLanguage(currentUser.language);
+      }
+
       // If we're on a board-specific login page, redirect back to that board
       if (boardName) {
         navigate(`/board/${boardName}`);
