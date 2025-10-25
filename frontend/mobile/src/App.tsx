@@ -45,6 +45,7 @@ const BoardRouteHandler = () => {
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   const apiUrl = localStorage.getItem('api_base_url');
 
   if (loading) {
@@ -60,6 +61,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) {
+    // If we're on a board route, redirect to the board's login page
+    const boardMatch = location.pathname.match(/^\/board\/([^/]+)/);
+    if (boardMatch) {
+      return <Navigate to={`/board/${boardMatch[1]}/login`} replace />;
+    }
     return <Navigate to="/login" replace />;
   }
 
@@ -78,6 +84,7 @@ const AppContent = () => {
     <Routes>
       <Route path="/config" element={<BoardConfigScreen />} />
       <Route path="/login" element={<LoginScreen />} />
+      <Route path="/board/:boardName/login" element={<LoginScreen />} />
       <Route path="/board/:boardName" element={<BoardRouteHandler />} />
       <Route
         path="/"

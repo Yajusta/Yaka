@@ -1,5 +1,5 @@
 import { useState, FormEvent, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@shared/hooks/useAuth';
 import { boardSettingsService } from '@shared/services/api';
@@ -8,12 +8,32 @@ import { Loader2, Settings } from 'lucide-react';
 const LoginScreen = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { boardName } = useParams();
   const { login } = useAuth();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [boardTitle, setBoardTitle] = useState<string>('Yaka'); // Default fallback
+
+  // If boardName is in URL params, configure the board
+  useEffect(() => {
+    if (boardName) {
+      const resolveEndpoint = (name: string): string => {
+        const apiBaseUrl = (window as any).API_BASE_URL || 'http://localhost:8000';
+
+        if (name.trim().toLowerCase() === 'localhost') {
+          return apiBaseUrl;
+        } else {
+          return `${apiBaseUrl}/board/${encodeURIComponent(name.trim())}`;
+        }
+      };
+
+      // Update localStorage with the board name from URL
+      localStorage.setItem('board_name', boardName.trim());
+      localStorage.setItem('api_base_url', resolveEndpoint(boardName));
+    }
+  }, [boardName]);
 
   // Fetch board title on component mount
   useEffect(() => {
@@ -37,7 +57,12 @@ const LoginScreen = () => {
 
     try {
       await login(email, password);
-      navigate('/');
+      // If we're on a board-specific login page, redirect back to that board
+      if (boardName) {
+        navigate(`/board/${boardName}`);
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || t('auth.loginError'));
     } finally {
