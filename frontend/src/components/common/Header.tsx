@@ -226,6 +226,20 @@ export const Header = ({
 
                     {/* Actions */}
                     <div className="flex items-center space-x-3">
+                        {/* Mobile switch - only show on mobile browsers */}
+                        {isMobile() && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => window.location.href = getMobileUrl()}
+                                className="h-9 w-9"
+                                aria-label={t('navigation.switchToMobile')}
+                                title={t('navigation.switchToMobile')}
+                            >
+                                <Smartphone className="h-4 w-4" />
+                            </Button>
+                        )}
+
                         {/* User menu */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -265,17 +279,6 @@ export const Header = ({
                                     </div>
                                 </div>
                                 <DropdownMenuSeparator />
-
-                                {/* Mobile switch - only show on mobile browsers */}
-                                {isMobile() && (
-                                    <DropdownMenuItem
-                                        onClick={() => window.location.href = getMobileUrl()}
-                                        className="cursor-pointer"
-                                    >
-                                        <Smartphone className="mr-2 h-4 w-4" />
-                                        <span>{t('navigation.switchToMobile')}</span>
-                                    </DropdownMenuItem>
-                                )}
 
                                 {/* Export submenu */}
                                 <DropdownMenuSub>
