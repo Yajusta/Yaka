@@ -102,7 +102,7 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                 let interimTranscript = '';
                 let finalTranscript = '';
 
-                // Parcourir tous les résultats pour reconstruire le transcript complet
+                // Process all results normally - the difference comes from continuous=true/false
                 for (let i = 0; i < event.results.length; i++) {
                     const transcriptPart = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
@@ -112,7 +112,6 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                     }
                 }
 
-                // Remplacer le transcript par la combinaison des résultats finaux et intermédiaires
                 setTranscript(finalTranscript + interimTranscript);
             };
 
@@ -147,6 +146,10 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
         if (recognitionRef.current) {
             const lang = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
             recognitionRef.current.lang = lang;
+
+            // Ensure properties are correctly set (same for all platforms)
+            recognitionRef.current.continuous = true;
+            recognitionRef.current.interimResults = true;
         }
 
         return () => {

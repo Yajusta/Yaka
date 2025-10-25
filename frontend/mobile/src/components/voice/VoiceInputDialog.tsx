@@ -56,6 +56,7 @@ const VoiceInputDialog = ({ isOpen, onClose, onCardSave, defaultListId }: VoiceI
         let interimTranscript = '';
         let finalTranscript = '';
 
+        // Process all results normally - the difference comes from continuous=true/false
         for (let i = 0; i < event.results.length; i++) {
           const transcriptPart = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
@@ -92,10 +93,14 @@ const VoiceInputDialog = ({ isOpen, onClose, onCardSave, defaultListId }: VoiceI
       recognitionRef.current = recognition;
     }
 
-    // Update language
+    // Always update language and properties, even if recognition already exists
     if (recognitionRef.current) {
       const lang = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
       recognitionRef.current.lang = lang;
+
+      // Ensure properties are correctly set (same for all platforms)
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
     }
 
     return () => {
