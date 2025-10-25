@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { Mic, MicOff, Send, X, AlertTriangle, Settings, Check } from 'lucide-react';
+import { Mic, MicOff, Send, X, AlertTriangle, Settings, Check, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { voiceControlService, VoiceControlResponse } from '@shared/services/voiceControlApi';
 import CardForm from '../cards/CardForm';
@@ -54,7 +54,6 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
     const [proposedChanges, setProposedChanges] = useState<any>(null);
     const recognitionRef = useRef<any>(null);
     const isListeningRef = useRef<boolean>(false);
-    const finalTranscriptRef = useRef<string>('');
 
     // Stocker le mode actuel dans un ref pour éviter les problèmes de narrowing TypeScript
     const currentModeRef = useRef<RecognitionMode>(recognitionMode);
@@ -100,23 +99,22 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                     return;
                 }
 
+                let finalTranscript = '';
                 let interimTranscript = '';
 
-                // Process ONLY NEW results starting from event.resultIndex
-                // This prevents processing the same results multiple times (crucial for mobile)
-                for (let i = event.resultIndex; i < event.results.length; i++) {
+                // Rebuild the COMPLETE transcript from ALL results
+                // On mobile, each result contains the full phrase up to that point
+                for (let i = 0; i < event.results.length; i++) {
                     const transcriptPart = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
-                        // Accumulate final results in the ref
-                        finalTranscriptRef.current += transcriptPart + ' ';
+                        finalTranscript += transcriptPart + ' ';
                     } else {
-                        // Interim results are temporary and will be replaced
                         interimTranscript += transcriptPart;
                     }
                 }
 
-                // Combine accumulated final transcript with current interim transcript
-                setTranscript(finalTranscriptRef.current + interimTranscript);
+                // Display the complete transcript
+                setTranscript(finalTranscript + interimTranscript);
             };
 
             recognition.onerror = (event: any) => {
@@ -211,7 +209,6 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
     const startListening = () => {
         if (recognitionRef.current && !isListeningRef.current) {
             setTranscript('');
-            finalTranscriptRef.current = '';
             try {
                 recognitionRef.current.start();
                 isListeningRef.current = true;
@@ -402,16 +399,27 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                     <div className="space-y-4">
                         {/* Zone de texte éditable */}
                         <div className="space-y-2">
-                            <Textarea
-                                value={transcript}
-                                onChange={handleTranscriptChange}
-                                onKeyDown={handleKeyDown}
-                                placeholder={t('voice.placeholder')}
-                                className="min-h-[150px] resize-none"
-                                disabled={isProcessing}
-                                readOnly={isListening}
-                                maxLength={500}
-                            />
+                            <div className="relative">
+                                <Textarea
+                                    value={transcript}
+                                    onChange={handleTranscriptChange}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder={t('voice.placeholder')}
+                                    className="min-h-[150px] resize-none pr-10"
+                                    disabled={isProcessing}
+                                    readOnly={isListening}
+                                    maxLength={500}
+                                />
+                                {transcript.trim() && !isListening && !isProcessing && (
+                                    <button
+                                        onClick={() => setTranscript('')}
+                                        className="absolute bottom-2 left-2 p-1 text-muted-foreground hover:text-foreground active:bg-accent rounded transition-colors"
+                                        aria-label={t('voice.clear')}
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
                             <div className="text-xs text-muted-foreground text-right">
                                 {transcript.length}/500
                             </div>

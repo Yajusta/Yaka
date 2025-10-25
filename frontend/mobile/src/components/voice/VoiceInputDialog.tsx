@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Mic, MicOff, Send } from 'lucide-react';
+import { X, Mic, MicOff, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '@shared/types';
 import { voiceControlService, VoiceControlResponse } from '@shared/services/voiceControlApi';
@@ -29,10 +29,10 @@ const VoiceInputDialog = ({ isOpen, onClose, onCardSave, defaultListId }: VoiceI
   const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
   const [cardInitialData, setCardInitialData] = useState<any>(null);
   const [proposedChanges, setProposedChanges] = useState<any>(null);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
   
   const recognitionRef = useRef<any>(null);
   const isListeningRef = useRef<boolean>(false);
-  const finalTranscriptRef = useRef<string>('');
 
   useEffect(() => {
     // Check if Web Speech API is available
@@ -54,23 +54,33 @@ const VoiceInputDialog = ({ isOpen, onClose, onCardSave, defaultListId }: VoiceI
           return;
         }
 
+        const logs: string[] = [];
+        logs.push(`Event: idx=${event.resultIndex} len=${event.results.length}`);
+
+        let finalTranscript = '';
         let interimTranscript = '';
 
-        // Process ONLY NEW results starting from event.resultIndex
-        // This prevents processing the same results multiple times (crucial for mobile)
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        // Rebuild the COMPLETE transcript from ALL results
+        // On mobile, each result contains the full phrase up to that point
+        for (let i = 0; i < event.results.length; i++) {
           const transcriptPart = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            // Accumulate final results in the ref
-            finalTranscriptRef.current += transcriptPart + ' ';
+          const isFinal = event.results[i].isFinal;
+          
+          if (isFinal) {
+            finalTranscript += transcriptPart + ' ';
           } else {
-            // Interim results are temporary and will be replaced
             interimTranscript += transcriptPart;
           }
         }
 
-        // Combine accumulated final transcript with current interim transcript
-        setTranscript(finalTranscriptRef.current + interimTranscript);
+        logs.push(`Final: "${finalTranscript}"`);
+        logs.push(`Interim: "${interimTranscript}"`);
+        logs.push(`Combined: "${finalTranscript + interimTranscript}"`);
+        
+        setDebugLogs(prev => [...prev.slice(-15), ...logs]); // Keep last 15 log entries
+
+        // Display the complete transcript
+        setTranscript(finalTranscript + interimTranscript);
       };
 
       recognition.onerror = (event: any) => {
@@ -138,7 +148,7 @@ const VoiceInputDialog = ({ isOpen, onClose, onCardSave, defaultListId }: VoiceI
   const startListening = () => {
     if (recognitionRef.current && !isListeningRef.current) {
       setTranscript('');
-      finalTranscriptRef.current = '';
+      setDebugLogs([]);
       try {
         recognitionRef.current.start();
         isListeningRef.current = true;
@@ -341,15 +351,26 @@ const VoiceInputDialog = ({ isOpen, onClose, onCardSave, defaultListId }: VoiceI
 
           {/* Transcript area */}
           <div className="space-y-2">
-            <textarea
-              value={transcript}
-              onChange={(e) => setTranscript(e.target.value)}
-              placeholder={t('voice.placeholder')}
-              className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground resize-none min-h-[200px]"
-              maxLength={500}
-              readOnly={isListening}
-              disabled={isProcessing}
-            />
+            <div className="relative">
+              <textarea
+                value={transcript}
+                onChange={(e) => setTranscript(e.target.value)}
+                placeholder={t('voice.placeholder')}
+                className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground resize-none min-h-[200px]"
+                maxLength={500}
+                readOnly={isListening}
+                disabled={isProcessing}
+              />
+              {transcript.trim() && !isListening && !isProcessing && (
+                <button
+                  onClick={() => setTranscript('')}
+                  className="absolute bottom-2 left-2 p-1 text-muted-foreground hover:text-foreground active:bg-accent rounded transition-colors"
+                  aria-label={t('voice.clear')}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
             <div className="text-xs text-muted-foreground text-right">
               {transcript.length}/500
             </div>
@@ -418,6 +439,16 @@ const VoiceInputDialog = ({ isOpen, onClose, onCardSave, defaultListId }: VoiceI
             <Send className="w-5 h-5" />
             {isProcessing ? t('voice.processing') : t('voice.send')}
           </button>
+
+          {/* Debug logs */}
+          {debugLogs.length > 0 && (
+            <div className="mt-4 p-3 bg-gray-900 text-green-400 rounded-lg text-xs font-mono overflow-auto max-h-[200px]">
+              <div className="font-bold mb-2">DEBUG LOGS:</div>
+              {debugLogs.map((log, idx) => (
+                <div key={idx}>{log}</div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
