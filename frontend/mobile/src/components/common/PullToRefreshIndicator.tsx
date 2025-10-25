@@ -42,11 +42,16 @@ export const PullToRefreshIndicator: React.FC<PullToRefreshIndicatorProps> = ({
       const currentY = e.touches[0].clientY;
       const diff = currentY - startY.current;
 
-      // Only pull down (positive diff) when at the top
-      if (diff > 0 && container.scrollTop <= 5) {
+      // Only pull down (positive diff) when at the top and with sufficient distance
+      if (diff > 15 && container.scrollTop <= 5) {
         e.preventDefault();
-        setPullDistance(Math.min(diff, 150)); // Cap the pull distance
+        setPullDistance(Math.min(diff - 15, 150)); // Cap the pull distance, subtract threshold
         setIsPulling(true);
+      } else if (diff <= 0) {
+        // Allow normal scrolling when not pulling down
+        startY.current = null;
+        setIsPulling(false);
+        setPullDistance(0);
       }
     };
 
