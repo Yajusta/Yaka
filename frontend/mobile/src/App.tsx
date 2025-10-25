@@ -8,6 +8,7 @@ import { Toaster } from './components/ui/sonner';
 import BoardConfigScreen from './screens/BoardConfigScreen';
 import LoginScreen from './screens/LoginScreen';
 import MainScreen from './screens/MainScreen';
+import ArchivesScreen from './screens/ArchivesScreen';
 import './index.css';
 
 // Board route handler - updates localStorage when board name is provided in URL and renders MainScreen
@@ -86,6 +87,14 @@ const AppContent = () => {
       <Route path="/login" element={<LoginScreen />} />
       <Route path="/board/:boardName/login" element={<LoginScreen />} />
       <Route path="/board/:boardName" element={<BoardRouteHandler />} />
+      <Route
+        path="/archives"
+        element={
+          <ProtectedRoute>
+            <ArchivesScreen />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/"
         element={

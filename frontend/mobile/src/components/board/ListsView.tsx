@@ -1,8 +1,10 @@
 import { KanbanList, Card } from '@shared/types';
 import { useTranslation } from 'react-i18next';
 import { useDisplayMode } from '@shared/hooks/useDisplayMode';
+import { useNavigate } from 'react-router-dom';
 import CardItem from './CardItem';
 import { PullToRefreshIndicator } from '../common/PullToRefreshIndicator';
+import { Archive } from 'lucide-react';
 
 interface ListsViewProps {
   lists: KanbanList[];
@@ -16,6 +18,7 @@ interface ListsViewProps {
 const ListsView = ({ lists, cards, onCardClick, onCardUpdate, onRefresh, isRefreshing = false }: ListsViewProps) => {
   const { t } = useTranslation();
   const { isCompact } = useDisplayMode();
+  const navigate = useNavigate();
 
   // Helper functions for priority handling
   const normalizePriority = (priority: string): 'low' | 'medium' | 'high' => {
@@ -146,6 +149,17 @@ const ListsView = ({ lists, cards, onCardClick, onCardUpdate, onRefresh, isRefre
           <p>{t('list.noListsAvailable')}</p>
         </div>
       )}
+
+      {/* Archives button */}
+      <div className="mt-8 mb-4">
+        <button
+          onClick={() => navigate('/archives')}
+          className="w-full flex items-center justify-center gap-2 p-4 bg-muted hover:bg-muted/80 active:bg-muted/60 border border-border rounded-lg transition-colors"
+        >
+          <Archive className="w-5 h-5 text-muted-foreground" />
+          <span className="font-medium text-foreground">{t('mobile.archives')}</span>
+        </button>
+      </div>
         </div>
       </div>
     </PullToRefreshIndicator>

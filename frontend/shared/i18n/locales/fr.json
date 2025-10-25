@@ -666,5 +666,9 @@
         "refreshing": "Rafraîchissement...",
         "releaseToRefresh": "Relâchez pour rafraîchir",
         "pullToRefresh": "Tirez pour rafraîchir"
+    },
+    "mobile": {
+        "archives": "Archives",
+        "viewArchives": "Voir les archives"
     }
 }

@@ -666,5 +666,9 @@
         "refreshing": "Refreshing...",
         "releaseToRefresh": "Release to refresh",
         "pullToRefresh": "Pull to refresh"
+    },
+    "mobile": {
+        "archives": "Archives",
+        "viewArchives": "View archives"
     }
 }
