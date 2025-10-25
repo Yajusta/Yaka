@@ -10,7 +10,7 @@ import LoginScreen from './screens/LoginScreen';
 import MainScreen from './screens/MainScreen';
 import './index.css';
 
-// Board route handler - updates localStorage when board name is provided in URL
+// Board route handler - updates localStorage when board name is provided in URL and renders MainScreen
 const BoardRouteHandler = () => {
   const { boardName } = useParams();
   const location = useLocation();
@@ -31,17 +31,14 @@ const BoardRouteHandler = () => {
       // Update localStorage with the board name from URL
       localStorage.setItem('board_name', boardName.trim());
       localStorage.setItem('api_base_url', resolveEndpoint(boardName));
-
-      // Redirect to main app
-      window.location.href = '/';
     }
   }, [boardName, location.pathname]);
 
-  // Show loading while redirecting
+  // Render MainScreen with protection, staying on the /board/:boardName URL
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-    </div>
+    <ProtectedRoute>
+      <MainScreen />
+    </ProtectedRoute>
   );
 };
 
