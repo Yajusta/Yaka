@@ -14,6 +14,9 @@ wheels/
 *.bak
 
 frontend/node_modules/
+frontend/mobile/node_modules/
+
+android/
 
 # Config
 .vscode/
