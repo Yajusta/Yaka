@@ -1,9 +1,9 @@
 import { Button } from '../ui/button';
 import * as React from 'react';
-import { BookOpen, Check, ChevronDown, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, ShieldCheck, Sun, Tag, Users } from 'lucide-react';
+import { BookOpen, Check, ChevronDown, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, ShieldCheck, Sun, Tag, Users, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useBoardSettings } from '../../hooks/useBoardSettingsContext';
-import { UserRole, UserRoleValue, User, ViewScope } from '../../types';
+import { useBoardSettings } from '@shared/hooks/useBoardSettingsContext';
+import { UserRole, UserRoleValue, User, ViewScope } from '@shared/types';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import {
     DropdownMenu,
@@ -16,11 +16,11 @@ import {
     DropdownMenuTrigger
 } from '../ui/dropdown-menu';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
-import { DisplayMode } from '../../hooks/useDisplayMode';
-import { cn } from '../../lib/utils';
-import { exportApi } from '../../services/exportApi';
-import { useToast } from '../../hooks/use-toast';
-import { authService, userService } from '../../services/api';
+import { DisplayMode } from '@shared/hooks/useDisplayMode';
+import { cn } from '@shared/lib/utils';
+import { exportApi } from '@shared/services/exportApi';
+import { useToast } from '@shared/hooks/use-toast';
+import { authService, userService } from '@shared/services/api';
 
 interface HeaderProps {
     user: User;
@@ -186,6 +186,24 @@ export const Header = ({
 
     const isAdmin = (): boolean => user?.role === UserRole.ADMIN;
 
+    // Check if user is on mobile browser
+    const isMobile = (): boolean => {
+        const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+        return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    };
+
+    // Get mobile URL with board path if applicable
+    const getMobileUrl = (): string => {
+        const currentPath = window.location.pathname;
+        const boardMatch = currentPath.match(/^\/board\/([^\/]+)(.*)$/);
+
+        if (boardMatch) {
+            return `${(window as any).BASE_URL_MOBILE}/board/${boardMatch[1]}${boardMatch[2]}`;
+        }
+
+        return (window as any).BASE_URL_MOBILE;
+    };
+
     return (
         <GlassmorphicCard className="border-b border-border/50 !rounded-none shadow-sm py-0 w-full">
             <div className="px-2 sm:px-4 md:px-6 lg:px-8 w-full">
@@ -208,6 +226,20 @@ export const Header = ({
 
                     {/* Actions */}
                     <div className="flex items-center space-x-3">
+                        {/* Mobile switch - only show on mobile browsers */}
+                        {isMobile() && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => window.location.href = getMobileUrl()}
+                                className="h-9 w-9"
+                                aria-label={t('navigation.switchToMobile')}
+                                title={t('navigation.switchToMobile')}
+                            >
+                                <Smartphone className="h-4 w-4" />
+                            </Button>
+                        )}
+
                         {/* User menu */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

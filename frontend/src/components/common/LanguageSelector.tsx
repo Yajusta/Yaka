@@ -8,7 +8,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Languages } from 'lucide-react';
-import { userService, authService } from '@/services/api';
+import { userService, authService } from '@shared/services/api';
 
 const LanguageSelector: React.FC = () => {
     const { i18n, t } = useTranslation();

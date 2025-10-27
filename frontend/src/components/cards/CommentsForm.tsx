@@ -1,11 +1,11 @@
 import { MessageSquare, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useToast } from '../../hooks/use-toast';
-import { useAuth } from '../../hooks/useAuth';
-import { usePermissions } from '../../hooks/usePermissions';
-import { cardCommentsService } from '../../services/api';
-import { CardComment } from '../../types/index';
+import { useToast } from '@shared/hooks/use-toast';
+import { useAuth } from '@shared/hooks/useAuth';
+import { usePermissions } from '@shared/hooks/usePermissions';
+import { cardCommentsService } from '@shared/services/api';
+import { CardComment } from '@shared/types/index';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Textarea } from '../ui/textarea';

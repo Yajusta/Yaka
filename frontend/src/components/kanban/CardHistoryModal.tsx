@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { CardHistoryEntry } from '../../types';
-import api from '../../services/api';
+import { CardHistoryEntry } from '@shared/types';
+import api from '@shared/services/api';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Clock } from 'lucide-react';

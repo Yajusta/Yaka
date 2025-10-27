@@ -11,7 +11,7 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { useBoardSettings } from '../../hooks/useBoardSettingsContext';
+import { useBoardSettings } from '@shared/hooks/useBoardSettingsContext';
 import { Loader2, CheckCircle } from 'lucide-react';
 
 interface InterfaceDialogProps {

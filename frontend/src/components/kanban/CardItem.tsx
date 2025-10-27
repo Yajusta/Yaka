@@ -2,9 +2,9 @@ import { useDraggable } from '@dnd-kit/core';
 import { AlertCircle, AlertTriangle, CalendarDays, Clock, Edit, MessageSquare, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../hooks/useAuth';
-import { usePermissions } from '../../hooks/usePermissions';
-import { Card, CardComment } from '../../types/index';
+import { useAuth } from '@shared/hooks/useAuth';
+import { usePermissions } from '@shared/hooks/usePermissions';
+import { Card, CardComment } from '@shared/types/index';
 import { CommentsForm } from '../cards/CommentsForm';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -14,10 +14,10 @@ import { GlassmorphicCard } from '../ui/GlassmorphicCard';
 import { AssigneeChanger } from './AssigneeChanger';
 import { CardHistoryModal } from './CardHistoryModal';
 import { PriorityChanger } from './PriorityChanger';
-import { DisplayMode } from '../../hooks/useDisplayMode';
-import { cn } from '../../lib/utils';
-import { cardItemsService } from '../../services/api.tsx';
-import { useToast } from '../../hooks/use-toast';
+import { DisplayMode } from '@shared/hooks/useDisplayMode';
+import { cn } from '@shared/lib/utils';
+import { cardItemsService } from '@shared/services/api.tsx';
+import { useToast } from '@shared/hooks/use-toast';
 
 interface CardItemProps {
     card: Card;

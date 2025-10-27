@@ -1,5 +1,5 @@
 import { Card } from './card';
-import { cn } from '../../lib/utils';
+import { cn } from '@shared/lib/utils';
 
 interface GlassmorphicCardProps {
     children: React.ReactNode;

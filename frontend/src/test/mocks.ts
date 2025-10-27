@@ -1,4 +1,4 @@
-import { KanbanList, Card } from '@/types'
+import { KanbanList, Card } from '@shared/types'
 
 export const mockLists: KanbanList[] = [
   {

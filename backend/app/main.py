@@ -27,6 +27,9 @@ from .services.email import FROM_ADDRESS, SMTP_HOST, SMTP_USER
 from .services.user import create_admin_user
 from .utils.demo_mode import is_demo_mode
 from .utils.demo_reset import reset_database, setup_fresh_database
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 @asynccontextmanager
@@ -220,7 +223,22 @@ import os
 
 # En développement, autoriser localhost; en production, utiliser les variables d'environnement
 frontend_url = os.getenv("BASE_URL", "http://localhost:5173")
-allowed_origins = [frontend_url]
+frontend_url_mobile = os.getenv("BASE_URL_MOBILE", "http://localhost:5174")
+allowed_origins = [frontend_url, frontend_url_mobile]
+allowed_from_config = os.getenv("ALLOWED_ORIGINS", "").split(",")
+if allowed_from_config:
+    allowed_origins.extend(allowed_from_config)
+
+# Ajouter les origines pour les applications mobiles (PWA → APK)
+mobile_origins = os.getenv("MOBILE_ORIGINS", "capacitor://localhost,ionic://localhost,http://localhost").split(",")
+allowed_origins.extend(mobile_origins)
+
+# Ajouter file:// pour le développement mobile (uniquement si environnement de développement)
+if os.getenv("ENVIRONMENT", "production").lower() == "development":
+    allowed_origins.append("file://")
+
+# Log des origines autorisées pour le debug
+print(f"CORS: Origines autorisées: {allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,

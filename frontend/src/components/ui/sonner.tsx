@@ -1,4 +1,4 @@
-import { useTheme } from '../../hooks/useTheme.tsx'
+import { useTheme } from '@shared/hooks/useTheme.tsx'
 import { Toaster as Sonner, ToasterProps } from "sonner"
 
 const Toaster = ({ ...props }: ToasterProps) => {

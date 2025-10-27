@@ -1,5 +1,5 @@
 import React from 'react';
-import { KanbanList } from '../../types/index';
+import { KanbanList } from '@shared/types/index';
 
 /**
  * Test component to verify horizontal scrolling behavior with various numbers of lists

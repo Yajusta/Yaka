@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn } from '@shared/lib/utils';
 import { Badge } from './badge';
 
 interface PriorityBadgeProps {
