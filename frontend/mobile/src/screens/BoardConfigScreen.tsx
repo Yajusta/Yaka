@@ -35,10 +35,12 @@ const BoardConfigScreen = () => {
       return;
     }
 
-    const resolvedEndpoint = resolveEndpoint(boardName);
+    // Transform board name: lowercase and remove spaces
+    const normalizedBoardName = boardName.trim().toLowerCase().replace(/\s+/g, '');
+    const resolvedEndpoint = resolveEndpoint(normalizedBoardName);
 
-    // Store both the board name and the resolved endpoint
-    localStorage.setItem('board_name', boardName.trim());
+    // Store both the normalized board name and the resolved endpoint
+    localStorage.setItem('board_name', normalizedBoardName);
     localStorage.setItem('api_base_url', resolvedEndpoint);
     navigate('/login');
   };
