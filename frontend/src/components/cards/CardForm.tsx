@@ -1,7 +1,7 @@
 import { closestCenter, DndContext, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ArrowDown, ArrowUp, GripVertical, Minus, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, GripVertical, Minus, Trash2, X, User as UserIcon, Shield, Key, PenTool, Users, MessageSquare, Eye } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@shared/hooks/use-toast.tsx';
@@ -11,7 +11,7 @@ import { useUsers } from '@shared/hooks/useUsers';
 import { mapPriorityFromBackend, mapPriorityToBackend } from '@shared/lib/priority';
 import { cardItemsService, cardService, labelService } from '@shared/services/api.tsx';
 import { listsApi } from '@shared/services/listsApi';
-import { Card, CardPriority, Label as LabelType, KanbanList } from '@shared/types/index.ts';
+import { Card, CardPriority, Label as LabelType, KanbanList, UserRole } from '@shared/types/index.ts';
 import { Badge } from '../ui/badge.tsx';
 import { Button } from '../ui/button.tsx';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog.tsx';
@@ -107,6 +107,26 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
 
     // Determine if we're in view-only mode
     const isViewOnly = isEditing && !canEditCard;
+
+    // Helper function to get role icon
+    const getRoleIcon = (role?: string) => {
+        switch (role) {
+            case UserRole.ADMIN:
+                return Key;
+            case UserRole.SUPERVISOR:
+                return Shield;
+            case UserRole.EDITOR:
+                return PenTool;
+            case UserRole.CONTRIBUTOR:
+                return Users;
+            case UserRole.COMMENTER:
+                return MessageSquare;
+            case UserRole.VISITOR:
+                return Eye;
+            default:
+                return UserIcon;
+        }
+    };
 
     const [labels, setLabels] = useState<LabelType[]>([]);
     const [lists, setLists] = useState<KanbanList[]>([]);
@@ -818,11 +838,17 @@ const CardForm = ({ card, isOpen, onClose, onSave, onDelete, defaultListId, init
                                         {users
                                             .slice()
                                             .sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''))
-                                            .map(user => (
-                                                <SelectItem key={user.id} value={user.id.toString()}>
-                                                    {user.display_name}
-                                                </SelectItem>
-                                            ))}
+                                            .map(user => {
+                                                const RoleIcon = getRoleIcon(user.role);
+                                                return (
+                                                    <SelectItem key={user.id} value={user.id.toString()}>
+                                                        <div className="flex items-center gap-2">
+                                                            <RoleIcon className="h-4 w-4 text-muted-foreground" />
+                                                            <span>{user.display_name}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                );
+                                            })}
                                     </SelectContent>
                                 </Select>
                             </HighlightedField>
