@@ -5,7 +5,7 @@
     ],
     "target": {
       "namespace": "yaka_mobile",
-      "package_name": "fr.yajusta.yaka_m.twa",
+      "package_name": "fr.yajusta.yaka.twa",
       "sha256_cert_fingerprints": [
         "A8:A5:1E:47:64:CD:D2:77:16:4C:B7:B5:AD:0D:AB:69:7C:91:91:EA:E0:BB:64:17:AA:DE:99:CD:A2:32:F6:64"
       ]
