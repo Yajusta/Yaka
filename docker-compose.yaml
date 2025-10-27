@@ -45,6 +45,7 @@ services:
         - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
         - BASE_URL=${BASE_URL:-http://localhost:3000}
         - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
+        - VITE_BASE_PATH=${VITE_BASE_PATH:-/}
     container_name: yaka-frontend-desktop
     ports:
       - "3000:80"
@@ -53,6 +54,7 @@ services:
       - BASE_URL=${BASE_URL:-http://localhost:3000}
       - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
       - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
+      - VITE_BASE_PATH=${VITE_BASE_PATH:-/}
     depends_on:
       backend:
         condition: service_healthy
@@ -76,16 +78,18 @@ services:
         - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
         - BASE_URL=${BASE_URL:-http://localhost:3000}
         - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
+        - VITE_BASE_PATH=${VITE_BASE_PATH:-/}
     container_name: yaka-frontend-mobile
     ports:
       - "3001:80"
-    volumes:
-      - ./frontend/mobile/public:/usr/share/nginx/html/mobile:ro
+    # volumes:
+    #   - ./frontend/mobile/public:/usr/share/nginx/html/mobile:ro
     environment:
       - DEMO_MODE=${DEMO_MODE:-false}
       - BASE_URL=${BASE_URL:-http://localhost:3000}
       - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
       - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
+      - VITE_BASE_PATH=${VITE_BASE_PATH:-/}
     depends_on:
       backend:
         condition: service_healthy

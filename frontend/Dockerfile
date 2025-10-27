@@ -42,7 +42,8 @@ RUN pnpm install --frozen-lockfile
 
 # Copier le code source
 COPY . .
-
+ARG VITE_BASE_PATH=/m/
+ENV VITE_BASE_PATH=$VITE_BASE_PATH
 # Construire la version mobile
 WORKDIR /app/mobile
 COPY mobile/package*.json ./

@@ -1,17 +1,24 @@
-import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@shared/hooks/useAuth';
-import { UsersProvider } from '@shared/hooks/useUsers';
 import { DisplayModeProvider } from '@shared/hooks/useDisplayMode';
 import { useTheme } from '@shared/hooks/useTheme';
+import { UsersProvider } from '@shared/hooks/useUsers';
+import { useEffect } from 'react';
+import { Navigate, Route, BrowserRouter as Router, Routes, useLocation, useParams } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
-import BoardConfigScreen from './screens/BoardConfigScreen';
-import LoginScreen from './screens/LoginScreen';
-import MainScreen from './screens/MainScreen';
-import ArchivesScreen from './screens/ArchivesScreen';
-import { CommentsScreen } from './screens/CommentsScreen';
 import i18n from './i18n';
 import './index.css';
+import ArchivesScreen from './screens/ArchivesScreen';
+import BoardConfigScreen from './screens/BoardConfigScreen';
+import { CommentsScreen } from './screens/CommentsScreen';
+import LoginScreen from './screens/LoginScreen';
+import MainScreen from './screens/MainScreen';
+
+const getBaseName = () => {
+  const envBase = import.meta.env.VITE_BASE_PATH || '';
+  if (envBase) return envBase;
+  const path = window.location.pathname;
+  return path.startsWith('/m/') ? '/m' : '/';
+};
 
 // Board route handler - updates localStorage when board name is provided in URL and renders MainScreen
 const BoardRouteHandler = () => {
@@ -88,7 +95,7 @@ const AppContent = () => {
   useEffect(() => {
     if (user?.language) {
       const currentLang = i18n.language;
-      
+
       if (currentLang !== user.language) {
         // Force update localStorage first
         localStorage.setItem('i18nextLng', user.language);
@@ -97,6 +104,15 @@ const AppContent = () => {
       }
     }
   }, [user]);
+
+  const basename = getBaseName();
+  const redirectPath = basename === '/m' ? '/m/' : '/';
+
+  // Débogage : capturer les changements d'URL
+  useEffect(() => {
+    console.log('Current URL:', window.location.href);
+    console.log('React Router location:', window.location.pathname);
+  }, []);
 
   return (
     <Routes>
@@ -128,14 +144,15 @@ const AppContent = () => {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to={redirectPath} replace />} />
     </Routes>
   );
 };
 
 function App() {
+  const basename = getBaseName();
   return (
-    <Router>
+    <Router basename={basename}>
       <AuthProvider>
         <UsersProvider>
           <DisplayModeProvider>
