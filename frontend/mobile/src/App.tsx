@@ -9,6 +9,7 @@ import BoardConfigScreen from './screens/BoardConfigScreen';
 import LoginScreen from './screens/LoginScreen';
 import MainScreen from './screens/MainScreen';
 import ArchivesScreen from './screens/ArchivesScreen';
+import i18n from './i18n';
 import './index.css';
 
 // Board route handler - updates localStorage when board name is provided in URL and renders MainScreen
@@ -76,10 +77,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 // App content with theme support
 const AppContent = () => {
   const { theme } = useTheme();
+  const { user } = useAuth();
 
   useEffect(() => {
     document.documentElement.className = theme;
   }, [theme]);
+
+  // Apply user language when user is loaded or changes
+  useEffect(() => {
+    if (user?.language) {
+      const currentLang = i18n.language;
+      
+      if (currentLang !== user.language) {
+        // Force update localStorage first
+        localStorage.setItem('i18nextLng', user.language);
+        // Then change the language in i18n
+        i18n.changeLanguage(user.language);
+      }
+    }
+  }, [user]);
 
   return (
     <Routes>

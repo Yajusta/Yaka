@@ -313,8 +313,8 @@ const MainScreen = () => {
 
           {/* Voice input dialog */}
           <VoiceInputDialog
-            isOpen={showVoiceInput}
-            onClose={() => setShowVoiceInput(false)}
+            open={showVoiceInput}
+            onOpenChange={() => setShowVoiceInput(false)}
             onCardSave={handleVoiceCardSave}
             defaultListId={lists.length > 0 ? lists[0].id : undefined}
           />

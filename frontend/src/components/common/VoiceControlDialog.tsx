@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Mic, MicOff, Send, X, AlertTriangle, Settings, Check, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { voiceControlService, VoiceControlResponse } from '@shared/services/voiceControlApi';
 import CardForm from '../cards/CardForm';
 import { Card } from '@shared/types';
@@ -29,6 +30,13 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
     const { user: currentUser } = useAuth();
     const permissions = usePermissions(currentUser);
 
+    const {
+        transcript,
+        listening,
+        resetTranscript,
+        browserSupportsSpeechRecognition
+    } = useSpeechRecognition();
+
     // Charger le mode de reconnaissance depuis localStorage
     const getInitialRecognitionMode = (): RecognitionMode => {
         try {
@@ -43,27 +51,21 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
     };
 
     const [recognitionMode, setRecognitionMode] = useState<RecognitionMode>(getInitialRecognitionMode);
-    const [isListening, setIsListening] = useState(false);
-    const [transcript, setTranscript] = useState('');
-    const [isSupported, setIsSupported] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [result, setResult] = useState<VoiceControlResponse | null>(null);
     const [showCardForm, setShowCardForm] = useState(false);
     const [cardInitialData, setCardInitialData] = useState<any>(null);
     const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
     const [proposedChanges, setProposedChanges] = useState<any>(null);
-    const recognitionRef = useRef<any>(null);
-    const isListeningRef = useRef<boolean>(false);
-
-    // Stocker le mode actuel dans un ref pour éviter les problèmes de narrowing TypeScript
-    const currentModeRef = useRef<RecognitionMode>(recognitionMode);
-    currentModeRef.current = recognitionMode;
+    const [shouldAutoRestart, setShouldAutoRestart] = useState(false);
+    const [useContinuousMode] = useState(true);
 
     // Gérer le changement de mode
     const handleModeChange = (mode: RecognitionMode) => {
-        if (isListening) {
-            stopListening();
+        if (listening) {
+            SpeechRecognition.abortListening();
         }
+        setShouldAutoRestart(false);
         // Sauvegarder le mode dans localStorage
         try {
             localStorage.setItem('voiceRecognitionMode', mode);
@@ -77,112 +79,61 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
     // Déterminer si on utilise Whisper
     const isWhisperMode = recognitionMode === 'whisper-tiny' || recognitionMode === 'whisper-base';
 
-    // TOUS les useEffect doivent être appelés AVANT tout return conditionnel
+    // Update language when it changes
     useEffect(() => {
-        // Vérifier si l'API Web Speech est disponible
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-        if (!SpeechRecognition) {
-            setIsSupported(false);
-            return;
+        const lang = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
+        const recognition = SpeechRecognition.getRecognition();
+        if (recognition) {
+            recognition.lang = lang;
         }
-
-        // Initialiser la reconnaissance vocale seulement si elle n'existe pas déjà
-        if (!recognitionRef.current) {
-            const recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
-
-            recognition.onresult = (event: any) => {
-                // Ne traiter les résultats que si on est encore en train d'écouter
-                if (!isListeningRef.current) {
-                    return;
-                }
-
-                let finalTranscript = '';
-                let interimTranscript = '';
-
-                // Rebuild the COMPLETE transcript from ALL results
-                // On mobile, each result contains the full phrase up to that point
-                for (let i = 0; i < event.results.length; i++) {
-                    const transcriptPart = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcriptPart + ' ';
-                    } else {
-                        interimTranscript += transcriptPart;
-                    }
-                }
-
-                // Display the complete transcript
-                setTranscript(finalTranscript + interimTranscript);
-            };
-
-            recognition.onerror = (event: any) => {
-                console.error('Speech recognition error:', event.error);
-                if (event.error === 'no-speech') {
-                    // Pas de parole détectée, continuer l'écoute
-                    return;
-                }
-                isListeningRef.current = false;
-                setIsListening(false);
-            };
-
-            recognition.onend = () => {
-                // Vérifier avec le ref pour avoir la valeur actuelle, pas celle du closure
-                if (isListeningRef.current) {
-                    // Redémarrer automatiquement si on est toujours en mode écoute
-                    try {
-                        recognition.start();
-                    } catch (e) {
-                        console.error('Error restarting recognition:', e);
-                        isListeningRef.current = false;
-                        setIsListening(false);
-                    }
-                }
-            };
-
-            recognitionRef.current = recognition;
-        }
-
-        // Mettre à jour la langue à chaque fois que i18n.language change
-        if (recognitionRef.current) {
-            const lang = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
-            recognitionRef.current.lang = lang;
-
-            // Ensure properties are correctly set (same for all platforms)
-            recognitionRef.current.continuous = true;
-            recognitionRef.current.interimResults = true;
-        }
-
-        return () => {
-            // Ne pas réinitialiser le ref lors du cleanup
-            if (recognitionRef.current) {
-                try {
-                    recognitionRef.current.stop();
-                } catch (e) {
-                    // Ignorer l'erreur si déjà arrêté
-                }
-            }
-        };
     }, [i18n.language]);
 
-    // Arrêter l'écoute quand le dialogue se ferme
+    // Auto-restart logic for non-continuous mode (same as VoiceInputDialog.tsx)
     useEffect(() => {
-        if (!open && isListening) {
-            stopListening();
+        if (!useContinuousMode && !isWhisperMode) {
+            const recognition = SpeechRecognition.getRecognition();
+            if (recognition) {
+                const handleEnd = () => {
+                    // Auto-restart if needed
+                    if (shouldAutoRestart && !listening && open) {
+                        setTimeout(() => {
+                            if (shouldAutoRestart && open) {
+                                SpeechRecognition.startListening({
+                                    continuous: false,
+                                    language: i18n.language === 'fr' ? 'fr-FR' : 'en-US'
+                                });
+                            }
+                        }, 100);
+                    }
+                };
+
+                recognition.addEventListener('end', handleEnd);
+                return () => {
+                    recognition.removeEventListener('end', handleEnd);
+                };
+            }
+        }
+    }, [shouldAutoRestart, listening, useContinuousMode, i18n.language, open, isWhisperMode]);
+
+    // Stop listening when dialog closes
+    useEffect(() => {
+        if (!open) {
+            setShouldAutoRestart(false);
+            SpeechRecognition.stopListening();
+        } else {
+            setShouldAutoRestart(false);
         }
     }, [open]);
 
-    // Démarrer automatiquement l'écoute quand le dialogue s'ouvre
+    // Auto-start listening when dialog opens
     useEffect(() => {
-        if (open && isSupported && !isListening && !isWhisperMode) {
-            // Petit délai pour s'assurer que le dialogue est complètement ouvert
+        if (open && browserSupportsSpeechRecognition && !listening && !isWhisperMode) {
             const timer = setTimeout(() => {
                 startListening();
             }, 300);
             return () => clearTimeout(timer);
         }
-    }, [open, isSupported, isWhisperMode]);
+    }, [open, browserSupportsSpeechRecognition]); // Removed 'listening' from dependencies
 
     // Si on utilise Whisper, afficher le dialogue Whisper à la place
     // IMPORTANT: Ce return doit être APRÈS tous les hooks
@@ -207,31 +158,30 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
     }
 
     const startListening = () => {
-        if (recognitionRef.current && !isListeningRef.current) {
-            setTranscript('');
-            try {
-                recognitionRef.current.start();
-                isListeningRef.current = true;
-                setIsListening(true);
-            } catch (e) {
-                console.error('Error starting recognition:', e);
-                isListeningRef.current = false;
-                setIsListening(false);
-            }
+        setShouldAutoRestart(true);
+
+        // Reset transcript only if not already listening (same as VoiceInputDialog.tsx)
+        if (!listening) {
+            resetTranscript();
+        }
+
+        try {
+            SpeechRecognition.startListening({
+                continuous: useContinuousMode,
+                language: i18n.language === 'fr' ? 'fr-FR' : 'en-US'
+            });
+        } catch (error: any) {
+            console.error('Error starting speech recognition:', error.message);
         }
     };
 
     const stopListening = () => {
-        // Mettre à jour le ref AVANT d'arrêter pour éviter le redémarrage automatique
-        isListeningRef.current = false;
-        setIsListening(false);
+        setShouldAutoRestart(false);
 
-        if (recognitionRef.current) {
-            try {
-                recognitionRef.current.stop();
-            } catch (e) {
-                console.error('Error stopping recognition:', e);
-            }
+        try {
+            SpeechRecognition.stopListening();
+        } catch (error: any) {
+            console.error('Error stopping speech recognition:', error.message);
         }
     };
 
@@ -259,18 +209,8 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
             return;
         }
 
-        // Arrêter l'écoute en mettant à jour le ref AVANT d'arrêter la reconnaissance
-        isListeningRef.current = false;
-        setIsListening(false);
-
-        if (recognitionRef.current) {
-            try {
-                recognitionRef.current.stop();
-            } catch (e) {
-                console.error('Error stopping recognition:', e);
-            }
-        }
-
+        // Stop listening before processing (as requested)
+        stopListening();
         setIsProcessing(true);
 
         try {
@@ -350,7 +290,7 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
             }
 
             onOpenChange(false);
-            setTranscript('');
+            resetTranscript();
         } catch (error) {
             console.error('Erreur lors du traitement de l\'instruction vocale:', error);
             toast({
@@ -366,23 +306,7 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
     const handleCancel = () => {
         stopListening();
         onOpenChange(false);
-        setTranscript('');
-    };
-
-    const handleTranscriptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setTranscript(e.target.value);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        // Si Enter est pressé sans Shift et qu'il y a du texte, envoyer
-        if (e.key === 'Enter' && !e.shiftKey && transcript.trim() && !isProcessing) {
-            e.preventDefault();
-            // Arrêter l'écoute si elle est en cours avant d'envoyer
-            if (isListening) {
-                stopListening();
-            }
-            handleSend();
-        }
+        resetTranscript();
     };
 
     return (
@@ -402,17 +326,13 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                             <div className="relative">
                                 <Textarea
                                     value={transcript}
-                                    onChange={handleTranscriptChange}
-                                    onKeyDown={handleKeyDown}
+                                    readOnly
                                     placeholder={t('voice.placeholder')}
                                     className="min-h-[150px] resize-none pr-10"
-                                    disabled={isProcessing}
-                                    readOnly={isListening}
-                                    maxLength={500}
                                 />
-                                {transcript.trim() && !isListening && !isProcessing && (
+                                {transcript.trim() && !listening && !isProcessing && (
                                     <button
-                                        onClick={() => setTranscript('')}
+                                        onClick={resetTranscript}
                                         className="absolute bottom-2 left-2 p-1 text-muted-foreground hover:text-foreground active:bg-accent rounded transition-colors"
                                         aria-label={t('voice.clear')}
                                     >
@@ -426,7 +346,7 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                         </div>
 
                         {/* Indicateur d'écoute */}
-                        {isListening && (
+                        {listening && (
                             <div className="flex items-center justify-center space-x-2 text-primary">
                                 <div className="flex space-x-1">
                                     <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -450,7 +370,7 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                         )}
 
                         {/* Message d'incompatibilité si mode navigateur sélectionné mais non supporté */}
-                        {!isSupported && (
+                        {!browserSupportsSpeechRecognition && (
                             <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/20 rounded-lg p-3">
                                 <AlertTriangle className="h-4 w-4" />
                                 <div>
@@ -463,12 +383,12 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                         {/* Boutons d'action */}
                         <div className="flex justify-between gap-2">
                             <div className="flex gap-2 items-center">
-                                {!isListening ? (
+                                {!listening ? (
                                     <Button
                                         onClick={startListening}
                                         variant="default"
                                         className="bg-primary hover:bg-primary/90"
-                                        disabled={!isSupported || isProcessing}
+                                        disabled={!browserSupportsSpeechRecognition || isProcessing}
                                     >
                                         <Mic className="h-4 w-4 mr-2" />
                                         {t('voice.start')}
@@ -490,7 +410,7 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                                         <Button
                                             variant="outline"
                                             size="icon"
-                                            disabled={isListening || isProcessing}
+                                            disabled={listening || isProcessing}
                                         >
                                             <Settings className="h-4 w-4" />
                                         </Button>
@@ -501,21 +421,21 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                                             className="flex items-center justify-between"
                                         >
                                             <span>{t('voice.mode.browser')}</span>
-                                            {currentModeRef.current === 'browser' && <Check className="h-4 w-4" />}
+                                            {recognitionMode === 'browser' && <Check className="h-4 w-4" />}
                                         </DropdownMenuItem>
                                         {/* <DropdownMenuItem
                                             onClick={() => handleModeChange('whisper-tiny')}
                                             className="flex items-center justify-between"
                                         >
                                             <span>{t('voice.mode.whisperTiny')}</span>
-                                            {currentModeRef.current === 'whisper-tiny' && <Check className="h-4 w-4" />}
+                                            {recognitionMode === 'whisper-tiny' && <Check className="h-4 w-4" />}
                                         </DropdownMenuItem> */}
                                         <DropdownMenuItem
                                             onClick={() => handleModeChange('whisper-base')}
                                             className="flex items-center justify-between"
                                         >
                                             <span>{t('voice.mode.whisperBase')}</span>
-                                            {currentModeRef.current === 'whisper-base' && <Check className="h-4 w-4" />}
+                                            {(recognitionMode as RecognitionMode) === 'whisper-base' && <Check className="h-4 w-4" />}
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>

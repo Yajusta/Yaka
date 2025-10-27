@@ -19,7 +19,7 @@ export default defineConfig({
       manifest: {
         name: 'Yaka Mobile',
         short_name: 'Yaka',
-        description: 'Yet Another Kanban App - Mobile PWA',
+        description: 'Yet Another Kanban App (mobile)',
         theme_color: '#667eea',
         background_color: '#fafbfc',
         display: 'standalone',

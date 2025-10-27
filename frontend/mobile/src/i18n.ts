@@ -15,31 +15,31 @@ const resources = {
     }
 };
 
-// Initialize i18n - use initImmediate to ensure synchronous initialization
-i18n
-    .use(LanguageDetector)
-    .use(initReactI18next)
-    .init({
-        resources,
-        lng: undefined, // Laisser indéfini pour être déterminé dynamiquement
-        fallbackLng: 'fr',
-        debug: false,
-        
-        // Force synchronous initialization
-        initImmediate: false,
+// Prevent multiple initializations
+if (!i18n.isInitialized) {
+    i18n
+        .use(LanguageDetector)
+        .use(initReactI18next)
+        .init({
+            resources,
+            lng: undefined, // Laisser indéfini pour être déterminé dynamiquement
+            fallbackLng: 'fr',
+            debug: process.env.NODE_ENV === 'development',
+            initImmediate: false,
 
-        interpolation: {
-            escapeValue: false // React échappe déjà les valeurs
-        },
+            interpolation: {
+                escapeValue: false // React échappe déjà les valeurs
+            },
 
-        detection: {
-            order: ['localStorage', 'navigator', 'htmlTag'],
-            caches: ['localStorage']
-        },
-        
-        react: {
-            useSuspense: false // Disable suspense to avoid timing issues
-        }
-    });
+            detection: {
+                order: ['localStorage', 'navigator', 'htmlTag'],
+                caches: ['localStorage']
+            },
+
+            react: {
+                useSuspense: false // Disable suspense to avoid timing issues
+            }
+        });
+}
 
 export default i18n;

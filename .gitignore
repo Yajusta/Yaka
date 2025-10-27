@@ -28,3 +28,6 @@ frontend/node_modules/
 # Data
 *.db
 _deprecated/
+
+
+android/

@@ -2,9 +2,9 @@ import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@shared/hooks/useAuth';
-import { authService, boardSettingsService } from '@shared/services/api';
+import { boardSettingsService, authService } from '@shared/services/api';
 import { Loader2, Settings } from 'lucide-react';
-import i18n from '@shared/i18n';
+import i18n from '../i18n';
 
 const LoginScreen = () => {
   const { t } = useTranslation();
@@ -62,6 +62,10 @@ const LoginScreen = () => {
       // Apply user language setting immediately after login
       const currentUser = authService.getCurrentUserFromStorage();
       if (currentUser?.language) {
+        // Force update localStorage first (authService.login should have done this, but let's be sure)
+        localStorage.setItem('i18nextLng', currentUser.language);
+        
+        // Then change the language in i18n
         await i18n.changeLanguage(currentUser.language);
       }
 

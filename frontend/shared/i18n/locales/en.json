@@ -604,6 +604,7 @@
         "start": "Start listening",
         "stop": "Stop",
         "send": "Send",
+        "clear": "Clear",
         "listening": "Listening...",
         "processing": "Processing...",
         "notSupported": "Voice recognition not supported",

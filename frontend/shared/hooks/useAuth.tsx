@@ -60,6 +60,12 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
         try {
             const userData = await authService.login(email, password);
             setUser(userData);
+            
+            // Note: Language setting is handled by authService.login which sets localStorage.
+            // The i18n instance in each app (mobile/desktop) should detect this change.
+            // We don't change the language here because the hook is in shared code
+            // and each app has its own i18n instance.
+            
             // Check AI features availability after login
             try {
                 const aiFeatures = await authService.checkAIFeatures();

@@ -604,6 +604,7 @@
         "start": "Démarrer l'écoute",
         "stop": "Arrêter",
         "send": "Envoyer",
+        "clear": "Effacer",
         "listening": "Écoute en cours...",
         "processing": "Traitement en cours...",
         "notSupported": "Reconnaissance vocale non supportée",
