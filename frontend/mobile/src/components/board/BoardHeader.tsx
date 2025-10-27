@@ -34,14 +34,13 @@ const BoardHeader = ({ boardTitle, user, onMenuClick }: BoardHeaderProps) => {
 
   // Get desktop URL with board path if applicable
   const getDesktopUrl = (): string => {
-    const currentPath = window.location.pathname;
-    console.log('currentPath', currentPath);
-    const boardMatch = currentPath.match(/^\/board\/([^\/]+)(.*)$/);
-    console.log('boardMatch', boardMatch);
-    if (boardMatch) {
-      return `${(window as any).BASE_URL}/board/${boardMatch[1]}${boardMatch[2]}`;
+    const boardName = localStorage.getItem('board_name');
+    if (boardName) {
+      const baseUrl = (window as any).BASE_URL;
+      const separator = baseUrl.endsWith('/') ? '' : '/';
+
+      return `${baseUrl}${separator}board/${boardName}`;
     }
-    console.log('BASE_URL', (window as any).BASE_URL);
     return (window as any).BASE_URL;
   };
 

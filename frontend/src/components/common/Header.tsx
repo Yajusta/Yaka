@@ -1,10 +1,15 @@
-import { Button } from '../ui/button';
-import * as React from 'react';
-import { BookOpen, Check, ChevronDown, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, ShieldCheck, Sun, Tag, Users, Smartphone } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useToast } from '@shared/hooks/use-toast';
 import { useBoardSettings } from '@shared/hooks/useBoardSettingsContext';
-import { UserRole, UserRoleValue, User, ViewScope } from '@shared/types';
+import { DisplayMode } from '@shared/hooks/useDisplayMode';
+import { cn } from '@shared/lib/utils';
+import { authService, userService } from '@shared/services/api';
+import { exportApi } from '@shared/services/exportApi';
+import { User, UserRole, UserRoleValue, ViewScope } from '@shared/types';
+import { BookOpen, Check, ChevronDown, ChevronLeft, Download, Eye, FileSpreadsheet, FileText, Languages, List, LogOut, Moon, MoreHorizontal, Palette, Settings, ShieldCheck, Smartphone, Sun, Tag, Users } from 'lucide-react';
+import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Button } from '../ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,11 +21,6 @@ import {
     DropdownMenuTrigger
 } from '../ui/dropdown-menu';
 import { GlassmorphicCard } from '../ui/GlassmorphicCard';
-import { DisplayMode } from '@shared/hooks/useDisplayMode';
-import { cn } from '@shared/lib/utils';
-import { exportApi } from '@shared/services/exportApi';
-import { useToast } from '@shared/hooks/use-toast';
-import { authService, userService } from '@shared/services/api';
 
 interface HeaderProps {
     user: User;
@@ -198,7 +198,9 @@ export const Header = ({
         const boardMatch = currentPath.match(/^\/board\/([^\/]+)(.*)$/);
 
         if (boardMatch) {
-            return `${(window as any).BASE_URL_MOBILE}/board/${boardMatch[1]}${boardMatch[2]}`;
+            const baseUrl = (window as any).BASE_URL_MOBILE;
+            const separator = baseUrl.endsWith('/') ? '' : '/';
+            return `${baseUrl}${separator}board/${boardMatch[1]}${boardMatch[2]}`;
         }
 
         return (window as any).BASE_URL_MOBILE;
