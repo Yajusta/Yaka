@@ -9,6 +9,7 @@ import BoardConfigScreen from './screens/BoardConfigScreen';
 import LoginScreen from './screens/LoginScreen';
 import MainScreen from './screens/MainScreen';
 import ArchivesScreen from './screens/ArchivesScreen';
+import { CommentsScreen } from './screens/CommentsScreen';
 import i18n from './i18n';
 import './index.css';
 
@@ -116,6 +117,14 @@ const AppContent = () => {
         element={
           <ProtectedRoute>
             <MainScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/board/:boardId/card/:cardId/comments"
+        element={
+          <ProtectedRoute>
+            <CommentsScreen />
           </ProtectedRoute>
         }
       />

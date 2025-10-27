@@ -18,6 +18,7 @@ import { cardService } from '@shared/services/api';
 import { useUsers } from '@shared/hooks/useUsers';
 import { useAuth } from '@shared/hooks/useAuth';
 import { useToast } from '@shared/hooks/use-toast';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface CardItemProps {
   card: Card;
@@ -30,8 +31,22 @@ const CardItem = ({ card, onClick, onUpdate }: CardItemProps) => {
   const { toast } = useToast();
   const { users } = useUsers();
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const currentUserId = currentUser?.id ?? null;
   const isCurrentUserAssigned = currentUserId !== null && card.assignee_id === currentUserId;
+
+  // Get board ID from localStorage or URL
+  const getBoardId = (): string => {
+    // First try to get from URL
+    const boardMatch = location.pathname.match(/^\/board\/([^\/]+)/);
+    if (boardMatch) {
+      return boardMatch[1];
+    }
+
+    // Fall back to localStorage
+    return localStorage.getItem('board_name') || '';
+  };
 
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
@@ -209,6 +224,12 @@ const CardItem = ({ card, onClick, onUpdate }: CardItemProps) => {
 
   const totalComments = card.comments?.length || 0;
 
+  const handleCommentsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const boardId = getBoardId();
+    navigate(`/board/${boardId}/card/${card.id}/comments`);
+  };
+
   return (
     <div
       ref={dropdownRef}
@@ -345,12 +366,17 @@ const CardItem = ({ card, onClick, onUpdate }: CardItemProps) => {
           })()}
 
           {/* Comments */}
-          {totalComments > 0 && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <MessageSquare className="h-3 w-3" />
+          <div
+            onClick={handleCommentsClick}
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-1"
+            role="button"
+            tabIndex={0}
+          >
+            <MessageSquare className="h-3 w-3" />
+            {totalComments > 0 && (
               <span className="text-xs">{totalComments}</span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Assignee - interactive dropdown */}
