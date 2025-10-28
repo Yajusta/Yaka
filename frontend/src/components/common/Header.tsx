@@ -196,14 +196,14 @@ export const Header = ({
     const getMobileUrl = (): string => {
         const currentPath = window.location.pathname;
         const boardMatch = currentPath.match(/^\/board\/([^\/]+)(.*)$/);
+        const baseUrl = (window as any).BASE_URL_MOBILE;
+        const separator = baseUrl.endsWith('/') ? '' : '/';
 
         if (boardMatch) {
-            const baseUrl = (window as any).BASE_URL_MOBILE;
-            const separator = baseUrl.endsWith('/') ? '' : '/';
             return `${baseUrl}${separator}board/${boardMatch[1]}${boardMatch[2]}`;
         }
 
-        return (window as any).BASE_URL_MOBILE;
+        return `${baseUrl}${separator}board/yaka/`;
     };
 
     return (

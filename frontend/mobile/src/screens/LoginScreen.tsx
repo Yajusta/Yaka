@@ -3,8 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@shared/hooks/useAuth';
 import { boardSettingsService, authService } from '@shared/services/api';
-import { Loader2, Settings } from 'lucide-react';
+import { AlertTriangle, Copy, Eye, Loader2, Settings, Trash, Zap } from 'lucide-react';
 import i18n from '../i18n';
+
+// Declaration for global variables injected by nginx
+declare global {
+    interface Window {
+        DEMO_MODE: string;
+    }
+}
 
 const LoginScreen = () => {
   const { t } = useTranslation();
@@ -16,6 +23,36 @@ const LoginScreen = () => {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [boardTitle, setBoardTitle] = useState<string>('Yaka'); // Default fallback
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+
+  // Load demo mode configuration and fetch board title on component mount
+  useEffect(() => {
+    // Load demo config securely
+    fetch('/demo-config.js')
+      .then(response => response.text())
+      .then(script => {
+        // Parse the script to extract DEMO_MODE value without using eval
+        const match = script.match(/window\.DEMO_MODE\s*=\s*['"]([^'"]*)['"]/);
+        const demoMode = match ? match[1] === 'true' : false;
+        setIsDemoMode(demoMode);
+      })
+      .catch(_error => {
+        setIsDemoMode(false);
+      });
+
+    // Fetch board title
+    const fetchBoardTitle = async () => {
+      try {
+        const titleData = await boardSettingsService.getBoardTitle();
+        setBoardTitle(titleData.title);
+      } catch (error) {
+        console.error('Failed to fetch board title:', error);
+        // Keep default 'Yaka' title on error
+      }
+    };
+
+    fetchBoardTitle();
+  }, []);
 
   // If boardName is in URL params, configure the board
   useEffect(() => {
@@ -35,21 +72,6 @@ const LoginScreen = () => {
       localStorage.setItem('api_base_url', resolveEndpoint(boardName));
     }
   }, [boardName]);
-
-  // Fetch board title on component mount
-  useEffect(() => {
-    const fetchBoardTitle = async () => {
-      try {
-        const titleData = await boardSettingsService.getBoardTitle();
-        setBoardTitle(titleData.title);
-      } catch (error) {
-        console.error('Failed to fetch board title:', error);
-        // Keep default 'Yaka' title on error
-      }
-    };
-
-    fetchBoardTitle();
-  }, []);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -91,6 +113,19 @@ const LoginScreen = () => {
     }
   };
 
+  const copyToClipboard = async (text: string): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+    }
+  };
+
+  const fillDemoCredentials = (): void => {
+    setEmail('admin@yaka.local');
+    setPassword('Admin123');
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
       {/* Config button */}
@@ -114,6 +149,71 @@ const LoginScreen = () => {
             {t('auth.connectToAccount')}
           </p>
         </div>
+
+        {/* Demo Mode Section */}
+        {isDemoMode && (
+          <div className="mb-6 space-y-3 animate-slide-up">
+            {/* Main message with icon */}
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <div className="text-amber-800 text-sm font-medium">
+                    🔄 {t('auth.demoModeEnabled')}
+                  </div>
+                  <div className="text-amber-700 text-sm mt-1">
+                    {t('auth.email')} : <strong>admin@yaka.local</strong>
+                    <button
+                      onClick={() => copyToClipboard('admin@yaka.local')}
+                      className="ml-2 p-1 hover:bg-amber-200 rounded transition-colors"
+                      title={t('auth.copyEmail')}
+                    >
+                      <Copy className="h-3 w-3 text-amber-600" />
+                    </button>
+                    <br />
+                    {t('auth.password')} : <strong>Admin123</strong>
+                    <button
+                      onClick={() => copyToClipboard('Admin123')}
+                      className="ml-2 p-1 hover:bg-amber-200 rounded transition-colors"
+                      title={t('auth.copyPassword')}
+                    >
+                      <Copy className="h-3 w-3 text-amber-600" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Auto-fill button - centered in the whole section */}
+              <div className="mt-3 pt-3 border-t border-amber-200 flex justify-center">
+                <button
+                  onClick={fillDemoCredentials}
+                  className="bg-amber-100 border border-amber-300 text-amber-800 hover:bg-amber-200 hover:border-amber-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  {t('auth.fillDemoCredentials')}
+                </button>
+              </div>
+            </div>
+
+            {/* Database warning */}
+            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+              <Trash className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="text-red-700 text-sm">
+                <strong>{t('auth.databaseDeletedRegularly')}</strong><br />
+                {t('auth.dataResetHourly')}
+              </div>
+            </div>
+
+            {/* Public environment warning */}
+            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+              <Eye className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="text-red-700 text-sm">
+                <strong>{t('auth.publicEnvironment')}</strong><br />
+                {t('auth.noSensitiveInfo')}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
