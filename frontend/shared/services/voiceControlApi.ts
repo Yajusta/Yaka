@@ -16,6 +16,7 @@ export interface LabelRef {
 }
 
 export interface VoiceControlResponse {
+    response_type?: string;
     task_id?: number | null;
     title: string;
     description?: string | null;
@@ -32,6 +33,7 @@ export interface CardId {
 }
 
 export interface CardFilterResponse {
+    response_type?: string;
     description: string;
     cards: CardId[];
 }

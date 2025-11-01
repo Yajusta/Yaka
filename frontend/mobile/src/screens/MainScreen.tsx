@@ -41,6 +41,8 @@ const MainScreen = () => {
     priorities: null as string[] | null,
     label_ids: null as number[] | null,
   });
+  const [voiceFilterIds, setVoiceFilterIds] = useState<number[] | null>(null);
+  const [voiceFilterDescription, setVoiceFilterDescription] = useState<string>('');
 
   
   const loadData = async (isRefresh = false) => {
@@ -90,38 +92,44 @@ const MainScreen = () => {
   useEffect(() => {
     let filteredCards = allCards;
 
-    // Search filter
-    if (filters.search) {
-      const searchTerm = filters.search.toLowerCase();
-      filteredCards = filteredCards.filter(card =>
-        card.title.toLowerCase().includes(searchTerm) ||
-        (card.description && card.description.toLowerCase().includes(searchTerm))
-      );
-    }
+    // Voice filter has priority over other filters
+    if (voiceFilterIds && voiceFilterIds.length > 0) {
+      filteredCards = filteredCards.filter(card => voiceFilterIds.includes(card.id));
+    } else {
+      // Apply other filters only if no voice filter is active
+      // Search filter
+      if (filters.search) {
+        const searchTerm = filters.search.toLowerCase();
+        filteredCards = filteredCards.filter(card =>
+          card.title.toLowerCase().includes(searchTerm) ||
+          (card.description && card.description.toLowerCase().includes(searchTerm))
+        );
+      }
 
-    // Assignee filter (multiple)
-    if (filters.assignee_ids && filters.assignee_ids.length > 0) {
-      filteredCards = filteredCards.filter(card =>
-        card.assignee_id && filters.assignee_ids!.includes(card.assignee_id)
-      );
-    }
+      // Assignee filter (multiple)
+      if (filters.assignee_ids && filters.assignee_ids.length > 0) {
+        filteredCards = filteredCards.filter(card =>
+          card.assignee_id && filters.assignee_ids!.includes(card.assignee_id)
+        );
+      }
 
-    // Priority filter (multiple)
-    if (filters.priorities && filters.priorities.length > 0) {
-      filteredCards = filteredCards.filter(card =>
-        filters.priorities!.includes(card.priority)
-      );
-    }
+      // Priority filter (multiple)
+      if (filters.priorities && filters.priorities.length > 0) {
+        filteredCards = filteredCards.filter(card =>
+          filters.priorities!.includes(card.priority)
+        );
+      }
 
-    // Label filter (multiple)
-    if (filters.label_ids && filters.label_ids.length > 0) {
-      filteredCards = filteredCards.filter(card =>
-        card.labels?.some(label => filters.label_ids!.includes(label.id))
-      );
+      // Label filter (multiple)
+      if (filters.label_ids && filters.label_ids.length > 0) {
+        filteredCards = filteredCards.filter(card =>
+          card.labels?.some(label => filters.label_ids!.includes(label.id))
+        );
+      }
     }
 
     setCards(filteredCards);
-  }, [filters, allCards]);
+  }, [filters, allCards, voiceFilterIds]);
 
   const handleLogout = async () => {
     try {
@@ -180,11 +188,23 @@ const MainScreen = () => {
     if (filters.assignee_ids && filters.assignee_ids.length > 0) count++;
     if (filters.priorities && filters.priorities.length > 0) count++;
     if (filters.label_ids && filters.label_ids.length > 0) count++;
+    if (voiceFilterIds && voiceFilterIds.length > 0) count++;
     return count;
   };
 
   const handleVoiceClick = () => {
     setShowVoiceInput(true);
+  };
+
+  const handleVoiceFilterApply = (cardIds: number[], description: string) => {
+    // Apply the voice filter
+    setVoiceFilterIds(cardIds);
+    setVoiceFilterDescription(description);
+  };
+
+  const handleVoiceFilterClear = () => {
+    setVoiceFilterIds(null);
+    setVoiceFilterDescription('');
   };
 
   const handleVoiceCardSave = (savedCard: Card) => {
@@ -317,6 +337,7 @@ const MainScreen = () => {
             onOpenChange={() => setShowVoiceInput(false)}
             onCardSave={handleVoiceCardSave}
             defaultListId={lists.length > 0 ? lists[0].id : undefined}
+            onVoiceFilterApply={handleVoiceFilterApply}
           />
         </div>
       ) : (
@@ -327,6 +348,9 @@ const MainScreen = () => {
           onFiltersChange={handleFiltersChange}
           users={users}
           labels={labels}
+          voiceFilterIds={voiceFilterIds}
+          voiceFilterDescription={voiceFilterDescription}
+          onVoiceFilterClear={handleVoiceFilterClear}
         />
       )}
     </>
