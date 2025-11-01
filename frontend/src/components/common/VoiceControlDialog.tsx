@@ -25,6 +25,8 @@ interface VoiceControlDialogProps {
 
 type RecognitionMode = 'browser' | 'whisper-tiny' | 'whisper-base';
 
+type VoiceMode = 'card_update' | 'filter' | 'auto';
+
 export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultListId, onVoiceFilterApply }: VoiceControlDialogProps) => {
     const { t, i18n } = useTranslation();
     const { toast } = useToast();
@@ -60,7 +62,7 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
     const [proposedChanges, setProposedChanges] = useState<any>(null);
     const [shouldAutoRestart, setShouldAutoRestart] = useState(false);
     const [useContinuousMode] = useState(true);
-    const [voiceMode, setVoiceMode] = useState<'card_update' | 'filter'>('card_update');
+    const [voiceMode, setVoiceMode] = useState<VoiceMode>('auto');
     const [manualTranscript, setManualTranscript] = useState('');
 
     // Gérer le changement de mode
@@ -89,21 +91,19 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
 
     // Get the current text to display
     const getCurrentText = () => {
-        // Always use manual transcript as base
-        let text = manualTranscript;
-
-        // If listening and transcript exists, append it
+        // When listening, combine manual text with live transcript
         if (listening && transcript.trim()) {
             // If manual text exists, append space + transcript
-            if (text.trim()) {
-                text = text.trim() + ' ' + transcript;
+            if (manualTranscript.trim()) {
+                return manualTranscript.trim() + ' ' + transcript;
             } else {
                 // If no manual text, use transcript directly
-                text = transcript;
+                return transcript;
             }
         }
 
-        return text;
+        // When not listening, use only manual transcript (transcript has been copied to manual)
+        return manualTranscript;
     };
 
     // Update language when it changes
@@ -257,8 +257,20 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
             const response = await voiceControlService.processTranscript(textToSend, voiceMode);
             setResult(response);
 
-            // Si le mode est "filter", appliquer le filtre
-            if (voiceMode === 'filter') {
+            // Gérer la réponse "unknown"
+            if ('response_type' in response && response.response_type === 'unknown') {
+                toast({
+                    title: t('voice.unknown'),
+                    variant: 'destructive'
+                });
+                onOpenChange(false);
+                resetTranscript();
+                setManualTranscript('');
+                return;
+            }
+
+            // Vérifier si la réponse est un filtre (que ce soit en mode "filter" ou "auto")
+            if ('response_type' in response && response.response_type === 'filter') {
                 const filterResponse = response as CardFilterResponse;
                 if (filterResponse.cards && onVoiceFilterApply) {
                     const cardIds = filterResponse.cards.map(card => card.id);
@@ -418,6 +430,17 @@ export const VoiceControlDialog = ({ open, onOpenChange, onCardSave, defaultList
                         <div className="space-y-2">
                             <label className="text-sm font-medium">{t('voice.mode.title')}</label>
                             <div className="flex gap-4">
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="voiceMode"
+                                        value="auto"
+                                        checked={voiceMode === 'auto'}
+                                        onChange={(e) => setVoiceMode(e.target.value as VoiceMode)}
+                                        className="w-4 h-4 text-primary focus:ring-primary border-gray-300"
+                                    />
+                                    <span className="text-sm">{t('voice.mode.auto')}</span>
+                                </label>
                                 <label className="flex items-center space-x-2 cursor-pointer">
                                     <input
                                         type="radio"

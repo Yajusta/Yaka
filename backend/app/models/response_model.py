@@ -5,9 +5,18 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field
+
+
+class ResponseType(Enum):
+    """Enum representing the type of response expected from the voice control system."""
+
+    CARD_UPDATE = "card_update"
+    FILTER = "filter"
+    AUTO_INTENT = "auto"
+    UNKNOWN = "unknown"
 
 
 class ChecklistItem(BaseModel):
@@ -30,6 +39,7 @@ class Label(BaseModel):
 
 
 class CardEditResponse(BaseModel):
+    response_type: ResponseType = Field(default=ResponseType.CARD_UPDATE, description="Type de réponse.")
     task_id: Optional[int] = Field(
         None,
         description="Identifiant unique de la tâche. Doit être vide dans le cas d'une nouvelle tâche.",
@@ -49,8 +59,27 @@ class CardId(BaseModel):
 
 
 class CardFilterResponse(BaseModel):
+    response_type: ResponseType = Field(default=ResponseType.FILTER, description="Type de réponse.")
     description: str = Field(..., description="Description du filtre appliqué basée sur la demande de l'utilisateur.")
     cards: List[CardId] = Field(
         ...,
         description="Liste des cartes qui correspondent au filtre. Chaque carte est représentée par un objet contenant son identifiant.",
     )
+
+
+class AutoIntentResponse(BaseModel):
+    """Response model when the system needs to analyze user intent to decide between card_update and filter."""
+
+    response_type: ResponseType = Field(default=ResponseType.AUTO_INTENT, description="Type of response.")
+    action: ResponseType = Field(..., description="Action decided by the system: card_update or filter.")
+    confidence: float = Field(..., description="Confidence level of the decision (0.0 to 1.0).")
+
+
+class UnknownResponse(BaseModel):
+    """Response model when the system cannot understand the user's request."""
+
+    response_type: ResponseType = Field(default=ResponseType.UNKNOWN, description="Type of response.")
+
+
+# Union type for all possible responses
+VoiceControlResponse = Union[CardEditResponse, CardFilterResponse, UnknownResponse]

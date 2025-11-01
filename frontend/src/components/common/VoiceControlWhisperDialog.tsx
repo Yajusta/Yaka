@@ -21,6 +21,8 @@ env.backends.onnx.wasm.numThreads = 1;
 
 type WhisperModel = 'Xenova/whisper-tiny' | 'Xenova/whisper-base';
 
+type VoiceMode = 'card_update' | 'filter' | 'auto';
+
 // Cache global pour les modèles Whisper (partagé entre toutes les instances)
 const whisperModelsCache: { [key: string]: any } = {};
 
@@ -68,7 +70,7 @@ export const VoiceControlWhisperDialog = ({
     const [cardInitialData, setCardInitialData] = useState<any>(null);
     const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
     const [proposedChanges, setProposedChanges] = useState<any>(null);
-    const [voiceMode, setVoiceMode] = useState<'card_update' | 'filter'>('card_update');
+    const [voiceMode, setVoiceMode] = useState<VoiceMode>('auto');
 
     const transcriberRef = useRef<any>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -311,8 +313,19 @@ export const VoiceControlWhisperDialog = ({
             const response = await voiceControlService.processTranscript(currentTranscript, voiceMode);
             setResult(response);
 
-            // Si le mode est "filter", appliquer le filtre
-            if (voiceMode === 'filter') {
+            // Gérer la réponse "unknown"
+            if ('response_type' in response && response.response_type === 'unknown') {
+                toast({
+                    title: t('voice.unknown'),
+                    variant: 'destructive'
+                });
+                onOpenChange(false);
+                setTranscript('');
+                return;
+            }
+
+            // Vérifier si la réponse est un filtre (que ce soit en mode "filter" ou "auto")
+            if ('response_type' in response && response.response_type === 'filter') {
                 const filterResponse = response as CardFilterResponse;
                 if (filterResponse.cards && onVoiceFilterApply) {
                     const cardIds = filterResponse.cards.map(card => card.id);
@@ -494,6 +507,17 @@ export const VoiceControlWhisperDialog = ({
                         <div className="space-y-2">
                             <label className="text-sm font-medium">{t('voice.mode.title')}</label>
                             <div className="flex gap-4">
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="voiceMode"
+                                        value="auto"
+                                        checked={voiceMode === 'auto'}
+                                        onChange={(e) => setVoiceMode(e.target.value as VoiceMode)}
+                                        className="w-4 h-4 text-primary focus:ring-primary border-gray-300"
+                                    />
+                                    <span className="text-sm">{t('voice.mode.auto')}</span>
+                                </label>
                                 <label className="flex items-center space-x-2 cursor-pointer">
                                     <input
                                         type="radio"

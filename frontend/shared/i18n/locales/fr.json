@@ -613,12 +613,13 @@
         "switchToLocal": "Reconnaissance locale",
         "input": "Saisie vocale",
         "mode": {
-            "title": "Mode de fonctionnement",
+            "title": "Intention",
             "browser": "🌐 Navigateur (natif)",
             "whisperTiny": "💻 Local - Whisper tiny (~40 MB)",
             "whisperBase": "💻 Local - Whisper (~75 MB)",
             "cardUpdate": "Éditer une carte",
-            "filter": "Filtrer les cartes"
+            "filter": "Filtrer les cartes",
+            "auto": "Détection automatique"
         },
         "resultTitle": "Résultat du pilotage vocal",
         "resultDescription": "Voici le résultat de votre demande vocale",
@@ -660,7 +661,8 @@
             "clear": "Supprimer le filtre",
             "applied": "Filtre appliqué",
             "appliedDescription": "{{count}} carte(s) correspondent à votre recherche"
-        }
+        },
+        "unknown": "Désolé, je n'ai pas compris votre requête"
     },
     "boardConfig": {
         "title": "Configuration du tableau",
