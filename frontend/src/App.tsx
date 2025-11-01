@@ -35,6 +35,7 @@ interface Filters {
     label_id: number | null;
 }
 
+
 const KanbanApp = () => {
     // Extraire le board_uid depuis l'URL
     const { t } = useTranslation();
@@ -72,6 +73,8 @@ const KanbanApp = () => {
     const [showPersonalDictionary, setShowPersonalDictionary] = useState<boolean>(false);
     const [listsRefreshTrigger, setListsRefreshTrigger] = useState<number>(0);
     const [defaultListIdForNewCard, setDefaultListIdForNewCard] = useState<number | null>(null);
+    const [voiceFilterIds, setVoiceFilterIds] = useState<number[]>([]);
+    const [voiceFilterDescription, setVoiceFilterDescription] = useState<string>('');
 
     // Calculer si une modale est ouverte pour masquer le TrashZone
     const isAnyModalOpen = showCardForm || showLabelManager || showListManager || showUsersManager || showInterfaceDialog || showGlobalDictionary || showPersonalDictionary;
@@ -148,8 +151,13 @@ const KanbanApp = () => {
             );
         }
 
+        // Voice filter (filter by card IDs)
+        if (voiceFilterIds.length > 0) {
+            filtered = filtered.filter(card => voiceFilterIds.includes(card.id));
+        }
+
         return filtered;
-    }, [allCards, filters]);
+    }, [allCards, filters, voiceFilterIds]);
 
     // Update cards when filtered cards change
     useEffect(() => {
@@ -374,6 +382,17 @@ const KanbanApp = () => {
         setShowInterfaceDialog(true);
     };
 
+    // Voice filter management
+    const handleVoiceFilterApply = (cardIds: number[], description: string) => {
+        setVoiceFilterIds(cardIds);
+        setVoiceFilterDescription(description);
+    };
+
+    const handleVoiceFilterClear = () => {
+        setVoiceFilterIds([]);
+        setVoiceFilterDescription('');
+    };
+
     const handleLogout = async (): Promise<void> => {
         try {
             await logout();
@@ -431,6 +450,10 @@ const KanbanApp = () => {
                     localSearchValue={filters.search || ''}
                     onLocalSearchChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
                     onCardSave={handleCardSave}
+                    voiceFilterIds={voiceFilterIds}
+                    voiceFilterDescription={voiceFilterDescription}
+                    onVoiceFilterClear={handleVoiceFilterClear}
+                    onVoiceFilterApply={handleVoiceFilterApply}
                 />
 
                 <KanbanBoard

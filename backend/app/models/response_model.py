@@ -15,48 +15,42 @@ class ChecklistItem(BaseModel):
         None,
         description="Identifiant unique de l'élément de la checklist. Doit être vide dans le cas d'un nouvel élément.",
     )
-    item_name: Optional[str] = Field(
-        None, description="Description de l'élément de la checklist."
-    )
-    is_done: Optional[bool] = Field(
-        None, description="Indique si l'élément est complété."
-    )
+    item_name: Optional[str] = Field(None, description="Description de l'élément de la checklist.")
+    is_done: Optional[bool] = Field(None, description="Indique si l'élément est complété.")
 
 
 class Priority(Enum):
-    low = 'low'
-    medium = 'medium'
-    high = 'high'
+    low = "low"
+    medium = "medium"
+    high = "high"
 
 
 class Label(BaseModel):
-    label_id: int = Field(..., description='Identifiant unique du libellé.')
+    label_id: int = Field(..., description="Identifiant unique du libellé.")
 
 
-class ResponseModel(BaseModel):
+class CardEditResponse(BaseModel):
     task_id: Optional[int] = Field(
         None,
         description="Identifiant unique de la tâche. Doit être vide dans le cas d'une nouvelle tâche.",
     )
-    title: str = Field(..., description='Titre de la tâche.')
-    description: Optional[str] = Field(
-        None, description='Description détaillée de la tâche.'
-    )
-    checklist: Optional[List[ChecklistItem]] = Field(
-        None, description='Liste des éléments à vérifier pour la tâche.'
-    )
-    due_date: Optional[str] = Field(
-        None, description='Date limite de la tâche au format "yyyy-mm-dd".'
-    )
-    list_id: Optional[int] = Field(
-        None, description='Identifiant de la liste à laquelle appartient la tâche.'
-    )
-    priority: Optional[Priority] = Field(
-        None, description='Niveau de priorité de la tâche.'
-    )
-    assignee_id: Optional[int] = Field(
-        None, description="Identifiant de l'utilisateur assigné à la tâche."
-    )
-    labels: Optional[List[Label]] = Field(
-        None, description='Liste des libellés associés à la tâche.'
+    title: str = Field(..., description="Titre de la tâche.")
+    description: Optional[str] = Field(None, description="Description détaillée de la tâche.")
+    checklist: Optional[List[ChecklistItem]] = Field(None, description="Liste des éléments à vérifier pour la tâche.")
+    due_date: Optional[str] = Field(None, description='Date limite de la tâche au format "yyyy-mm-dd".')
+    list_id: Optional[int] = Field(None, description="Identifiant de la liste à laquelle appartient la tâche.")
+    priority: Optional[Priority] = Field(None, description="Niveau de priorité de la tâche.")
+    assignee_id: Optional[int] = Field(None, description="Identifiant de l'utilisateur assigné à la tâche.")
+    labels: Optional[List[Label]] = Field(None, description="Liste des libellés associés à la tâche.")
+
+
+class CardId(BaseModel):
+    id: int = Field(..., description="Identifiant unique de la carte.")
+
+
+class CardFilterResponse(BaseModel):
+    description: str = Field(..., description="Description du filtre appliqué basée sur la demande de l'utilisateur.")
+    cards: List[CardId] = Field(
+        ...,
+        description="Liste des cartes qui correspondent au filtre. Chaque carte est représentée par un objet contenant son identifiant.",
     )

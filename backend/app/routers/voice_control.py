@@ -11,7 +11,7 @@ from ..services.llm_service import LLMService
 
 from ..multi_database import get_dynamic_db as get_db
 from ..models import User
-from ..models.response_model import ChecklistItem, Label, Priority, ResponseModel
+from ..models.response_model import ChecklistItem, Label, Priority, CardEditResponse
 from ..utils.dependencies import get_current_active_user
 
 router = APIRouter(prefix="/voice-control", tags=["voice-control"])
@@ -75,6 +75,7 @@ class VoiceControlRequest(BaseModel):
     """Requête de pilotage vocal."""
 
     transcript: str
+    response_type: str = "card_update"
 
 
 @router.post("/")
@@ -97,7 +98,9 @@ async def process_voice_transcript(
     )
 
     llm_service = LLMService()
-    response_json = llm_service.analyze_transcript(transcript=transcript, user_context=user_context)
+    response_json = llm_service.analyze_transcript(
+        transcript=transcript, user_context=user_context, response_type=request.response_type
+    )
 
     # Nettoyer l'objet de réponse
     response_data = json.loads(response_json)
