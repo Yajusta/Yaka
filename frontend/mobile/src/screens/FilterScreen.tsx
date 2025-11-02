@@ -30,6 +30,9 @@ interface FilterScreenProps {
   onFiltersChange: (filters: Filters) => void;
   users: User[];
   labels: Label[];
+  voiceFilterIds?: number[] | null;
+  voiceFilterDescription?: string;
+  onVoiceFilterClear?: () => void;
 }
 
 export const FilterScreen = ({
@@ -38,6 +41,9 @@ export const FilterScreen = ({
   onFiltersChange,
   users,
   labels,
+  voiceFilterIds,
+  voiceFilterDescription,
+  onVoiceFilterClear,
 }: FilterScreenProps) => {
   const { t } = useTranslation();
   const { aiAvailable } = useAuth();
@@ -85,6 +91,7 @@ export const FilterScreen = ({
   };
 
   const hasActiveFilters = !!(searchValue || selectedAssignees.length > 0 || selectedPriorities.length > 0 || selectedLabels.length > 0);
+  const hasVoiceFilter = !!(voiceFilterIds && voiceFilterIds.length > 0);
 
   const getSelectedUsers = (): User[] => {
     return users.filter(u => selectedAssignees.includes(u.id));
@@ -92,6 +99,24 @@ export const FilterScreen = ({
 
   const getSelectedLabels = (): Label[] => {
     return labels.filter(l => selectedLabels.includes(l.id));
+  };
+
+  const handleClearAllFilters = () => {
+    const clearedFilters = {
+      search: '',
+      assignee_ids: null,
+      priorities: null,
+      label_ids: null,
+    };
+    onFiltersChange(clearedFilters);
+    setSearchValue('');
+    setSelectedAssignees([]);
+    setSelectedPriorities([]);
+    setSelectedLabels([]);
+    if (hasVoiceFilter && onVoiceFilterClear) {
+      onVoiceFilterClear();
+    }
+    onBack();
   };
 
   return (
@@ -111,9 +136,9 @@ export const FilterScreen = ({
           </button>
           <h2 className="text-lg font-bold text-foreground">{t('common.filters')}</h2>
           <div className="flex items-center gap-2">
-            {hasActiveFilters && (
+            {(hasActiveFilters || hasVoiceFilter) && (
               <button
-                onClick={handleClearFilters}
+                onClick={handleClearAllFilters}
                 className="p-2 text-muted-foreground hover:text-foreground active:bg-accent rounded-lg transition-colors"
                 aria-label={t('common.clear')}
               >
@@ -128,11 +153,22 @@ export const FilterScreen = ({
       <div className="flex-1 overflow-y-auto pb-safe">
         <div className="p-4 space-y-6">
           {/* Active Filters Summary */}
-          {hasActiveFilters && (
+          {(hasActiveFilters || hasVoiceFilter) && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('filter.activeFilters')}</label>
               <div className="p-3 bg-muted/30 border border-border rounded-lg">
                 <div className="space-y-2">
+                  {hasVoiceFilter && voiceFilterDescription && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">🎤 {voiceFilterDescription}</span>
+                      {onVoiceFilterClear && (
+                        <X
+                          className="w-4 h-4 text-muted-foreground cursor-pointer hover:text-foreground"
+                          onClick={() => onVoiceFilterClear()}
+                        />
+                      )}
+                    </div>
+                  )}
                   {searchValue && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm">{t('common.search')}: {searchValue}</span>

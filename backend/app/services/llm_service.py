@@ -14,7 +14,13 @@ from ..models.global_dictionary import GlobalDictionary
 from ..models.kanban_list import KanbanList
 from ..models.label import Label
 from ..models.personal_dictionary import PersonalDictionary
-from ..models.response_model import ResponseModel
+from ..models.response_model import (
+    CardEditResponse,
+    CardFilterResponse,
+    AutoIntentResponse,
+    UnknownResponse,
+    ResponseType,
+)
 from ..models.user import User, UserStatus
 
 # Charger les variables d'environnement depuis .env
@@ -49,37 +55,62 @@ class LLMService:
         # Initialiser le client OpenAI
         self.client = OpenAI(api_key=api_key, base_url=os.getenv("OPENAI_API_BASE_URL", ""))
 
-    def analyze_transcript(self, transcript: str, user_context: str, instructions: str = "") -> str:
+    def analyze_transcript(
+        self,
+        transcript: str,
+        user_context: str,
+        instructions: str = "",
+        response_type: ResponseType = ResponseType.AUTO_INTENT,
+    ) -> str:
         """
-        Analyse un transcript de réunion et extrait les informations selon le modèle ResponseModel.
+        Analyse un transcript de réunion et extrait les informations selon le modèle spécifié.
 
         Args:
             transcript: Le texte du transcript à analyser
             user_context: Contexte utilisateur au format JSON
             instructions: Instructions préformatées pour le LLM (optionnel)
+            response_type: Type de réponse attendu ("card_update", "filter", ou "auto")
 
         Returns:
             Un dictionnaire contenant les informations extraites au format JSON
         """
         try:
-            # Construire les instructions pour le LLM
-            if not instructions:
-                instructions = self._build_instructions_from_model(user_context)
+            if response_type == ResponseType.AUTO_INTENT:
+                intent_instructions = self._build_intent_analysis_instructions(user_context)
+                intent_response: AutoIntentResponse = AutoIntentResponse.model_validate_json(
+                    self._analyze_with_openai(transcript, intent_instructions, response_type)
+                )
+                if intent_response.action == ResponseType.CARD_UPDATE:
+                    response_type = ResponseType.CARD_UPDATE
+                elif intent_response.action == ResponseType.FILTER:
+                    response_type = ResponseType.FILTER
+                else:
+                    unknown_response = UnknownResponse()
+                    return unknown_response.model_dump_json(indent=2)
 
-            return self._analyze_with_openai(transcript, instructions)
+            # Construire les instructions pour le LLM selon le type de réponse
+            if not instructions:
+                if response_type == ResponseType.FILTER:
+                    instructions = self._build_filter_instructions(user_context)
+                if response_type == ResponseType.CARD_UPDATE:
+                    instructions = self._build_card_edit_instructions(user_context)
+
+            return self._analyze_with_openai(transcript, instructions, response_type)
 
         except Exception as e:
             print(f"Erreur lors de l'analyse du transcript: {str(e)}")
             return "{}"
 
-    def _analyze_with_openai(self, transcript: str, instructions: str) -> str:
+    def _analyze_with_openai(
+        self, transcript: str, instructions: str, response_type: ResponseType = ResponseType.AUTO_INTENT
+    ) -> str:
         """Analyse avec OpenAI standard."""
         temp_param = os.getenv("MODEL_TEMPERATURE", None)
         temperature: Optional[float] = float(temp_param) if temp_param else None
         if not self.client:
             raise ValueError("Client OpenAI non initialisé. Assurez-vous que la clé API est définie.")
 
-        completion = self._get_completion(transcript, instructions, temperature)
+        completion = self._get_completion(transcript, instructions, temperature, response_type)
 
         # Extraire la réponse parsée
         message = completion.choices[0].message
@@ -92,7 +123,20 @@ class LLMService:
             print("Aucune réponse parsée disponible")
             return "{}"
 
-    def _get_completion(self, transcript: str, instructions: str, temperature: Optional[float] = None) -> Any:
+    def _get_completion(
+        self,
+        transcript: str,
+        instructions: str,
+        temperature: Optional[float] = None,
+        response_type: ResponseType = ResponseType.AUTO_INTENT,
+    ) -> Any:
+
+        # Choisir le modèle de réponse selon le type
+        response_format = AutoIntentResponse
+        if response_type == ResponseType.FILTER:
+            response_format = CardFilterResponse
+        if response_type == ResponseType.CARD_UPDATE:
+            response_format = CardEditResponse
 
         args = {
             "model": self.model_name,
@@ -103,7 +147,7 @@ class LLMService:
                     "content": f"DEMANDE UTILISATEUR :\n\n{transcript}",
                 },
             ],
-            "response_format": ResponseModel,
+            "response_format": response_format,
         }
         if temperature is not None:
             args["temperature"] = temperature
@@ -113,14 +157,14 @@ class LLMService:
         except BadRequestError as e:
             if e.param == "temperature":
                 print("Le modèle ne supporte pas le paramètre 'temperature', réessai sans ce paramètre.")
-                return self._get_completion(transcript, instructions, temperature=None)
+                return self._get_completion(transcript, instructions, temperature=None, response_type=response_type)
             else:
                 raise e
         return completion
 
-    def _build_instructions_from_model(self, user_context: str) -> str:
+    def _build_card_edit_instructions(self, user_context: str) -> str:
         """
-        Construit les instructions pour le LLM basées sur le modèle ResponseModel
+        Construit les instructions pour le LLM basées sur le modèle CardEditResponse
 
         Args:
             user_context: Contexte utilisateur au format JSON
@@ -210,6 +254,149 @@ Dans le cas d'une création :
 - Si la description n'apporte pas d'information supplémentaire au titre de la tâche, garde la description vide.
 
 Génère UN SEUL objet JSON représentant la tâche en respectant le format demandé.
+        """
+        return instructions
+
+    def _build_filter_instructions(self, user_context: str) -> str:
+        """
+        Construit les instructions pour le LLM basées sur le modèle CardFilterResponse
+
+        Args:
+            user_context: Contexte utilisateur au format JSON
+
+        Returns:
+            Les instructions formatées pour le LLM pour les filtres
+        """
+
+        # Parse user context to extract user_id for view scope filtering
+        user_dict = {}
+        try:
+            user_dict = json.loads(user_context) if user_context else {}
+        except json.JSONDecodeError:
+            user_dict = {}
+
+        instructions = f"""
+### CONTEXTE EXISTANT ###
+Tu es un assistant de gestion de tâches intelligent. Voici les données actuelles de l'application :
+
+1.  **Tâches existantes :**
+```json
+{get_tasks(user_dict)}
+```
+
+La "tâche" peut aussi être appelée "élément", "item", "carte", "chose à faire" ou "action".
+
+2. **Vocabulaire spécifique (pour mieux comprendre le contexte et corriger les erreurs de transcription) :**
+```json
+{get_vocabulary(user_dict)}
+```
+
+3. **Utilisateur actuel, qui fait la demande :**
+```json
+{user_context}
+```
+
+4. **Date et heure actuelles :** {datetime.now().strftime("%Y-%m-%d %H:%M")}
+
+### INSTRUCTION ###
+Ton rôle est d'analyser la "DEMANDE UTILISATEUR" ci-dessous.
+Tu dois identifier toutes les tâches qui correspondent à la demande et retourner une liste avec les identifiants de ces tâches.
+
+Exemple de demandes :
+- "Montre-moi mes tâches haute priorité" → retourne les identifiants des tâches haute priorité
+- "Toutes les tâches de Pierre" → retourne les identifiants des tâches de Pierre
+- "Les cartes terminées" → retourne les identifiants des tâches terminées
+- "Tâches avec le libellé 'urgent'" → retourne les identifiants des tâches avec le libellé 'urgent'
+- "Ce qui est dû cette semaine" → retourne les identifiants des tâches dûes cette semaine
+- "Cherche les tâches qui parlent de facturation" → retourne les identifiants des tâches qui parlent de facturation
+- Combinaisons de critères
+
+IMPORTANT :
+- Analyse attentivement le titre, la description, les libellés, la priorité, l'assignee, la date d'échéance et le statut de chaque tâche
+- Utilise le vocabulaire spécifique pour comprendre les termes techniques
+- Sois très précis et exhaustif : si une tâche correspond au critère, inclus-la
+- Pour les recherches textuelles, cherche dans le titre, la description ET dans les éléments de checklist
+- Quand tu comprends qu'un élément correspond à un terme du dictionnaire, utilise le terme tel qu'il est écrit dans le dictionnaire
+
+INSTRUCTIONS CRITIQUES POUR cards :
+
+1. NE JAMAIS utiliser un tableau d'IDs directement (ex: [27, 31, 33])
+2. TOUJOURS utiliser une liste d'objets, chaque objet contient l'ID d'une carte
+
+EXEMPLES CORRECTS :
+- 3 cartes (IDs: 27, 31, 33) → {{"cards": [{{"id": 27}}, {{"id": 31}}, {{"id": 33}}], "description": "..."}}
+- 2 cartes (IDs: 5, 12) → {{"cards": [{{"id": 5}}, {{"id": 12}}], "description": "..."}}
+- 1 carte (ID: 88) → {{"cards": [{{"id": 88}}], "description": "..."}}
+
+STRUCTURE STRICTEMENT REQUISE :
+- "cards" : liste d'objets avec clé "id" contenant l'identifiant de la carte
+- "description" : résumé du filtre appliqué
+
+Format final exact à utiliser :
+```json
+{{
+  "cards": [{{"id": 27}}, {{"id": 31}}, {{"id": 33}}],
+  "description": "Résumé concis du filtre"
+}}
+```
+        """
+        return instructions
+
+    def _build_intent_analysis_instructions(self, user_context: str) -> str:
+        """
+        Construit les instructions pour analyser l'intention de l'utilisateur.
+
+        Args:
+            user_context: Contexte utilisateur au format JSON
+
+        Returns:
+            Les instructions formatées pour le LLM
+        """
+        # Parse user context
+        instructions = f"""
+### CONTEXTE EXISTANT ###
+Tu es un assistant intelligent de gestion de tâches. Tu dois analyser l'intention de l'utilisateur pour déterminer s'il souhaite:
+1. ÉDITER UNE CARTE (card_update) : créer une nouvelle tâche ou modifier une tâche existante
+2. APPLIQUER UN FILTRE (filter) : rechercher et filtrer des cartes existantes
+
+Exemples d'actions "card_update" (édition de carte) :
+- "Crée une nouvelle tâche pour appeler Pierre demain"
+- "Ajoute une checklist 'Préparer réunion' à la tâche 'Projet X'"
+- "Modifie la priorité de ma tâche à 'urgent'"
+- "Assigne cette tâche à Marie"
+- "Change le statut de la tâche 'Facturation' à 'terminé'"
+- "Ajoute une date d'échéance de demain à la tâche"
+- "Marque l'élément 'Appeler fournisseur' comme terminé"
+- "Il faut faire les courses et acheter du pain"
+
+Exemples d'actions "filter" (filtre) :
+- "Montre-moi mes tâches haute priorité"
+- "Toutes les tâches de Pierre"
+- "Les cartes terminées"
+- "Tâches avec le libellé 'urgent'"
+- "Ce qui est dû cette semaine"
+- "Cherche les tâches qui parlent de facturation"
+- "Affiche mes tâches assignées à moi"
+- "Trouve les cartes dans la liste 'En cours'"
+
+### INSTRUCTION ###
+Analyse la demande ci-dessous et décide quelle est l'intention de l'utilisateur.
+
+Règles importantes :
+- Si la demande mentionne explicitement "cherche", "affiche", "montre", "filtre", ou "trouve" → c'est généralement un filtre
+- Si la demande parle de "créer", "ajouter", "modifier", "changer", "assigner", "marquer" → c'est généralement une édition
+- Si l'utilisateur demande des informations sur des tâches existantes → c'est un filtre
+- Si l'utilisateur veut créer ou modifier une tâche → c'est une édition de carte
+- Si tu ne comprends pas l'intention, tu peux répondre "UNKNOWN".
+
+Utilisateur actuel :
+```json
+{user_context}
+```
+
+Date et heure actuelles : {datetime.now().strftime("%Y-%m-%d %H:%M")}
+
+Analyse la DEMANDE UTILISATEUR et décide de l'intention la plus probable.
         """
         return instructions
 

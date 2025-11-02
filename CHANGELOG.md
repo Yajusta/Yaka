@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1 (2025-11-01)
+
+- [NEW] Filtre des tâches à la voix.
+
 ## 1.4.0. (2025-10-27)
 
 - [NEW] Ajout d'une version mobile.

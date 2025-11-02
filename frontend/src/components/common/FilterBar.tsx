@@ -8,6 +8,7 @@ import { Search, Filter, X, Plus, ChevronDown, ChevronUp, Mic } from 'lucide-rea
 import { cn } from '@shared/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { VoiceControlDialog } from './VoiceControlDialog';
+import { VoiceFilterIndicator } from './VoiceFilterIndicator';
 import { useAuth } from '@shared/hooks/useAuth';
 
 interface User {
@@ -41,6 +42,10 @@ interface FilterBarProps {
     onLocalSearchChange?: (value: string) => void;
     onCardSave?: (card: any) => void;
     defaultListId?: number;
+    voiceFilterIds?: number[];
+    voiceFilterDescription?: string;
+    onVoiceFilterClear?: () => void;
+    onVoiceFilterApply?: (cardIds: number[], description: string) => void;
 }
 
 export const FilterBar = ({
@@ -53,6 +58,10 @@ export const FilterBar = ({
     localSearchValue = '',
     onCardSave,
     defaultListId,
+    voiceFilterIds,
+    voiceFilterDescription,
+    onVoiceFilterClear,
+    onVoiceFilterApply,
 }: FilterBarProps) => {
     const { t } = useTranslation();
     const { aiAvailable } = useAuth();
@@ -122,14 +131,18 @@ export const FilterBar = ({
             priority: null,
             label_id: null
         });
+        // Clear voice filter if it exists
+        if (hasVoiceFilter() && onVoiceFilterClear) {
+            onVoiceFilterClear();
+        }
     };
 
     const hasActiveFilters = (): boolean => {
-        return !!(filters.search || filters.assignee_id || filters.priority || filters.label_id);
+        return !!(filters.search || filters.assignee_id || filters.priority || filters.label_id || hasVoiceFilter());
     };
 
     const getActiveFilterCount = (): number => {
-        return [filters.assignee_id, filters.priority, filters.label_id].filter(Boolean).length;
+        return [filters.assignee_id, filters.priority, filters.label_id, voiceFilterIds && voiceFilterIds.length > 0].filter(Boolean).length;
     };
 
     const getSelectedUser = (): User | undefined => {
@@ -138,6 +151,10 @@ export const FilterBar = ({
 
     const getSelectedLabel = (): Label | undefined => {
         return labels.find(l => l.id === filters.label_id);
+    };
+
+    const hasVoiceFilter = (): boolean => {
+        return !!(voiceFilterIds && voiceFilterIds.length > 0);
     };
 
     return (
@@ -323,6 +340,9 @@ export const FilterBar = ({
                                     />
                                 </Badge>
                             )}
+                            {hasVoiceFilter() && onVoiceFilterClear && (
+                                <VoiceFilterIndicator onClear={onVoiceFilterClear} description={voiceFilterDescription} />
+                            )}
                         </div>
                     </>
                 )}
@@ -334,6 +354,7 @@ export const FilterBar = ({
                 onOpenChange={setShowVoiceDialog}
                 onCardSave={onCardSave}
                 defaultListId={defaultListId}
+                onVoiceFilterApply={onVoiceFilterApply}
             />
         </GlassmorphicCard>
     );

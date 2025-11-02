@@ -613,9 +613,13 @@
         "switchToLocal": "Local recognition",
         "input": "Voice input",
         "mode": {
+            "title": "User intent",
             "browser": "🌐 Browser (native)",
             "whisperTiny": "💻 Local - Whisper tiny (~40 MB)",
-            "whisperBase": "💻 Local - Whisper (~75 MB)"
+            "whisperBase": "💻 Local - Whisper (~75 MB)",
+            "cardUpdate": "Edit card",
+            "filter": "Filter cards",
+            "auto": "Auto-detect"
         },
         "resultTitle": "Voice control result",
         "resultDescription": "Here is the result of your voice request",
@@ -651,7 +655,14 @@
             "noTranscript": "No text detected",
             "noTranscriptDescription": "No text was transcribed. Please try again.",
             "switchToNative": "Back"
-        }
+        },
+        "filter": {
+            "active": "Voice filter active",
+            "clear": "Remove filter",
+            "applied": "Filter applied",
+            "appliedDescription": "{{count}} card(s) match your search"
+        },
+        "unknown": "Sorry, I didn't understand your request"
     },
     "boardConfig": {
         "title": "Board configuration",

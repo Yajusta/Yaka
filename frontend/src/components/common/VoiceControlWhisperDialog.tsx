@@ -5,7 +5,7 @@ import { Textarea } from '../ui/textarea';
 import { Mic, MicOff, Send, X, AlertTriangle, Settings, Check } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useTranslation } from 'react-i18next';
-import { voiceControlService, VoiceControlResponse } from '@shared/services/voiceControlApi';
+import { voiceControlService, VoiceControlResponse, CardFilterResponse } from '@shared/services/voiceControlApi';
 import CardForm from '../cards/CardForm';
 import { Card } from '@shared/types';
 import { cardService } from '@shared/services/api';
@@ -21,6 +21,8 @@ env.backends.onnx.wasm.numThreads = 1;
 
 type WhisperModel = 'Xenova/whisper-tiny' | 'Xenova/whisper-base';
 
+type VoiceMode = 'card_update' | 'filter' | 'auto';
+
 // Cache global pour les modèles Whisper (partagé entre toutes les instances)
 const whisperModelsCache: { [key: string]: any } = {};
 
@@ -33,6 +35,7 @@ interface VoiceControlWhisperDialogProps {
     onSwitchModel?: (model: WhisperModel) => void;
     initialModel?: WhisperModel;
     autoStart?: boolean;
+    onVoiceFilterApply?: (cardIds: number[], description: string) => void;
 }
 
 export const VoiceControlWhisperDialog = ({
@@ -43,7 +46,8 @@ export const VoiceControlWhisperDialog = ({
     onSwitchToNative,
     onSwitchModel,
     initialModel = 'Xenova/whisper-base',
-    autoStart = false
+    autoStart = false,
+    onVoiceFilterApply
 }: VoiceControlWhisperDialogProps) => {
     const { t, i18n } = useTranslation();
     const { toast } = useToast();
@@ -61,11 +65,12 @@ export const VoiceControlWhisperDialog = ({
 
     // Utiliser la langue de l'interface
     const selectedLanguage = i18n.language === 'fr' ? 'french' : 'english';
-    const [result, setResult] = useState<VoiceControlResponse | null>(null);
+    const [result, setResult] = useState<VoiceControlResponse | CardFilterResponse | null>(null);
     const [showCardForm, setShowCardForm] = useState(false);
     const [cardInitialData, setCardInitialData] = useState<any>(null);
     const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
     const [proposedChanges, setProposedChanges] = useState<any>(null);
+    const [voiceMode, setVoiceMode] = useState<VoiceMode>('auto');
 
     const transcriberRef = useRef<any>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -305,11 +310,39 @@ export const VoiceControlWhisperDialog = ({
         setIsProcessing(true);
 
         try {
-            const response = await voiceControlService.processTranscript(currentTranscript);
+            const response = await voiceControlService.processTranscript(currentTranscript, voiceMode);
             setResult(response);
 
+            // Gérer la réponse "unknown"
+            if ('response_type' in response && response.response_type === 'unknown') {
+                toast({
+                    title: t('voice.unknown'),
+                    variant: 'destructive'
+                });
+                onOpenChange(false);
+                setTranscript('');
+                return;
+            }
+
+            // Vérifier si la réponse est un filtre (que ce soit en mode "filter" ou "auto")
+            if ('response_type' in response && response.response_type === 'filter') {
+                const filterResponse = response as CardFilterResponse;
+                if (filterResponse.cards && onVoiceFilterApply) {
+                    const cardIds = filterResponse.cards.map(card => card.id);
+                    onVoiceFilterApply(cardIds, filterResponse.description);
+                    toast({
+                        title: t('voice.filter.applied'),
+                        description: filterResponse.description,
+                    });
+                }
+                onOpenChange(false);
+                setTranscript('');
+                return;
+            }
+
             // Si task_id est null ou vide, ouvrir CardForm en mode création avec les données pré-remplies
-            if (!response.task_id) {
+            const cardResponse = response as VoiceControlResponse;
+            if (!cardResponse.task_id) {
                 // Vérifier les permissions pour créer une carte
                 if (!permissions.canCreateCard) {
                     toast({
@@ -320,7 +353,7 @@ export const VoiceControlWhisperDialog = ({
                     return;
                 }
 
-                const initialData = convertResponseToInitialData(response);
+                const initialData = convertResponseToInitialData(cardResponse);
                 setCardInitialData(initialData);
                 setCardToEdit(null);
                 setProposedChanges(null);
@@ -328,7 +361,7 @@ export const VoiceControlWhisperDialog = ({
             } else {
                 // Sinon, charger la carte existante et ouvrir CardForm en mode édition
                 try {
-                    const existingCard = await cardService.getCard(response.task_id);
+                    const existingCard = await cardService.getCard(cardResponse.task_id);
 
                     if (existingCard) {
                         // Vérifier les permissions pour modifier la carte
@@ -342,7 +375,7 @@ export const VoiceControlWhisperDialog = ({
                         }
 
                         // Carte existe → Mode édition avec proposedChanges
-                        const changes = convertResponseToInitialData(response);
+                        const changes = convertResponseToInitialData(cardResponse);
                         setCardToEdit(existingCard);
                         setProposedChanges(changes);
                         setCardInitialData(null);
@@ -364,7 +397,7 @@ export const VoiceControlWhisperDialog = ({
                             variant: 'default'
                         });
 
-                        const initialData = convertResponseToInitialData(response);
+                        const initialData = convertResponseToInitialData(cardResponse);
                         setCardInitialData(initialData);
                         setCardToEdit(null);
                         setProposedChanges(null);
@@ -467,6 +500,46 @@ export const VoiceControlWhisperDialog = ({
                             />
                             <div className="text-xs text-muted-foreground text-right">
                                 {transcript.length}/500
+                            </div>
+                        </div>
+
+                        {/* Sélection du mode vocal */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">{t('voice.mode.title')}</label>
+                            <div className="flex gap-4">
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="voiceMode"
+                                        value="auto"
+                                        checked={voiceMode === 'auto'}
+                                        onChange={(e) => setVoiceMode(e.target.value as VoiceMode)}
+                                        className="w-4 h-4 text-primary focus:ring-primary border-gray-300"
+                                    />
+                                    <span className="text-sm">{t('voice.mode.auto')}</span>
+                                </label>
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="voiceMode"
+                                        value="card_update"
+                                        checked={voiceMode === 'card_update'}
+                                        onChange={(e) => setVoiceMode(e.target.value as 'card_update')}
+                                        className="w-4 h-4 text-primary focus:ring-primary border-gray-300"
+                                    />
+                                    <span className="text-sm">{t('voice.mode.cardUpdate')}</span>
+                                </label>
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="voiceMode"
+                                        value="filter"
+                                        checked={voiceMode === 'filter'}
+                                        onChange={(e) => setVoiceMode(e.target.value as 'filter')}
+                                        className="w-4 h-4 text-primary focus:ring-primary border-gray-300"
+                                    />
+                                    <span className="text-sm">{t('voice.mode.filter')}</span>
+                                </label>
                             </div>
                         </div>
 
@@ -607,7 +680,7 @@ export const VoiceControlWhisperDialog = ({
                             onCardSave(card);
                         }
                     }}
-                    defaultListId={result?.list_id || defaultListId}
+                    defaultListId={(result && 'list_id' in result && result.list_id != null) ? result.list_id : defaultListId}
                     initialData={cardInitialData}
                     proposedChanges={proposedChanges}
                 />
