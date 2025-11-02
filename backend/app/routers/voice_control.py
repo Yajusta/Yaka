@@ -11,7 +11,6 @@ from ..services.llm_service import LLMService
 
 from ..multi_database import get_dynamic_db as get_db
 from ..models import User
-from ..models.response_model import ChecklistItem, Label, Priority, CardEditResponse
 from ..utils.dependencies import get_current_active_user
 
 router = APIRouter(prefix="/voice-control", tags=["voice-control"])
