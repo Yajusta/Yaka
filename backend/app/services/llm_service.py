@@ -19,7 +19,6 @@ from ..models.response_model import (
     CardFilterResponse,
     AutoIntentResponse,
     UnknownResponse,
-    VoiceControlResponse,
     ResponseType,
 )
 from ..models.user import User, UserStatus
