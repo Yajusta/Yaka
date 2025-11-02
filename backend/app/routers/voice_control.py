@@ -1,13 +1,12 @@
 """Routeur pour le pilotage par la voix."""
 
 import json
-from time import sleep
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..services.llm_service import LLMService
+from ..services.llm_service import LLMService, ResponseType
 
 from ..multi_database import get_dynamic_db as get_db
 from ..models import User
@@ -74,7 +73,7 @@ class VoiceControlRequest(BaseModel):
     """Requête de pilotage vocal."""
 
     transcript: str
-    response_type: str = "card_update"
+    response_type: ResponseType = ResponseType.AUTO_INTENT
 
 
 @router.post("/")

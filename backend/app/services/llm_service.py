@@ -60,7 +60,7 @@ class LLMService:
         transcript: str,
         user_context: str,
         instructions: str = "",
-        response_type: str = ResponseType.AUTO_INTENT.value,
+        response_type: ResponseType = ResponseType.AUTO_INTENT,
     ) -> str:
         """
         Analyse un transcript de réunion et extrait les informations selon le modèle spécifié.
@@ -75,24 +75,24 @@ class LLMService:
             Un dictionnaire contenant les informations extraites au format JSON
         """
         try:
-            if response_type == ResponseType.AUTO_INTENT.value:
+            if response_type == ResponseType.AUTO_INTENT:
                 intent_instructions = self._build_intent_analysis_instructions(user_context)
                 intent_response: AutoIntentResponse = AutoIntentResponse.model_validate_json(
                     self._analyze_with_openai(transcript, intent_instructions, response_type)
                 )
                 if intent_response.action == ResponseType.CARD_UPDATE:
-                    response_type = ResponseType.CARD_UPDATE.value
+                    response_type = ResponseType.CARD_UPDATE
                 elif intent_response.action == ResponseType.FILTER:
-                    response_type = ResponseType.FILTER.value
+                    response_type = ResponseType.FILTER
                 else:
                     unknown_response = UnknownResponse()
                     return unknown_response.model_dump_json(indent=2)
 
             # Construire les instructions pour le LLM selon le type de réponse
             if not instructions:
-                if response_type == ResponseType.FILTER.value:
+                if response_type == ResponseType.FILTER:
                     instructions = self._build_filter_instructions(user_context)
-                else:
+                if response_type == ResponseType.CARD_UPDATE:
                     instructions = self._build_card_edit_instructions(user_context)
 
             return self._analyze_with_openai(transcript, instructions, response_type)
@@ -102,7 +102,7 @@ class LLMService:
             return "{}"
 
     def _analyze_with_openai(
-        self, transcript: str, instructions: str, response_type: str = ResponseType.AUTO_INTENT.value
+        self, transcript: str, instructions: str, response_type: ResponseType = ResponseType.AUTO_INTENT
     ) -> str:
         """Analyse avec OpenAI standard."""
         temp_param = os.getenv("MODEL_TEMPERATURE", None)
@@ -128,14 +128,14 @@ class LLMService:
         transcript: str,
         instructions: str,
         temperature: Optional[float] = None,
-        response_type: str = ResponseType.AUTO_INTENT.value,
+        response_type: ResponseType = ResponseType.AUTO_INTENT,
     ) -> Any:
 
         # Choisir le modèle de réponse selon le type
         response_format = AutoIntentResponse
-        if response_type == ResponseType.FILTER.value:
+        if response_type == ResponseType.FILTER:
             response_format = CardFilterResponse
-        if response_type == ResponseType.CARD_UPDATE.value:
+        if response_type == ResponseType.CARD_UPDATE:
             response_format = CardEditResponse
 
         args = {
