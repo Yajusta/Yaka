@@ -354,12 +354,6 @@ Format final exact à utiliser :
             Les instructions formatées pour le LLM
         """
         # Parse user context
-        user_dict = {}
-        try:
-            user_dict = json.loads(user_context) if user_context else {}
-        except json.JSONDecodeError:
-            user_dict = {}
-
         instructions = f"""
 ### CONTEXTE EXISTANT ###
 Tu es un assistant intelligent de gestion de tâches. Tu dois analyser l'intention de l'utilisateur pour déterminer s'il souhaite:
