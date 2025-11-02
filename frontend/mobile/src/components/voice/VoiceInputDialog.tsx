@@ -510,7 +510,7 @@ const VoiceInputDialog = ({ open, onOpenChange, onCardSave, defaultListId, onVoi
                         <div className="flex gap-2">
                             <button
                                 onClick={handleSend}
-                                disabled={!transcript.trim() || isProcessing}
+                                disabled={!getCurrentText().trim() || isProcessing}
                                 className="btn-touch bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 active:bg-primary/80 transition-colors flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Send className="w-5 h-5" />
