@@ -13,9 +13,27 @@ import { CommentsScreen } from './screens/CommentsScreen';
 import LoginScreen from './screens/LoginScreen';
 import MainScreen from './screens/MainScreen';
 
+const normalizeBasePath = (value?: string) => {
+  if (!value) {
+    return '/';
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === '/') {
+    return '/';
+  }
+
+  const withLeadingSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  const withoutTrailingSlash = withLeadingSlash.replace(/\/+$/, '');
+
+  return withoutTrailingSlash || '/';
+};
+
 const getBaseName = () => {
-  const envBase = import.meta.env.VITE_BASE_PATH || '';
-  if (envBase) return envBase;
+  const envBase = import.meta.env.VITE_BASE_PATH;
+  if (typeof envBase === 'string' && envBase.length > 0) {
+    return normalizeBasePath(envBase);
+  }
   const path = window.location.pathname;
   return path.startsWith('/m/') ? '/m' : '/';
 };
