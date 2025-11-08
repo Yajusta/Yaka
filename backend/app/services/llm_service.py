@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from openai import BadRequestError, OpenAI
 from sqlalchemy.orm import selectinload
 
-from ..multi_database import get_board_db
 from ..models.card import Card, CardPriority
 from ..models.card_item import CardItem
 from ..models.global_dictionary import GlobalDictionary
@@ -15,13 +14,14 @@ from ..models.kanban_list import KanbanList
 from ..models.label import Label
 from ..models.personal_dictionary import PersonalDictionary
 from ..models.response_model import (
+    AutoIntentResponse,
     CardEditResponse,
     CardFilterResponse,
-    AutoIntentResponse,
-    UnknownResponse,
     ResponseType,
+    UnknownResponse,
 )
 from ..models.user import User, UserStatus
+from ..multi_database import get_board_db
 
 # Charger les variables d'environnement depuis .env
 load_dotenv(override=True)
@@ -383,11 +383,11 @@ Exemples d'actions "filter" (filtre) :
 Analyse la demande ci-dessous et décide quelle est l'intention de l'utilisateur.
 
 Règles importantes :
-- Si la demande mentionne explicitement "cherche", "affiche", "montre", "filtre", ou "trouve" → c'est généralement un filtre
-- Si la demande parle de "créer", "ajouter", "modifier", "changer", "assigner", "marquer" → c'est généralement une édition
-- Si l'utilisateur demande des informations sur des tâches existantes → c'est un filtre
-- Si l'utilisateur veut créer ou modifier une tâche → c'est une édition de carte
-- Si tu ne comprends pas l'intention, tu peux répondre "UNKNOWN".
+- Si la demande mentionne explicitement "cherche", "affiche", "montre", "filtre", ou "trouve" → c'est généralement un filtre ("FILTER")
+- Si la demande parle de "créer", "ajouter", "modifier", "changer", "assigner", "marquer" → c'est généralement une édition de carte ("CARD_UPDATE")
+- Si l'utilisateur demande des informations sur des tâches existantes → c'est un filtre ("FILTER")
+- Si l'utilisateur veut créer ou modifier une tâche → c'est une édition de carte ("CARD_UPDATE")
+
 
 Utilisateur actuel :
 ```json
