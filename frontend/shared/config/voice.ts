@@ -11,8 +11,19 @@ const normalizeLimit = (value?: string) => {
     return Math.min(parsed, 5000);
 };
 
+interface ImportMetaEnv {
+    VITE_VOICE_TRANSCRIPT_LIMIT?: string;
+}
+
+function isImportMetaEnv(env: unknown): env is ImportMetaEnv {
+    return typeof env === 'object' && env !== null && 'VITE_VOICE_TRANSCRIPT_LIMIT' in env;
+}
+
 const getTranscriptLimit = () => {
-    const raw = typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_VOICE_TRANSCRIPT_LIMIT : undefined;
+    let raw: string | undefined = undefined;
+    if (typeof import.meta !== 'undefined' && isImportMetaEnv((import.meta as { env?: unknown }).env)) {
+        raw = ((import.meta as { env?: unknown }).env as ImportMetaEnv).VITE_VOICE_TRANSCRIPT_LIMIT;
+    }
     if (typeof raw === 'string') {
         return normalizeLimit(raw);
     }
