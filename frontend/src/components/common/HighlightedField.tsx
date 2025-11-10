@@ -15,7 +15,13 @@ interface HighlightedFieldProps {
  * Affiche une tooltip avec l'ancienne valeur au survol.
  */
 export const HighlightedField = ({ isChanged, tooltipContent, children, className = '' }: HighlightedFieldProps) => {
-    const content = (
+    const indicator = (
+        <div className="absolute -top-2 -right-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
+            <Pencil className="w-3 h-3 text-white" />
+        </div>
+    );
+
+    return (
         <div className={`relative ${className}`}>
             <div className="relative rounded-md">
                 {isChanged && (
@@ -25,27 +31,19 @@ export const HighlightedField = ({ isChanged, tooltipContent, children, classNam
                     {children}
                 </div>
             </div>
-            {isChanged && (
-                <div className="absolute -top-2 -right-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-md z-10">
-                    <Pencil className="w-3 h-3 text-white" />
-                </div>
-            )}
+            {isChanged ? (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            {indicator}
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 [&_.bg-primary]:!bg-green-500 [&_.fill-primary]:!fill-green-500">
+                            <p className="text-sm text-green-900 dark:text-green-100">{tooltipContent}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            ) : null}
         </div>
-    );
-
-    return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    {content}
-                </TooltipTrigger>
-                {isChanged && (
-                    <TooltipContent side="top" className="max-w-xs bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 [&_.bg-primary]:!bg-green-500 [&_.fill-primary]:!fill-green-500">
-                        <p className="text-sm text-green-900 dark:text-green-100">{tooltipContent}</p>
-                    </TooltipContent>
-                )}
-            </Tooltip>
-        </TooltipProvider>
     );
 };
 
