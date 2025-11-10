@@ -619,7 +619,11 @@
             "whisperBase": "💻 Local - Whisper (~75 MB)",
             "cardUpdate": "Edit card",
             "filter": "Filter cards",
-            "auto": "Auto-detect"
+            "auto": "Auto-detect",
+            "settings": "Settings"
+        },
+        "card": {
+            "noTitle": "Untitled card"
         },
         "resultTitle": "Voice control result",
         "resultDescription": "Here is the result of your voice request",

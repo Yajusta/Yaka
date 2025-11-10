@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
-import { Mic, MicOff, Send, X, Trash2 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import { voiceControlService, VoiceControlResponse, CardFilterResponse } from '@shared/services/voiceControlApi';
-import { Card } from '@shared/types';
-import { cardService } from '@shared/services/api';
+import { VOICE_TRANSCRIPT_LIMIT } from '@shared/config/voice';
+import { useToast } from '@shared/hooks/use-toast';
 import { useAuth } from '@shared/hooks/useAuth';
 import { usePermissions } from '@shared/hooks/usePermissions';
-import { useToast } from '@shared/hooks/use-toast';
+import { useVoiceCapture } from '@shared/hooks/useVoiceCapture';
+import { cardService } from '@shared/services/api';
+import { CardFilterResponse, VoiceControlResponse, voiceControlService } from '@shared/services/voiceControlApi';
+import { Card } from '@shared/types';
+import { Mic, MicOff, Send, Trash2, X } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import CardDetail from '../card/CardDetail';
 
 interface VoiceInputDialogProps {
@@ -27,157 +28,67 @@ const VoiceInputDialog = ({ open, onOpenChange, onCardSave, defaultListId, onVoi
     const permissions = usePermissions(currentUser);
 
     const {
-        transcript,
+        currentText,
         listening,
+        browserSupportsSpeechRecognition,
+        startListening,
+        stopListening,
         resetTranscript,
-        browserSupportsSpeechRecognition
-    } = useSpeechRecognition();
+        handleManualChange,
+        clearTranscripts,
+        setManualTranscript
+    } = useVoiceCapture({
+        open,
+        language: i18n.language === 'fr' ? 'fr-FR' : 'en-US',
+        autoStart: true,
+        continuous: true
+    });
 
-    const [shouldAutoRestart, setShouldAutoRestart] = useState(false);
-    const [useContinuousMode] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showCardDetail, setShowCardDetail] = useState(false);
     const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
     const [cardInitialData, setCardInitialData] = useState<any>(null);
     const [proposedChanges, setProposedChanges] = useState<any>(null);
     const [voiceMode, setVoiceMode] = useState<VoiceMode>('auto');
-    const [manualTranscript, setManualTranscript] = useState('');
-
-    // Auto-restart logic for non-continuous mode (same as VoiceRecognitionTest.tsx)
-    useEffect(() => {
-        if (!useContinuousMode) {
-            const recognition = SpeechRecognition.getRecognition();
-            if (recognition) {
-                const handleEnd = () => {
-                    // Auto-restart if needed
-                    if (shouldAutoRestart && !listening) {
-                        setTimeout(() => {
-                            if (shouldAutoRestart) {
-                                SpeechRecognition.startListening({
-                                    continuous: false,
-                                    language: i18n.language === 'fr' ? 'fr-FR' : 'en-US'
-                                });
-                            }
-                        }, 100);
-                    }
-                };
-
-                recognition.addEventListener('end', handleEnd);
-                return () => {
-                    recognition.removeEventListener('end', handleEnd);
-                };
-            }
-        }
-    }, [shouldAutoRestart, listening, useContinuousMode, i18n.language]);
-
-    // Stop listening when dialog closes
-    useEffect(() => {
-        if (!open) {
-            setShouldAutoRestart(false);
-            SpeechRecognition.stopListening();
-        } else {
-            setShouldAutoRestart(false);
-        }
-    }, [open]);
-
-    // Auto-start listening when dialog opens
-    useEffect(() => {
-        if (open && browserSupportsSpeechRecognition && !listening) {
-            const timer = setTimeout(() => {
-                startListening();
-            }, 300);
-            return () => clearTimeout(timer);
-        }
-    }, [open, browserSupportsSpeechRecognition]); // Removed 'listening' from dependencies
-
-    // Handle manual transcript editing
     const handleTranscriptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setManualTranscript(e.target.value);
+        handleManualChange(e.target.value);
     };
 
-    // Get the current text to display
-    const getCurrentText = () => {
-        // When listening, combine manual text with live transcript
-        if (listening && transcript.trim()) {
-            // If manual text exists, append space + transcript
-            if (manualTranscript.trim()) {
-                return manualTranscript.trim() + ' ' + transcript;
-            } else {
-                // If no manual text, use transcript directly
-                return transcript;
-            }
-        }
-
-        // When not listening, use only manual transcript (transcript has been copied to manual)
-        return manualTranscript;
+    const handleStartListening = () => {
+        startListening({ enableAutoStart: true });
     };
 
-    // Copy transcript to manual transcript when listening stops
-    useEffect(() => {
-        if (!listening && transcript) {
-            // Concatenate the new transcript with the existing manual text
-            setManualTranscript(prev => {
-                const combined = prev ? prev + ' ' + transcript : transcript;
-                return combined.trim();
-            });
-        }
-    }, [listening, transcript]);
-
-    const startListening = () => {
-        setShouldAutoRestart(true);
-
-        // Reset transcript only if not already listening (same as VoiceRecognitionTest.tsx)
-        if (!listening) {
-            resetTranscript();
-        }
-
-        try {
-            SpeechRecognition.startListening({
-                continuous: useContinuousMode,
-                language: i18n.language === 'fr' ? 'fr-FR' : 'en-US'
-            });
-        } catch (error: any) {
-            console.error('Error starting speech recognition:', error.message);
-        }
-    };
-
-    const stopListening = () => {
-        setShouldAutoRestart(false);
-
-        try {
-            SpeechRecognition.stopListening();
-        } catch (error: any) {
-            console.error('Error stopping speech recognition:', error.message);
-        }
+    const handleStopListening = () => {
+        stopListening({ disableAutoStart: true });
     };
 
     // Function to convert response to initial data for CardDetail (from VoiceInputDialogOld.tsx)
-  const convertResponseToInitialData = (response: VoiceControlResponse) => {
-    return {
-      title: response.title || '',
-      description: response.description || '',
-      due_date: response.due_date || '',
-      priority: response.priority || 'medium',
-      assignee_id: response.assignee_id || null,
-      label_ids: response.labels?.map(l => l.label_id) || [],
-      list_id: response.list_id || undefined,
-      checklist: response.checklist?.map((item, index) => ({
-        id: item.item_id || undefined,
-        text: item.item_name,
-        is_done: item.is_done,
-        position: index + 1
-      })) || []
+    const convertResponseToInitialData = (response: VoiceControlResponse) => {
+        return {
+            title: response.title || '',
+            description: response.description || '',
+            due_date: response.due_date || '',
+            priority: response.priority || 'medium',
+            assignee_id: response.assignee_id || null,
+            label_ids: response.labels?.map(l => l.label_id) || [],
+            list_id: response.list_id || undefined,
+            checklist: response.checklist?.map((item, index) => ({
+                id: item.item_id || undefined,
+                text: item.item_name,
+                is_done: item.is_done,
+                position: index + 1
+            })) || []
+        };
     };
-  };
 
-  const handleSend = async () => {
-        const textToSend = getCurrentText();
+    const handleSend = async () => {
+        const textToSend = currentText;
         if (!textToSend.trim()) {
             return;
         }
 
         // Stop listening before processing (as requested)
-        stopListening();
+        stopListening({ disableAutoStart: true });
         setIsProcessing(true);
 
         try {
@@ -302,33 +213,32 @@ const VoiceInputDialog = ({ open, onOpenChange, onCardSave, defaultListId, onVoi
     };
 
     const handleClear = () => {
-        resetTranscript();
-        setManualTranscript('');
+        clearTranscripts();
     };
 
-  const handleCardSave = (savedCard: Card) => {
-    setShowCardDetail(false);
-    setCardToEdit(null);
-    setCardInitialData(null);
-    setProposedChanges(null);
-    onOpenChange(false);
+    const handleCardSave = (savedCard: Card) => {
+        setShowCardDetail(false);
+        setCardToEdit(null);
+        setCardInitialData(null);
+        setProposedChanges(null);
+        onOpenChange(false);
 
-    if (onCardSave) {
-      onCardSave(savedCard);
-    }
-  };
+        if (onCardSave) {
+            onCardSave(savedCard);
+        }
+    };
 
-  const handleCardClose = () => {
-    setShowCardDetail(false);
-    setCardToEdit(null);
-    setCardInitialData(null);
-    setProposedChanges(null);
-    // Close also voice dialog to return to main page
-    onOpenChange(false);
-  };
+    const handleCardClose = () => {
+        setShowCardDetail(false);
+        setCardToEdit(null);
+        setCardInitialData(null);
+        setProposedChanges(null);
+        // Close also voice dialog to return to main page
+        onOpenChange(false);
+    };
 
     const handleCancel = () => {
-        stopListening();
+        stopListening({ disableAutoStart: true });
         onOpenChange(false);
         resetTranscript();
         setManualTranscript('');
@@ -420,17 +330,16 @@ const VoiceInputDialog = ({ open, onOpenChange, onCardSave, defaultListId, onVoi
 
                 {/* Content */}
                 <div className="pb-safe p-4 space-y-4">
-                    {/* Text area with trash icon */}
                     <div className="space-y-2">
                         <div className="relative">
                             <textarea
-                                value={getCurrentText()}
+                                value={currentText}
                                 onChange={handleTranscriptChange}
                                 readOnly={listening}
                                 placeholder={t('voice.placeholder')}
                                 className="w-full min-h-[150px] p-4 bg-background border-2 border-border rounded-lg resize-none font-mono pr-12"
                             />
-                            {getCurrentText().trim() && !listening && !isProcessing && (
+                            {currentText.trim() && !listening && !isProcessing && (
                                 <button
                                     onClick={handleClear}
                                     className="absolute bottom-4 left-4 p-1 text-muted-foreground hover:text-foreground active:bg-accent rounded transition-colors"
@@ -441,7 +350,7 @@ const VoiceInputDialog = ({ open, onOpenChange, onCardSave, defaultListId, onVoi
                             )}
                         </div>
                         <div className="text-xs text-muted-foreground text-right">
-                            {getCurrentText().length}/500
+                            {currentText.length}/{VOICE_TRANSCRIPT_LIMIT}
                         </div>
                     </div>
 
@@ -486,21 +395,21 @@ const VoiceInputDialog = ({ open, onOpenChange, onCardSave, defaultListId, onVoi
                     {/* Action buttons */}
                     <div className="flex justify-between gap-2 pt-4">
                         <div className="flex gap-2">
-                            {!listening ? (
-                                <button
-                                    onClick={startListening}
-                                    disabled={isProcessing}
-                                    className="btn-touch bg-green-500 hover:bg-green-600 text-white hover:text-white font-medium rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2 px-6 py-3"
-                                >
-                                    <Mic className="w-5 h-5" />
-                                    {t('voice.start')}
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={stopListening}
-                                    disabled={isProcessing}
-                                    className="btn-touch bg-destructive text-destructive-foreground font-medium rounded-lg hover:bg-destructive/90 active:bg-destructive/80 transition-colors flex items-center justify-center gap-2 px-6 py-3"
-                                >
+                                {!listening ? (
+                                    <button
+                                        onClick={handleStartListening}
+                                        disabled={isProcessing}
+                                        className="btn-touch bg-green-500 hover:bg-green-600 text-white hover:text-white font-medium rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2 px-6 py-3"
+                                    >
+                                        <Mic className="w-5 h-5" />
+                                        {t('voice.start')}
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleStopListening}
+                                        disabled={isProcessing}
+                                        className="btn-touch bg-destructive text-destructive-foreground font-medium rounded-lg hover:bg-destructive/90 active:bg-destructive/80 transition-colors flex items-center justify-center gap-2 px-6 py-3"
+                                    >
                                     <MicOff className="w-5 h-5" />
                                     {t('voice.stop')}
                                 </button>
@@ -510,7 +419,7 @@ const VoiceInputDialog = ({ open, onOpenChange, onCardSave, defaultListId, onVoi
                         <div className="flex gap-2">
                             <button
                                 onClick={handleSend}
-                                disabled={!getCurrentText().trim() || isProcessing}
+                                disabled={!currentText.trim() || isProcessing}
                                 className="btn-touch bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 active:bg-primary/80 transition-colors flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Send className="w-5 h-5" />

@@ -619,7 +619,11 @@
             "whisperBase": "💻 Local - Whisper (~75 MB)",
             "cardUpdate": "Éditer une carte",
             "filter": "Filtrer les cartes",
-            "auto": "Détection automatique"
+            "auto": "Détection automatique",
+            "settings": "Paramètres"
+        },
+        "card": {
+            "noTitle": "Carte sans titre"
         },
         "resultTitle": "Résultat du pilotage vocal",
         "resultDescription": "Voici le résultat de votre demande vocale",
