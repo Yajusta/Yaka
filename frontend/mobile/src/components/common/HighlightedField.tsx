@@ -14,12 +14,17 @@ export const HighlightedField = ({ isChanged, tooltipContent, children, classNam
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!isChanged && showTooltip) {
+      setShowTooltip(false);
+    }
+  }, [isChanged, showTooltip]);
+
+  useEffect(() => {
     if (showTooltip && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      
-      // Si moins de 150px en dessous, afficher au-dessus
+
       if (spaceBelow < 150 && spaceAbove > spaceBelow) {
         setTooltipPosition('top');
       } else {
@@ -28,42 +33,35 @@ export const HighlightedField = ({ isChanged, tooltipContent, children, classNam
     }
   }, [showTooltip]);
 
-  if (!isChanged) {
-    return <>{children}</>;
-  }
-
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <div className="relative">
-        {/* Green border wrapper */}
-        <div className="relative border-2 border-green-500 rounded-lg p-0.5">
+        <div className={`relative rounded-lg ${isChanged ? 'border-2 border-green-500 p-0.5' : ''}`}>
           {children}
         </div>
-        
-        {/* Info icon */}
-        <button
-          type="button"
-          onClick={() => setShowTooltip(!showTooltip)}
-          className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1 shadow-lg z-10"
-          aria-label="Show previous value"
-        >
-          <Info className="w-4 h-4" />
-        </button>
+
+        {isChanged && (
+          <button
+            type="button"
+            onClick={() => setShowTooltip(!showTooltip)}
+            className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1 shadow-lg z-10"
+            aria-label="Show previous value"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
-      {/* Tooltip */}
-      {showTooltip && (
+      {isChanged && showTooltip && (
         <>
-          {/* Backdrop to close tooltip */}
           <div
             className="fixed inset-0 z-20"
             onClick={() => setShowTooltip(false)}
           />
-          {/* Tooltip content */}
-          <div 
+          <div
             className={`absolute left-0 right-0 bg-card border-2 border-green-500 rounded-lg p-3 shadow-xl z-30 ${
-              tooltipPosition === 'bottom' 
-                ? 'top-full mt-2 animate-slide-up' 
+              tooltipPosition === 'bottom'
+                ? 'top-full mt-2 animate-slide-up'
                 : 'bottom-full mb-2 animate-slide-down'
             }`}
           >
