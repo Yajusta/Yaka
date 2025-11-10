@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.2 (2025-11-10)
+
+- [FIX] Problème de focus quand on modifie un champ de la checklist.
+- [CHORE] Refacto du VoiceControl.
+
 ## 1.4.1 (2025-11-01)
 
 - [NEW] Filtre des tâches à la voix.

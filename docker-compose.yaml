@@ -27,7 +27,7 @@ services:
       - ./data/:/app/data/
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      test: [ "CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -60,7 +60,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/" ]
       interval: 300s
       timeout: 10s
       retries: 3
@@ -79,6 +79,7 @@ services:
         - BASE_URL=${BASE_URL:-http://localhost:3000}
         - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
         - VITE_BASE_PATH=${VITE_BASE_PATH:-/}
+        - VITE_VOICE_TRANSCRIPT_LIMIT=${VITE_VOICE_TRANSCRIPT_LIMIT:-500}
     container_name: yaka-frontend-mobile
     ports:
       - "3001:80"
@@ -90,12 +91,13 @@ services:
       - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
       - API_BASE_URL=${API_BASE_URL:-http://localhost:8000}
       - VITE_BASE_PATH=${VITE_BASE_PATH:-/}
+      - VITE_VOICE_TRANSCRIPT_LIMIT=${VITE_VOICE_TRANSCRIPT_LIMIT:-500}
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/" ]
       interval: 300s
       timeout: 10s
       retries: 3
