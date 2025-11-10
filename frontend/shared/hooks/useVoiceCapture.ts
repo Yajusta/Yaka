@@ -91,7 +91,7 @@ export const useVoiceCapture = ({
         } else {
             setManualTranscript('');
         }
-    }, [listening, resetTranscript, setManualTranscript]);
+    }, [listening, resetTranscript]);
 
     const currentText = useMemo(() => {
         if (listening && transcript.trim()) {
