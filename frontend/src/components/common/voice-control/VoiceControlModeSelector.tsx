@@ -68,7 +68,7 @@ export const VoiceControlModeSelector = ({
                             <span>{t('voice.mode.browser')}</span>
                             {recognitionMode === 'browser' && <Check className="h-4 w-4" />}
                         </DropdownMenuItem>
-                        {/* Whisper tiny est désactivé pour le moment, laisser l'option centrale */}
+                        {/* Whisper tiny is disabled for now, keeping the central option */}
                         <DropdownMenuItem
                             onClick={() => onRecognitionModeChange('whisper-base')}
                             className="flex items-center justify-between"
