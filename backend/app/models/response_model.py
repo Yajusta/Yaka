@@ -71,7 +71,7 @@ class AutoIntentResponse(BaseModel):
     """Response model when the system needs to analyze user intent to decide between card_update and filter."""
 
     response_type: ResponseType = Field(default=ResponseType.AUTO_INTENT, description="Type of response.")
-    action: ResponseType = Field(..., description="Action decided by the system: CARD_UPDATE or FILTER.")
+    action: ResponseType = Field(..., description="Action decided by the system: 'card_update' or 'filter'.")
     confidence: float = Field(..., description="Confidence level of the decision (0.0 to 1.0).")
 
 
