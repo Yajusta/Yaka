@@ -7,7 +7,6 @@ from typing import Optional
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
 
 from ..database import Base
 from .helpers import get_system_timezone_datetime

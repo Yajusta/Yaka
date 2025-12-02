@@ -8,7 +8,6 @@ from openai import BadRequestError, OpenAI
 from sqlalchemy.orm import selectinload
 
 from ..models.card import Card, CardPriority
-from ..models.card_item import CardItem
 from ..models.global_dictionary import GlobalDictionary
 from ..models.kanban_list import KanbanList
 from ..models.label import Label

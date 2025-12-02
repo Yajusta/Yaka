@@ -2,10 +2,10 @@
 
 from typing import List, Optional
 
-from sqlalchemy import and_, func, or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
-from ..models import Card, CardComment, CardPriority, KanbanList, Label, User, ViewScope, UserRole
+from ..models import Card, CardComment, CardPriority, KanbanList, Label, User, UserRole, ViewScope
 from ..schemas import (
     BulkCardMoveRequest,
     CardCreate,
@@ -26,19 +26,14 @@ def apply_view_scope_filter(query, user: User):
     # # Admin users can see all cards
     # if user.role == UserRole.ADMIN:
     #     return query
-    
+
     # Apply view scope filter
     if user.view_scope == ViewScope.ALL:
         # No filtering needed
         return query
     elif user.view_scope == ViewScope.UNASSIGNED_PLUS_MINE:
         # Show unassigned cards + cards assigned to current user
-        return query.filter(
-            or_(
-                Card.assignee_id.is_(None),
-                Card.assignee_id == user.id
-            )
-        )
+        return query.filter(or_(Card.assignee_id.is_(None), Card.assignee_id == user.id))
     elif user.view_scope == ViewScope.MINE_ONLY:
         # Show only cards assigned to current user
         return query.filter(Card.assignee_id == user.id)
@@ -55,7 +50,7 @@ def can_access_card(user: User, card: Card) -> bool:
     # Admin users can access all cards
     if user.role == UserRole.ADMIN:
         return True
-    
+
     # Check view scope permissions
     if user.view_scope == ViewScope.ALL:
         return True
@@ -77,10 +72,12 @@ def get_card(db: Session, card_id: int) -> Optional[Card]:
     return card
 
 
-def get_cards(db: Session, filters: CardFilter, skip: int = 0, limit: int = 100, user: Optional[User] = None) -> List[Card]:
+def get_cards(
+    db: Session, filters: CardFilter, skip: int = 0, limit: int = 100, user: Optional[User] = None
+) -> List[Card]:
     """Récupérer une liste de cartes avec filtres."""
     query = db.query(Card)
-    
+
     # Apply view scope filter if user is provided
     if user:
         query = apply_view_scope_filter(query, user)
@@ -125,11 +122,11 @@ def get_cards(db: Session, filters: CardFilter, skip: int = 0, limit: int = 100,
 def get_archived_cards(db: Session, skip: int = 0, limit: int = 100, user: Optional[User] = None) -> List[Card]:
     """Récupérer les cartes archivées."""
     query = db.query(Card).filter(Card.is_archived == True)
-    
+
     # Apply view scope filter if user is provided
     if user:
         query = apply_view_scope_filter(query, user)
-    
+
     return query.offset(skip).limit(limit).all()
 
 
@@ -156,10 +153,11 @@ def create_card(db: Session, card: CardCreate, created_by: int) -> Card:
         position = card.position
     else:
         # Pas de position spécifiée - ajouter à la fin (uniquement les cartes non archivées)
-        max_position = db.query(func.max(Card.position)).filter(
-            Card.list_id == target_list_id,
-            Card.is_archived == False
-        ).scalar()
+        max_position = (
+            db.query(func.max(Card.position))
+            .filter(Card.list_id == target_list_id, Card.is_archived == False)
+            .scalar()
+        )
         position = (max_position + 1) if max_position is not None else 0
 
     db_card = Card(
@@ -422,10 +420,11 @@ def move_card(
         target_position = getattr(move_request, "position", None)
         if target_position is None:
             # Pas de position spécifiée, mettre à la fin (uniquement les cartes non archivées)
-            max_position = db.query(func.max(Card.position)).filter(
-                Card.list_id == new_list_id,
-                Card.is_archived == False
-            ).scalar()
+            max_position = (
+                db.query(func.max(Card.position))
+                .filter(Card.list_id == new_list_id, Card.is_archived == False)
+                .scalar()
+            )
             target_position = (max_position + 1) if max_position is not None else 0
 
         _reorder_cards_in_same_list(db, card_id, old_position, target_position, new_list_id)
@@ -441,10 +440,11 @@ def move_card(
         target_position = getattr(move_request, "position", None)
         if target_position is None:
             # Pas de position spécifiée, mettre à la fin (uniquement les cartes non archivées)
-            max_position = db.query(func.max(Card.position)).filter(
-                Card.list_id == new_list_id,
-                Card.is_archived == False
-            ).scalar()
+            max_position = (
+                db.query(func.max(Card.position))
+                .filter(Card.list_id == new_list_id, Card.is_archived == False)
+                .scalar()
+            )
             target_position = (max_position + 1) if max_position is not None else 0
         else:
             # Décaler les cartes existantes dans la liste de destination
@@ -492,7 +492,7 @@ def _reorder_cards_in_same_list(db: Session, card_id: int, old_position: int, ne
             Card.position > old_position,
             Card.position <= new_position,
             Card.id != card_id,
-            Card.is_archived == False
+            Card.is_archived == False,
         ).update({Card.position: Card.position - 1})
         db.commit()  # Commit des décalages avant de mettre à jour la carte déplacée
 
@@ -505,7 +505,7 @@ def _reorder_cards_in_same_list(db: Session, card_id: int, old_position: int, ne
             Card.position >= new_position,
             Card.position < old_position,
             Card.id != card_id,
-            Card.is_archived == False
+            Card.is_archived == False,
         ).update({Card.position: Card.position + 1})
         db.commit()  # Commit des décalages avant de mettre à jour la carte déplacée
 
@@ -517,31 +517,24 @@ def _reorder_cards_in_same_list(db: Session, card_id: int, old_position: int, ne
 
 def _compact_positions_after_removal(db: Session, list_id: int, removed_position: int):
     """Compacter les positions après suppression d'une carte."""
-    db.query(Card).filter(
-        Card.list_id == list_id,
-        Card.position > removed_position,
-        Card.is_archived == False
-    ).update({Card.position: Card.position - 1})
+    db.query(Card).filter(Card.list_id == list_id, Card.position > removed_position, Card.is_archived == False).update(
+        {Card.position: Card.position - 1}
+    )
     db.commit()
 
 
 def _shift_positions_for_insertion(db: Session, list_id: int, insert_position: int):
     """Décaler les positions pour faire de la place à une nouvelle carte."""
-    db.query(Card).filter(
-        Card.list_id == list_id,
-        Card.position >= insert_position,
-        Card.is_archived == False
-    ).update({Card.position: Card.position + 1})
+    db.query(Card).filter(Card.list_id == list_id, Card.position >= insert_position, Card.is_archived == False).update(
+        {Card.position: Card.position + 1}
+    )
     db.commit()
 
 
 def _normalize_positions_in_list(db: Session, list_id: int):
     """Normaliser les positions des cartes non archivées dans une liste pour qu'elles soient séquentielles (0, 1, 2, ...)."""
     # Récupérer uniquement les cartes non archivées de la liste triées par position actuelle
-    cards = db.query(Card).filter(
-        Card.list_id == list_id,
-        Card.is_archived == False
-    ).order_by(Card.position).all()
+    cards = db.query(Card).filter(Card.list_id == list_id, Card.is_archived == False).order_by(Card.position).all()
 
     # Mettre à jour les positions pour qu'elles soient séquentielles en commençant à 0
     for new_position, card in enumerate(cards):
@@ -558,10 +551,11 @@ def bulk_move_cards(db: Session, bulk_move_request: BulkCardMoveRequest) -> List
         return []
 
     # Obtenir la position maximale dans la liste de destination (uniquement les cartes non archivées)
-    max_position = db.query(func.max(Card.position)).filter(
-        Card.list_id == bulk_move_request.target_list_id,
-        Card.is_archived == False
-    ).scalar()
+    max_position = (
+        db.query(func.max(Card.position))
+        .filter(Card.list_id == bulk_move_request.target_list_id, Card.is_archived == False)
+        .scalar()
+    )
     next_position = (max_position + 1) if max_position is not None else 0
 
     # Déplacer toutes les cartes vers la liste de destination

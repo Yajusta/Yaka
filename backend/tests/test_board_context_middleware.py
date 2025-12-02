@@ -1,16 +1,14 @@
 """Tests for the board context middleware."""
 
-import asyncio
 import os
 import tempfile
-import pytest
-from unittest.mock import AsyncMock, MagicMock
-from fastapi import Request, HTTPException
-from fastapi.security import HTTPAuthorizationCredentials
+from unittest.mock import MagicMock
 
-from app.utils.board_context import BoardContextMiddleware, get_board_uid_from_request
-from app.multi_database import db_manager, set_current_board_uid, get_current_board_uid
+import pytest
 from app.database import Base
+from app.multi_database import db_manager, get_current_board_uid, set_current_board_uid
+from app.utils.board_context import BoardContextMiddleware, get_board_uid_from_request
+from fastapi import Request
 from sqlalchemy import create_engine
 
 
@@ -92,7 +90,7 @@ class TestBoardContextMiddleware:
             request = self.create_mock_request(f"/board/{board_uid}/cards")
             call_next = self.create_mock_call_next()
 
-            response = await middleware.dispatch(request, call_next)
+            await middleware.dispatch(request, call_next)
 
             # Verify board UID was set in request state
             assert request.state.board_uid == board_uid
@@ -125,7 +123,7 @@ class TestBoardContextMiddleware:
         request = self.create_mock_request("/board/board with spaces/cards")
         call_next = self.create_mock_call_next(check_context=False)
 
-        response = await middleware.dispatch(request, call_next)
+        await middleware.dispatch(request, call_next)
 
         # Board UID should not be set for invalid UIDs
         assert get_current_board_uid() is None
@@ -138,7 +136,7 @@ class TestBoardContextMiddleware:
         request = self.create_mock_request("/health")
         call_next = self.create_mock_call_next(check_context=False)
 
-        response = await middleware.dispatch(request, call_next)
+        await middleware.dispatch(request, call_next)
 
         # Board UID should remain None
         assert get_current_board_uid() is None
@@ -160,7 +158,7 @@ class TestBoardContextMiddleware:
             engine = create_engine(f"sqlite:///{db_path}")
             Base.metadata.create_all(bind=engine)
 
-            response = await middleware.dispatch(request, call_next)
+            await middleware.dispatch(request, call_next)
 
             # Context should be cleaned up after request
             assert get_current_board_uid() is None
@@ -180,7 +178,7 @@ class TestBoardContextMiddleware:
 
         # This should return a JSONResponse with 401 status code
         response = await middleware.dispatch(request, call_next)
-        
+
         assert response.status_code == 401
         assert "not found or access denied" in response.body.decode()
 

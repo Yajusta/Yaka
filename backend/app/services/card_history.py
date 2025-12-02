@@ -6,7 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 
 from ..models import CardHistory
-from ..schemas import CardHistoryCreate, CardHistoryResponse
+from ..schemas import CardHistoryCreate
 
 
 def create_card_history_entry(db: Session, card_history: CardHistoryCreate) -> CardHistory:
@@ -22,7 +22,7 @@ def create_card_history_entry(db: Session, card_history: CardHistoryCreate) -> C
     try:
         db.commit()
         db.refresh(db_history_entry)
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         db.rollback()
         raise
     return db_history_entry

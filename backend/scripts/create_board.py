@@ -11,10 +11,10 @@ Example:
 """
 
 import sys
-import os
 from typing import Optional
-from app.multi_database import db_manager
+
 from app.database import Base
+from app.multi_database import db_manager
 from app.utils.validators import validate_email_format
 
 
@@ -53,7 +53,7 @@ def create_board_database(board_uid: str, admin_email: Optional[str] = None):
 
         # Initialize alembic_version table
         db_manager._initialize_alembic_version(engine)
-        print(f"Alembic version initialized")
+        print("Alembic version initialized")
 
         print(f"Database '{board_uid}.db' created successfully!")
         print(f"   Path: ./data/{board_uid}.db")
@@ -68,15 +68,15 @@ def create_board_database(board_uid: str, admin_email: Optional[str] = None):
             db = SessionLocal()
 
             try:
-                from app.models import User, UserRole
+                from app.models import UserRole
                 from app.services import user as user_service
                 from app.services.board_settings import initialize_default_settings
                 from app.utils.demo_reset import create_demo_board_content
 
                 # Initialize board settings
-                print(f"Initializing board settings...")
+                print("Initializing board settings...")
                 initialize_default_settings(db)
-                print(f"Board settings initialized")
+                print("Board settings initialized")
 
                 # Send automatic invitation (this creates the admin user)
                 invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN, board_uid)
@@ -84,9 +84,9 @@ def create_board_database(board_uid: str, admin_email: Optional[str] = None):
                 print(f"  Token: {invited_user.invite_token}")
 
                 # Create demo board content with the invited admin user
-                print(f"Creating demo board content...")
+                print("Creating demo board content...")
                 create_demo_board_content(db, admin_user=invited_user)
-                print(f"Demo board content created (lists, labels, and initial task)")
+                print("Demo board content created (lists, labels, and initial task)")
 
             except Exception as e:
                 db.rollback()

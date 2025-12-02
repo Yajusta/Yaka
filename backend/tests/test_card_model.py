@@ -3,11 +3,11 @@
 import datetime
 import os
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import and_, or_
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -554,6 +554,7 @@ class TestCardModel:
         db_session.add(card)
         db_session.commit()
 
+        assert card.due_date is not None
         assert card.due_date == future_date
         assert card.due_date > datetime.date.today()
 
@@ -571,6 +572,7 @@ class TestCardModel:
         db_session.add(card)
         db_session.commit()
 
+        assert card.due_date is not None
         assert card.due_date == past_date
         assert card.due_date < datetime.date.today()
 
@@ -948,7 +950,6 @@ class TestCardModel:
     def test_card_concurrent_modification(self, db_session, sample_cards):
         """Test de modification concurrente (simplifié)."""
         card = sample_cards[0]
-        original_title = card.title
 
         # Simuler des modifications concurrentes
         card1 = db_session.query(Card).filter(Card.id == card.id).first()

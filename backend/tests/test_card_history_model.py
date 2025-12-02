@@ -1,21 +1,22 @@
 """Tests complets pour le modèle CardHistory."""
 
-import sys
-import os
-import pytest
 import datetime
-from unittest.mock import patch, MagicMock
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+import os
+import sys
+from unittest.mock import patch
+
+import pytest
+from sqlalchemy.exc import SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from app.database import Base
+from app.models.card import Card
+from app.models.card_history import CardHistory
+from app.models.kanban_list import KanbanList
+from app.models.user import User, UserRole, UserStatus
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.database import Base
-from app.models.card_history import CardHistory
-from app.models.card import Card
-from app.models.user import User, UserRole, UserStatus
-from app.models.kanban_list import KanbanList
 
 # Configuration de la base de données de test
 TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")

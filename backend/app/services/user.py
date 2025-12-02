@@ -3,7 +3,6 @@
 import contextlib
 import datetime
 import secrets
-from asyncio import log
 from os import getenv
 from typing import List, Optional
 
@@ -29,7 +28,9 @@ def get_user(db: Session, user_id: int) -> Optional[User]:
     return (
         db.query(User)
         .filter(
-            and_(User.__table__.c.id == user_id, func.lower(User.__table__.c.status) != UserStatus.DELETED.value.lower())
+            and_(
+                User.__table__.c.id == user_id, func.lower(User.__table__.c.status) != UserStatus.DELETED.value.lower()
+            )
         )
         .first()
     )
@@ -80,7 +81,9 @@ def create_user(db: Session, user: UserCreate) -> User:
     return db_user
 
 
-def invite_user(db: Session, email: str, display_name: str | None, role: UserRole, board_uid: Optional[str] = None) -> User:
+def invite_user(
+    db: Session, email: str, display_name: str | None, role: UserRole, board_uid: Optional[str] = None
+) -> User:
     """Creer un utilisateur en tant qu'invite et envoyer un email d'invitation."""
     invite_token = secrets.token_urlsafe(32)
     invited_at = get_system_timezone_datetime()
@@ -104,7 +107,9 @@ def invite_user(db: Session, email: str, display_name: str | None, role: UserRol
     db.refresh(db_user)
 
     try:
-        email_service.send_invitation(email=normalized_email, display_name=display_name, token=invite_token, board_uid=board_uid)
+        email_service.send_invitation(
+            email=normalized_email, display_name=display_name, token=invite_token, board_uid=board_uid
+        )
     except Exception as exc:
         print(f"ERROR: Erreur lors de l'envoi de l'email d'invitation a {normalized_email}: {exc}")
     return db_user
@@ -177,51 +182,45 @@ def set_password_from_invite(db: Session, user: User, password: str) -> bool:
 
 def request_password_reset(db: Session, email: str, board_uid: Optional[str] = None) -> bool:
     """Demander une réinitialisation de mot de passe.
-    
-    Si l'utilisateur est INVITED (n'a pas encore validé son invitation), 
+
+    Si l'utilisateur est INVITED (n'a pas encore validé son invitation),
     renvoie un email d'invitation au lieu d'un email de reset.
     Si l'utilisateur est ACTIVE, envoie un email de reset password.
     Pour tous les autres cas (inexistant, DELETED), retourne True sans rien faire
     pour des raisons de sécurité (ne pas révéler l'existence ou non de l'utilisateur).
     """
     user = get_user_by_email(db, email)
-    
+
     # Cas 1: Utilisateur inexistant ou supprimé - Ne rien faire pour des raisons de sécurité
     if not user or user.status == UserStatus.DELETED:
         return True
-    
+
     # Cas 2: Utilisateur invité mais pas encore actif - Renvoyer l'email d'invitation
     if user.status == UserStatus.INVITED:
         invite_token = secrets.token_urlsafe(32)
         user.invite_token = invite_token
         user.invited_at = get_system_timezone_datetime()
         db.commit()
-        
+
         with contextlib.suppress(Exception):
             email_service.send_invitation(
-                email=email,
-                display_name=user.display_name,
-                token=invite_token,
-                board_uid=board_uid
+                email=email, display_name=user.display_name, token=invite_token, board_uid=board_uid
             )
         return True
-    
+
     # Cas 3: Utilisateur actif - Envoyer l'email de réinitialisation de mot de passe
     if user.status == UserStatus.ACTIVE:
         reset_token = secrets.token_urlsafe(32)
         user.invite_token = reset_token  # Réutiliser le champ invite_token pour la réinitialisation
         user.invited_at = get_system_timezone_datetime()
         db.commit()
-        
+
         with contextlib.suppress(Exception):
             email_service.send_password_reset(
-                email=email,
-                display_name=user.display_name,
-                token=reset_token,
-                board_uid=board_uid
+                email=email, display_name=user.display_name, token=reset_token, board_uid=board_uid
             )
         return True
-    
+
     # Sécurité: retourner True pour tous les autres cas
     return True
 

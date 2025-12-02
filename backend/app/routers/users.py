@@ -7,9 +7,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..multi_database import get_dynamic_db as get_db
 from ..models import User, UserRole, UserStatus
-from ..schemas import LanguageUpdate, SetPasswordPayload, UserCreate, UserListItem, UserResponse, UserUpdate, ViewScopeUpdate
+from ..multi_database import get_dynamic_db as get_db
+from ..schemas import (
+    LanguageUpdate,
+    SetPasswordPayload,
+    UserCreate,
+    UserListItem,
+    UserResponse,
+    UserUpdate,
+    ViewScopeUpdate,
+)
 from ..services import user as user_service
 from ..utils.dependencies import get_current_active_user, require_admin
 
@@ -100,7 +108,11 @@ async def invite_user(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Un utilisateur avec cet email existe déjà"
             )
         return user_service.invite_user(
-            db=db, email=payload.email, display_name=payload.display_name, role=payload.role, board_uid=payload.board_uid
+            db=db,
+            email=payload.email,
+            display_name=payload.display_name,
+            role=payload.role,
+            board_uid=payload.board_uid,
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
@@ -167,7 +179,12 @@ async def update_user_language(
 
 
 @router.post("/{user_id}/resend-invitation", response_model=UserResponse)
-async def resend_invitation(user_id: int, payload: ResendInvitationPayload, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+async def resend_invitation(
+    user_id: int,
+    payload: ResendInvitationPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
     """Renvoyer une invitation à un utilisateur existant (Admin uniquement)."""
     db_user = user_service.get_user(db, user_id=user_id)
     if db_user is None:
@@ -179,7 +196,7 @@ async def resend_invitation(user_id: int, payload: ResendInvitationPayload, db: 
         )
 
     # Vérifier le délai d'une minute
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     if db_user.invited_at:
         # Convertir invited_at en timezone-aware si nécessaire
@@ -212,7 +229,9 @@ async def resend_invitation(user_id: int, payload: ResendInvitationPayload, db: 
     with contextlib.suppress(Exception):
         from ..services import email as email_service
 
-        email_service.send_invitation(email=db_user.email, display_name=db_user.display_name, token=new_token, board_uid=payload.board_uid)
+        email_service.send_invitation(
+            email=db_user.email, display_name=db_user.display_name, token=new_token, board_uid=payload.board_uid
+        )
     return db_user
 
 
@@ -267,18 +286,18 @@ async def update_user_view_scope(
     if current_user.role != UserRole.ADMIN and current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Seuls les administrateurs peuvent modifier le périmètre de vue des autres utilisateurs"
+            detail="Seuls les administrateurs peuvent modifier le périmètre de vue des autres utilisateurs",
         )
-    
+
     # Get target user
     target_user = user_service.get_user(db, user_id)
     if not target_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
-    
+
     # Update view scope
     user_update = UserUpdate.model_construct(view_scope=view_scope_update.view_scope)
     updated_user = user_service.update_user(db, user_id, user_update)
     if not updated_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
-    
+
     return updated_user

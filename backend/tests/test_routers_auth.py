@@ -7,18 +7,16 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.database import Base
 from app.models.user import User, UserRole, UserStatus
-from app.routers.auth import login, logout, read_users_me, request_password_reset, router
+from app.routers.auth import login, logout, read_users_me, request_password_reset
 from app.schemas import PasswordResetRequest
-from app.services.user import authenticate_user
-from app.utils.security import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
-from fastapi.testclient import TestClient
+from app.utils.security import create_access_token
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 

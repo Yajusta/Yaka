@@ -1,19 +1,19 @@
 """Tests pour vérifier que le problème de position des cartes est résolu."""
 
-import pytest
-import sys
 import os
+import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import pytest
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from app.database import Base
-from app.models.card import Card
 from app.models.kanban_list import KanbanList
 from app.models.user import User
-from app.services.card import create_card, move_card, get_cards
-from app.schemas.card import CardCreate, CardMoveRequest, CardFilter
+from app.schemas.card import CardCreate, CardFilter, CardMoveRequest
+from app.services.card import create_card, get_cards, move_card
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # Configuration de la base de données de test
 TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
@@ -62,21 +62,12 @@ class TestCardPositionFix:
     def test_new_cards_get_correct_positions(self, db_session, test_user, test_list):
         """Test que les nouvelles cartes reçoivent des positions correctes."""
         # Créer 3 cartes
-        card1 = create_card(db_session, CardCreate(
-            title="Carte 1", 
-            list_id=test_list.id
-        ), test_user.id)
-        
-        card2 = create_card(db_session, CardCreate(
-            title="Carte 2", 
-            list_id=test_list.id
-        ), test_user.id)
-        
-        card3 = create_card(db_session, CardCreate(
-            title="Carte 3", 
-            list_id=test_list.id
-        ), test_user.id)
-        
+        card1 = create_card(db_session, CardCreate(title="Carte 1", list_id=test_list.id), test_user.id)
+
+        card2 = create_card(db_session, CardCreate(title="Carte 2", list_id=test_list.id), test_user.id)
+
+        card3 = create_card(db_session, CardCreate(title="Carte 3", list_id=test_list.id), test_user.id)
+
         # Vérifier les positions
         assert card1.position == 0
         assert card2.position == 1
@@ -88,10 +79,10 @@ class TestCardPositionFix:
         create_card(db_session, CardCreate(title="Carte A", list_id=test_list.id), test_user.id)
         create_card(db_session, CardCreate(title="Carte B", list_id=test_list.id), test_user.id)
         create_card(db_session, CardCreate(title="Carte C", list_id=test_list.id), test_user.id)
-        
+
         # Récupérer les cartes
         cards = get_cards(db_session, CardFilter(list_id=test_list.id))
-        
+
         # Vérifier l'ordre
         assert len(cards) == 3
         assert cards[0].title == "Carte A" and cards[0].position == 0
@@ -106,11 +97,9 @@ class TestCardPositionFix:
         card3 = create_card(db_session, CardCreate(title="Carte 3", list_id=test_list.id), test_user.id)
 
         # Déplacer la carte 3 en première position (position 0)
-        move_card(db_session, card3.id, CardMoveRequest(
-            source_list_id=test_list.id,
-            target_list_id=test_list.id,
-            position=0
-        ))
+        move_card(
+            db_session, card3.id, CardMoveRequest(source_list_id=test_list.id, target_list_id=test_list.id, position=0)
+        )
 
         # Récupérer les cartes dans l'ordre
         cards = get_cards(db_session, CardFilter(list_id=test_list.id))
@@ -132,11 +121,9 @@ class TestCardPositionFix:
         card3 = create_card(db_session, CardCreate(title="Carte 3", list_id=test_list.id), test_user.id)
 
         # Déplacer la carte 1 en dernière position (position 2)
-        move_card(db_session, card1.id, CardMoveRequest(
-            source_list_id=test_list.id,
-            target_list_id=test_list.id,
-            position=2
-        ))
+        move_card(
+            db_session, card1.id, CardMoveRequest(source_list_id=test_list.id, target_list_id=test_list.id, position=2)
+        )
 
         # Récupérer les cartes dans l'ordre
         cards = get_cards(db_session, CardFilter(list_id=test_list.id))
@@ -160,6 +147,7 @@ class TestCardPositionFix:
 
         # Supprimer la deuxième carte
         from app.services.card import delete_card
+
         delete_card(db_session, card2.id)
 
         # Récupérer les cartes dans l'ordre
@@ -189,11 +177,9 @@ class TestCardPositionFix:
 
         # Déplacer la carte en position 3 (card4) vers la position 1
         # Les cartes en position 1 et 2 devraient être décalées vers le bas
-        move_card(db_session, card4.id, CardMoveRequest(
-            source_list_id=test_list.id,
-            target_list_id=test_list.id,
-            position=1
-        ))
+        move_card(
+            db_session, card4.id, CardMoveRequest(source_list_id=test_list.id, target_list_id=test_list.id, position=1)
+        )
 
         # Récupérer les cartes et vérifier les positions
         cards = get_cards(db_session, CardFilter(list_id=test_list.id))
@@ -217,6 +203,7 @@ class TestCardPositionFix:
 
         # Archiver la deuxième carte
         from app.services.card import archive_card
+
         archive_card(db_session, card2.id, test_user.id)
 
         # Créer une nouvelle carte - elle devrait obtenir la position 1 (pas 3)
@@ -238,6 +225,7 @@ class TestCardPositionFix:
         """Test déplacer une carte vers une autre liste avec une position spécifique."""
         # Créer une deuxième liste
         from app.models.kanban_list import KanbanList
+
         target_list = KanbanList(name="Target List", order=2)
         db_session.add(target_list)
         db_session.commit()
@@ -254,11 +242,11 @@ class TestCardPositionFix:
         card6 = create_card(db_session, CardCreate(title="Target 3", list_id=target_list.id), test_user.id)
 
         # Déplacer card2 vers la liste cible à la position 1
-        move_card(db_session, card2.id, CardMoveRequest(
-            source_list_id=test_list.id,
-            target_list_id=target_list.id,
-            position=1
-        ))
+        move_card(
+            db_session,
+            card2.id,
+            CardMoveRequest(source_list_id=test_list.id, target_list_id=target_list.id, position=1),
+        )
 
         # Vérifier les cartes dans la liste source (devrait avoir card1, card3 avec positions 0, 1)
         source_cards = get_cards(db_session, CardFilter(list_id=test_list.id))

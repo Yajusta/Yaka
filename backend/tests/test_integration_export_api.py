@@ -4,14 +4,12 @@ import csv
 import io
 
 import pytest
-from openpyxl import load_workbook
-
 from app.models.card import Card, CardPriority
 from app.models.card_item import CardItem
-from app.models.label import Label
 from app.models.user import UserRole
 from app.routers.auth import router as auth_router
 from app.routers.export import router as export_router
+from openpyxl import load_workbook
 
 
 @pytest.mark.asyncio
@@ -287,6 +285,7 @@ async def test_export_excel_content(
         ws = wb.active
 
         # Vérifier l'en-tête (avec Checklist)
+        assert ws is not None
         headers = [cell.value for cell in ws[1]]
         assert headers == [
             "Liste",
@@ -302,8 +301,9 @@ async def test_export_excel_content(
         # Vérifier que la checklist est présente
         assert ws.max_row >= 2  # Header + au moins 1 carte
         checklist_content = ws.cell(row=2, column=4).value
-        assert "[x] Item 1" in checklist_content
-        assert "[ ] Item 2" in checklist_content
+        assert checklist_content is not None
+        assert "[x] Item 1" in str(checklist_content)
+        assert "[ ] Item 2" in str(checklist_content)
 
 
 @pytest.mark.asyncio

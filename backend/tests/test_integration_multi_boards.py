@@ -3,11 +3,10 @@
 import asyncio
 import os
 from unittest.mock import patch
-import pytest
-from httpx import AsyncClient
 
-from app.routers import admin_router, auth_router, cards_router, users_router
+import pytest
 from app.multi_database import db_manager
+from app.routers import admin_router, auth_router, cards_router, users_router
 
 
 class TestMultiBoardIntegration:
@@ -17,6 +16,7 @@ class TestMultiBoardIntegration:
     def temp_data_dir(self):
         """Create a temporary directory for test databases."""
         import tempfile
+
         with tempfile.TemporaryDirectory() as temp_dir:
             old_base_path = db_manager.base_path
             db_manager.base_path = temp_dir
@@ -42,16 +42,13 @@ class TestMultiBoardIntegration:
     @pytest.fixture
     async def client(self, async_client_factory):
         """Create async client with all routers."""
-        async with async_client_factory(
-            admin_router,
-            auth_router,
-            cards_router,
-            users_router
-        ) as client:
+        async with async_client_factory(admin_router, auth_router, cards_router, users_router) as client:
             yield client
 
     @pytest.mark.asyncio
-    async def test_complete_board_lifecycle(self, client, temp_data_dir, set_api_key_env, auth_headers, seed_admin_user):
+    async def test_complete_board_lifecycle(
+        self, client, temp_data_dir, set_api_key_env, auth_headers, seed_admin_user
+    ):
         """Test complete lifecycle: create -> access -> delete."""
         board_uid = "integration-test-board"
 
@@ -59,11 +56,7 @@ class TestMultiBoardIntegration:
         seed_admin_user()
 
         # 1. Create board via admin API
-        create_response = await client.post(
-            "/admin/boards",
-            json={"board_uid": board_uid},
-            headers=auth_headers
-        )
+        create_response = await client.post("/admin/boards", json={"board_uid": board_uid}, headers=auth_headers)
         assert create_response.status_code == 201
         board_data = create_response.json()
         assert board_data["board_uid"] == board_uid
@@ -72,7 +65,7 @@ class TestMultiBoardIntegration:
         admin_login_response = await client.post(
             "/auth/login",
             data={"username": "admin@yaka.local", "password": "Admin123"},
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert admin_login_response.status_code == 200
         admin_token_data = admin_login_response.json()
@@ -85,7 +78,7 @@ class TestMultiBoardIntegration:
             "password": "TestPassword123",
             "display_name": "Test User",
             "role": "editor",
-            "language": "en"
+            "language": "en",
         }
 
         # Register user (uses default database, but we'll simulate board-specific)
@@ -96,12 +89,11 @@ class TestMultiBoardIntegration:
         login_response = await client.post(
             "/auth/login",
             data={"username": user_data["email"], "password": user_data["password"]},
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert login_response.status_code == 200
         token_data = login_response.json()
-        token = token_data["access_token"]
-        board_headers = {"Authorization": f"Bearer {token}"}
+        token_data["access_token"]
 
         # 5. Test board-specific routes work (simulated by checking auth)
         # Note: In a real scenario, this would access /board/{board_uid}/auth/me
@@ -109,17 +101,9 @@ class TestMultiBoardIntegration:
 
         # 7. Test that board-specific card operations would work
         # (This is a simplified test since we can't easily test the actual board isolation)
-        card_data = {
-            "title": f"Test Card for {board_uid}",
-            "description": "Test card description",
-            "list_id": 1  # This would need to be created per board
-        }
 
         # 8. Delete board
-        delete_response = await client.delete(
-            f"/admin/boards/{board_uid}",
-            headers=auth_headers
-        )
+        delete_response = await client.delete(f"/admin/boards/{board_uid}", headers=auth_headers)
         assert delete_response.status_code == 200
         delete_data = delete_response.json()
         assert f"Board '{board_uid}' archived successfully" in delete_data["message"]
@@ -138,11 +122,7 @@ class TestMultiBoardIntegration:
 
         # Create multiple boards
         for board_uid in boards:
-            create_response = await client.post(
-                "/admin/boards",
-                json={"board_uid": board_uid},
-                headers=auth_headers
-            )
+            create_response = await client.post("/admin/boards", json={"board_uid": board_uid}, headers=auth_headers)
             assert create_response.status_code == 201
             created_boards.append(board_uid)
 
@@ -157,10 +137,7 @@ class TestMultiBoardIntegration:
 
         # Delete all boards
         for board_uid in boards:
-            delete_response = await client.delete(
-                f"/admin/boards/{board_uid}",
-                headers=auth_headers
-            )
+            delete_response = await client.delete(f"/admin/boards/{board_uid}", headers=auth_headers)
             assert delete_response.status_code == 200
 
         # Verify all boards are gone
@@ -177,9 +154,7 @@ class TestMultiBoardIntegration:
 
         # Create board with admin API key
         create_response = await client.post(
-            "/admin/boards",
-            json={"board_uid": board_uid},
-            headers={"Authorization": f"Bearer {api_key}"}
+            "/admin/boards", json={"board_uid": board_uid}, headers={"Authorization": f"Bearer {api_key}"}
         )
         assert create_response.status_code == 201
 
@@ -187,24 +162,18 @@ class TestMultiBoardIntegration:
         unauthorized_headers = {"Authorization": "Bearer invalid-key"}
 
         # Try to delete with invalid key
-        delete_response = await client.delete(
-            f"/admin/boards/{board_uid}",
-            headers=unauthorized_headers
-        )
+        delete_response = await client.delete(f"/admin/boards/{board_uid}", headers=unauthorized_headers)
         assert delete_response.status_code == 401
 
         # Try to create with invalid key
         create_response_2 = await client.post(
-            "/admin/boards",
-            json={"board_uid": "another-board"},
-            headers=unauthorized_headers
+            "/admin/boards", json={"board_uid": "another-board"}, headers=unauthorized_headers
         )
         assert create_response_2.status_code == 401
 
         # Clean up with valid key
         delete_response = await client.delete(
-            f"/admin/boards/{board_uid}",
-            headers={"Authorization": f"Bearer {api_key}"}
+            f"/admin/boards/{board_uid}", headers={"Authorization": f"Bearer {api_key}"}
         )
         assert delete_response.status_code == 200
 
@@ -216,38 +185,26 @@ class TestMultiBoardIntegration:
             "board@invalid",
             "board#tag",
             "a" * 51,  # Too long
-            "../../../etc/passwd"  # Path traversal
+            "../../../etc/passwd",  # Path traversal
         ]
 
         for invalid_uid in invalid_uids:
-            response = await client.post(
-                "/admin/boards",
-                json={"board_uid": invalid_uid},
-                headers=auth_headers
-            )
+            response = await client.post("/admin/boards", json={"board_uid": invalid_uid}, headers=auth_headers)
             assert response.status_code == 400
             assert "must contain only alphanumeric" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_concurrent_board_operations(self, client, temp_data_dir, set_api_key_env, auth_headers):
         """Test concurrent operations on different boards."""
-        import asyncio
 
         async def create_board_task(board_uid):
             """Task to create a board."""
-            response = await client.post(
-                "/admin/boards",
-                json={"board_uid": board_uid},
-                headers=auth_headers
-            )
+            response = await client.post("/admin/boards", json={"board_uid": board_uid}, headers=auth_headers)
             return response
 
         async def delete_board_task(board_uid):
             """Task to delete a board."""
-            response = await client.delete(
-                f"/admin/boards/{board_uid}",
-                headers=auth_headers
-            )
+            response = await client.delete(f"/admin/boards/{board_uid}", headers=auth_headers)
             return response
 
         # Create multiple boards concurrently
@@ -282,11 +239,7 @@ class TestMultiBoardIntegration:
         board_uid = "persistent-board"
 
         # Create board
-        create_response = await client.post(
-            "/admin/boards",
-            json={"board_uid": board_uid},
-            headers=auth_headers
-        )
+        create_response = await client.post("/admin/boards", json={"board_uid": board_uid}, headers=auth_headers)
         assert create_response.status_code == 201
 
         # Verify board exists in multiple requests
@@ -301,10 +254,7 @@ class TestMultiBoardIntegration:
             assert info_response.json()["exists"] is True
 
         # Delete board
-        delete_response = await client.delete(
-            f"/admin/boards/{board_uid}",
-            headers=auth_headers
-        )
+        delete_response = await client.delete(f"/admin/boards/{board_uid}", headers=auth_headers)
         assert delete_response.status_code == 200
 
         # Verify board is gone in subsequent requests
@@ -318,28 +268,17 @@ class TestMultiBoardIntegration:
         """Test error recovery after invalid operations."""
         # Try to create board with invalid UID
         invalid_uid = "invalid board name"
-        invalid_response = await client.post(
-            "/admin/boards",
-            json={"board_uid": invalid_uid},
-            headers=auth_headers
-        )
+        invalid_response = await client.post("/admin/boards", json={"board_uid": invalid_uid}, headers=auth_headers)
         assert invalid_response.status_code == 400
 
         # Try to delete non-existent board
         non_existent_uid = "non-existent-board"
-        delete_response = await client.delete(
-            f"/admin/boards/{non_existent_uid}",
-            headers=auth_headers
-        )
+        delete_response = await client.delete(f"/admin/boards/{non_existent_uid}", headers=auth_headers)
         assert delete_response.status_code == 404
 
         # System should still work for valid operations
         valid_uid = "recovery-test-board"
-        valid_create_response = await client.post(
-            "/admin/boards",
-            json={"board_uid": valid_uid},
-            headers=auth_headers
-        )
+        valid_create_response = await client.post("/admin/boards", json={"board_uid": valid_uid}, headers=auth_headers)
         assert valid_create_response.status_code == 201
 
         # Verify valid board was created
@@ -348,10 +287,7 @@ class TestMultiBoardIntegration:
         assert info_response.json()["exists"] is True
 
         # Clean up
-        cleanup_response = await client.delete(
-            f"/admin/boards/{valid_uid}",
-            headers=auth_headers
-        )
+        cleanup_response = await client.delete(f"/admin/boards/{valid_uid}", headers=auth_headers)
         assert cleanup_response.status_code == 200
 
 
@@ -361,12 +297,7 @@ class TestMultiBoardSecurity:
     @pytest.fixture
     async def client(self, async_client_factory):
         """Create an async test client."""
-        async with async_client_factory(
-            admin_router,
-            auth_router,
-            cards_router,
-            users_router
-        ) as client:
+        async with async_client_factory(admin_router, auth_router, cards_router, users_router) as client:
             yield client
 
     @pytest.mark.asyncio
@@ -376,9 +307,7 @@ class TestMultiBoardSecurity:
         with patch.dict(os.environ, {}, clear=True):
             # Try to create board without API key
             response = await client.post(
-                "/admin/boards",
-                json={"board_uid": "test-board"},
-                headers={"Authorization": "Bearer some-key"}
+                "/admin/boards", json={"board_uid": "test-board"}, headers={"Authorization": "Bearer some-key"}
             )
             assert response.status_code == 503
             assert "not configured" in response.json()["detail"]
@@ -387,6 +316,7 @@ class TestMultiBoardSecurity:
     def temp_data_dir(self):
         """Create a temporary directory for test databases."""
         import tempfile
+
         with tempfile.TemporaryDirectory() as temp_dir:
             old_base_path = db_manager.base_path
             db_manager.base_path = temp_dir
@@ -405,18 +335,13 @@ class TestMultiBoardSecurity:
 
             # Create board with old key
             create_response = await client.post(
-                "/admin/boards",
-                json={"board_uid": "rotation-test"},
-                headers=old_headers
+                "/admin/boards", json={"board_uid": "rotation-test"}, headers=old_headers
             )
             assert create_response.status_code == 201
 
             # Try to use new key (should fail)
             new_headers = {"Authorization": f"Bearer {new_key}"}
-            delete_response = await client.delete(
-                "/admin/boards/rotation-test",
-                headers=new_headers
-            )
+            delete_response = await client.delete("/admin/boards/rotation-test", headers=new_headers)
             assert delete_response.status_code == 401
 
         # Switch to new API key
@@ -424,8 +349,5 @@ class TestMultiBoardSecurity:
             new_headers = {"Authorization": f"Bearer {new_key}"}
 
             # Delete with new key
-            delete_response = await client.delete(
-                "/admin/boards/rotation-test",
-                headers=new_headers
-            )
+            delete_response = await client.delete("/admin/boards/rotation-test", headers=new_headers)
             assert delete_response.status_code == 200

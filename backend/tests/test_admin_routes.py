@@ -1,13 +1,12 @@
 """Tests for the admin routes functionality."""
 
 import os
-import pytest
-from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
-from fastapi import HTTPException
+from unittest.mock import patch
 
+import pytest
 from app.main import app
 from app.multi_database import db_manager
+from fastapi.testclient import TestClient
 
 
 class TestAdminRoutes:
@@ -22,19 +21,20 @@ class TestAdminRoutes:
     def temp_data_dir(self):
         """Create a temporary directory for test databases."""
         import tempfile
+
         from app.multi_database import _engines
 
         with tempfile.TemporaryDirectory() as temp_dir:
             old_base_path = db_manager.base_path
             db_manager.base_path = temp_dir
             yield temp_dir
-            
+
             # Dispose all engines to release database locks before cleanup
             for engine in list(_engines.values()):
-                if hasattr(engine, 'dispose'):
+                if hasattr(engine, "dispose"):
                     engine.dispose()
             _engines.clear()
-            
+
             db_manager.base_path = old_base_path
 
     @pytest.fixture
@@ -57,8 +57,8 @@ class TestAdminRoutes:
         # Create a test database
         board_uid = "test-board"
         db_path = os.path.join(temp_data_dir, f"{board_uid}.db")
-        from sqlalchemy import create_engine
         from app.database import Base
+        from sqlalchemy import create_engine
 
         engine = create_engine(f"sqlite:///{db_path}")
         Base.metadata.create_all(bind=engine)
@@ -73,8 +73,8 @@ class TestAdminRoutes:
         # Create a test database
         board_uid = "existing-board"
         db_path = os.path.join(temp_data_dir, f"{board_uid}.db")
-        from sqlalchemy import create_engine
         from app.database import Base
+        from sqlalchemy import create_engine
 
         engine = create_engine(f"sqlite:///{db_path}")
         Base.metadata.create_all(bind=engine)
@@ -138,8 +138,8 @@ class TestAdminRoutes:
 
         # Create the database first
         db_path = os.path.join(temp_data_dir, f"{board_uid}.db")
-        from sqlalchemy import create_engine
         from app.database import Base
+        from sqlalchemy import create_engine
 
         engine = create_engine(f"sqlite:///{db_path}")
         Base.metadata.create_all(bind=engine)
@@ -190,8 +190,8 @@ class TestAdminRoutes:
 
         # Create the database first
         db_path = os.path.join(temp_data_dir, f"{board_uid}.db")
-        from sqlalchemy import create_engine
         from app.database import Base
+        from sqlalchemy import create_engine
 
         engine = create_engine(f"sqlite:///{db_path}")
         Base.metadata.create_all(bind=engine)
@@ -342,19 +342,20 @@ class TestAdminRoutesEdgeCases:
     def temp_data_dir(self):
         """Create a temporary directory for test databases."""
         import tempfile
+
         from app.multi_database import _engines
 
         with tempfile.TemporaryDirectory() as temp_dir:
             old_base_path = db_manager.base_path
             db_manager.base_path = temp_dir
             yield temp_dir
-            
+
             # Dispose all engines to release database locks before cleanup
             for engine in list(_engines.values()):
-                if hasattr(engine, 'dispose'):
+                if hasattr(engine, "dispose"):
                     engine.dispose()
             _engines.clear()
-            
+
             db_manager.base_path = old_base_path
 
     @pytest.fixture

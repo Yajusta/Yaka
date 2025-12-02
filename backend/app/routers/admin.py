@@ -1,15 +1,15 @@
 """Administrative routes for board management."""
 
 import os
-from fastapi import APIRouter, HTTPException, Depends, Security
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
-from typing import List
 
-from ..multi_database import db_manager
-from ..database import Base
-from ..utils.validators import validate_email_format
+from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel
 from sqlalchemy import create_engine
+
+from ..database import Base
+from ..multi_database import db_manager
+from ..utils.validators import validate_email_format
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 security = HTTPBearer()
@@ -93,11 +93,12 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
 
             # Handle admin email logic if provided
             if admin_email:
-                from ..models import User, UserRole
-                from ..services import user as user_service
-
                 # Create a session to handle database operations
                 from sqlalchemy.orm import sessionmaker
+
+                from ..models import UserRole
+                from ..services import user as user_service
+
                 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
                 db = SessionLocal()
 
@@ -189,8 +190,8 @@ async def delete_board(board_uid: str, authorized: bool = Depends(verify_admin_a
 
     try:
         import os
-        from datetime import datetime
         import shutil
+        from datetime import datetime
 
         # Get original database path
         original_path = db_manager.get_database_path(board_uid)
@@ -198,7 +199,6 @@ async def delete_board(board_uid: str, authorized: bool = Depends(verify_admin_a
         # Create deleted directory if it doesn't exist
         deleted_dir = os.path.join(db_manager.base_path, "deleted")
         os.makedirs(deleted_dir, exist_ok=True)
-        
 
         # Generate timestamp for unique filename
         timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")

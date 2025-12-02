@@ -1,13 +1,11 @@
 """Dépendances FastAPI pour l'authentification et l'autorisation."""
 
-from typing import Optional
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from ..multi_database import get_dynamic_db as get_db
 from ..models import User, UserRole
+from ..multi_database import get_dynamic_db as get_db
 from .security import verify_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")

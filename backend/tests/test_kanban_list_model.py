@@ -1,18 +1,19 @@
 """Tests complets pour le modèle KanbanList."""
 
-import sys
-import os
-import pytest
 import datetime
-from unittest.mock import patch, MagicMock
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+import os
+import sys
+from unittest.mock import patch
+
+import pytest
+from sqlalchemy.exc import SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from app.database import Base
 from app.models.kanban_list import KanbanList
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # Configuration de la base de données de test
 TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")

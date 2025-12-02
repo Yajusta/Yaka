@@ -1,30 +1,30 @@
 """Tests complets pour le service CardComment."""
 
-import pytest
-import sys
 import os
+import sys
 from unittest.mock import patch
-from datetime import datetime
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
+import pytest
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from app.database import Base
-from app.models.card_comment import CardComment
 from app.models.card import Card, CardPriority
-from app.models.user import User, UserRole, UserStatus
+from app.models.card_comment import CardComment
 from app.models.kanban_list import KanbanList
+from app.models.user import User, UserRole, UserStatus
 from app.schemas.card_comment import CardCommentCreate, CardCommentUpdate
 from app.services.card_comment import (
-    get_comments_for_card,
     create_comment,
-    update_comment,
     delete_comment,
     get_comment_by_id,
+    get_comments_for_card,
+    update_comment,
 )
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # Configuration de la base de données de test
 TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
@@ -419,6 +419,7 @@ class TestUpdateComment:
 
         result = update_comment(db_session, comment.id, comment_update, sample_user.id)
 
+        assert result is not None
         assert result.id == original_id
         assert result.card_id == original_card_id
         assert result.user_id == original_user_id
@@ -427,13 +428,12 @@ class TestUpdateComment:
     def test_update_comment_partial_update(self, db_session, sample_comments, sample_user):
         """Test de mise à jour partielle."""
         comment = sample_comments[0]
-        original_comment = comment.comment
 
         # Simuler une mise à jour avec d'autres champs qui ne devraient pas être modifiés
         comment_update = CardCommentUpdate(comment="Texte modifié")
 
         result = update_comment(db_session, comment.id, comment_update, sample_user.id)
-
+        assert result is not None
         assert result.comment == "Texte modifié"
         assert result.card_id == comment.card_id
         assert result.user_id == comment.user_id
@@ -446,7 +446,7 @@ class TestUpdateComment:
         comment_update = CardCommentUpdate(comment=unicode_text)
 
         result = update_comment(db_session, comment.id, comment_update, sample_user.id)
-
+        assert result is not None
         assert result.comment == unicode_text
 
     def test_update_comment_integrity_error(self, db_session, sample_comments, sample_user):
@@ -654,6 +654,7 @@ class TestCardCommentIntegration:
         for i, comment in enumerate(comments):
             update_data = CardCommentUpdate(comment=f"Commentaire modifié {i}")
             updated_comment = update_comment(db_session, comment.id, update_data, sample_user.id)
+            assert updated_comment is not None
             assert updated_comment.comment == f"Commentaire modifié {i}"
 
     def test_edge_case_empty_comment(self, db_session, sample_card, sample_user):

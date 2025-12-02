@@ -2,10 +2,9 @@
 
 import os
 
-from app.database import Base
-from app.multi_database import get_board_db
 from app.models import BoardSettings, Card, CardComment, CardHistory, CardItem, KanbanList, Label, User, UserRole
 from app.models.card import CardPriority
+from app.multi_database import get_board_db
 from app.schemas.card import CardCreate
 from app.schemas.card_item import CardItemCreate
 from app.schemas.kanban_list import KanbanListCreate
@@ -233,7 +232,7 @@ def create_demo_data(db_session):
     print("Creating demo data...")
 
     # Create demo users with different roles
-    demo_users = create_demo_users(db_session)
+    create_demo_users(db_session)
 
     # Create board content (lists, labels, and sample task)
     create_demo_board_content(db_session)
@@ -303,7 +302,6 @@ def setup_fresh_database():
     with get_board_db() as db:
         try:
             # Check if database is already configured
-            from app.models import User
 
             if get_user_by_email(db, "admin@yaka.local"):
                 print("Database already configured, no action needed")

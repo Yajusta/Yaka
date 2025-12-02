@@ -3,8 +3,8 @@
 import pytest
 from app.models.user import UserRole
 from app.routers.auth import router as auth_router
-from app.routers.cards import router as cards_router
 from app.routers.card_comments import router as card_comments_router
+from app.routers.cards import router as cards_router
 from app.routers.labels import router as labels_router
 
 
@@ -141,7 +141,7 @@ async def test_card_filters_bulk_move_and_archive(
         user_headers = {"Authorization": f"Bearer {user_token}"}
         user_me = await client.get("/auth/me", headers=user_headers)
         assert user_me.status_code == 200
-        creator_id = user_me.json()["id"]
+        user_me.json()["id"]
 
         assignee_token = await login_user(client, "assignee@example.com", "Assign123!")
         assignee_headers = {"Authorization": f"Bearer {assignee_token}"}

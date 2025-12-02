@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import HTTPException, Query, status
+from fastapi import HTTPException
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -27,28 +27,7 @@ from app.routers.cards import (
     unarchive_card,
     update_card,
 )
-from app.schemas import (
-    BulkCardMoveRequest,
-    CardCreate,
-    CardFilter,
-    CardHistoryCreate,
-    CardHistoryResponse,
-    CardListUpdate,
-    CardMoveRequest,
-    CardResponse,
-    CardUpdate,
-)
-from app.services.card import archive_card as service_archive_card
-from app.services.card import bulk_move_cards as service_bulk_move_cards
-from app.services.card import create_card as service_create_card
-from app.services.card import delete_card as service_delete_card
-from app.services.card import get_archived_cards, get_card, get_cards
-from app.services.card import move_card as service_move_card
-from app.services.card import unarchive_card as service_unarchive_card
-from app.services.card import update_card as service_update_card
-from app.services.card import update_card_list
-from app.services.card_history import create_card_history_entry as service_create_history
-from app.services.card_history import get_card_history as service_get_card_history
+from app.schemas import BulkCardMoveRequest, CardCreate, CardHistoryResponse, CardMoveRequest, CardResponse, CardUpdate
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -701,4 +680,3 @@ class TestCardsRouter:
 
 
 # Import needed for tests
-import asyncio

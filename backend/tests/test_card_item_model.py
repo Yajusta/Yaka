@@ -3,10 +3,10 @@
 import datetime
 import os
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -339,7 +339,7 @@ class TestCardItemModel:
         db_session.commit()
 
         # Rechercher les éléments terminés
-        done_items = db_session.query(CardItem).filter(CardItem.is_done == True).all()
+        done_items = db_session.query(CardItem).filter(CardItem.is_done).all()
 
         # Rechercher les éléments non terminés
         pending_items = db_session.query(CardItem).filter(CardItem.is_done == False).all()
@@ -686,9 +686,7 @@ Notes supplémentaires"""
         # Chercher les éléments terminés contenant "task"
         from sqlalchemy import and_
 
-        completed_tasks = (
-            db_session.query(CardItem).filter(and_(CardItem.is_done == True, CardItem.text.like("%task%"))).all()
-        )
+        completed_tasks = db_session.query(CardItem).filter(and_(CardItem.is_done, CardItem.text.like("%task%"))).all()
 
         assert len(completed_tasks) == 1
         assert completed_tasks[0].text == "Important task"
@@ -740,7 +738,7 @@ Notes supplémentaires"""
         # Compter les éléments par statut
         active_count = db_session.query(CardItem).filter(CardItem.is_done == False).count()
 
-        completed_count = db_session.query(CardItem).filter(CardItem.is_done == True).count()
+        completed_count = db_session.query(CardItem).filter(CardItem.is_done).count()
 
         assert active_count == 5
         assert completed_count == 3

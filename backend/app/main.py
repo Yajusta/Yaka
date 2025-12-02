@@ -5,29 +5,32 @@ from typing import AsyncIterator
 
 from alembic import command
 from alembic.config import Config
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from .database import Base, engine
 from .multi_database import get_board_db
-from .utils.board_context import BoardContextMiddleware
-from .models import BoardSettings, Card, KanbanList, Label, User
-from .routers import auth_router, board_settings_router, cards_router, labels_router, lists_router, users_router
+from .routers import (
+    admin_router,
+    auth_router,
+    board_settings_router,
+    cards_router,
+    labels_router,
+    lists_router,
+    users_router,
+)
 from .routers.card_comments import router as card_comments_router
 from .routers.card_items import router as card_items_router
 from .routers.export import router as export_router
-from .routers.voice_control import router as voice_control_router
-from .routers import admin_router
 from .routers.global_dictionary import router as global_dictionary_router
 from .routers.personal_dictionary import router as personal_dictionary_router
-from .services.board_settings import initialize_default_settings
+from .routers.voice_control import router as voice_control_router
 from .services.email import FROM_ADDRESS, SMTP_HOST, SMTP_USER
-from .services.user import create_admin_user
+from .utils.board_context import BoardContextMiddleware
 from .utils.demo_mode import is_demo_mode
 from .utils.demo_reset import reset_database, setup_fresh_database
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -63,8 +66,6 @@ def ensure_database_exists():
     """Vérifie si la base de données existe et la crée si nécessaire."""
     try:
         import os
-
-        from sqlalchemy import inspect
 
         # Vérifier si le répertoire data existe
         db_path = "./data"
@@ -259,7 +260,6 @@ app.add_middleware(
 
 # Ajouter les headers de sécurité via middleware personnalisé
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

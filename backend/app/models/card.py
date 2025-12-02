@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
 
 from ..database import Base
 from .helpers import get_system_timezone_datetime

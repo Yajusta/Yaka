@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -15,10 +15,7 @@ from app.database import Base
 from app.models.card import Card
 from app.models.user import User, UserRole, UserStatus
 from app.routers.card_history import create_card_history_entry, get_card_history
-from app.schemas import CardHistoryCreate, CardHistoryResponse
-from app.services.card import get_card
-from app.services.card_history import create_card_history_entry as service_create_history
-from app.services.card_history import get_card_history as service_get_history
+from app.schemas import CardHistoryResponse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -96,7 +93,6 @@ class TestCardHistoryRouter:
 
     def test_get_card_history_success(self, test_user, test_card):
         """Test de récupération de l'historique d'une carte avec succès."""
-        from app.routers.card_history import get_card_history
 
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = test_card
@@ -133,7 +129,6 @@ class TestCardHistoryRouter:
 
     def test_get_card_history_card_not_found(self, test_user):
         """Test de récupération de l'historique d'une carte qui n'existe pas."""
-        from app.routers.card_history import get_card_history
 
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = None
@@ -157,7 +152,6 @@ class TestCardHistoryRouter:
 
     def test_get_card_history_empty(self, test_user, test_card):
         """Test de récupération de l'historique d'une carte sans historique."""
-        from app.routers.card_history import get_card_history
 
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = test_card
@@ -243,7 +237,6 @@ class TestCardHistoryRouter:
 
     def test_get_card_history_invalid_card_id(self, test_user):
         """Test de récupération de l'historique avec un ID de carte invalide."""
-        from app.routers.card_history import get_card_history
 
         with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
             mock_current_user.return_value = test_user
@@ -446,7 +439,6 @@ class TestCardHistoryRouter:
 
     def test_get_card_history_service_error(self, test_user, test_card):
         """Test de récupération de l'historique avec une erreur du service."""
-        from app.routers.card_history import get_card_history
 
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = test_card
@@ -511,7 +503,6 @@ class TestCardHistoryRouter:
 
     def test_get_card_history_card_service_error(self, test_user):
         """Test de récupération de l'historique avec une erreur du service de carte."""
-        from app.routers.card_history import get_card_history
 
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.side_effect = Exception("Card service error")
@@ -570,7 +561,6 @@ class TestCardHistoryRouter:
 
     def test_get_card_history_zero_card_id(self, test_user):
         """Test de récupération de l'historique avec un ID de carte zéro."""
-        from app.routers.card_history import get_card_history
 
         with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
             mock_current_user.return_value = test_user

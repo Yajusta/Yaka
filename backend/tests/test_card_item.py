@@ -1,22 +1,23 @@
 """Tests complets pour le service CardItem."""
 
-import pytest
-import sys
 import os
+import sys
 from unittest.mock import patch
+
+import pytest
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from app.database import Base
+from app.models.card import Card, CardPriority
+from app.models.card_item import CardItem
+from app.models.kanban_list import KanbanList
+from app.models.user import User, UserRole, UserStatus
+from app.schemas.card_item import CardItemCreate, CardItemUpdate
+from app.services.card_item import create_item, delete_item, get_items_for_card, update_item
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.database import Base
-from app.models.card_item import CardItem
-from app.models.card import Card, CardPriority
-from app.models.user import User, UserRole, UserStatus
-from app.models.kanban_list import KanbanList
-from app.schemas.card_item import CardItemCreate, CardItemUpdate
-from app.services.card_item import get_items_for_card, create_item, update_item, delete_item
 
 # Configuration de la base de données de test
 TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
@@ -223,7 +224,7 @@ class TestCreateItem:
 
     def test_create_item_position_shift(self, db_session, sample_card, sample_card_items):
         """Test que les positions existantes sont décalées."""
-        initial_items = get_items_for_card(db_session, sample_card.id)
+        get_items_for_card(db_session, sample_card.id)
 
         item_data = CardItemCreate(card_id=sample_card.id, text="Élément inséré", position=2)
 
@@ -321,7 +322,7 @@ class TestCreateItem:
         # Insérer un nouvel élément à la position 1
         item_data = CardItemCreate(card_id=sample_card.id, text="Nouveau", position=1)
 
-        new_item = create_item(db_session, item_data)
+        create_item(db_session, item_data)
 
         # Vérifier que les positions ont été décalées
         items = get_items_for_card(db_session, sample_card.id)
@@ -398,7 +399,6 @@ class TestUpdateItem:
     def test_update_item_partial_update(self, db_session, sample_card_items):
         """Test de mise à jour partielle (seulement certains champs)."""
         item = sample_card_items[0]
-        original_text = item.text
         original_is_done = item.is_done
 
         item_update = CardItemUpdate(text="Texte modifié")

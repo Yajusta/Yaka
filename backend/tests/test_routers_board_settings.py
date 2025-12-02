@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -24,7 +24,6 @@ from app.routers.board_settings import (
     update_board_title,
 )
 from app.schemas.board_settings import BoardSettingsResponse, BoardTitleUpdate
-from app.services.board_settings import create_or_update_setting, delete_setting, get_all_settings, get_setting
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 

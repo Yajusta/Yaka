@@ -5,7 +5,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from datamodel_code_generator import InputFileType, PythonVersion, generate
+from datamodel_code_generator import InputFileType, generate
 from unidecode import unidecode
 
 OUTPUT_FILE = "app/models/response_model.py"

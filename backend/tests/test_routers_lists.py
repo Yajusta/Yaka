@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from pydantic import ValidationError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -16,20 +16,11 @@ from app.models.kanban_list import KanbanList
 from app.models.user import User, UserRole, UserStatus
 from app.routers.lists import create_list as create_list_route
 from app.routers.lists import delete_list as delete_list_route
-from app.routers.lists import get_list_cards_count, read_list, read_lists
+from app.routers.lists import get_list_cards_count, read_lists
 from app.routers.lists import reorder_lists as reorder_lists_route
-from app.routers.lists import require_admin, router
+from app.routers.lists import require_admin
 from app.routers.lists import update_list as update_list_route
 from app.schemas import KanbanListCreate, KanbanListResponse, KanbanListUpdate, ListDeletionRequest, ListReorderRequest
-from app.services.kanban_list import (
-    create_list,
-    delete_list,
-    get_list,
-    get_list_with_cards_count,
-    get_lists,
-    reorder_lists,
-    update_list,
-)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 

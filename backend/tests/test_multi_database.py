@@ -1,14 +1,13 @@
 """Tests for the multi-database manager functionality."""
 
-import asyncio
 import os
 import tempfile
+
 import pytest
+from app.database import Base
+from app.multi_database import db_manager, get_board_db, get_current_board_uid, set_current_board_uid
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
-from app.multi_database import db_manager, set_current_board_uid, get_current_board_uid, get_board_db
-from app.database import Base
 
 
 class TestMultiDatabaseManager:
@@ -33,7 +32,7 @@ class TestMultiDatabaseManager:
 
             # Cleanup engines and session locals
             for engine in _engines.values():
-                if hasattr(engine, 'dispose'):
+                if hasattr(engine, "dispose"):
                     engine.dispose()
 
             db_manager.base_path = old_base_path
@@ -144,7 +143,7 @@ class TestBoardContext:
         set_current_board_uid("non-existent-board")
 
         with pytest.raises(ValueError):
-            with get_board_db("non-existent-board") as db:
+            with get_board_db("non-existent-board"):
                 pass  # This should not be reached
 
         # Reset context
@@ -156,28 +155,24 @@ class TestBoardValidation:
 
     def test_valid_board_uids(self):
         """Test validation of valid board UIDs."""
-        from app.utils.board_context import BoardContextMiddleware
         from unittest.mock import MagicMock
+
+        from app.utils.board_context import BoardContextMiddleware
 
         # Create middleware with a mock ASGI app
         mock_app = MagicMock()
         middleware = BoardContextMiddleware(mock_app)
 
-        valid_uids = [
-            "board1",
-            "test-board",
-            "a",
-            "BOARD123",
-            "test-board-123"
-        ]
+        valid_uids = ["board1", "test-board", "a", "BOARD123", "test-board-123"]
 
         for uid in valid_uids:
             assert middleware._is_valid_board_uid(uid) is True
 
     def test_invalid_board_uids(self):
         """Test validation of invalid board UIDs."""
-        from app.utils.board_context import BoardContextMiddleware
         from unittest.mock import MagicMock
+
+        from app.utils.board_context import BoardContextMiddleware
 
         # Create middleware with a mock ASGI app
         mock_app = MagicMock()
@@ -219,7 +214,7 @@ class TestDatabaseIsolation:
 
             # Cleanup engines and session locals
             for engine in _engines.values():
-                if hasattr(engine, 'dispose'):
+                if hasattr(engine, "dispose"):
                     engine.dispose()
 
             db_manager.base_path = old_base_path

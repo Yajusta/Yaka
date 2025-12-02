@@ -3,10 +3,10 @@
 import datetime
 import os
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -381,7 +381,7 @@ class TestCardCommentModel:
 
     def test_card_comment_query_deleted_only(self, db_session, sample_comments):
         """Test de recherche des commentaires supprimés uniquement."""
-        deleted_comments = db_session.query(CardComment).filter(CardComment.is_deleted == True).all()
+        deleted_comments = db_session.query(CardComment).filter(CardComment.is_deleted).all()
 
         assert len(deleted_comments) == 1
         assert all(comment.is_deleted for comment in deleted_comments)
@@ -497,7 +497,7 @@ class TestCardCommentModel:
         assert db_session.query(CardComment).filter(CardComment.id == comment.id).first() is not None
 
         # Mais ne devrait pas apparaître dans les requêtes actives
-        active_comments = db_session.query(CardComment).filter(CardComment.is_deleted == False).all()
+        active_comments = db_session.query(CardComment).filter(not CardComment.is_deleted).all()
         assert comment not in active_comments
 
     def test_card_comment_string_fields_validation(self, db_session, sample_card, sample_user):
@@ -705,12 +705,12 @@ With some special characters: éèàç"""
     def test_card_comment_bulk_update(self, db_session, sample_comments):
         """Test de mises à jour en masse."""
         # Mettre à jour tous les commentaires non supprimés pour les marquer comme supprimés
-        db_session.query(CardComment).filter(CardComment.is_deleted == False).update({"is_deleted": True})
+        db_session.query(CardComment).filter(not CardComment.is_deleted).update({"is_deleted": True})
 
         db_session.commit()
 
         # Vérifier que tous les commentaires sont maintenant supprimés
-        active_comments = db_session.query(CardComment).filter(CardComment.is_deleted == False).count()
+        active_comments = db_session.query(CardComment).filter(not CardComment.is_deleted).count()
         assert active_comments == 0
 
     def test_card_comment_complex_queries(self, db_session, sample_card, sample_user):
@@ -809,7 +809,7 @@ With some special characters: éèàç"""
         # Compter les commentaires par statut
         active_count = db_session.query(CardComment).filter(CardComment.is_deleted == False).count()
 
-        deleted_count = db_session.query(CardComment).filter(CardComment.is_deleted == True).count()
+        deleted_count = db_session.query(CardComment).filter(CardComment.is_deleted).count()
 
         assert active_count == 5
         assert deleted_count == 3
@@ -962,8 +962,6 @@ With some special characters: éèàç"""
         )
         db_session.add(comment)
         db_session.commit()
-
-        original_comment = comment.comment
 
         # Simuler des modifications concurrentes
         comment1 = db_session.query(CardComment).filter(CardComment.id == comment.id).first()

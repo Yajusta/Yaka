@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 

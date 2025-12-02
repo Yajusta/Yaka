@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -15,10 +15,9 @@ from app.models.label import Label
 from app.models.user import User, UserRole, UserStatus
 from app.routers.labels import create_label as create_label_route
 from app.routers.labels import delete_label as delete_label_route
-from app.routers.labels import read_label, read_labels, router
+from app.routers.labels import read_labels
 from app.routers.labels import update_label as update_label_route
 from app.schemas import LabelCreate, LabelResponse, LabelUpdate
-from app.services.label import create_label, delete_label, get_label, get_label_by_name, get_labels, update_label
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -109,7 +108,6 @@ class TestLabelsRouter:
                     description="Problème à corriger",
                     created_by=1,
                     created_at=datetime.now(timezone.utc),
-                    updated_at=datetime.now(timezone.utc),
                 )
             ]
             mock_get_labels.return_value = mock_labels
@@ -137,7 +135,6 @@ class TestLabelsRouter:
                     description="Nouvelle fonctionnalité",
                     created_by=1,
                     created_at=datetime.now(timezone.utc),
-                    updated_at=datetime.now(timezone.utc),
                 )
             ]
             mock_get_labels.return_value = mock_labels
@@ -183,7 +180,6 @@ class TestLabelsRouter:
             description="Priorité haute",
             created_by=1,
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.labels.label_service.get_label_by_name") as mock_get_by_name:
@@ -287,7 +283,6 @@ class TestLabelsRouter:
             description="Problème critique",
             created_by=1,
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
         )
 
         with patch("app.routers.labels.label_service.update_label") as mock_update:

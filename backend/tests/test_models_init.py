@@ -2,7 +2,7 @@
 
 import os
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -217,20 +217,6 @@ class TestModelImports:
         start_time = time.time()
 
         # Importer tous les modèles
-        from app.models import (
-            BoardSettings,
-            Card,
-            CardComment,
-            CardHistory,
-            CardItem,
-            CardPriority,
-            KanbanList,
-            Label,
-            User,
-            UserRole,
-            UserStatus,
-            card_labels,
-        )
 
         end_time = time.time()
 

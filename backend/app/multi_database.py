@@ -2,11 +2,11 @@
 
 import os
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, Optional
-from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
-
 from contextvars import ContextVar
+from typing import Any, Dict, Generator, Optional
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
 # Context variable pour stocker l'identifiant du board courant
 current_board_uid: ContextVar[Optional[str]] = ContextVar("current_board_uid", default=None)
@@ -61,8 +61,8 @@ class MultiDatabaseManager:
 
     def _initialize_alembic_version(self, engine: Any):
         """Initialise la table alembic_version pour une nouvelle base."""
-        from alembic.script import ScriptDirectory
         from alembic.config import Config
+        from alembic.script import ScriptDirectory
         from sqlalchemy import text
 
         try:

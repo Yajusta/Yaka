@@ -230,7 +230,7 @@ class TestCreateUser:
     def test_create_user_successfully(self, db_session, sample_user_data):
         """Test de création réussie d'un utilisateur."""
         user_data = UserCreate(**sample_user_data)
-        user = create_user(db_session, user_data)
+        create_user(db_session, user_data)
 
     def test_create_user_normalizes_email(self, db_session, sample_user_data):
         """L'adresse email doit être stockée en minuscules."""
@@ -610,7 +610,7 @@ class TestRequestPasswordReset:
 
     def test_request_password_reset_invited_user(self, db_session, sample_users, mock_email_service):
         """Test de demande de réinitialisation pour un utilisateur invité (non activé).
-        
+
         Dans ce cas, on doit renvoyer un email d'invitation au lieu d'un email de reset.
         Cela permet à l'utilisateur qui a perdu son email d'invitation de le recevoir à nouveau.
         """
@@ -745,7 +745,7 @@ class TestAuthenticateUser:
     def test_authenticate_user_successfully(self, db_session, sample_users):
         """Test d'authentification réussie."""
         user = sample_users[0]
-        result = authenticate_user(db_session, user.email, "Password123")
+        authenticate_user(db_session, user.email, "Password123")
 
     def test_authenticate_user_case_insensitive_email(self, db_session, sample_users):
         """L'authentification doit ignorer la casse de l'email."""

@@ -7,26 +7,14 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import HTTPException, status
-from fastapi.testclient import TestClient
+from fastapi import HTTPException
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.database import Base
-from app.main import app
 from app.models.card_comment import CardComment
 from app.models.user import User, UserRole, UserStatus
-from app.routers.card_comments import router
 from app.schemas.card_comment import CardCommentCreate, CardCommentResponse, CardCommentUpdate
-from app.schemas.card_history import CardHistoryCreate
-from app.services.card_comment import (
-    create_comment,
-    delete_comment,
-    get_comment_by_id,
-    get_comments_for_card,
-    update_comment,
-)
-from app.services.card_history import create_card_history_entry
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
