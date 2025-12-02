@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.3 (2025-12-02)
+
+- [FIX] Changement de format pour le LLM.
+
 ## 1.4.2 (2025-11-10)
 
 - [FIX] Problème de focus quand on modifie un champ de la checklist.
