@@ -27,7 +27,9 @@ from sqlalchemy.orm import sessionmaker
 def db_session():
     """Fixture pour créer une session de base de données de test."""
     SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
@@ -112,14 +114,23 @@ class TestLabelsRouter:
             ]
             mock_get_labels.return_value = mock_labels
 
-            with patch("app.routers.labels.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.labels.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
                 with patch("app.routers.labels.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(read_labels(0, 100, mock_db.return_value.__enter__.return_value, admin_user))
+                    result = asyncio.run(
+                        read_labels(
+                            0,
+                            100,
+                            mock_db.return_value.__enter__.return_value,
+                            admin_user,
+                        )
+                    )
 
                     assert len(result) == 1
                     assert result[0].name == "Bug"
@@ -139,7 +150,9 @@ class TestLabelsRouter:
             ]
             mock_get_labels.return_value = mock_labels
 
-            with patch("app.routers.labels.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.labels.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = regular_user
 
                 # Mock database session
@@ -147,7 +160,12 @@ class TestLabelsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        read_labels(0, 100, mock_db.return_value.__enter__.return_value, regular_user)
+                        read_labels(
+                            0,
+                            100,
+                            mock_db.return_value.__enter__.return_value,
+                            regular_user,
+                        )
                     )
 
                     assert len(result) == 1
@@ -158,20 +176,31 @@ class TestLabelsRouter:
         with patch("app.routers.labels.label_service.get_labels") as mock_get_labels:
             mock_get_labels.return_value = []
 
-            with patch("app.routers.labels.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.labels.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
                 with patch("app.routers.labels.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(read_labels(0, 100, mock_db.return_value.__enter__.return_value, admin_user))
+                    result = asyncio.run(
+                        read_labels(
+                            0,
+                            100,
+                            mock_db.return_value.__enter__.return_value,
+                            admin_user,
+                        )
+                    )
 
                     assert len(result) == 0
 
     def test_create_label_success_admin(self, admin_user):
         """Test de création d'un libellé par un admin avec succès."""
-        label_data = LabelCreate(name="Urgent", color="#FF0000", description="Priorité haute")
+        label_data = LabelCreate(
+            name="Urgent", color="#FF0000", description="Priorité haute"
+        )
 
         mock_label = LabelResponse(
             id=1,
@@ -182,13 +211,17 @@ class TestLabelsRouter:
             created_at=datetime.now(timezone.utc),
         )
 
-        with patch("app.routers.labels.label_service.get_label_by_name") as mock_get_by_name:
+        with patch(
+            "app.routers.labels.label_service.get_label_by_name"
+        ) as mock_get_by_name:
             mock_get_by_name.return_value = None
 
             with patch("app.routers.labels.label_service.create_label") as mock_create:
                 mock_create.return_value = mock_label
 
-                with patch("app.routers.labels.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.labels.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = admin_user
 
                     # Mock database session
@@ -196,7 +229,11 @@ class TestLabelsRouter:
                         mock_db.return_value.__enter__.return_value = MagicMock()
 
                         result = asyncio.run(
-                            create_label_route(label_data, mock_db.return_value.__enter__.return_value, admin_user)
+                            create_label_route(
+                                label_data,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
+                            )
                         )
 
                     assert result.name == "Urgent"
@@ -204,10 +241,14 @@ class TestLabelsRouter:
 
     def test_create_label_permission_denied(self, regular_user):
         """Test de création d'un libellé par un utilisateur régulier (devrait échouer)."""
-        label_data = LabelCreate(name="Urgent", color="#FF0000", description="Priorité haute")
+        label_data = LabelCreate(
+            name="Urgent", color="#FF0000", description="Priorité haute"
+        )
 
         with patch("app.routers.labels.require_admin") as mock_require_admin:
-            mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+            mock_require_admin.side_effect = HTTPException(
+                status_code=403, detail="Accès réservé aux administrateurs"
+            )
 
             with patch("app.routers.labels.get_db") as mock_db:
                 mock_db.return_value.__enter__.return_value = MagicMock()
@@ -215,7 +256,9 @@ class TestLabelsRouter:
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
                         create_label_route(
-                            label_data, mock_db.return_value.__enter__.return_value, mock_require_admin()
+                            label_data,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin(),
                         )
                     )
 
@@ -233,7 +276,9 @@ class TestLabelsRouter:
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
                         create_label_route(
-                            None, mock_db.return_value.__enter__.return_value, mock_require_admin.return_value
+                            None,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin.return_value,
                         )
                     )
 
@@ -252,7 +297,9 @@ class TestLabelsRouter:
 
     def test_create_label_duplicate_name(self, admin_user):
         """Test de création d'un libellé avec un nom dupliqué."""
-        label_data = LabelCreate(name="Bug", color="#FF0000", description="Problème à corriger")
+        label_data = LabelCreate(
+            name="Bug", color="#FF0000", description="Problème à corriger"
+        )
 
         with patch("app.routers.labels.get_current_active_user") as mock_current_user:
             mock_current_user.return_value = admin_user
@@ -261,12 +308,20 @@ class TestLabelsRouter:
             with patch("app.routers.labels.get_db") as mock_db:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
-                with patch("app.routers.labels.label_service.create_label") as mock_create:
-                    mock_create.side_effect = ValueError("Un libellé avec ce nom existe déjà")
+                with patch(
+                    "app.routers.labels.label_service.create_label"
+                ) as mock_create:
+                    mock_create.side_effect = ValueError(
+                        "Un libellé avec ce nom existe déjà"
+                    )
 
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
-                            create_label_route(label_data, mock_db.return_value.__enter__.return_value, admin_user)
+                            create_label_route(
+                                label_data,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
+                            )
                         )
 
                     assert exc_info.value.status_code == 400
@@ -274,7 +329,9 @@ class TestLabelsRouter:
 
     def test_update_label_success_admin(self, admin_user):
         """Test de mise à jour d'un libellé par un admin avec succès."""
-        update_data = LabelUpdate(name="Updated Bug", color="#FFFF00", description="Problème critique")
+        update_data = LabelUpdate(
+            name="Updated Bug", color="#FFFF00", description="Problème critique"
+        )
 
         mock_label = LabelResponse(
             id=1,
@@ -288,7 +345,9 @@ class TestLabelsRouter:
         with patch("app.routers.labels.label_service.update_label") as mock_update:
             mock_update.return_value = mock_label
 
-            with patch("app.routers.labels.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.labels.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
@@ -296,7 +355,12 @@ class TestLabelsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        update_label_route(1, update_data, mock_db.return_value.__enter__.return_value, admin_user)
+                        update_label_route(
+                            1,
+                            update_data,
+                            mock_db.return_value.__enter__.return_value,
+                            admin_user,
+                        )
                     )
 
                     assert result.name == "Updated Bug"
@@ -304,10 +368,14 @@ class TestLabelsRouter:
 
     def test_update_label_permission_denied(self, regular_user):
         """Test de mise à jour d'un libellé par un utilisateur régulier (devrait échouer)."""
-        update_data = LabelUpdate(name="Updated Bug", color="#FFFF00", description="Problème critique")
+        update_data = LabelUpdate(
+            name="Updated Bug", color="#FFFF00", description="Problème critique"
+        )
 
         with patch("app.routers.labels.require_admin") as mock_require_admin:
-            mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+            mock_require_admin.side_effect = HTTPException(
+                status_code=403, detail="Accès réservé aux administrateurs"
+            )
 
             # Mock database session
             with patch("app.routers.labels.get_db") as mock_db:
@@ -316,7 +384,10 @@ class TestLabelsRouter:
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
                         update_label_route(
-                            1, update_data, mock_db.return_value.__enter__.return_value, mock_require_admin()
+                            1,
+                            update_data,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin(),
                         )
                     )
 
@@ -330,7 +401,9 @@ class TestLabelsRouter:
         with patch("app.routers.labels.label_service.update_label") as mock_update:
             mock_update.return_value = None
 
-            with patch("app.routers.labels.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.labels.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
@@ -340,7 +413,10 @@ class TestLabelsRouter:
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
                             update_label_route(
-                                999, update_data, mock_db.return_value.__enter__.return_value, admin_user
+                                999,
+                                update_data,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
                             )
                         )
 
@@ -352,7 +428,9 @@ class TestLabelsRouter:
         with patch("app.routers.labels.label_service.delete_label") as mock_delete:
             mock_delete.return_value = True
 
-            with patch("app.routers.labels.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.labels.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
@@ -360,7 +438,9 @@ class TestLabelsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        delete_label_route(1, mock_db.return_value.__enter__.return_value, admin_user)
+                        delete_label_route(
+                            1, mock_db.return_value.__enter__.return_value, admin_user
+                        )
                     )
 
                     assert result["message"] == "Libellé supprimé avec succès"
@@ -368,7 +448,9 @@ class TestLabelsRouter:
     def test_delete_label_permission_denied(self, regular_user):
         """Test de suppression d'un libellé par un utilisateur régulier (devrait échouer)."""
         with patch("app.routers.labels.require_admin") as mock_require_admin:
-            mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+            mock_require_admin.side_effect = HTTPException(
+                status_code=403, detail="Accès réservé aux administrateurs"
+            )
 
             # Mock database session
             with patch("app.routers.labels.get_db") as mock_db:
@@ -376,7 +458,11 @@ class TestLabelsRouter:
 
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
-                        delete_label_route(1, mock_db.return_value.__enter__.return_value, mock_require_admin())
+                        delete_label_route(
+                            1,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin(),
+                        )
                     )
 
                 assert exc_info.value.status_code == 403
@@ -387,7 +473,9 @@ class TestLabelsRouter:
         with patch("app.routers.labels.label_service.delete_label") as mock_delete:
             mock_delete.return_value = False
 
-            with patch("app.routers.labels.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.labels.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
@@ -395,7 +483,13 @@ class TestLabelsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(delete_label_route(999, mock_db.return_value.__enter__.return_value, admin_user))
+                        asyncio.run(
+                            delete_label_route(
+                                999,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
+                            )
+                        )
 
                     assert exc_info.value.status_code == 404
                     assert exc_info.value.detail == "Libellé non trouvé"
@@ -411,7 +505,12 @@ class TestLabelsRouter:
 
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
-                        update_label_route("invalid", None, mock_db.return_value.__enter__.return_value, admin_user)
+                        update_label_route(
+                            "invalid",
+                            None,
+                            mock_db.return_value.__enter__.return_value,
+                            admin_user,
+                        )
                     )
 
                 assert exc_info.value.status_code == 422
@@ -422,7 +521,9 @@ class TestLabelsRouter:
 
         # Test with invalid color format - should be caught by Pydantic validation
         with pytest.raises(ValidationError) as exc_info:
-            LabelCreate(name="Test Label", color="invalid_color", description="Test description")
+            LabelCreate(
+                name="Test Label", color="invalid_color", description="Test description"
+            )
 
         # Verify that the validation error is about color format
         assert "color" in str(exc_info.value).lower()
@@ -432,7 +533,9 @@ class TestLabelsRouter:
         with patch("app.routers.labels.label_service.get_labels") as mock_get_labels:
             mock_get_labels.side_effect = Exception("Database error")
 
-            with patch("app.routers.labels.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.labels.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
@@ -440,7 +543,14 @@ class TestLabelsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     with pytest.raises(Exception) as exc_info:
-                        asyncio.run(read_labels(0, 100, mock_db.return_value.__enter__.return_value, admin_user))
+                        asyncio.run(
+                            read_labels(
+                                0,
+                                100,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
+                            )
+                        )
 
                     assert str(exc_info.value) == "Database error"
 

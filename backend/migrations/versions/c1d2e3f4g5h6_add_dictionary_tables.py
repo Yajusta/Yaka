@@ -6,9 +6,8 @@ Create Date: 2025-10-17 10:00:00.000000
 
 """
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "c1d2e3f4g5h6"
@@ -33,8 +32,12 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     with op.batch_alter_table("global_dictionary", schema=None) as batch_op:
-        batch_op.create_index(batch_op.f("ix_global_dictionary_id"), ["id"], unique=False)
-        batch_op.create_index(batch_op.f("ix_global_dictionary_term"), ["term"], unique=True)
+        batch_op.create_index(
+            batch_op.f("ix_global_dictionary_id"), ["id"], unique=False
+        )
+        batch_op.create_index(
+            batch_op.f("ix_global_dictionary_term"), ["term"], unique=True
+        )
 
     # Create personal_dictionary table
     op.create_table(
@@ -51,7 +54,9 @@ def upgrade() -> None:
         sa.UniqueConstraint("user_id", "term", name="uq_user_term"),
     )
     with op.batch_alter_table("personal_dictionary", schema=None) as batch_op:
-        batch_op.create_index(batch_op.f("ix_personal_dictionary_id"), ["id"], unique=False)
+        batch_op.create_index(
+            batch_op.f("ix_personal_dictionary_id"), ["id"], unique=False
+        )
 
 
 def downgrade() -> None:
@@ -69,4 +74,3 @@ def downgrade() -> None:
         batch_op.drop_index(batch_op.f("ix_global_dictionary_term"))
         batch_op.drop_index(batch_op.f("ix_global_dictionary_id"))
     op.drop_table("global_dictionary")
-

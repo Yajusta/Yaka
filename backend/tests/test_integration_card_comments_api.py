@@ -1,10 +1,9 @@
 """Integration tests for the card comments router."""
 
 import pytest
-
 from app.routers.auth import router as auth_router
-from app.routers.cards import router as cards_router
 from app.routers.card_comments import router as card_comments_router
+from app.routers.cards import router as cards_router
 
 
 @pytest.mark.asyncio
@@ -17,9 +16,13 @@ async def test_card_comments_crud(
 ):
     seed_admin_user()
     list_id = create_list_record("Backlog", 1)
-    create_regular_user("commenter@example.com", "Comment123!", display_name="Commenter")
+    create_regular_user(
+        "commenter@example.com", "Comment123!", display_name="Commenter"
+    )
 
-    async with async_client_factory(auth_router, cards_router, card_comments_router) as client:
+    async with async_client_factory(
+        auth_router, cards_router, card_comments_router
+    ) as client:
         token = await login_user(client, "commenter@example.com", "Comment123!")
 
         card_response = await client.post(

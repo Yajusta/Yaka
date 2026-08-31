@@ -103,12 +103,16 @@ class TestAdminRoutes:
         assert data["database_path"] is None
         assert data["access_url"] is None
 
-    def test_create_board_success(self, client, temp_data_dir, set_api_key_env, mock_api_key):
+    def test_create_board_success(
+        self, client, temp_data_dir, set_api_key_env, mock_api_key
+    ):
         """Test successful board creation."""
         board_uid = "new-test-board"
         headers = self.create_auth_headers(mock_api_key)
 
-        response = client.post("/admin/boards", json={"board_uid": board_uid}, headers=headers)
+        response = client.post(
+            "/admin/boards", json={"board_uid": board_uid}, headers=headers
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -127,12 +131,16 @@ class TestAdminRoutes:
         invalid_uid = "board with spaces"
         headers = self.create_auth_headers(mock_api_key)
 
-        response = client.post("/admin/boards", json={"board_uid": invalid_uid}, headers=headers)
+        response = client.post(
+            "/admin/boards", json={"board_uid": invalid_uid}, headers=headers
+        )
 
         assert response.status_code == 400
         assert "alphanumeric" in response.json()["detail"].lower()
 
-    def test_create_board_already_exists(self, client, temp_data_dir, set_api_key_env, mock_api_key):
+    def test_create_board_already_exists(
+        self, client, temp_data_dir, set_api_key_env, mock_api_key
+    ):
         """Test board creation when board already exists."""
         board_uid = "existing-board"
 
@@ -147,7 +155,9 @@ class TestAdminRoutes:
 
         headers = self.create_auth_headers(mock_api_key)
 
-        response = client.post("/admin/boards", json={"board_uid": board_uid}, headers=headers)
+        response = client.post(
+            "/admin/boards", json={"board_uid": board_uid}, headers=headers
+        )
 
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
@@ -161,7 +171,9 @@ class TestAdminRoutes:
         with patch.dict(os.environ, {}, clear=False):
             if "YAKA_ADMIN_API_KEY" in os.environ:
                 del os.environ["YAKA_ADMIN_API_KEY"]
-            response = client.post("/admin/boards", json={"board_uid": board_uid}, headers=headers)
+            response = client.post(
+                "/admin/boards", json={"board_uid": board_uid}, headers=headers
+            )
 
         assert response.status_code == 503
         assert "not configured" in response.json()["detail"]
@@ -171,7 +183,9 @@ class TestAdminRoutes:
         board_uid = "test-board"
         headers = {"Authorization": "Bearer invalid-key"}
 
-        response = client.post("/admin/boards", json={"board_uid": board_uid}, headers=headers)
+        response = client.post(
+            "/admin/boards", json={"board_uid": board_uid}, headers=headers
+        )
 
         assert response.status_code == 401
         assert "Invalid or missing admin API key" in response.json()["detail"]
@@ -182,9 +196,13 @@ class TestAdminRoutes:
 
         response = client.post("/admin/boards", json={"board_uid": board_uid})
 
-        assert response.status_code == 403  # FastAPI HTTPBearer returns 403 for missing Bearer token
+        assert (
+            response.status_code == 403
+        )  # FastAPI HTTPBearer returns 403 for missing Bearer token
 
-    def test_delete_board_success(self, client, temp_data_dir, set_api_key_env, mock_api_key):
+    def test_delete_board_success(
+        self, client, temp_data_dir, set_api_key_env, mock_api_key
+    ):
         """Test successful board deletion."""
         board_uid = "board-to-delete"
 
@@ -219,7 +237,9 @@ class TestAdminRoutes:
         assert response.status_code == 404
         assert "does not exist" in response.json()["detail"]
 
-    def test_delete_default_board_forbidden(self, client, set_api_key_env, mock_api_key):
+    def test_delete_default_board_forbidden(
+        self, client, set_api_key_env, mock_api_key
+    ):
         """Test that deleting default 'yaka' board is forbidden."""
         board_uid = "yaka"
         headers = self.create_auth_headers(mock_api_key)
@@ -305,7 +325,9 @@ class TestAdminRoutesSecurity:
         ]
 
         for malicious_uid in malicious_uids:
-            response = client.post("/admin/boards", json={"board_uid": malicious_uid}, headers=headers)
+            response = client.post(
+                "/admin/boards", json={"board_uid": malicious_uid}, headers=headers
+            )
 
             # Should be rejected due to validation
             assert response.status_code == 400
@@ -324,7 +346,9 @@ class TestAdminRoutesSecurity:
         ]
 
         for traversal_uid in traversal_uids:
-            response = client.post("/admin/boards", json={"board_uid": traversal_uid}, headers=headers)
+            response = client.post(
+                "/admin/boards", json={"board_uid": traversal_uid}, headers=headers
+            )
 
             # Should be rejected due to validation
             assert response.status_code == 400
@@ -369,7 +393,9 @@ class TestAdminRoutesEdgeCases:
         with patch.dict(os.environ, {"YAKA_ADMIN_API_KEY": mock_api_key}):
             yield
 
-    def test_create_board_with_special_characters(self, client, temp_data_dir, set_api_key_env):
+    def test_create_board_with_special_characters(
+        self, client, temp_data_dir, set_api_key_env
+    ):
         """Test board creation with various special characters."""
         api_key = os.getenv("YAKA_ADMIN_API_KEY")
         headers = {"Authorization": f"Bearer {api_key}"}
@@ -386,7 +412,9 @@ class TestAdminRoutesEdgeCases:
         ]
 
         for uid in valid_uids:
-            response = client.post("/admin/boards", json={"board_uid": uid}, headers=headers)
+            response = client.post(
+                "/admin/boards", json={"board_uid": uid}, headers=headers
+            )
             assert response.status_code == 201, f"Failed for valid UID: {uid}"
 
             # Clean up immediately to avoid database lock issues on Windows
@@ -401,7 +429,9 @@ class TestAdminRoutesEdgeCases:
         # Create a board UID that's too long (51 characters)
         long_uid = "a" * 51
 
-        response = client.post("/admin/boards", json={"board_uid": long_uid}, headers=headers)
+        response = client.post(
+            "/admin/boards", json={"board_uid": long_uid}, headers=headers
+        )
 
         assert response.status_code == 400
 
@@ -417,10 +447,15 @@ class TestAdminRoutesEdgeCases:
     def test_malformed_json_request(self, client, set_api_key_env):
         """Test handling of malformed JSON requests."""
         api_key = os.getenv("YAKA_ADMIN_API_KEY")
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
 
         # Send malformed JSON
-        response = client.post("/admin/boards", data='{"board_uid": "test", invalid_json}', headers=headers)
+        response = client.post(
+            "/admin/boards", data='{"board_uid": "test", invalid_json}', headers=headers
+        )
 
         assert response.status_code == 422  # Unprocessable Entity
 
@@ -429,6 +464,8 @@ class TestAdminRoutesEdgeCases:
         api_key = os.getenv("YAKA_ADMIN_API_KEY")
         headers = {"Authorization": f"Bearer {api_key}"}
 
-        response = client.post("/admin/boards", json={"wrong_field": "test"}, headers=headers)
+        response = client.post(
+            "/admin/boards", json={"wrong_field": "test"}, headers=headers
+        )
 
         assert response.status_code == 422  # Validation error

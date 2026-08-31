@@ -15,8 +15,8 @@ from sqlalchemy.orm import Session, sessionmaker
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.database import Base
-from app.multi_database import get_dynamic_db
 from app.models.user import UserRole
+from app.multi_database import get_dynamic_db
 from app.schemas import KanbanListCreate, UserCreate
 from app.services.board_settings import initialize_default_settings
 from app.services.kanban_list import create_list as service_create_list
@@ -27,7 +27,9 @@ from app.services.user import create_admin_user, create_user
 def integration_engine(tmp_path_factory: pytest.TempPathFactory):
     """Provide a dedicated SQLite engine per test session."""
     db_file = tmp_path_factory.mktemp("integration_db") / "yaka_integration.db"
-    engine = create_engine(f"sqlite:///{db_file}", connect_args={"check_same_thread": False})
+    engine = create_engine(
+        f"sqlite:///{db_file}", connect_args={"check_same_thread": False}
+    )
     yield engine
     engine.dispose()
 
@@ -70,7 +72,9 @@ def async_client_factory(build_test_app: Callable[..., FastAPI]):
     async def _factory(*routers) -> AsyncIterator[httpx.AsyncClient]:
         app = build_test_app(*routers)
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://testserver"
+        ) as client:
             yield client
 
     return _factory
@@ -92,11 +96,16 @@ def seed_admin_user(integration_session_factory: sessionmaker) -> Callable[[], N
 
 
 @pytest.fixture
-def create_regular_user(integration_session_factory: sessionmaker) -> Callable[[str, str, str | None], None]:
+def create_regular_user(
+    integration_session_factory: sessionmaker,
+) -> Callable[[str, str, str | None], None]:
     """Create a regular user in the isolated database."""
 
     def _create(
-        email: str, password: str, display_name: str | None = "Regular", role: UserRole = UserRole.EDITOR
+        email: str,
+        password: str,
+        display_name: str | None = "Regular",
+        role: UserRole = UserRole.EDITOR,
     ) -> None:
         session = integration_session_factory()
         try:
@@ -115,7 +124,9 @@ def create_regular_user(integration_session_factory: sessionmaker) -> Callable[[
 
 
 @pytest.fixture
-def create_list_record(integration_session_factory: sessionmaker) -> Callable[[str, int], int]:
+def create_list_record(
+    integration_session_factory: sessionmaker,
+) -> Callable[[str, int], int]:
     """Utility to seed a Kanban list without going through HTTP endpoints."""
 
     def _create(name: str, order: int) -> int:

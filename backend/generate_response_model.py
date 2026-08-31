@@ -72,7 +72,9 @@ def generate_response_model(input_file):
         # Créer un fichier temporaire pour le schéma normalisé
         temp_file_path = None
         try:
-            with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False) as temp_file:
+            with tempfile.NamedTemporaryFile(
+                mode="w+", suffix=".json", delete=False
+            ) as temp_file:
                 json.dump(normalized_schema, temp_file)
                 temp_file_path = temp_file.name
 

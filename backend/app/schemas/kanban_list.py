@@ -34,7 +34,9 @@ class KanbanListBase(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=100, description="Nom de la liste")
     description: Optional[str] = Field(
-        default=None, max_length=255, description="Description de la liste (255 caractères max)"
+        default=None,
+        max_length=255,
+        description="Description de la liste (255 caractères max)",
     )
     order: int = Field(..., ge=1, description="Ordre d'affichage de la liste")
 
@@ -56,11 +58,17 @@ class KanbanListCreate(KanbanListBase):
 class KanbanListUpdate(BaseModel):
     """Schéma pour la mise à jour d'une liste Kanban."""
 
-    name: Optional[str] = Field(default=None, min_length=1, max_length=100, description="Nom de la liste")
-    description: Optional[str] = Field(
-        default=None, max_length=255, description="Description de la liste (255 caractères max)"
+    name: Optional[str] = Field(
+        default=None, min_length=1, max_length=100, description="Nom de la liste"
     )
-    order: Optional[int] = Field(default=None, ge=1, description="Ordre d'affichage de la liste")
+    description: Optional[str] = Field(
+        default=None,
+        max_length=255,
+        description="Description de la liste (255 caractères max)",
+    )
+    order: Optional[int] = Field(
+        default=None, ge=1, description="Ordre d'affichage de la liste"
+    )
 
     @field_validator("name")
     @classmethod
@@ -90,20 +98,26 @@ class KanbanListResponse(KanbanListBase):
 class ListDeletionRequest(BaseModel):
     """Schéma pour la demande de suppression d'une liste avec déplacement des cartes."""
 
-    target_list_id: int = Field(..., description="ID de la liste de destination pour les cartes")
+    target_list_id: int = Field(
+        ..., description="ID de la liste de destination pour les cartes"
+    )
 
     @field_validator("target_list_id")
     @classmethod
     def validate_target_list_id(cls, value: int) -> int:
         if value <= 0:
-            raise ValueError("L'ID de la liste de destination doit être un entier positif")
+            raise ValueError(
+                "L'ID de la liste de destination doit être un entier positif"
+            )
         return value
 
 
 class ListReorderRequest(BaseModel):
     """Schéma pour la réorganisation des listes."""
 
-    list_orders: dict[int, int] = Field(..., description="Dictionnaire des ID de listes et leurs nouveaux ordres")
+    list_orders: dict[int, int] = Field(
+        ..., description="Dictionnaire des ID de listes et leurs nouveaux ordres"
+    )
 
     @field_validator("list_orders")
     @classmethod

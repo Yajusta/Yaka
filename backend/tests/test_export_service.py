@@ -11,9 +11,6 @@ from openpyxl import load_workbook
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 from app.database import Base
 from app.models.card import Card, CardPriority
 from app.models.card_item import CardItem
@@ -21,13 +18,17 @@ from app.models.kanban_list import KanbanList
 from app.models.label import Label
 from app.models.user import User, UserRole, UserStatus
 from app.services import export_service
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # Configuration de la base de données de test
 TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_export_service.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -189,7 +190,9 @@ class TestFormatFunctions:
         result = export_service.format_labels(card)
         assert result == ""
 
-    def test_format_labels_with_multiple(self, db_session, sample_user, sample_lists, sample_labels):
+    def test_format_labels_with_multiple(
+        self, db_session, sample_user, sample_lists, sample_labels
+    ):
         """Test format_labels avec plusieurs étiquettes."""
         card = Card(
             title="Test",
@@ -240,7 +243,9 @@ class TestGetCardsForExport:
         assert len(cards) == 2
         assert all(not card.is_archived for card in cards)
 
-    def test_get_cards_sorted_by_list_and_position(self, db_session, sample_user, sample_lists):
+    def test_get_cards_sorted_by_list_and_position(
+        self, db_session, sample_user, sample_lists
+    ):
         """Test que les cartes sont triées par liste puis position."""
         # Créer plusieurs cartes dans différentes listes
         card1 = Card(

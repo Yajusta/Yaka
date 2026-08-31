@@ -1,41 +1,48 @@
-import { AuthProvider, useAuth } from '@shared/hooks/useAuth';
-import { DisplayModeProvider } from '@shared/hooks/useDisplayMode';
-import { useTheme } from '@shared/hooks/useTheme';
-import { UsersProvider } from '@shared/hooks/useUsers';
-import { useEffect } from 'react';
-import { Navigate, Route, BrowserRouter as Router, Routes, useLocation, useParams } from 'react-router-dom';
-import { Toaster } from './components/ui/sonner';
-import i18n from './i18n';
-import './index.css';
-import ArchivesScreen from './screens/ArchivesScreen';
-import BoardConfigScreen from './screens/BoardConfigScreen';
-import { CommentsScreen } from './screens/CommentsScreen';
-import LoginScreen from './screens/LoginScreen';
-import MainScreen from './screens/MainScreen';
+import { AuthProvider, useAuth } from "@shared/hooks/useAuth";
+import { DisplayModeProvider } from "@shared/hooks/useDisplayMode";
+import { useTheme } from "@shared/hooks/useTheme";
+import { UsersProvider } from "@shared/hooks/useUsers";
+import { useEffect } from "react";
+import {
+  Navigate,
+  Route,
+  BrowserRouter as Router,
+  Routes,
+  useLocation,
+  useParams,
+} from "react-router-dom";
+import { Toaster } from "./components/ui/sonner";
+import i18n from "./i18n";
+import "./index.css";
+import ArchivesScreen from "./screens/ArchivesScreen";
+import BoardConfigScreen from "./screens/BoardConfigScreen";
+import { CommentsScreen } from "./screens/CommentsScreen";
+import LoginScreen from "./screens/LoginScreen";
+import MainScreen from "./screens/MainScreen";
 
 const normalizeBasePath = (value?: string) => {
   if (!value) {
-    return '/';
+    return "/";
   }
 
   const trimmed = value.trim();
-  if (!trimmed || trimmed === '/') {
-    return '/';
+  if (!trimmed || trimmed === "/") {
+    return "/";
   }
 
-  const withLeadingSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  const withoutTrailingSlash = withLeadingSlash.replace(/\/+$/, '');
+  const withLeadingSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  const withoutTrailingSlash = withLeadingSlash.replace(/\/+$/, "");
 
-  return withoutTrailingSlash || '/';
+  return withoutTrailingSlash || "/";
 };
 
 const getBaseName = () => {
   const envBase = import.meta.env.VITE_BASE_PATH;
-  if (typeof envBase === 'string' && envBase.length > 0) {
+  if (typeof envBase === "string" && envBase.length > 0) {
     return normalizeBasePath(envBase);
   }
   const path = window.location.pathname;
-  return path.startsWith('/m/') ? '/m' : '/';
+  return path.startsWith("/m/") ? "/m" : "/";
 };
 
 // Board route handler - updates localStorage when board name is provided in URL and renders MainScreen
@@ -47,9 +54,10 @@ const BoardRouteHandler = () => {
     if (boardName) {
       // Resolve endpoint using the same logic as BoardConfigScreen
       const resolveEndpoint = (name: string): string => {
-        const apiBaseUrl = (window as any).API_BASE_URL || 'http://localhost:8000';
+        const apiBaseUrl =
+          (window as any).API_BASE_URL || "http://localhost:8000";
 
-        if (name.trim().toLowerCase() === 'localhost') {
+        if (name.trim().toLowerCase() === "localhost") {
           return apiBaseUrl;
         } else {
           return `${apiBaseUrl}/board/${encodeURIComponent(name.trim())}`;
@@ -57,8 +65,8 @@ const BoardRouteHandler = () => {
       };
 
       // Update localStorage with the board name from URL
-      localStorage.setItem('board_name', boardName.trim());
-      localStorage.setItem('api_base_url', resolveEndpoint(boardName));
+      localStorage.setItem("board_name", boardName.trim());
+      localStorage.setItem("api_base_url", resolveEndpoint(boardName));
     }
   }, [boardName, location.pathname]);
 
@@ -74,7 +82,7 @@ const BoardRouteHandler = () => {
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const apiUrl = localStorage.getItem('api_base_url');
+  const apiUrl = localStorage.getItem("api_base_url");
 
   if (loading) {
     return (
@@ -116,7 +124,7 @@ const AppContent = () => {
 
       if (currentLang !== user.language) {
         // Force update localStorage first
-        localStorage.setItem('i18nextLng', user.language);
+        localStorage.setItem("i18nextLng", user.language);
         // Then change the language in i18n
         i18n.changeLanguage(user.language);
       }
@@ -124,12 +132,12 @@ const AppContent = () => {
   }, [user]);
 
   const basename = getBaseName();
-  const redirectPath = basename === '/m' ? '/m/' : '/';
+  const redirectPath = basename === "/m" ? "/m/" : "/";
 
   // Débogage : capturer les changements d'URL
   useEffect(() => {
-    console.log('Current URL:', window.location.href);
-    console.log('React Router location:', window.location.pathname);
+    console.log("Current URL:", window.location.href);
+    console.log("React Router location:", window.location.pathname);
   }, []);
 
   return (
@@ -184,4 +192,3 @@ function App() {
 }
 
 export default App;
-

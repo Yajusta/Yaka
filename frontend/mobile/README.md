@@ -170,4 +170,3 @@ Les tests seront ajoutés dans une version future.
 ## 📝 Licence
 
 Même licence que le projet principal Yaka.
-

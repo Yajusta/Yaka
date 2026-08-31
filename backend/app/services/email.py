@@ -32,7 +32,9 @@ SMTP_HOST = os.getenv("SMTP_HOST", "0.0.0.0")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
-SMTP_SECURE = os.getenv("SMTP_SECURE", "starttls").lower()  # values: 'ssl'|'starttls'|'none'
+SMTP_SECURE = os.getenv(
+    "SMTP_SECURE", "starttls"
+).lower()  # values: 'ssl'|'starttls'|'none'
 FROM_ADDRESS = os.getenv("SMTP_FROM", "no-reply@kanban.local")
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 INVITE_BASE_URL = f"{BASE_URL}/invite"
@@ -41,7 +43,9 @@ PASSWORD_RESET_BASE_URL = f"{BASE_URL}/invite"
 
 def send_mail(to: str, subject: str, html_body: str, plain_body: str = ""):
     if not plain_body:
-        raise ValueError("plain_body must be provided to avoid unreadable plain text emails.")
+        raise ValueError(
+            "plain_body must be provided to avoid unreadable plain text emails."
+        )
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = FROM_ADDRESS
@@ -72,7 +76,9 @@ def send_mail(to: str, subject: str, html_body: str, plain_body: str = ""):
         raise e
 
 
-def send_invitation(email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None):
+def send_invitation(
+    email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None
+):
     encoded_token = urllib.parse.quote_plus(token)
     if board_uid:
         invite_link = f"{BASE_URL}/board/{board_uid}/invite?token={encoded_token}"
@@ -88,10 +94,14 @@ def send_invitation(email: str, display_name: Optional[str], token: str, board_u
     send_mail(to=email, subject=subject, html_body=html, plain_body=plain)
 
 
-def send_password_reset(email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None):
+def send_password_reset(
+    email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None
+):
     encoded_token = urllib.parse.quote_plus(token)
     if board_uid:
-        reset_link = f"{BASE_URL}/board/{board_uid}/invite?token={encoded_token}&reset=true"
+        reset_link = (
+            f"{BASE_URL}/board/{board_uid}/invite?token={encoded_token}&reset=true"
+        )
         board_url = f"{BASE_URL}/board/{board_uid}"
     else:
         reset_link = f"{PASSWORD_RESET_BASE_URL}?token={encoded_token}&reset=true"

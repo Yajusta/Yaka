@@ -1,25 +1,25 @@
-import { useState, FormEvent, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useState, FormEvent, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const BoardConfigScreen = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [boardName, setBoardName] = useState<string>('');
-  const [error, setError] = useState<string>('');
+  const [boardName, setBoardName] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
   // Initialize board name from localStorage or URL params
   useEffect(() => {
-    const currentBoardName = localStorage.getItem('board_name') || '';
-    const prefilledName = searchParams.get('prefill') || currentBoardName;
+    const currentBoardName = localStorage.getItem("board_name") || "";
+    const prefilledName = searchParams.get("prefill") || currentBoardName;
     setBoardName(prefilledName);
   }, [searchParams]);
 
   const resolveEndpoint = (name: string): string => {
-    const apiBaseUrl = (window as any).API_BASE_URL || 'http://localhost:8000';
+    const apiBaseUrl = (window as any).API_BASE_URL || "http://localhost:8000";
 
-    if (name.trim().toLowerCase() === 'localhost') {
+    if (name.trim().toLowerCase() === "localhost") {
       return apiBaseUrl;
     } else {
       return `${apiBaseUrl}/board/${encodeURIComponent(name.trim())}`;
@@ -28,21 +28,24 @@ const BoardConfigScreen = () => {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!boardName.trim()) {
-      setError('Please enter a board name');
+      setError("Please enter a board name");
       return;
     }
 
     // Transform board name: lowercase and remove spaces
-    const normalizedBoardName = boardName.trim().toLowerCase().replace(/\s+/g, '');
+    const normalizedBoardName = boardName
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "");
     const resolvedEndpoint = resolveEndpoint(normalizedBoardName);
 
     // Store both the normalized board name and the resolved endpoint
-    localStorage.setItem('board_name', normalizedBoardName);
-    localStorage.setItem('api_base_url', resolvedEndpoint);
-    navigate('/login');
+    localStorage.setItem("board_name", normalizedBoardName);
+    localStorage.setItem("api_base_url", resolvedEndpoint);
+    navigate("/login");
   };
 
   return (
@@ -54,10 +57,10 @@ const BoardConfigScreen = () => {
             <img src="/yaka.svg" alt="Yaka" className="w-32 h-32" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">
-            {t('app.name')}
+            {t("app.name")}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            {t('boardConfig.subtitle')}
+            {t("boardConfig.subtitle")}
           </p>
         </div>
 
@@ -79,7 +82,10 @@ const BoardConfigScreen = () => {
               className="w-full px-4 py-3 bg-card border-2 border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             <p className="mt-2 text-xs text-muted-foreground">
-              If your desktop access point is <br/>"https://yaka.yajusta.fr/board/your-board-name"<br/>enter "your-board-name" here.
+              If your desktop access point is <br />
+              "https://yaka.yajusta.fr/board/your-board-name"
+              <br />
+              enter "your-board-name" here.
             </p>
           </div>
 
@@ -93,14 +99,12 @@ const BoardConfigScreen = () => {
             type="submit"
             className="w-full btn-touch bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 active:bg-primary/80 transition-colors"
           >
-            {t('common.continue')}
+            {t("common.continue")}
           </button>
         </form>
-
       </div>
     </div>
   );
 };
 
 export default BoardConfigScreen;
-

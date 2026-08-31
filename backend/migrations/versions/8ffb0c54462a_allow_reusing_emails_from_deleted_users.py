@@ -1,8 +1,7 @@
 """Allow reusing emails from logically deleted users"""
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "8ffb0c54462a"

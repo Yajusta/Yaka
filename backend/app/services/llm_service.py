@@ -46,13 +46,17 @@ class LLMService:
         # Vérifier la clé API OpenAI
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError("Clé API OpenAI manquante. Veuillez définir OPENAI_API_KEY dans .env")
+            raise ValueError(
+                "Clé API OpenAI manquante. Veuillez définir OPENAI_API_KEY dans .env"
+            )
 
         # Utiliser le modèle fourni ou celui de l'environnement, ou la valeur par défaut
         self.model_name = model or os.getenv("LLM_MODEL", DEFAULT_MODEL)
 
         # Initialiser le client OpenAI
-        self.client = OpenAI(api_key=api_key, base_url=os.getenv("OPENAI_API_BASE_URL", ""))
+        self.client = OpenAI(
+            api_key=api_key, base_url=os.getenv("OPENAI_API_BASE_URL", "")
+        )
 
     def analyze_transcript(
         self,
@@ -75,9 +79,15 @@ class LLMService:
         """
         try:
             if response_type == ResponseType.AUTO_INTENT:
-                intent_instructions = self._build_intent_analysis_instructions(user_context)
-                intent_response: AutoIntentResponse = AutoIntentResponse.model_validate_json(
-                    self._analyze_with_openai(transcript, intent_instructions, response_type)
+                intent_instructions = self._build_intent_analysis_instructions(
+                    user_context
+                )
+                intent_response: AutoIntentResponse = (
+                    AutoIntentResponse.model_validate_json(
+                        self._analyze_with_openai(
+                            transcript, intent_instructions, response_type
+                        )
+                    )
                 )
                 if intent_response.action == ResponseType.CARD_UPDATE:
                     response_type = ResponseType.CARD_UPDATE
@@ -101,15 +111,22 @@ class LLMService:
             return "{}"
 
     def _analyze_with_openai(
-        self, transcript: str, instructions: str, response_type: ResponseType = ResponseType.AUTO_INTENT
+        self,
+        transcript: str,
+        instructions: str,
+        response_type: ResponseType = ResponseType.AUTO_INTENT,
     ) -> str:
         """Analyse avec OpenAI standard."""
         temp_param = os.getenv("MODEL_TEMPERATURE", None)
         temperature: Optional[float] = float(temp_param) if temp_param else None
         if not self.client:
-            raise ValueError("Client OpenAI non initialisé. Assurez-vous que la clé API est définie.")
+            raise ValueError(
+                "Client OpenAI non initialisé. Assurez-vous que la clé API est définie."
+            )
 
-        completion = self._get_completion(transcript, instructions, temperature, response_type)
+        completion = self._get_completion(
+            transcript, instructions, temperature, response_type
+        )
 
         # Extraire la réponse parsée
         message = completion.choices[0].message
@@ -155,8 +172,15 @@ class LLMService:
             completion = self.client.chat.completions.parse(**args)
         except BadRequestError as e:
             if e.param == "temperature":
-                print("Le modèle ne supporte pas le paramètre 'temperature', réessai sans ce paramètre.")
-                return self._get_completion(transcript, instructions, temperature=None, response_type=response_type)
+                print(
+                    "Le modèle ne supporte pas le paramètre 'temperature', réessai sans ce paramètre."
+                )
+                return self._get_completion(
+                    transcript,
+                    instructions,
+                    temperature=None,
+                    response_type=response_type,
+                )
             else:
                 raise e
         return completion
@@ -404,7 +428,14 @@ def get_lists() -> str:
     """Retourne les statuts possibles depuis la base de données."""
     with get_board_db() as db:
         lists = db.query(KanbanList).order_by(KanbanList.order).all()
-        result = [{"list_id": lst.id, "list_name": lst.name, "list_description": lst.description} for lst in lists]
+        result = [
+            {
+                "list_id": lst.id,
+                "list_name": lst.name,
+                "list_description": lst.description,
+            }
+            for lst in lists
+        ]
         return json.dumps(result, ensure_ascii=False, indent=2)
 
 
@@ -412,7 +443,10 @@ def get_users() -> str:
     """Retourne les utilisateurs actifs depuis la base de données."""
     with get_board_db() as db:
         users = db.query(User).filter(User.status != UserStatus.DELETED).all()
-        result = [{"user_id": user.id, "user_name": user.display_name or user.email} for user in users]
+        result = [
+            {"user_id": user.id, "user_name": user.display_name or user.email}
+            for user in users
+        ]
         return json.dumps(result, ensure_ascii=False, indent=2)
 
 
@@ -423,7 +457,11 @@ def get_tasks(user_context: Optional[Dict] = None) -> str:
         query = (
             db.query(Card)
             .join(KanbanList)
-            .options(selectinload(Card.items), selectinload(Card.labels), selectinload(Card.assignee))
+            .options(
+                selectinload(Card.items),
+                selectinload(Card.labels),
+                selectinload(Card.assignee),
+            )
             .filter(Card.is_archived == False)
         )
 
@@ -447,7 +485,10 @@ def get_tasks(user_context: Optional[Dict] = None) -> str:
             ]
 
             # Construire la liste des labels
-            labels = [{"label_id": label.id, "label_name": label.name} for label in card.labels]
+            labels = [
+                {"label_id": label.id, "label_name": label.name}
+                for label in card.labels
+            ]
 
             # Obtenir le nom de l'assignee
             assignee_name = None
@@ -481,7 +522,11 @@ def get_labels() -> str:
     with get_board_db() as db:
         labels = db.query(Label).all()
         result = [
-            {"label_id": label.id, "label_name": label.name, "label_description": label.description}
+            {
+                "label_id": label.id,
+                "label_name": label.name,
+                "label_description": label.description,
+            }
             for label in labels
         ]
         return json.dumps(result, ensure_ascii=False, indent=2)
@@ -492,12 +537,24 @@ def get_vocabulary(user_context: Optional[Dict] = None) -> str:
     with get_board_db() as db:
         # Get global dictionary entries
         global_entries = db.query(GlobalDictionary).all()
-        result = [{"term": entry.term, "definition": entry.definition} for entry in global_entries]
+        result = [
+            {"term": entry.term, "definition": entry.definition}
+            for entry in global_entries
+        ]
 
         # Get personal dictionary entries if user context is provided
         if user_context and "user_id" in user_context:
             user_id = user_context["user_id"]
-            personal_entries = db.query(PersonalDictionary).filter(PersonalDictionary.user_id == user_id).all()
-            result.extend([{"term": entry.term, "definition": entry.definition} for entry in personal_entries])
+            personal_entries = (
+                db.query(PersonalDictionary)
+                .filter(PersonalDictionary.user_id == user_id)
+                .all()
+            )
+            result.extend(
+                [
+                    {"term": entry.term, "definition": entry.definition}
+                    for entry in personal_entries
+                ]
+            )
 
         return json.dumps(result, ensure_ascii=False, indent=2)

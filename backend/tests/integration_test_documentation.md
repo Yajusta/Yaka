@@ -170,34 +170,42 @@ The E2E tests use an `ApplicationState` class that simulates a complete applicat
 The integration tests validate all requirements from the specification:
 
 ### Requirement 1: Admin Access to List Management
+
 - ✅ Tested in `test_permission_enforcement_workflow`
 - ✅ Validates admin-only access to list management operations
 
 ### Requirement 2: Creating Lists with Names and Orders
+
 - ✅ Tested in `test_complete_list_lifecycle`
 - ✅ Validates list creation with proper validation
 
 ### Requirement 3: Modifying Existing Lists
+
 - ✅ Tested in `test_complete_list_lifecycle` and `test_list_reordering_workflow`
 - ✅ Validates list updates and reordering
 
 ### Requirement 4: Deleting Lists with Card Reassignment
+
 - ✅ Tested in `test_list_deletion_with_card_migration`
 - ✅ Validates card migration during list deletion
 
 ### Requirement 5: Horizontal Scrolling Display
+
 - ✅ Tested in frontend component integration tests
 - ✅ Validates UI behavior with multiple lists
 
 ### Requirement 6: Compatibility with Existing Card Movement
+
 - ✅ Tested in `test_card_movement_between_dynamic_lists`
 - ✅ Validates card movement between dynamic lists
 
 ### Requirement 7: Automatic Default List Creation
+
 - ✅ Tested in `test_migration_process_simulation`
 - ✅ Validates migration and default list setup
 
 ### Requirement 8: Full-Stack Implementation
+
 - ✅ Tested across all integration tests
 - ✅ Validates backend, frontend, and database integration
 
@@ -206,12 +214,14 @@ The integration tests validate all requirements from the specification:
 ### Individual Test Files
 
 **Backend:**
+
 ```bash
 cd backend
 python -m pytest tests/test_integration_list_workflow.py -v
 ```
 
 **Frontend:**
+
 ```bash
 cd frontend
 pnpm vitest src/test/integration-workflow.test.ts --run
@@ -221,12 +231,14 @@ pnpm vitest src/test/e2e-workflow.test.ts --run
 ### Complete Test Suite
 
 Use the provided test runner:
+
 ```bash
 cd backend/tests
 python run_integration_tests.py
 ```
 
 This will:
+
 - Run all backend and frontend tests
 - Generate a comprehensive report
 - Provide detailed output and error information
@@ -235,6 +247,7 @@ This will:
 ## Test Coverage
 
 ### Functional Coverage
+
 - ✅ All CRUD operations for lists
 - ✅ Card movement between lists
 - ✅ List reordering and organization
@@ -243,6 +256,7 @@ This will:
 - ✅ Error handling and recovery
 
 ### Technical Coverage
+
 - ✅ API endpoint testing
 - ✅ Database integrity validation
 - ✅ Frontend-backend integration
@@ -251,6 +265,7 @@ This will:
 - ✅ Performance validation
 
 ### Edge Cases
+
 - ✅ Empty databases
 - ✅ Maximum data limits
 - ✅ Invalid inputs

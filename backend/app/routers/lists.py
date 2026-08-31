@@ -1,27 +1,28 @@
 """Routeur pour la gestion des listes Kanban."""
 
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
+from ..models import User
 from ..multi_database import get_dynamic_db as get_db
 from ..schemas import (
-    KanbanListCreate, 
-    KanbanListUpdate, 
-    KanbanListResponse, 
+    KanbanListCreate,
+    KanbanListResponse,
+    KanbanListUpdate,
     ListDeletionRequest,
-    ListReorderRequest
+    ListReorderRequest,
 )
 from ..services import kanban_list as list_service
 from ..utils.dependencies import get_current_active_user, require_admin
-from ..models import User
 
 router = APIRouter(prefix="/lists", tags=["listes"])
 
 
 @router.get("/", response_model=List[KanbanListResponse])
 async def read_lists(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """Récupérer toutes les listes ordonnées par ordre d'affichage."""
     lists = list_service.get_lists(db)
@@ -32,27 +33,26 @@ async def read_lists(
 async def create_list(
     list_data: KanbanListCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
 ):
     """Créer une nouvelle liste (admin seulement)."""
     if list_data is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Données invalides pour la création de la liste"
+            detail="Données invalides pour la création de la liste",
         )
     try:
         return list_service.create_list(db=db, list_data=list_data)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc)
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         ) from exc
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur interne lors de la création de la liste"
+            detail="Erreur interne lors de la création de la liste",
         ) from exc
 
 
@@ -60,14 +60,13 @@ async def create_list(
 async def read_list(
     list_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Récupérer une liste par son ID."""
     db_list = list_service.get_list(db, list_id=list_id)
     if db_list is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Liste non trouvée"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Liste non trouvée"
         )
     return db_list
 
@@ -77,39 +76,37 @@ async def update_list(
     list_id: int,
     list_update: KanbanListUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
 ):
     """Mettre à jour une liste (admin seulement)."""
     # Validation de l'ID
     if list_id <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="L'ID de la liste doit être un entier positif"
+            detail="L'ID de la liste doit être un entier positif",
         )
-    
+
     if list_update is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Données invalides pour la mise à jour de la liste"
+            detail="Données invalides pour la mise à jour de la liste",
         )
     try:
         db_list = list_service.update_list(db, list_id=list_id, list_data=list_update)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc)
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         ) from exc
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur interne lors de la mise à jour de la liste"
+            detail="Erreur interne lors de la mise à jour de la liste",
         ) from exc
     if db_list is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Liste non trouvée"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Liste non trouvée"
         )
     return db_list
 
@@ -119,43 +116,39 @@ async def delete_list(
     list_id: int,
     deletion_request: ListDeletionRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
 ):
     """Supprimer une liste après avoir déplacé ses cartes (admin seulement)."""
     # Validation de l'ID
     if list_id <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="L'ID de la liste doit être un entier positif"
+            detail="L'ID de la liste doit être un entier positif",
         )
-    
+
     if deletion_request is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Données invalides pour la suppression de la liste"
+            detail="Données invalides pour la suppression de la liste",
         )
     try:
         success = list_service.delete_list(
-            db,
-            list_id=list_id,
-            target_list_id=deletion_request.target_list_id
+            db, list_id=list_id, target_list_id=deletion_request.target_list_id
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc)
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         ) from exc
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur interne lors de la suppression de la liste"
+            detail="Erreur interne lors de la suppression de la liste",
         ) from exc
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Liste non trouvée"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Liste non trouvée"
         )
     return {"message": "Liste supprimée avec succès"}
 
@@ -164,34 +157,36 @@ async def delete_list(
 async def get_list_cards_count(
     list_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Récupérer le nombre de cartes dans une liste."""
     # Validation de l'ID
     if list_id <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="L'ID de la liste doit être un entier positif"
+            detail="L'ID de la liste doit être un entier positif",
         )
-    
+
     try:
-        kanban_list, cards_count = list_service.get_list_with_cards_count(db, list_id=list_id)
+        kanban_list, cards_count = list_service.get_list_with_cards_count(
+            db, list_id=list_id
+        )
         if kanban_list is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Liste avec l'ID {list_id} non trouvée"
+                detail=f"Liste avec l'ID {list_id} non trouvée",
             )
         return {
             "list_id": list_id,
             "list_name": kanban_list.name,
-            "cards_count": cards_count
+            "cards_count": cards_count,
         }
     except Exception as e:
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur interne lors de la récupération du nombre de cartes"
+            detail="Erreur interne lors de la récupération du nombre de cartes",
         )
 
 
@@ -199,31 +194,32 @@ async def get_list_cards_count(
 async def reorder_lists(
     reorder_request: ListReorderRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
 ):
     """Réorganiser l'ordre des listes (admin seulement)."""
     if reorder_request is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Données invalides pour la réorganisation des listes"
+            detail="Données invalides pour la réorganisation des listes",
         )
     try:
-        success = list_service.reorder_lists(db, list_orders=reorder_request.list_orders)
+        success = list_service.reorder_lists(
+            db, list_orders=reorder_request.list_orders
+        )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc)
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         ) from exc
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur interne lors de la réorganisation des listes"
+            detail="Erreur interne lors de la réorganisation des listes",
         ) from exc
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Erreur lors de la réorganisation des listes"
+            detail="Erreur lors de la réorganisation des listes",
         )
     return {"message": "Listes réorganisées avec succès"}

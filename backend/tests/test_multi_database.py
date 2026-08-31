@@ -5,7 +5,12 @@ import tempfile
 
 import pytest
 from app.database import Base
-from app.multi_database import db_manager, get_board_db, get_current_board_uid, set_current_board_uid
+from app.multi_database import (
+    db_manager,
+    get_board_db,
+    get_current_board_uid,
+    set_current_board_uid,
+)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -246,8 +251,12 @@ class TestDatabaseIsolation:
         manager_engine2 = db_manager.get_engine(board2_uid)
 
         assert manager_engine1 is not manager_engine2
-        assert os.path.normpath(manager_engine1.url.database) == os.path.normpath(db_path1)
-        assert os.path.normpath(manager_engine2.url.database) == os.path.normpath(db_path2)
+        assert os.path.normpath(manager_engine1.url.database) == os.path.normpath(
+            db_path1
+        )
+        assert os.path.normpath(manager_engine2.url.database) == os.path.normpath(
+            db_path2
+        )
 
     def test_board_context_isolation(self, temp_data_dir):
         """Test that board context is properly isolated."""

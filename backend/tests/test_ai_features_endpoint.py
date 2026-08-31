@@ -1,7 +1,6 @@
 """Tests for AI features availability endpoint."""
 
 import pytest
-
 from app.routers.auth import router as auth_router
 
 

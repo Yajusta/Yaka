@@ -32,7 +32,9 @@ def _validate_password_strength(value: str) -> str:
     has_digit = any(c.isdigit() for c in value)
 
     if not (has_upper and has_lower and has_digit):
-        raise ValueError("Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre")
+        raise ValueError(
+            "Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre"
+        )
 
     return value
 
@@ -49,7 +51,9 @@ class UserBase(BaseModel):
         assert validated is not None
         return validated
 
-    display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
+    display_name: Optional[str] = Field(
+        None, max_length=32, description="Nom affiché (32 caractères max)"
+    )
     role: UserRole = UserRole.VISITOR
     language: Optional[str] = Field("fr", description="Langue préférée (fr, en, etc.)")
     view_scope: ViewScope = ViewScope.ALL
@@ -77,7 +81,9 @@ class UserUpdate(BaseModel):
     def _ensure_valid_optional_email(cls, value: str | None) -> str | None:
         return _validate_email(value)
 
-    display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
+    display_name: Optional[str] = Field(
+        None, max_length=32, description="Nom affiché (32 caractères max)"
+    )
     role: Optional[UserRole] = None
     language: Optional[str] = Field(None, description="Langue préférée (fr, en, etc.)")
     view_scope: Optional[ViewScope] = None
@@ -99,7 +105,9 @@ class LanguageUpdate(BaseModel):
 class ViewScopeUpdate(BaseModel):
     """Schema for updating view scope only."""
 
-    view_scope: ViewScope = Field(..., description="View scope for card access permissions")
+    view_scope: ViewScope = Field(
+        ..., description="View scope for card access permissions"
+    )
 
 
 class SetPasswordPayload(BaseModel):
@@ -143,7 +151,9 @@ class UserListItem(BaseModel):
     """Schéma minimal pour la liste d'utilisateurs (utilisé par les non-admins)."""
 
     id: int
-    display_name: Optional[str] = Field(None, max_length=32, description="Nom affiché (32 caractères max)")
+    display_name: Optional[str] = Field(
+        None, max_length=32, description="Nom affiché (32 caractères max)"
+    )
     role: Optional[UserRole] = UserRole.VISITOR
     status: Optional[UserStatus] = None
     view_scope: Optional[ViewScope] = ViewScope.ALL

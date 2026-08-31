@@ -9,7 +9,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 # Context variable pour stocker l'identifiant du board courant
-current_board_uid: ContextVar[Optional[str]] = ContextVar("current_board_uid", default=None)
+current_board_uid: ContextVar[Optional[str]] = ContextVar(
+    "current_board_uid", default=None
+)
 
 # Cache des moteurs et sessions
 _engines: Dict[str, Any] = {}
@@ -56,7 +58,9 @@ class MultiDatabaseManager:
         """Récupère ou crée un session maker pour un board."""
         if board_uid not in _sessions:
             engine = self.get_engine(board_uid)
-            _sessions[board_uid] = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+            _sessions[board_uid] = sessionmaker(
+                autocommit=False, autoflush=False, bind=engine
+            )
         return _sessions[board_uid]
 
     def _initialize_alembic_version(self, engine: Any):
@@ -71,8 +75,16 @@ class MultiDatabaseManager:
             latest_version = script.get_current_head()
 
             with engine.connect() as conn:
-                conn.execute(text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)"))
-                conn.execute(text(f"INSERT INTO alembic_version (version_num) VALUES ('{latest_version}')"))
+                conn.execute(
+                    text(
+                        "CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)"
+                    )
+                )
+                conn.execute(
+                    text(
+                        f"INSERT INTO alembic_version (version_num) VALUES ('{latest_version}')"
+                    )
+                )
                 conn.commit()
 
             print(f"Base de données initialisée avec alembic version {latest_version}")

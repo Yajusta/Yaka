@@ -2,7 +2,17 @@
 
 import os
 
-from app.models import BoardSettings, Card, CardComment, CardHistory, CardItem, KanbanList, Label, User, UserRole
+from app.models import (
+    BoardSettings,
+    Card,
+    CardComment,
+    CardHistory,
+    CardItem,
+    KanbanList,
+    Label,
+    User,
+    UserRole,
+)
 from app.models.card import CardPriority
 from app.multi_database import get_board_db
 from app.schemas.card import CardCreate
@@ -101,7 +111,9 @@ def create_demo_users(db_session):
             )
             user = create_user(db_session, user_create)
             created_users.append(user)
-            print(f"Demo user created: {user_data['email']} ({user_data['role'].value}) / {user_data['password']}")
+            print(
+                f"Demo user created: {user_data['email']} ({user_data['role'].value}) / {user_data['password']}"
+            )
     return created_users
 
 
@@ -125,13 +137,19 @@ def create_demo_lists(db_session):
         ]
 
     # Create the 3 lists
-    todo_list_data = KanbanListCreate(name=list_names[0], description=list_descriptions[0], order=1)
+    todo_list_data = KanbanListCreate(
+        name=list_names[0], description=list_descriptions[0], order=1
+    )
     todo_list = create_list(db_session, todo_list_data)
 
-    in_progress_list_data = KanbanListCreate(name=list_names[1], description=list_descriptions[1], order=2)
+    in_progress_list_data = KanbanListCreate(
+        name=list_names[1], description=list_descriptions[1], order=2
+    )
     in_progress_list = create_list(db_session, in_progress_list_data)
 
-    done_list_data = KanbanListCreate(name=list_names[2], description=list_descriptions[2], order=3)
+    done_list_data = KanbanListCreate(
+        name=list_names[2], description=list_descriptions[2], order=3
+    )
     done_list = create_list(db_session, done_list_data)
 
     return todo_list, in_progress_list, done_list
@@ -149,7 +167,9 @@ def create_demo_labels(db_session, admin_user_id):
         label_description = "Tâches prioritaires nécessitant une attention immédiate"
 
     # Create "Important" label with red color
-    label_data = LabelCreate(name=label_name, color="#940000", description=label_description)
+    label_data = LabelCreate(
+        name=label_name, color="#940000", description=label_description
+    )
     important_label = create_label(db_session, label_data, admin_user_id)
 
     return important_label
@@ -198,7 +218,9 @@ def create_demo_task(db_session, todo_list, important_label, admin_user):
     # Add checklist items to the task
     for i, item_text in enumerate(checklist_items):
         is_done = i == 0
-        item_data = CardItemCreate(card_id=config_card.id, text=item_text, is_done=is_done, position=i + 1)
+        item_data = CardItemCreate(
+            card_id=config_card.id, text=item_text, is_done=is_done, position=i + 1
+        )
         create_card_item(db_session, item_data)
 
     return config_card

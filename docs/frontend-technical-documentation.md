@@ -8,54 +8,54 @@ Cette documentation décrit l'architecture technique du frontend de l'applicatio
 
 1. App
 
-    ```mermaid
-    graph TB
-        A[App.tsx] --> B[Router]
-        B --> C[AuthProvider]
-        C --> D[BoardSettingsProvider]
-        D --> E[UsersProvider]
-        E --> F[AppContent]
+   ```mermaid
+   graph TB
+       A[App.tsx] --> B[Router]
+       B --> C[AuthProvider]
+       C --> D[BoardSettingsProvider]
+       D --> E[UsersProvider]
+       E --> F[AppContent]
 
-        F --> G[KanbanApp]
-        G --> H[Header]
-        G --> I[FilterBar]
-        G --> J[KanbanBoard]
-        G --> K[CardForm]
-        G --> L[LabelManager]
-        G --> M[UsersManager]
-        G --> N[ListManager]
-        G --> O[InterfaceDialog]
+       F --> G[KanbanApp]
+       G --> H[Header]
+       G --> I[FilterBar]
+       G --> J[KanbanBoard]
+       G --> K[CardForm]
+       G --> L[LabelManager]
+       G --> M[UsersManager]
+       G --> N[ListManager]
+       G --> O[InterfaceDialog]
 
-        B --> P[InvitePage]
+       B --> P[InvitePage]
 
-        J --> Q[KanbanColumn]
-        Q --> R[CardItem]
-    ```
+       J --> Q[KanbanColumn]
+       Q --> R[CardItem]
+   ```
 
 2. API Services
 
-    ```mermaid
-    graph TB
-        S[API Services] --> T[authService]
-        S --> U[cardService]
-        S --> V[userService]
-        S --> W[labelService]
-        S --> X[listsApi]
-        S --> Y[boardSettingsService]
-        S --> Z[cardItemsService]
-    ```
+   ```mermaid
+   graph TB
+       S[API Services] --> T[authService]
+       S --> U[cardService]
+       S --> V[userService]
+       S --> W[labelService]
+       S --> X[listsApi]
+       S --> Y[boardSettingsService]
+       S --> Z[cardItemsService]
+   ```
 
 3. Hooks
 
-    ```mermaid
-    graph TB
-        AA[Hooks] --> AB[useAuth]
-        AA --> AC[useTheme]
-        AA --> AD[useToast]
-        AA --> AE[useElasticTransition]
-        AA --> AF[useBoardSettings]
-        AA --> AG[useUsers]
-    ```
+   ```mermaid
+   graph TB
+       AA[Hooks] --> AB[useAuth]
+       AA --> AC[useTheme]
+       AA --> AD[useToast]
+       AA --> AE[useElasticTransition]
+       AA --> AF[useBoardSettings]
+       AA --> AG[useUsers]
+   ```
 
 ## Structure des composants
 
@@ -553,7 +553,7 @@ sequenceDiagram
     participant US as UserService
     participant LS as LabelService
     participant ListsAPI as ListsApi
-    
+
     U->>A: Accès à l'application
     A->>AS: Vérification authentification
     AS-->>A: Utilisateur connecté
@@ -577,7 +577,7 @@ sequenceDiagram
     participant CF as CardForm
     participant CS as CardService
     participant A as App
-    
+
     U->>FB: Clic "Nouvelle carte"
     FB->>A: handleCreateCard()
     A->>CF: Ouverture du formulaire
@@ -597,7 +597,7 @@ sequenceDiagram
     participant KB as KanbanBoard
     participant CS as CardService
     participant A as App
-    
+
     U->>KB: Drag & drop carte
     KB->>KB: Calcul nouvelle position et liste
     KB->>A: onCardMove(id, moveRequest)
@@ -614,7 +614,7 @@ sequenceDiagram
     participant LM as ListManager
     participant ListsAPI as ListsApi
     participant App as App
-    
+
     A->>LM: Ouverture gestionnaire
     LM->>ListsAPI: getLists()
     ListsAPI-->>LM: Listes avec ordre
@@ -623,7 +623,7 @@ sequenceDiagram
     ListsAPI-->>LM: Liste créée
     LM->>App: onListsUpdated()
     App->>App: Rechargement des données
-    
+
     A->>LM: Suppression liste
     LM->>ListsAPI: getListCardsCount(id)
     ListsAPI-->>LM: Nombre de cartes
@@ -639,66 +639,66 @@ sequenceDiagram
 
 ```typescript
 interface User {
-    id: number;
-    username: string;
-    email: string;
-    display_name?: string;
-    role?: string;
-    created_at: string;
-    updated_at: string;
+  id: number;
+  username: string;
+  email: string;
+  display_name?: string;
+  role?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface KanbanList {
-    id: number;
-    name: string;
-    order: number;
-    created_at: string;
-    updated_at: string;
+  id: number;
+  name: string;
+  order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface Card {
-    id: number;
-    title: string;
-    description: string;
-    priority: string;
-    assignee_id: number | null;
-    list_id: number;  // Remplace 'statut'
-    position: number; // Nouvelle propriété pour l'ordre
-    due_date?: string;
-    assignee?: User;
-    labels?: Label[];
-    kanban_list?: KanbanList;
-    created_at: string;
-    updated_at: string;
+  id: number;
+  title: string;
+  description: string;
+  priority: string;
+  assignee_id: number | null;
+  list_id: number; // Remplace 'statut'
+  position: number; // Nouvelle propriété pour l'ordre
+  due_date?: string;
+  assignee?: User;
+  labels?: Label[];
+  kanban_list?: KanbanList;
+  created_at: string;
+  updated_at: string;
 }
 
 interface Label {
-    id: number;
-    name: string;
-    color: string;
-    created_at: string;
-    updated_at: string;
+  id: number;
+  name: string;
+  color: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface CardMoveRequest {
-    source_list_id: number;
-    target_list_id: number;
-    position?: number;
+  source_list_id: number;
+  target_list_id: number;
+  position?: number;
 }
 
 interface KanbanListCreate {
-    name: string;
-    order: number;
+  name: string;
+  order: number;
 }
 
 interface KanbanListUpdate {
-    name?: string;
-    order?: number;
+  name?: string;
+  order?: number;
 }
 
 interface ListWithCardCount {
-    list: KanbanList;
-    card_count: number;
+  list: KanbanList;
+  card_count: number;
 }
 ```
 

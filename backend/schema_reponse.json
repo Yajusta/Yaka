@@ -35,10 +35,7 @@
             "description": "Indique si l'élément est complété."
           }
         },
-        "required": [
-          "item",
-          "done"
-        ]
+        "required": ["item", "done"]
       }
     },
     "due_date": {
@@ -52,11 +49,7 @@
     "priority": {
       "description": "Niveau de priorité de la tâche.",
       "type": "string",
-      "enum": [
-        "low",
-        "medium",
-        "high"
-      ]
+      "enum": ["low", "medium", "high"]
     },
     "assignee_id": {
       "description": "Identifiant de l'utilisateur assigné à la tâche.",
@@ -73,14 +66,9 @@
             "type": "integer"
           }
         },
-        "required": [
-          "label_id"
-        ]
+        "required": ["label_id"]
       }
     }
   },
-  "required": [
-    "title",
-    "status"
-  ]
+  "required": ["title", "status"]
 }

@@ -11,7 +11,9 @@ from ..models import User as UserModel
 from ..schemas.card_comment import CardCommentCreate, CardCommentUpdate
 
 
-def get_comments_for_card(db: Session, card_id: int, limit: int = 200, offset: int = 0) -> List[CardComment]:
+def get_comments_for_card(
+    db: Session, card_id: int, limit: int = 200, offset: int = 0
+) -> List[CardComment]:
     """
     Récupère les commentaires non supprimés d'une carte triés par date décroissante,
     avec pagination.
@@ -36,7 +38,9 @@ def get_comments_for_card(db: Session, card_id: int, limit: int = 200, offset: i
     )
 
 
-def create_comment(db: Session, comment: CardCommentCreate, user_id: int) -> CardComment:
+def create_comment(
+    db: Session, comment: CardCommentCreate, user_id: int
+) -> CardComment:
     """Crée un nouveau commentaire pour une carte."""
     # Ensure card exists
     card = db.query(Card).filter(Card.id == comment.card_id).first()
@@ -48,18 +52,25 @@ def create_comment(db: Session, comment: CardCommentCreate, user_id: int) -> Car
     if not user:
         raise ValueError("Utilisateur introuvable")
 
-    db_comment = CardComment(card_id=comment.card_id, user_id=user_id, comment=comment.comment)
+    db_comment = CardComment(
+        card_id=comment.card_id, user_id=user_id, comment=comment.comment
+    )
     db.add(db_comment)
     try:
         db.commit()
         db.refresh(db_comment)
     except IntegrityError as e:
         db.rollback()
-        raise ValueError(f"Erreur d'intégrité lors de la création du commentaire : {str(e.orig)}") from e
+        raise ValueError(
+            f"Erreur d'intégrité lors de la création du commentaire : {str(e.orig)}"
+        ) from e
 
     # Recharger avec la relation user pour s'assurer que les données sont disponibles
     result = (
-        db.query(CardComment).options(joinedload(CardComment.user)).filter(CardComment.id == db_comment.id).first()
+        db.query(CardComment)
+        .options(joinedload(CardComment.user))
+        .filter(CardComment.id == db_comment.id)
+        .first()
     )
 
     if result is None:
@@ -94,14 +105,19 @@ def update_comment(
 
         # Recharger avec la relation user pour s'assurer que les données sont disponibles
         result = (
-            db.query(CardComment).options(joinedload(CardComment.user)).filter(CardComment.id == db_comment.id).first()
+            db.query(CardComment)
+            .options(joinedload(CardComment.user))
+            .filter(CardComment.id == db_comment.id)
+            .first()
         )
 
         if result is None:
             raise ValueError("Erreur lors de la mise à jour du commentaire")
     except IntegrityError as e:
         db.rollback()
-        raise ValueError(f"Erreur d'intégrité lors de la mise à jour du commentaire : {str(e.orig)}") from e
+        raise ValueError(
+            f"Erreur d'intégrité lors de la mise à jour du commentaire : {str(e.orig)}"
+        ) from e
     return result
 
 
@@ -121,7 +137,9 @@ def delete_comment(db: Session, comment_id: int, user_id: int) -> bool:
         db.commit()
     except IntegrityError as e:
         db.rollback()
-        raise ValueError(f"Erreur d'intégrité lors de la suppression du commentaire : {str(e.orig)}") from e
+        raise ValueError(
+            f"Erreur d'intégrité lors de la suppression du commentaire : {str(e.orig)}"
+        ) from e
     return True
 
 

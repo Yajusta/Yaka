@@ -33,7 +33,9 @@ from sqlalchemy.orm import sessionmaker
 def db_session():
     """Fixture pour créer une session de base de données de test."""
     SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
@@ -94,8 +96,12 @@ def test_app():
 
     # Override the database dependency
     def override_get_db():
-        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-        TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        engine = create_engine(
+            "sqlite:///:memory:", connect_args={"check_same_thread": False}
+        )
+        TestingSessionLocal = sessionmaker(
+            autocommit=False, autoflush=False, bind=engine
+        )
         Base.metadata.create_all(bind=engine)
         db = TestingSessionLocal()
         try:
@@ -112,7 +118,9 @@ class TestBoardSettingsRouter:
 
     def test_read_board_settings_as_admin(self, admin_user):
         """Test de récupération des paramètres du tableau en tant qu'admin."""
-        with patch("app.routers.board_settings.board_settings_service.get_all_settings") as mock_get_all:
+        with patch(
+            "app.routers.board_settings.board_settings_service.get_all_settings"
+        ) as mock_get_all:
             mock_settings = [
                 BoardSettingsResponse(
                     id=1,
@@ -125,7 +133,9 @@ class TestBoardSettingsRouter:
             ]
             mock_get_all.return_value = mock_settings
 
-            with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.board_settings.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock the database session
@@ -144,7 +154,9 @@ class TestBoardSettingsRouter:
 
     def test_read_board_settings_as_user_forbidden(self, regular_user):
         """Test de tentative de récupération des paramètres en tant qu'utilisateur régulier."""
-        with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.board_settings.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = regular_user
 
             # Mock the database session
@@ -159,20 +171,26 @@ class TestBoardSettingsRouter:
 
     def test_get_board_title_public_access(self):
         """Test de récupération du title du tableau (accès public)."""
-        with patch("app.routers.board_settings.board_settings_service.get_board_title") as mock_get_title:
+        with patch(
+            "app.routers.board_settings.board_settings_service.get_board_title"
+        ) as mock_get_title:
             mock_get_title.return_value = "Mon Tableau Kanban"
 
             # Mock the database session
             with patch("app.routers.board_settings.get_db") as mock_db:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
-                result = asyncio.run(get_board_title(mock_db.return_value.__enter__.return_value))
+                result = asyncio.run(
+                    get_board_title(mock_db.return_value.__enter__.return_value)
+                )
 
                 assert result["title"] == "Mon Tableau Kanban"
 
     def test_update_board_title_as_admin(self, admin_user):
         """Test de mise à jour du title du tableau en tant qu'admin."""
-        with patch("app.routers.board_settings.board_settings_service.set_board_title") as mock_set_title:
+        with patch(
+            "app.routers.board_settings.board_settings_service.set_board_title"
+        ) as mock_set_title:
             mock_setting = BoardSettingsResponse(
                 id=2,
                 setting_key="board_title",
@@ -183,7 +201,9 @@ class TestBoardSettingsRouter:
             )
             mock_set_title.return_value = mock_setting
 
-            with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.board_settings.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock the database session
@@ -202,7 +222,9 @@ class TestBoardSettingsRouter:
 
     def test_update_board_title_as_user_forbidden(self, regular_user):
         """Test de tentative de mise à jour du title en tant qu'utilisateur régulier."""
-        with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.board_settings.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = regular_user
 
             # Mock the database session
@@ -217,7 +239,9 @@ class TestBoardSettingsRouter:
 
     def test_read_board_setting_as_admin(self, admin_user):
         """Test de récupération d'un paramètre spécifique en tant qu'admin."""
-        with patch("app.routers.board_settings.board_settings_service.get_setting") as mock_get_setting:
+        with patch(
+            "app.routers.board_settings.board_settings_service.get_setting"
+        ) as mock_get_setting:
             mock_setting = BoardSettingsResponse(
                 id=3,
                 setting_key="test_key",
@@ -228,7 +252,9 @@ class TestBoardSettingsRouter:
             )
             mock_get_setting.return_value = mock_setting
 
-            with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.board_settings.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock the database session
@@ -247,10 +273,14 @@ class TestBoardSettingsRouter:
 
     def test_read_board_setting_not_found(self, admin_user):
         """Test de récupération d'un paramètre qui n'existe pas."""
-        with patch("app.routers.board_settings.board_settings_service.get_setting") as mock_get_setting:
+        with patch(
+            "app.routers.board_settings.board_settings_service.get_setting"
+        ) as mock_get_setting:
             mock_get_setting.return_value = None
 
-            with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.board_settings.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock the database session
@@ -271,7 +301,9 @@ class TestBoardSettingsRouter:
 
     def test_update_board_setting_as_admin(self, admin_user):
         """Test de mise à jour d'un paramètre spécifique en tant qu'admin."""
-        with patch("app.routers.board_settings.board_settings_service.create_or_update_setting") as mock_update:
+        with patch(
+            "app.routers.board_settings.board_settings_service.create_or_update_setting"
+        ) as mock_update:
             mock_setting = BoardSettingsResponse(
                 id=4,
                 setting_key="test_key",
@@ -282,7 +314,9 @@ class TestBoardSettingsRouter:
             )
             mock_update.return_value = mock_setting
 
-            with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.board_settings.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock the database session
@@ -292,7 +326,10 @@ class TestBoardSettingsRouter:
                     result = asyncio.run(
                         update_board_setting(
                             "test_key",
-                            {"setting_value": "new_value", "description": "Updated setting"},
+                            {
+                                "setting_value": "new_value",
+                                "description": "Updated setting",
+                            },
                             mock_db.return_value.__enter__.return_value,
                             mock_current_user.return_value,
                         )
@@ -302,7 +339,9 @@ class TestBoardSettingsRouter:
 
     def test_update_board_setting_missing_value(self, admin_user):
         """Test de mise à jour d'un paramètre sans setting_value."""
-        with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.board_settings.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = admin_user
 
             # Mock the database session
@@ -324,10 +363,14 @@ class TestBoardSettingsRouter:
 
     def test_delete_board_setting_as_admin(self, admin_user):
         """Test de suppression d'un paramètre en tant qu'admin."""
-        with patch("app.routers.board_settings.board_settings_service.delete_setting") as mock_delete:
+        with patch(
+            "app.routers.board_settings.board_settings_service.delete_setting"
+        ) as mock_delete:
             mock_delete.return_value = True
 
-            with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.board_settings.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock the database session
@@ -346,10 +389,14 @@ class TestBoardSettingsRouter:
 
     def test_delete_board_setting_not_found(self, admin_user):
         """Test de suppression d'un paramètre qui n'existe pas."""
-        with patch("app.routers.board_settings.board_settings_service.delete_setting") as mock_delete:
+        with patch(
+            "app.routers.board_settings.board_settings_service.delete_setting"
+        ) as mock_delete:
             mock_delete.return_value = False
 
-            with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.board_settings.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock the database session
@@ -383,7 +430,9 @@ class TestBoardSettingsRouter:
 
     def test_update_board_title_with_empty_title(self, admin_user):
         """Test de mise à jour du title avec une chaîne vide."""
-        with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.board_settings.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = admin_user
 
             # Mock the database session
@@ -403,7 +452,9 @@ class TestBoardSettingsRouter:
 
     def test_update_board_setting_with_invalid_data(self, admin_user):
         """Test de mise à jour d'un paramètre avec des données invalides."""
-        with patch("app.routers.board_settings.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.board_settings.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = admin_user
 
             # Mock the database session

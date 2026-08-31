@@ -9,7 +9,9 @@ from ..models import CardHistory
 from ..schemas import CardHistoryCreate
 
 
-def create_card_history_entry(db: Session, card_history: CardHistoryCreate) -> CardHistory:
+def create_card_history_entry(
+    db: Session, card_history: CardHistoryCreate
+) -> CardHistory:
     """Créer une nouvelle entrée d'historique pour une carte."""
     db_history_entry = CardHistory(
         card_id=card_history.card_id,

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.4 (2026-08-31)
+
+- [CHORE] Trunk check.
+
 ## 1.4.3 (2025-12-02)
 
 - [FIX] Changement de format pour le LLM.

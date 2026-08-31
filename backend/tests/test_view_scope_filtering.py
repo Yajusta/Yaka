@@ -14,14 +14,21 @@ from app.models.card import Card, CardPriority
 from app.models.kanban_list import KanbanList
 from app.models.user import User, UserRole, UserStatus, ViewScope
 from app.schemas.card import CardFilter
-from app.services.card import apply_view_scope_filter, can_access_card, get_archived_cards, get_cards
+from app.services.card import (
+    apply_view_scope_filter,
+    can_access_card,
+    get_archived_cards,
+    get_cards,
+)
 
 # Configuration de la base de données de test
 TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_view_scope.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -195,7 +202,9 @@ def sample_cards(db_session, sample_users, sample_kanban_lists):
 class TestViewScopeFiltering:
     """Tests for view scope filtering functions."""
 
-    def test_apply_view_scope_filter_all_scope(self, db_session, sample_users, sample_cards):
+    def test_apply_view_scope_filter_all_scope(
+        self, db_session, sample_users, sample_cards
+    ):
         """Test that users with ALL scope can see all cards."""
         user = sample_users["all_scope"]
         query = db_session.query(Card).filter(Card.is_archived == False)
@@ -212,7 +221,9 @@ class TestViewScopeFiltering:
         assert "Mine Only Card" in card_titles
         assert "Unassigned Card" in card_titles
 
-    def test_apply_view_scope_filter_unassigned_plus_mine(self, db_session, sample_users, sample_cards):
+    def test_apply_view_scope_filter_unassigned_plus_mine(
+        self, db_session, sample_users, sample_cards
+    ):
         """Test that users with UNASSIGNED_PLUS_MINE scope see unassigned cards + their cards."""
         user = sample_users["unassigned_plus_mine"]
         query = db_session.query(Card).filter(Card.is_archived == False)
@@ -229,7 +240,9 @@ class TestViewScopeFiltering:
         assert "Mine Only Card" not in card_titles
         assert "Admin Card" not in card_titles
 
-    def test_apply_view_scope_filter_mine_only(self, db_session, sample_users, sample_cards):
+    def test_apply_view_scope_filter_mine_only(
+        self, db_session, sample_users, sample_cards
+    ):
         """Test that users with MINE_ONLY scope see only their assigned cards."""
         user = sample_users["mine_only"]
         query = db_session.query(Card).filter(Card.is_archived == False)
@@ -288,7 +301,9 @@ class TestViewScopeFiltering:
             else:
                 assert can_access_card(user, card) is False
 
-    def test_get_cards_with_view_scope_filtering(self, db_session, sample_users, sample_kanban_lists, sample_cards):
+    def test_get_cards_with_view_scope_filtering(
+        self, db_session, sample_users, sample_kanban_lists, sample_cards
+    ):
         """Test get_cards function with view scope filtering."""
         user_mine_only = sample_users["mine_only"]
 
@@ -333,7 +348,9 @@ class TestViewScopeFiltering:
 class TestViewScopeIntegration:
     """Integration tests for view scope functionality."""
 
-    def test_view_scope_filtering_with_search(self, db_session, sample_users, sample_cards):
+    def test_view_scope_filtering_with_search(
+        self, db_session, sample_users, sample_cards
+    ):
         """Test that search respects view scope filtering."""
         user = sample_users["unassigned_plus_mine"]
         query = db_session.query(Card)
@@ -356,7 +373,9 @@ class TestViewScopeIntegration:
         assert "Unassigned Card" in card_titles
         assert len(result) == 2
 
-    def test_view_scope_filtering_with_list_filter(self, db_session, sample_users, sample_cards, sample_kanban_lists):
+    def test_view_scope_filtering_with_list_filter(
+        self, db_session, sample_users, sample_cards, sample_kanban_lists
+    ):
         """Test that list filtering respects view scope."""
         user = sample_users["mine_only"]
         query = db_session.query(Card)
@@ -368,7 +387,9 @@ class TestViewScopeIntegration:
         filtered_query = apply_view_scope_filter(query, user)
 
         # Then apply list filter
-        filtered_query = filtered_query.filter(Card.list_id == sample_kanban_lists[1].id)
+        filtered_query = filtered_query.filter(
+            Card.list_id == sample_kanban_lists[1].id
+        )
 
         result = filtered_query.all()
 

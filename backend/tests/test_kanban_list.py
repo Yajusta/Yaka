@@ -1,24 +1,25 @@
 """Tests complets pour le service KanbanList."""
 
-import pytest
-import sys
 import os
-from unittest.mock import patch, Mock
+import sys
+from unittest.mock import Mock, patch
+
+import pytest
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from app.models import Card, KanbanList
+from app.schemas import KanbanListCreate, KanbanListUpdate
 from app.services.kanban_list import (
     KanbanListService,
-    get_lists,
+    create_list,
+    delete_list,
     get_list,
     get_list_with_cards_count,
-    create_list,
-    update_list,
-    delete_list,
+    get_lists,
     reorder_lists,
+    update_list,
 )
-from app.models import KanbanList, Card
-from app.schemas import KanbanListCreate, KanbanListUpdate
 
 
 @pytest.fixture
@@ -48,10 +49,33 @@ def sample_kanban_lists():
 def sample_cards():
     """Données de test pour les cartes."""
     return [
-        Card(id=1, title="Carte 1", list_id=1, position=1, is_archived=False, created_by=1),
-        Card(id=2, title="Carte 2", list_id=1, position=2, is_archived=False, created_by=1),
-        Card(id=3, title="Carte 3", list_id=2, position=1, is_archived=True, created_by=1),
-        Card(id=4, title="Carte 4", list_id=2, position=2, is_archived=False, created_by=1),
+        Card(
+            id=1,
+            title="Carte 1",
+            list_id=1,
+            position=1,
+            is_archived=False,
+            created_by=1,
+        ),
+        Card(
+            id=2,
+            title="Carte 2",
+            list_id=1,
+            position=2,
+            is_archived=False,
+            created_by=1,
+        ),
+        Card(
+            id=3, title="Carte 3", list_id=2, position=1, is_archived=True, created_by=1
+        ),
+        Card(
+            id=4,
+            title="Carte 4",
+            list_id=2,
+            position=2,
+            is_archived=False,
+            created_by=1,
+        ),
     ]
 
 
@@ -128,16 +152,18 @@ class TestGetList:
 class TestGetListWithCardsCount:
     """Tests pour la fonction get_list_with_cards_count."""
 
-    def test_get_list_with_cards_count_success(self, mock_db, sample_kanban_lists, sample_cards):
+    def test_get_list_with_cards_count_success(
+        self, mock_db, sample_kanban_lists, sample_cards
+    ):
         """Test de récupération réussie d'une liste avec le nombre de cartes."""
         # Mock pour la liste
         list_query = Mock()
         list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+
         # Mock pour le comptage des cartes
         card_query = Mock()
         card_query.filter.return_value.count.return_value = 2  # 2 cartes actives
-        
+
         # Configurer le mock pour retourner différents query objects
         mock_db.query.side_effect = [list_query, card_query]
 
@@ -164,20 +190,24 @@ class TestGetListWithCardsCount:
 
     def test_get_list_with_cards_count_invalid_id(self, mock_db):
         """Test de récupération avec ID invalide."""
-        with pytest.raises(ValueError, match="L'ID de la liste doit être un entier positif"):
+        with pytest.raises(
+            ValueError, match="L'ID de la liste doit être un entier positif"
+        ):
             KanbanListService.get_list_with_cards_count(mock_db, 0)
 
-        with pytest.raises(ValueError, match="L'ID de la liste doit être un entier positif"):
+        with pytest.raises(
+            ValueError, match="L'ID de la liste doit être un entier positif"
+        ):
             KanbanListService.get_list_with_cards_count(mock_db, -1)
 
     def test_get_list_with_cards_count_count_error(self, mock_db, sample_kanban_lists):
         """Test de gestion d'erreur lors du comptage des cartes."""
         list_query = Mock()
         list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+
         card_query = Mock()
         card_query.filter.return_value.count.side_effect = Exception("Database error")
-        
+
         mock_db.query.side_effect = [list_query, card_query]
 
         with pytest.raises(ValueError, match="Erreur lors du comptage des cartes"):
@@ -192,15 +222,15 @@ class TestCreateList:
         # Mock pour vérifier l'unicité du nom
         existing_query = Mock()
         existing_query.filter.return_value.first.return_value = None
-        
+
         # Mock pour le comptage total
         count_query = Mock()
         count_query.count.return_value = 2  # Moins de 50 listes
-        
+
         # Mock pour vérifier l'ordre existant
         order_query = Mock()
         order_query.filter.return_value.first.return_value = None
-        
+
         # Configurer les mocks
         mock_db.query.side_effect = [existing_query, count_query, order_query]
 
@@ -212,13 +242,19 @@ class TestCreateList:
         mock_db.commit.assert_called_once()
         mock_db.refresh.assert_called_once()
 
-    def test_create_list_name_exists(self, mock_db, sample_list_create_data, sample_kanban_lists):
+    def test_create_list_name_exists(
+        self, mock_db, sample_list_create_data, sample_kanban_lists
+    ):
         """Test de création avec un nom qui existe déjà."""
         existing_query = Mock()
-        existing_query.filter.return_value.first.return_value = sample_kanban_lists[0]  # Liste avec même nom
+        existing_query.filter.return_value.first.return_value = sample_kanban_lists[
+            0
+        ]  # Liste avec même nom
         mock_db.query.return_value = existing_query
 
-        with pytest.raises(ValueError, match="Une liste avec le nom 'Nouvelle liste' existe déjà"):
+        with pytest.raises(
+            ValueError, match="Une liste avec le nom 'Nouvelle liste' existe déjà"
+        ):
             KanbanListService.create_list(mock_db, sample_list_create_data)
 
     def test_create_list_invalid_order_too_low(self, mock_db):
@@ -237,10 +273,10 @@ class TestCreateList:
         """Test de création quand le maximum de listes est atteint."""
         existing_query = Mock()
         existing_query.filter.return_value.first.return_value = None
-        
+
         count_query = Mock()
         count_query.count.return_value = 50  # Maximum atteint
-        
+
         mock_db.query.side_effect = [existing_query, count_query]
 
         with pytest.raises(ValueError, match="Nombre maximum de listes atteint"):
@@ -251,13 +287,15 @@ class TestCreateList:
         # Test simplifié - on suppose que le mécanisme de décalage fonctionne
         existing_query = Mock()
         existing_query.filter.return_value.first.return_value = None
-        
+
         count_query = Mock()
         count_query.count.return_value = 2
-        
+
         order_query = Mock()
-        order_query.filter.return_value.first.return_value = None  # Pas de conflit d'ordre
-        
+        order_query.filter.return_value.first.return_value = (
+            None  # Pas de conflit d'ordre
+        )
+
         mock_db.query.side_effect = [existing_query, count_query, order_query]
 
         result = KanbanListService.create_list(mock_db, sample_list_create_data)
@@ -270,35 +308,37 @@ class TestCreateList:
         """Test de gestion d'erreur de base de données."""
         existing_query = Mock()
         existing_query.filter.return_value.first.return_value = None
-        
+
         count_query = Mock()
         count_query.count.return_value = 2
-        
+
         order_query = Mock()
         order_query.filter.return_value.first.return_value = None
-        
+
         mock_db.query.side_effect = [existing_query, count_query, order_query]
         mock_db.commit.side_effect = Exception("Database error")
 
         with pytest.raises(ValueError, match="Erreur lors de la création de la liste"):
             KanbanListService.create_list(mock_db, sample_list_create_data)
-        
+
         mock_db.rollback.assert_called_once()
 
 
 class TestUpdateList:
     """Tests pour la fonction update_list."""
 
-    @patch('app.services.kanban_list.KanbanListService.get_list')
-    def test_update_list_success(self, mock_get_list, mock_db, sample_kanban_lists, sample_list_update_data):
+    @patch("app.services.kanban_list.KanbanListService.get_list")
+    def test_update_list_success(
+        self, mock_get_list, mock_db, sample_kanban_lists, sample_list_update_data
+    ):
         """Test de mise à jour réussie d'une liste."""
         # Mock get_list pour retourner la liste à mettre à jour
         mock_get_list.return_value = sample_kanban_lists[0]
-        
+
         # Mock la vérification d'unicité du nom pour retourner None (pas de conflit)
-        with patch.object(mock_db, 'query') as mock_query:
+        with patch.object(mock_db, "query") as mock_query:
             mock_query.return_value.filter.return_value.first.return_value = None
-            
+
             result = KanbanListService.update_list(mock_db, 1, sample_list_update_data)
 
             assert result is not None
@@ -324,7 +364,9 @@ class TestUpdateList:
 
         empty_data = KanbanListUpdate()
 
-        with pytest.raises(ValueError, match="Aucune donnée fournie pour la mise à jour"):
+        with pytest.raises(
+            ValueError, match="Aucune donnée fournie pour la mise à jour"
+        ):
             KanbanListService.update_list(mock_db, 1, empty_data)
 
     def test_update_list_name_exists(self, mock_db, sample_kanban_lists):
@@ -332,16 +374,18 @@ class TestUpdateList:
         # Mock pour get_list
         get_list_query = Mock()
         get_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+
         # Mock pour vérifier l'unicité du nom (trouve une autre liste avec même nom)
         name_query = Mock()
         name_query.filter.return_value.first.return_value = sample_kanban_lists[1]
-        
+
         mock_db.query.side_effect = [get_list_query, name_query]
 
         update_data = KanbanListUpdate(name="En cours")
 
-        with pytest.raises(ValueError, match="Une liste avec le nom 'En cours' existe déjà"):
+        with pytest.raises(
+            ValueError, match="Une liste avec le nom 'En cours' existe déjà"
+        ):
             KanbanListService.update_list(mock_db, 1, update_data)
 
     def test_update_list_order_invalid_too_low(self, mock_db):
@@ -359,19 +403,19 @@ class TestUpdateList:
     def test_update_list_order_exists_reorders(self, mock_db, sample_kanban_lists):
         """Test de mise à jour quand l'ordre existe déjà (réorganisation)."""
         existing_list = KanbanList(id=4, name="Existante", order=2)
-        
+
         # Mock pour get_list
         get_list_query = Mock()
         get_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+
         # Mock pour vérifier l'unicité du nom
         name_query = Mock()
         name_query.filter.return_value.first.return_value = None
-        
+
         # Mock pour vérifier l'ordre existant
         order_query = Mock()
         order_query.filter.return_value.first.return_value = existing_list
-        
+
         mock_db.query.side_effect = [get_list_query, name_query, order_query]
 
         update_data = KanbanListUpdate(order=2)
@@ -386,18 +430,20 @@ class TestUpdateList:
         """Test de gestion d'erreur de base de données."""
         get_list_query = Mock()
         get_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+
         name_query = Mock()
         name_query.filter.return_value.first.return_value = None
-        
+
         mock_db.query.side_effect = [get_list_query, name_query]
         mock_db.commit.side_effect = Exception("Database error")
 
         update_data = KanbanListUpdate(name="Nouveau nom")
 
-        with pytest.raises(ValueError, match="Erreur lors de la mise à jour de la liste"):
+        with pytest.raises(
+            ValueError, match="Erreur lors de la mise à jour de la liste"
+        ):
             KanbanListService.update_list(mock_db, 1, update_data)
-        
+
         mock_db.rollback.assert_called_once()
 
 
@@ -409,29 +455,39 @@ class TestDeleteList:
         # Mock pour vérifier le nombre total de listes
         total_query = Mock()
         total_query.count.return_value = 3  # Plus d'une liste
-        
+
         # Mock pour get_list (liste à supprimer)
         delete_list_query = Mock()
-        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            0
+        ]
+
         # Mock pour get_list (liste de destination)
         target_list_query = Mock()
-        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[1]
-        
+        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            1
+        ]
+
         # Mock pour compter les cartes
         card_count_query = Mock()
         card_count_query.filter.return_value.count.return_value = 2
-        
+
         # Mock pour déplacer les cartes
         card_update_query = Mock()
         card_update_query.filter.return_value.update.return_value = 2
-        
+
         # Mock pour _compact_orders (pour éviter l'erreur de comparaison)
         compact_query = Mock()
         compact_query.filter.return_value.update.return_value = None
-        
-        mock_db.query.side_effect = [total_query, delete_list_query, target_list_query, 
-                                   card_count_query, card_update_query, compact_query]
+
+        mock_db.query.side_effect = [
+            total_query,
+            delete_list_query,
+            target_list_query,
+            card_count_query,
+            card_update_query,
+            compact_query,
+        ]
 
         result = KanbanListService.delete_list(mock_db, 1, 2)
 
@@ -441,10 +497,15 @@ class TestDeleteList:
 
     def test_delete_list_invalid_ids(self, mock_db):
         """Test de suppression avec IDs invalides."""
-        with pytest.raises(ValueError, match="L'ID de la liste à supprimer doit être un entier positif"):
+        with pytest.raises(
+            ValueError, match="L'ID de la liste à supprimer doit être un entier positif"
+        ):
             KanbanListService.delete_list(mock_db, 0, 2)
 
-        with pytest.raises(ValueError, match="L'ID de la liste de destination doit être un entier positif"):
+        with pytest.raises(
+            ValueError,
+            match="L'ID de la liste de destination doit être un entier positif",
+        ):
             KanbanListService.delete_list(mock_db, 1, 0)
 
     def test_delete_list_last_list(self, mock_db, sample_kanban_lists):
@@ -453,17 +514,19 @@ class TestDeleteList:
         total_query.count.return_value = 1  # Une seule liste
         mock_db.query.return_value = total_query
 
-        with pytest.raises(ValueError, match="Impossible de supprimer la dernière liste"):
+        with pytest.raises(
+            ValueError, match="Impossible de supprimer la dernière liste"
+        ):
             KanbanListService.delete_list(mock_db, 1, 2)
 
     def test_delete_list_not_found(self, mock_db, sample_kanban_lists):
         """Test de suppression d'une liste inexistante."""
         total_query = Mock()
         total_query.count.return_value = 3
-        
+
         delete_list_query = Mock()
         delete_list_query.filter.return_value.first.return_value = None
-        
+
         mock_db.query.side_effect = [total_query, delete_list_query]
 
         with pytest.raises(ValueError, match="La liste avec l'ID 999 n'existe pas"):
@@ -473,53 +536,75 @@ class TestDeleteList:
         """Test de suppression avec liste de destination inexistante."""
         total_query = Mock()
         total_query.count.return_value = 3
-        
+
         delete_list_query = Mock()
-        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            0
+        ]
+
         target_list_query = Mock()
         target_list_query.filter.return_value.first.return_value = None
-        
+
         mock_db.query.side_effect = [total_query, delete_list_query, target_list_query]
 
-        with pytest.raises(ValueError, match="La liste de destination avec l'ID 999 n'existe pas"):
+        with pytest.raises(
+            ValueError, match="La liste de destination avec l'ID 999 n'existe pas"
+        ):
             KanbanListService.delete_list(mock_db, 1, 999)
 
     def test_delete_list_same_target(self, mock_db, sample_kanban_lists):
         """Test de suppression avec la même liste comme destination."""
         total_query = Mock()
         total_query.count.return_value = 3
-        
+
         delete_list_query = Mock()
-        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            0
+        ]
+
         target_list_query = Mock()
-        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            0
+        ]
+
         mock_db.query.side_effect = [total_query, delete_list_query, target_list_query]
 
-        with pytest.raises(ValueError, match="La liste de destination ne peut pas être la même que la liste à supprimer"):
+        with pytest.raises(
+            ValueError,
+            match="La liste de destination ne peut pas être la même que la liste à supprimer",
+        ):
             KanbanListService.delete_list(mock_db, 1, 1)
 
     def test_delete_list_card_move_error(self, mock_db, sample_kanban_lists):
         """Test d'erreur lors du déplacement des cartes."""
         total_query = Mock()
         total_query.count.return_value = 3
-        
+
         delete_list_query = Mock()
-        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            0
+        ]
+
         target_list_query = Mock()
-        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[1]
-        
+        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            1
+        ]
+
         card_count_query = Mock()
         card_count_query.filter.return_value.count.return_value = 2
-        
+
         card_update_query = Mock()
-        card_update_query.filter.return_value.update.return_value = 1  # Seulement 1 carte déplacée au lieu de 2
-        
-        mock_db.query.side_effect = [total_query, delete_list_query, target_list_query, 
-                                   card_count_query, card_update_query]
+        card_update_query.filter.return_value.update.return_value = (
+            1  # Seulement 1 carte déplacée au lieu de 2
+        )
+
+        mock_db.query.side_effect = [
+            total_query,
+            delete_list_query,
+            target_list_query,
+            card_count_query,
+            card_update_query,
+        ]
 
         with pytest.raises(ValueError, match="Erreur lors du déplacement des cartes"):
             KanbanListService.delete_list(mock_db, 1, 2)
@@ -528,22 +613,35 @@ class TestDeleteList:
         """Test de gestion d'erreur de base de données."""
         total_query = Mock()
         total_query.count.return_value = 3
-        
+
         delete_list_query = Mock()
-        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            0
+        ]
+
         target_list_query = Mock()
-        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[1]
-        
+        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            1
+        ]
+
         card_count_query = Mock()
-        card_count_query.filter.return_value.count.return_value = 0  # Pas de cartes à déplacer
-        
-        mock_db.query.side_effect = [total_query, delete_list_query, target_list_query, card_count_query]
+        card_count_query.filter.return_value.count.return_value = (
+            0  # Pas de cartes à déplacer
+        )
+
+        mock_db.query.side_effect = [
+            total_query,
+            delete_list_query,
+            target_list_query,
+            card_count_query,
+        ]
         mock_db.commit.side_effect = Exception("Database error")
 
-        with pytest.raises(ValueError, match="Erreur lors de la suppression de la liste"):
+        with pytest.raises(
+            ValueError, match="Erreur lors de la suppression de la liste"
+        ):
             KanbanListService.delete_list(mock_db, 1, 2)
-        
+
         mock_db.rollback.assert_called_once()
 
 
@@ -566,7 +664,9 @@ class TestReorderLists:
     def test_reorder_lists_missing_lists(self, mock_db, sample_kanban_lists):
         """Test de réorganisation avec des listes manquantes."""
         existing_query = Mock()
-        existing_query.filter.return_value.all.return_value = sample_kanban_lists[:1]  # Seulement une liste trouvée
+        existing_query.filter.return_value.all.return_value = sample_kanban_lists[
+            :1
+        ]  # Seulement une liste trouvée
         mock_db.query.return_value = existing_query
 
         list_orders = {1: 2, 2: 1, 999: 3}  # La liste 999 n'existe pas
@@ -622,14 +722,16 @@ class TestUtilityFunctions:
         assert result is not None
         assert result.id == 1
 
-    def test_get_list_with_cards_count_utility_function(self, mock_db, sample_kanban_lists, sample_cards):
+    def test_get_list_with_cards_count_utility_function(
+        self, mock_db, sample_kanban_lists, sample_cards
+    ):
         """Test de la fonction utilitaire get_list_with_cards_count."""
         list_query = Mock()
         list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+
         card_query = Mock()
         card_query.filter.return_value.count.return_value = 2
-        
+
         mock_db.query.side_effect = [list_query, card_query]
 
         result = get_list_with_cards_count(mock_db, 1)
@@ -643,13 +745,13 @@ class TestUtilityFunctions:
         """Test de la fonction utilitaire create_list."""
         existing_query = Mock()
         existing_query.filter.return_value.first.return_value = None
-        
+
         count_query = Mock()
         count_query.count.return_value = 2
-        
+
         order_query = Mock()
         order_query.filter.return_value.first.return_value = None
-        
+
         mock_db.query.side_effect = [existing_query, count_query, order_query]
 
         result = create_list(mock_db, sample_list_create_data)
@@ -657,16 +759,18 @@ class TestUtilityFunctions:
         assert result.name == "Nouvelle liste"
         assert result.order == 4
 
-    @patch('app.services.kanban_list.KanbanListService.get_list')
-    def test_update_list_utility_function(self, mock_get_list, mock_db, sample_kanban_lists, sample_list_update_data):
+    @patch("app.services.kanban_list.KanbanListService.get_list")
+    def test_update_list_utility_function(
+        self, mock_get_list, mock_db, sample_kanban_lists, sample_list_update_data
+    ):
         """Test de la fonction utilitaire update_list."""
         # Mock get_list pour retourner la liste à mettre à jour
         mock_get_list.return_value = sample_kanban_lists[0]
-        
+
         # Mock la vérification d'unicité du nom pour retourner None (pas de conflit)
-        with patch.object(mock_db, 'query') as mock_query:
+        with patch.object(mock_db, "query") as mock_query:
             mock_query.return_value.filter.return_value.first.return_value = None
-            
+
             result = update_list(mock_db, 1, sample_list_update_data)
 
             assert result is not None
@@ -677,29 +781,39 @@ class TestUtilityFunctions:
         # Mock pour vérifier le nombre total de listes
         total_query = Mock()
         total_query.count.return_value = 3  # Plus d'une liste
-        
+
         # Mock pour get_list (liste à supprimer)
         delete_list_query = Mock()
-        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            0
+        ]
+
         # Mock pour get_list (liste de destination)
         target_list_query = Mock()
-        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[1]
-        
+        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            1
+        ]
+
         # Mock pour compter les cartes
         card_count_query = Mock()
         card_count_query.filter.return_value.count.return_value = 2
-        
+
         # Mock pour déplacer les cartes
         card_update_query = Mock()
         card_update_query.filter.return_value.update.return_value = 2
-        
+
         # Mock pour _compact_orders (pour éviter l'erreur de comparaison)
         compact_query = Mock()
         compact_query.filter.return_value.update.return_value = None
-        
-        mock_db.query.side_effect = [total_query, delete_list_query, target_list_query, 
-                                   card_count_query, card_update_query, compact_query]
+
+        mock_db.query.side_effect = [
+            total_query,
+            delete_list_query,
+            target_list_query,
+            card_count_query,
+            card_update_query,
+            compact_query,
+        ]
 
         result = delete_list(mock_db, 1, 2)
 
@@ -723,16 +837,16 @@ class TestEdgeCases:
     def test_create_list_edge_case_max_order(self, mock_db):
         """Test de création avec ordre maximum valide."""
         list_data = KanbanListCreate(name="Test", order=9999)
-        
+
         existing_query = Mock()
         existing_query.filter.return_value.first.return_value = None
-        
+
         count_query = Mock()
         count_query.count.return_value = 2
-        
+
         order_query = Mock()
         order_query.filter.return_value.first.return_value = None
-        
+
         mock_db.query.side_effect = [existing_query, count_query, order_query]
 
         result = KanbanListService.create_list(mock_db, list_data)
@@ -743,15 +857,19 @@ class TestEdgeCases:
         """Test de mise à jour avec même nom en casse différente."""
         get_list_query = Mock()
         get_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+
         name_query = Mock()
         name_query.filter.return_value.first.return_value = sample_kanban_lists[1]
-        
+
         mock_db.query.side_effect = [get_list_query, name_query]
 
-        update_data = KanbanListUpdate(name="EN COURS")  # Même nom que "En cours" mais en majuscules
+        update_data = KanbanListUpdate(
+            name="EN COURS"
+        )  # Même nom que "En cours" mais en majuscules
 
-        with pytest.raises(ValueError, match="Une liste avec le nom 'EN COURS' existe déjà"):
+        with pytest.raises(
+            ValueError, match="Une liste avec le nom 'EN COURS' existe déjà"
+        ):
             KanbanListService.update_list(mock_db, 1, update_data)
 
     def test_delete_list_with_archived_cards(self, mock_db, sample_kanban_lists):
@@ -759,33 +877,47 @@ class TestEdgeCases:
         # Mock pour vérifier le nombre total de listes
         total_query = Mock()
         total_query.count.return_value = 3  # Plus d'une liste
-        
+
         # Mock pour get_list (liste à supprimer)
         delete_list_query = Mock()
-        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[0]
-        
+        delete_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            0
+        ]
+
         # Mock pour get_list (liste de destination)
         target_list_query = Mock()
-        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[1]
-        
+        target_list_query.filter.return_value.first.return_value = sample_kanban_lists[
+            1
+        ]
+
         # Mock pour compter les cartes
         card_count_query = Mock()
-        card_count_query.filter.return_value.count.return_value = 0  # Aucune carte active
-        
+        card_count_query.filter.return_value.count.return_value = (
+            0  # Aucune carte active
+        )
+
         # Mock pour déplacer les cartes
         card_update_query = Mock()
         card_update_query.filter.return_value.update.return_value = 0
-        
+
         # Mock pour _compact_orders (pour éviter l'erreur de comparaison)
         compact_query = Mock()
         compact_query.filter.return_value.update.return_value = None
-        
-        mock_db.query.side_effect = [total_query, delete_list_query, target_list_query, 
-                                   card_count_query, card_update_query, compact_query]
+
+        mock_db.query.side_effect = [
+            total_query,
+            delete_list_query,
+            target_list_query,
+            card_count_query,
+            card_update_query,
+            compact_query,
+        ]
 
         result = KanbanListService.delete_list(mock_db, 1, 2)
 
-        assert result is True  # Devrait réussir car on ne déplace que les cartes actives
+        assert (
+            result is True
+        )  # Devrait réussir car on ne déplace que les cartes actives
 
     def test_reorder_lists_single_list(self, mock_db, sample_kanban_lists):
         """Test de réorganisation d'une seule liste."""

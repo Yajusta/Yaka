@@ -1,45 +1,45 @@
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import LanguageDetector from "i18next-browser-languagedetector";
 
 // Import des fichiers de traduction
-import en from '@shared/i18n/locales/en.json';
-import fr from '@shared/i18n/locales/fr.json';
+import en from "@shared/i18n/locales/en.json";
+import fr from "@shared/i18n/locales/fr.json";
 
 const resources = {
-    en: {
-        translation: en
-    },
-    fr: {
-        translation: fr
-    }
+  en: {
+    translation: en,
+  },
+  fr: {
+    translation: fr,
+  },
 };
 
 // Prevent multiple initializations
 if (!i18n.isInitialized) {
-    i18n
-        .use(LanguageDetector)
-        .use(initReactI18next)
-        .init({
-            resources,
-            lng: undefined, // Laisser indéfini pour être déterminé dynamiquement
-            fallbackLng: 'fr',
-            debug: process.env.NODE_ENV === 'development',
-            initImmediate: false,
+  i18n
+    .use(LanguageDetector)
+    .use(initReactI18next)
+    .init({
+      resources,
+      lng: undefined, // Laisser indéfini pour être déterminé dynamiquement
+      fallbackLng: "fr",
+      debug: process.env.NODE_ENV === "development",
+      initImmediate: false,
 
-            interpolation: {
-                escapeValue: false // React échappe déjà les valeurs
-            },
+      interpolation: {
+        escapeValue: false, // React échappe déjà les valeurs
+      },
 
-            detection: {
-                order: ['localStorage', 'navigator', 'htmlTag'],
-                caches: ['localStorage']
-            },
+      detection: {
+        order: ["localStorage", "navigator", "htmlTag"],
+        caches: ["localStorage"],
+      },
 
-            react: {
-                useSuspense: false // Disable suspense to avoid timing issues
-            }
-        });
+      react: {
+        useSuspense: false, // Disable suspense to avoid timing issues
+      },
+    });
 }
 
 export default i18n;

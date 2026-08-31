@@ -209,7 +209,9 @@ class TestBoardContextMiddleware:
         ]
 
         for uid in valid_uids:
-            assert middleware._is_valid_board_uid(uid), f"Should consider '{uid}' as valid"
+            assert middleware._is_valid_board_uid(
+                uid
+            ), f"Should consider '{uid}' as valid"
 
     def test_invalid_board_uid_patterns(self, middleware):
         """Test validation of various invalid board UID patterns."""
@@ -232,7 +234,9 @@ class TestBoardContextMiddleware:
         ]
 
         for uid in invalid_uids:
-            assert not middleware._is_valid_board_uid(uid), f"Should consider '{uid}' as invalid"
+            assert not middleware._is_valid_board_uid(
+                uid
+            ), f"Should consider '{uid}' as invalid"
 
     def test_max_length_validation(self, middleware):
         """Test maximum length validation (50 characters)."""

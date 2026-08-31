@@ -41,7 +41,9 @@ def db_session():
     """Fixture pour créer une session de base de données de test."""
     # Utiliser une base de données en mémoire pour éviter les conflits
     SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
@@ -76,7 +78,12 @@ def sample_users(db_session, sample_user_data):
     users.append(user1)
 
     # Créer un utilisateur invité
-    user2 = invite_user(db_session, email="invited@example.com", display_name="Invited User", role=UserRole.EDITOR)
+    user2 = invite_user(
+        db_session,
+        email="invited@example.com",
+        display_name="Invited User",
+        role=UserRole.EDITOR,
+    )
     users.append(user2)
 
     # Créer un administrateur
@@ -96,7 +103,9 @@ def sample_users(db_session, sample_user_data):
 @pytest.fixture(autouse=True)
 def mock_email_service():
     """Fixture pour mocker le service email (autouse pour s'appliquer à tous les tests)."""
-    with patch("app.services.user.email_service.send_invitation") as mock_send_invitation, patch(
+    with patch(
+        "app.services.user.email_service.send_invitation"
+    ) as mock_send_invitation, patch(
         "app.services.user.email_service.send_password_reset"
     ) as mock_send_reset:
         # Créer un objet mock qui contient les deux fonctions
@@ -247,7 +256,9 @@ class TestCreateUser:
         assert user.language == user_data.language
         assert user.status == UserStatus.ACTIVE
         assert user.password_hash is not None
-        assert user.password_hash != user_data.password  # Le mot de passe doit être haché
+        assert (
+            user.password_hash != user_data.password
+        )  # Le mot de passe doit être haché
 
     def test_create_user_without_language(self, db_session):
         """Test de création d'un utilisateur sans spécifier la langue."""
@@ -312,7 +323,12 @@ class TestInviteUser:
     def test_invite_user_successfully(self, db_session, mock_email_service):
         """Test d'invitation réussie d'un utilisateur."""
         mixed_email = "NewInvite@Example.Com"
-        user = invite_user(db_session, email=mixed_email, display_name="New Invited User", role=UserRole.EDITOR)
+        user = invite_user(
+            db_session,
+            email=mixed_email,
+            display_name="New Invited User",
+            role=UserRole.EDITOR,
+        )
 
         assert user.id is not None
         assert user.email == "newinvite@example.com"
@@ -329,7 +345,12 @@ class TestInviteUser:
 
     def test_invite_user_without_display_name(self, db_session, mock_email_service):
         """Test d'invitation d'un utilisateur sans nom d'affichage."""
-        user = invite_user(db_session, email="invite2@example.com", display_name=None, role=UserRole.EDITOR)
+        user = invite_user(
+            db_session,
+            email="invite2@example.com",
+            display_name=None,
+            role=UserRole.EDITOR,
+        )
 
         assert user.display_name is None
         mock_email_service.send_invitation.assert_called_once()
@@ -337,7 +358,10 @@ class TestInviteUser:
     def test_invite_user_admin_role(self, db_session, mock_email_service):
         """Test d'invitation d'un utilisateur avec le rôle admin."""
         user = invite_user(
-            db_session, email="admin_invite@example.com", display_name="Admin Invite", role=UserRole.ADMIN
+            db_session,
+            email="admin_invite@example.com",
+            display_name="Admin Invite",
+            role=UserRole.ADMIN,
         )
 
         assert user.role == UserRole.ADMIN
@@ -347,14 +371,22 @@ class TestInviteUser:
         """Test d'invitation d'un utilisateur avec un email déjà existant (insensible à la casse)."""
         existing_email = sample_users[0].email.upper()
         with pytest.raises(ValueError):
-            invite_user(db_session, email=existing_email, display_name="Duplicate Invite", role=UserRole.EDITOR)
+            invite_user(
+                db_session,
+                email=existing_email,
+                display_name="Duplicate Invite",
+                role=UserRole.EDITOR,
+            )
 
     def test_invite_user_email_sending_failure(self, db_session, mock_email_service):
         """Test d'échec d'envoi d'email lors de l'invitation."""
         mock_email_service.send_invitation.side_effect = Exception("SMTP Error")
 
         user = invite_user(
-            db_session, email="email_fail@example.com", display_name="Email Fail User", role=UserRole.EDITOR
+            db_session,
+            email="email_fail@example.com",
+            display_name="Email Fail User",
+            role=UserRole.EDITOR,
         )
 
         # L'utilisateur devrait quand même être créé
@@ -418,7 +450,9 @@ class TestUpdateUser:
     def test_update_user_multiple_fields(self, db_session, sample_users):
         """Test de mise à jour de plusieurs champs."""
         user = sample_users[0]
-        update_data = UserUpdate(email="multi@example.com", display_name="Multi Update", language="en")
+        update_data = UserUpdate(
+            email="multi@example.com", display_name="Multi Update", language="en"
+        )
 
         result = update_user(db_session, user.id, update_data)
 
@@ -547,7 +581,9 @@ class TestSetPasswordFromInvite:
 class TestRequestPasswordReset:
     """Tests pour la fonction request_password_reset."""
 
-    def test_request_password_reset_successfully(self, db_session, sample_users, mock_email_service):
+    def test_request_password_reset_successfully(
+        self, db_session, sample_users, mock_email_service
+    ):
         """Test de demande de réinitialisation de mot de passe réussie."""
         user = sample_users[0]
         original_token = user.invite_token
@@ -565,7 +601,9 @@ class TestRequestPasswordReset:
         # Vérifier que l'email de réinitialisation a été envoyé
         mock_email_service.send_password_reset.assert_called_once()
 
-    def test_request_password_reset_nonexistent_user(self, db_session, mock_email_service):
+    def test_request_password_reset_nonexistent_user(
+        self, db_session, mock_email_service
+    ):
         """Test de demande de réinitialisation pour un utilisateur qui n'existe pas."""
         result = request_password_reset(db_session, "nonexistent@example.com")
 
@@ -575,7 +613,9 @@ class TestRequestPasswordReset:
         # Aucun email ne devrait être envoyé
         mock_email_service.send_password_reset.assert_not_called()
 
-    def test_request_password_reset_deleted_user(self, db_session, sample_users, mock_email_service):
+    def test_request_password_reset_deleted_user(
+        self, db_session, sample_users, mock_email_service
+    ):
         """Test de demande de réinitialisation pour un utilisateur désactivé."""
         user = sample_users[0]
         user_email = user.email
@@ -595,7 +635,9 @@ class TestRequestPasswordReset:
         assert mock_email_service.send_invitation.call_count == invitation_calls_before
         assert mock_email_service.send_password_reset.call_count == reset_calls_before
 
-    def test_request_password_reset_email_sending_failure(self, db_session, sample_users, mock_email_service):
+    def test_request_password_reset_email_sending_failure(
+        self, db_session, sample_users, mock_email_service
+    ):
         """Test d'échec d'envoi d'email de réinitialisation."""
         mock_email_service.send_password_reset.side_effect = Exception("SMTP Error")
 
@@ -608,7 +650,9 @@ class TestRequestPasswordReset:
         # Mais l'email a tenté d'être envoyé
         mock_email_service.send_password_reset.assert_called_once()
 
-    def test_request_password_reset_invited_user(self, db_session, sample_users, mock_email_service):
+    def test_request_password_reset_invited_user(
+        self, db_session, sample_users, mock_email_service
+    ):
         """Test de demande de réinitialisation pour un utilisateur invité (non activé).
 
         Dans ce cas, on doit renvoyer un email d'invitation au lieu d'un email de reset.
@@ -833,7 +877,11 @@ class TestSecurityAndEdgeCases:
         malicious_email = "test'; DROP TABLE users; --"
 
         with pytest.raises(ValidationError):
-            UserCreate(email=malicious_email, password="Password123", display_name="SQL Injection Test")
+            UserCreate(
+                email=malicious_email,
+                password="Password123",
+                display_name="SQL Injection Test",
+            )
 
     def test_xss_attempt_display_name(self, db_session):
         """Test de tentative XSS dans le nom d'affichage."""
@@ -841,7 +889,9 @@ class TestSecurityAndEdgeCases:
 
         # Les utilisateurs n'ont pas de validation XSS sur le display_name
         # Le contenu est stocké tel quel (protection au niveau affichage)
-        user_data = UserCreate(email="xss@example.com", password="Password123", display_name=xss_name)
+        user_data = UserCreate(
+            email="xss@example.com", password="Password123", display_name=xss_name
+        )
 
         user = create_user(db_session, user_data)
         assert user.display_name == xss_name  # Stocké tel quel
@@ -850,7 +900,11 @@ class TestSecurityAndEdgeCases:
         """Test avec des caractères spéciaux dans l'email."""
         special_email = "test+special@example.com"
 
-        user_data = UserCreate(email=special_email, password="Password123", display_name="Special Email Test")
+        user_data = UserCreate(
+            email=special_email,
+            password="Password123",
+            display_name="Special Email Test",
+        )
 
         user = create_user(db_session, user_data)
         assert user.email == special_email
@@ -874,31 +928,51 @@ class TestSecurityAndEdgeCases:
 
         for password in valid_passwords:
             user_data = UserCreate(
-                email=f"valid{password[:4]}@example.com", password=password, display_name="Valid User"
+                email=f"valid{password[:4]}@example.com",
+                password=password,
+                display_name="Valid User",
             )
             user = create_user(db_session, user_data)
             assert user.password_hash is not None
 
         # Mot de passe invalide - trop court
         with pytest.raises(ValidationError):
-            UserCreate(email="short@example.com", password="Short1", display_name="Short Password")
+            UserCreate(
+                email="short@example.com",
+                password="Short1",
+                display_name="Short Password",
+            )
 
         # Mot de passe invalide - pas de majuscule
         with pytest.raises(ValidationError):
-            UserCreate(email="noupper@example.com", password="password123", display_name="No Upper")
+            UserCreate(
+                email="noupper@example.com",
+                password="password123",
+                display_name="No Upper",
+            )
 
         # Mot de passe invalide - pas de minuscule
         with pytest.raises(ValidationError):
-            UserCreate(email="nolower@example.com", password="PASSWORD123", display_name="No Lower")
+            UserCreate(
+                email="nolower@example.com",
+                password="PASSWORD123",
+                display_name="No Lower",
+            )
 
         # Mot de passe invalide - pas de chiffre
         with pytest.raises(ValidationError):
-            UserCreate(email="nodigit@example.com", password="Password", display_name="No Digit")
+            UserCreate(
+                email="nodigit@example.com",
+                password="Password",
+                display_name="No Digit",
+            )
 
     def test_empty_strings(self, db_session):
         """Test avec des chaînes vides."""
         # Le display_name peut être vide (Optional)
-        user_data = UserCreate(email="empty@example.com", password="Password123", display_name="")
+        user_data = UserCreate(
+            email="empty@example.com", password="Password123", display_name=""
+        )
         assert user_data.display_name == ""
 
         # Test que le schéma permet effectivement les champs vides selon sa définition
@@ -907,11 +981,15 @@ class TestSecurityAndEdgeCases:
     def test_concurrent_user_creation(self, db_session):
         """Test de création concurrente d'utilisateurs."""
         user1_data = UserCreate(
-            email="concurrent1@example.com", password="Password123", display_name="Concurrent User 1"
+            email="concurrent1@example.com",
+            password="Password123",
+            display_name="Concurrent User 1",
         )
 
         user2_data = UserCreate(
-            email="concurrent2@example.com", password="Password123", display_name="Concurrent User 2"
+            email="concurrent2@example.com",
+            password="Password123",
+            display_name="Concurrent User 2",
         )
 
         # Créer deux utilisateurs
@@ -925,9 +1003,13 @@ class TestSecurityAndEdgeCases:
         """Test que le même mot de passe produit le même hash."""
         password = "TestPassword123"
 
-        user1_data = UserCreate(email="hash1@example.com", password=password, display_name="Hash Test 1")
+        user1_data = UserCreate(
+            email="hash1@example.com", password=password, display_name="Hash Test 1"
+        )
 
-        user2_data = UserCreate(email="hash2@example.com", password=password, display_name="Hash Test 2")
+        user2_data = UserCreate(
+            email="hash2@example.com", password=password, display_name="Hash Test 2"
+        )
 
         user1 = create_user(db_session, user1_data)
         user2 = create_user(db_session, user2_data)
@@ -950,7 +1032,9 @@ class TestSecurityAndEdgeCases:
 
     def test_timezone_handling(self, db_session, mock_email_service):
         """Test de la gestion des fuseaux horaires."""
-        invited_user = invite_user(db_session, "timezone@example.com", "Timezone User", UserRole.EDITOR)
+        invited_user = invite_user(
+            db_session, "timezone@example.com", "Timezone User", UserRole.EDITOR
+        )
 
         assert invited_user.invited_at is not None
         # Note: SQLite ne stocke pas les timezone info, mais datetime devrait être présent
@@ -958,14 +1042,22 @@ class TestSecurityAndEdgeCases:
 
         # La date devrait être récente (comparaison naive avec datetime naive)
         now = datetime.now()
-        time_diff = abs((invited_user.invited_at.replace(tzinfo=None) - now).total_seconds())
+        time_diff = abs(
+            (invited_user.invited_at.replace(tzinfo=None) - now).total_seconds()
+        )
         assert time_diff < 60  # Moins d'une minute de différence
 
     def test_database_error_handling(self, db_session):
         """Test de gestion des erreurs de base de données."""
         # Simuler une erreur de base de données
-        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
-            user_data = UserCreate(email="error@example.com", password="Password123", display_name="Error Test")
+        with patch.object(
+            db_session, "commit", side_effect=SQLAlchemyError("Database error")
+        ):
+            user_data = UserCreate(
+                email="error@example.com",
+                password="Password123",
+                display_name="Error Test",
+            )
 
             with pytest.raises(SQLAlchemyError):
                 create_user(db_session, user_data)
@@ -973,7 +1065,11 @@ class TestSecurityAndEdgeCases:
     def test_integrity_error_handling(self, db_session):
         """Test de gestion des erreurs d'intégrité."""
         # Créer un utilisateur
-        user_data = UserCreate(email="integrity@example.com", password="Password123", display_name="Integrity Test")
+        user_data = UserCreate(
+            email="integrity@example.com",
+            password="Password123",
+            display_name="Integrity Test",
+        )
         create_user(db_session, user_data)
 
         # Essayer de créer un autre utilisateur avec le même email

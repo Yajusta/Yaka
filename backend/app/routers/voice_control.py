@@ -1,15 +1,15 @@
 """Routeur pour le pilotage par la voix."""
 
 import json
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..services.llm_service import LLMService, ResponseType
-
-from ..multi_database import get_dynamic_db as get_db
 from ..models import User
+from ..multi_database import get_dynamic_db as get_db
+from ..services.llm_service import LLMService, ResponseType
 from ..utils.dependencies import get_current_active_user
 
 router = APIRouter(prefix="/voice-control", tags=["voice-control"])
@@ -92,12 +92,18 @@ async def process_voice_transcript(
 
     # Préparer le contexte utilisateur au format JSON
     user_context = json.dumps(
-        {"user_id": current_user.id, "user_name": current_user.display_name or current_user.email}, ensure_ascii=False
+        {
+            "user_id": current_user.id,
+            "user_name": current_user.display_name or current_user.email,
+        },
+        ensure_ascii=False,
     )
 
     llm_service = LLMService()
     response_json = llm_service.analyze_transcript(
-        transcript=transcript, user_context=user_context, response_type=request.response_type
+        transcript=transcript,
+        user_context=user_context,
+        response_type=request.response_type,
     )
 
     # Nettoyer l'objet de réponse

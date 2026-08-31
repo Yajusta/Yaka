@@ -1,9 +1,9 @@
 """Configuration de la base de données SQLite."""
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import sessionmaker
 from typing import Generator
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 # Default database URL
 SQLALCHEMY_DATABASE_URL = "sqlite:///./data/yaka.db"
@@ -40,7 +40,12 @@ def get_db() -> Generator:
 
 # Import dynamic functions for easy access
 try:
-    from .multi_database import get_dynamic_db, get_board_db, set_current_board_uid, get_current_board_uid
+    from .multi_database import (
+        get_board_db,
+        get_current_board_uid,
+        get_dynamic_db,
+        set_current_board_uid,
+    )
 
     __all__ = [
         "Base",

@@ -6,7 +6,18 @@ import datetime
 import enum
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
@@ -46,11 +57,19 @@ class Card(Base):
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     due_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True)
-    priority: Mapped[CardPriority] = mapped_column(Enum(CardPriority), default=CardPriority.MEDIUM, nullable=False)
-    list_id: Mapped[int] = mapped_column(Integer, ForeignKey("kanban_lists.id"), nullable=False)
+    priority: Mapped[CardPriority] = mapped_column(
+        Enum(CardPriority), default=CardPriority.MEDIUM, nullable=False
+    )
+    list_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("kanban_lists.id"), nullable=False
+    )
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    assignee_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
-    created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    assignee_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=True
+    )
+    created_by: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False
+    )
     is_archived: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime(timezone=True), default=get_system_timezone_datetime
@@ -60,13 +79,21 @@ class Card(Base):
     )
 
     # Relations
-    kanban_list: Mapped["KanbanList"] = relationship("KanbanList", back_populates="cards")
-    creator: Mapped["User"] = relationship("User", foreign_keys=[created_by], back_populates="created_cards")
+    kanban_list: Mapped["KanbanList"] = relationship(
+        "KanbanList", back_populates="cards"
+    )
+    creator: Mapped["User"] = relationship(
+        "User", foreign_keys=[created_by], back_populates="created_cards"
+    )
     assignee: Mapped[Optional["User"]] = relationship(
         "User", foreign_keys=[assignee_id], back_populates="assigned_cards"
     )
-    labels: Mapped[List["Label"]] = relationship("Label", secondary=card_labels, back_populates="cards")
-    items: Mapped[List["CardItem"]] = relationship("CardItem", back_populates="card", cascade="all, delete-orphan")
+    labels: Mapped[List["Label"]] = relationship(
+        "Label", secondary=card_labels, back_populates="cards"
+    )
+    items: Mapped[List["CardItem"]] = relationship(
+        "CardItem", back_populates="card", cascade="all, delete-orphan"
+    )
     comments: Mapped[List["CardComment"]] = relationship(
         "CardComment", back_populates="card", cascade="all, delete-orphan"
     )

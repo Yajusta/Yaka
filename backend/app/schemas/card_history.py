@@ -1,8 +1,10 @@
 """Schémas Pydantic pour l'historique des cartes."""
 
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
 from .user import UserResponse
 
 

@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest --run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "trunk": "powershell -ExecutionPolicy Bypass -File ../trunk.ps1"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

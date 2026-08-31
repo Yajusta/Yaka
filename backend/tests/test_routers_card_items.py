@@ -24,7 +24,9 @@ from sqlalchemy.orm import sessionmaker
 def db_session():
     """Fixture pour créer une session de base de données de test."""
     SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
@@ -91,14 +93,20 @@ class TestCardItemsRouter:
             ]
             mock_get_items.return_value = mock_items
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
                 with patch("app.routers.card_items.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(list_items(1, mock_db.return_value.__enter__.return_value, test_user))
+                    result = asyncio.run(
+                        list_items(
+                            1, mock_db.return_value.__enter__.return_value, test_user
+                        )
+                    )
 
                     assert len(result) == 1
                     assert result[0].text == "Test Item"
@@ -109,20 +117,28 @@ class TestCardItemsRouter:
         with patch("app.services.card_item.get_items_for_card") as mock_get_items:
             mock_get_items.return_value = []
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
                 with patch("app.routers.card_items.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(list_items(999, mock_db.return_value.__enter__.return_value, test_user))
+                    result = asyncio.run(
+                        list_items(
+                            999, mock_db.return_value.__enter__.return_value, test_user
+                        )
+                    )
 
                     assert len(result) == 0
 
     def test_create_item_success(self, test_user):
         """Test de création d'un élément avec succès."""
-        item_data = CardItemCreate(card_id=1, text="New Item", is_done=False, position=0)
+        item_data = CardItemCreate(
+            card_id=1, text="New Item", is_done=False, position=0
+        )
 
         mock_item = CardItemResponse(
             id=1,
@@ -137,7 +153,9 @@ class TestCardItemsRouter:
         with patch("app.services.card_item.create_item") as mock_create:
             mock_create.return_value = mock_item
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -145,7 +163,11 @@ class TestCardItemsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        create_item(item_data, mock_db.return_value.__enter__.return_value, test_user)
+                        create_item(
+                            item_data,
+                            mock_db.return_value.__enter__.return_value,
+                            test_user,
+                        )
                     )
 
                     assert result.text == "New Item"
@@ -154,9 +176,13 @@ class TestCardItemsRouter:
 
     def test_create_item_invalid_card_id(self, test_user):
         """Test de création d'un élément avec un ID de carte invalide."""
-        item_data = CardItemCreate(card_id=-1, text="New Item", is_done=False, position=0)
+        item_data = CardItemCreate(
+            card_id=-1, text="New Item", is_done=False, position=0
+        )
 
-        with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.card_items.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Mock database session
@@ -167,7 +193,13 @@ class TestCardItemsRouter:
                     mock_create.side_effect = ValueError("Card not found")
 
                     with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(create_item(item_data, mock_db.return_value.__enter__.return_value, test_user))
+                        asyncio.run(
+                            create_item(
+                                item_data,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                     assert exc_info.value.status_code == 400
                     assert exc_info.value.detail == "Card not found"
@@ -186,9 +218,13 @@ class TestCardItemsRouter:
 
     def test_create_item_service_error(self, test_user):
         """Test de création d'un élément avec une erreur du service."""
-        item_data = CardItemCreate(card_id=1, text="New Item", is_done=False, position=0)
+        item_data = CardItemCreate(
+            card_id=1, text="New Item", is_done=False, position=0
+        )
 
-        with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.card_items.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Mock database session
@@ -199,7 +235,13 @@ class TestCardItemsRouter:
                     mock_create.side_effect = ValueError("Card not found")
 
                     with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(create_item(item_data, mock_db.return_value.__enter__.return_value, test_user))
+                        asyncio.run(
+                            create_item(
+                                item_data,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                     assert exc_info.value.status_code == 400
                     assert exc_info.value.detail == "Card not found"
@@ -221,7 +263,9 @@ class TestCardItemsRouter:
         with patch("app.services.card_item.update_item") as mock_update:
             mock_update.return_value = mock_item
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -229,7 +273,12 @@ class TestCardItemsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        update_item(1, update_data, mock_db.return_value.__enter__.return_value, test_user)
+                        update_item(
+                            1,
+                            update_data,
+                            mock_db.return_value.__enter__.return_value,
+                            test_user,
+                        )
                     )
 
                     assert result.text == "Updated Item"
@@ -242,7 +291,9 @@ class TestCardItemsRouter:
         with patch("app.services.card_item.update_item") as mock_update:
             mock_update.return_value = None
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -251,7 +302,12 @@ class TestCardItemsRouter:
 
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
-                            update_item(999, update_data, mock_db.return_value.__enter__.return_value, test_user)
+                            update_item(
+                                999,
+                                update_data,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
                         )
 
                     assert exc_info.value.status_code == 404
@@ -273,7 +329,9 @@ class TestCardItemsRouter:
         with patch("app.services.card_item.update_item") as mock_update:
             mock_update.side_effect = ValueError("Permission denied")
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -283,7 +341,12 @@ class TestCardItemsRouter:
                     # Le routeur update_item ne gère pas les ValueError, elles devraient remonter
                     with pytest.raises(ValueError) as exc_info:
                         asyncio.run(
-                            update_item(1, update_data, mock_db.return_value.__enter__.return_value, test_user)
+                            update_item(
+                                1,
+                                update_data,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
                         )
 
                     assert str(exc_info.value) == "Permission denied"
@@ -293,14 +356,20 @@ class TestCardItemsRouter:
         with patch("app.services.card_item.delete_item") as mock_delete:
             mock_delete.return_value = True
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
                 with patch("app.routers.card_items.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(delete_item(1, mock_db.return_value.__enter__.return_value, test_user))
+                    result = asyncio.run(
+                        delete_item(
+                            1, mock_db.return_value.__enter__.return_value, test_user
+                        )
+                    )
 
                     assert result["message"] == "Item deleted"
 
@@ -309,7 +378,9 @@ class TestCardItemsRouter:
         with patch("app.services.card_item.delete_item") as mock_delete:
             mock_delete.return_value = False
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -317,7 +388,13 @@ class TestCardItemsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(delete_item(999, mock_db.return_value.__enter__.return_value, test_user))
+                        asyncio.run(
+                            delete_item(
+                                999,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                     assert exc_info.value.status_code == 404
                     assert exc_info.value.detail == "Item not found"
@@ -327,7 +404,9 @@ class TestCardItemsRouter:
         with patch("app.services.card_item.delete_item") as mock_delete:
             mock_delete.side_effect = ValueError("Permission denied")
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -336,7 +415,13 @@ class TestCardItemsRouter:
 
                     # Le routeur delete_item ne gère pas les ValueError, elles devraient remonter
                     with pytest.raises(ValueError) as exc_info:
-                        asyncio.run(delete_item(1, mock_db.return_value.__enter__.return_value, test_user))
+                        asyncio.run(
+                            delete_item(
+                                1,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                     assert str(exc_info.value) == "Permission denied"
 
@@ -364,7 +449,9 @@ class TestCardItemsRouter:
         with patch("app.services.card_item.update_item") as mock_update:
             mock_update.return_value = mock_item
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -373,7 +460,12 @@ class TestCardItemsRouter:
 
                     update_data = CardItemUpdate(is_done=True)
                     result = asyncio.run(
-                        update_item(1, update_data, mock_db.return_value.__enter__.return_value, test_user)
+                        update_item(
+                            1,
+                            update_data,
+                            mock_db.return_value.__enter__.return_value,
+                            test_user,
+                        )
                     )
 
                     assert result.is_done is True
@@ -404,14 +496,20 @@ class TestCardItemsRouter:
         with patch("app.services.card_item.get_items_for_card") as mock_get_items:
             mock_get_items.return_value = mock_items
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
                 with patch("app.routers.card_items.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(list_items(1, mock_db.return_value.__enter__.return_value, test_user))
+                    result = asyncio.run(
+                        list_items(
+                            1, mock_db.return_value.__enter__.return_value, test_user
+                        )
+                    )
 
                     assert len(result) == 2
                     assert result[0].position == 0
@@ -422,7 +520,9 @@ class TestCardItemsRouter:
         with patch("app.services.card_item.get_items_for_card") as mock_get_items:
             mock_get_items.side_effect = Exception("Database error")
 
-            with patch("app.routers.card_items.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_items.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -431,7 +531,13 @@ class TestCardItemsRouter:
 
                     # Le routeur list_items ne gère pas les exceptions générales, elles devraient remonter
                     with pytest.raises(Exception) as exc_info:
-                        asyncio.run(list_items(1, mock_db.return_value.__enter__.return_value, test_user))
+                        asyncio.run(
+                            list_items(
+                                1,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                     assert str(exc_info.value) == "Database error"
 

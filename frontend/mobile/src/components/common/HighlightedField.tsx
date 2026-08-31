@@ -1,5 +1,5 @@
-import { Info } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { Info } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 interface HighlightedFieldProps {
   isChanged: boolean;
@@ -8,9 +8,16 @@ interface HighlightedFieldProps {
   className?: string;
 }
 
-export const HighlightedField = ({ isChanged, tooltipContent, children, className = '' }: HighlightedFieldProps) => {
+export const HighlightedField = ({
+  isChanged,
+  tooltipContent,
+  children,
+  className = "",
+}: HighlightedFieldProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState<'bottom' | 'top'>('bottom');
+  const [tooltipPosition, setTooltipPosition] = useState<"bottom" | "top">(
+    "bottom",
+  );
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,9 +33,9 @@ export const HighlightedField = ({ isChanged, tooltipContent, children, classNam
       const spaceAbove = rect.top;
 
       if (spaceBelow < 150 && spaceAbove > spaceBelow) {
-        setTooltipPosition('top');
+        setTooltipPosition("top");
       } else {
-        setTooltipPosition('bottom');
+        setTooltipPosition("bottom");
       }
     }
   }, [showTooltip]);
@@ -36,7 +43,9 @@ export const HighlightedField = ({ isChanged, tooltipContent, children, classNam
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <div className="relative">
-        <div className={`relative rounded-lg ${isChanged ? 'border-2 border-green-500 p-0.5' : ''}`}>
+        <div
+          className={`relative rounded-lg ${isChanged ? "border-2 border-green-500 p-0.5" : ""}`}
+        >
           {children}
         </div>
 
@@ -60,16 +69,17 @@ export const HighlightedField = ({ isChanged, tooltipContent, children, classNam
           />
           <div
             className={`absolute left-0 right-0 bg-card border-2 border-green-500 rounded-lg p-3 shadow-xl z-30 ${
-              tooltipPosition === 'bottom'
-                ? 'top-full mt-2 animate-slide-up'
-                : 'bottom-full mb-2 animate-slide-down'
+              tooltipPosition === "bottom"
+                ? "top-full mt-2 animate-slide-up"
+                : "bottom-full mb-2 animate-slide-down"
             }`}
           >
-            <p className="text-sm text-foreground break-words">{tooltipContent}</p>
+            <p className="text-sm text-foreground break-words">
+              {tooltipContent}
+            </p>
           </div>
         </>
       )}
     </div>
   );
 };
-

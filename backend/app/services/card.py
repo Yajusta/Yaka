@@ -5,7 +5,16 @@ from typing import List, Optional
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
-from ..models import Card, CardComment, CardPriority, KanbanList, Label, User, UserRole, ViewScope
+from ..models import (
+    Card,
+    CardComment,
+    CardPriority,
+    KanbanList,
+    Label,
+    User,
+    UserRole,
+    ViewScope,
+)
 from ..schemas import (
     BulkCardMoveRequest,
     CardCreate,
@@ -33,7 +42,9 @@ def apply_view_scope_filter(query, user: User):
         return query
     elif user.view_scope == ViewScope.UNASSIGNED_PLUS_MINE:
         # Show unassigned cards + cards assigned to current user
-        return query.filter(or_(Card.assignee_id.is_(None), Card.assignee_id == user.id))
+        return query.filter(
+            or_(Card.assignee_id.is_(None), Card.assignee_id == user.id)
+        )
     elif user.view_scope == ViewScope.MINE_ONLY:
         # Show only cards assigned to current user
         return query.filter(Card.assignee_id == user.id)
@@ -73,7 +84,11 @@ def get_card(db: Session, card_id: int) -> Optional[Card]:
 
 
 def get_cards(
-    db: Session, filters: CardFilter, skip: int = 0, limit: int = 100, user: Optional[User] = None
+    db: Session,
+    filters: CardFilter,
+    skip: int = 0,
+    limit: int = 100,
+    user: Optional[User] = None,
 ) -> List[Card]:
     """Récupérer une liste de cartes avec filtres."""
     query = db.query(Card)
@@ -105,12 +120,19 @@ def get_cards(
     # Recherche textuelle
     if filters.search:
         search_term = f"%{filters.search}%"
-        query = query.filter(or_(Card.title.ilike(search_term), Card.description.ilike(search_term)))
+        query = query.filter(
+            or_(Card.title.ilike(search_term), Card.description.ilike(search_term))
+        )
 
     # Trier par position dans la liste, puis par date de création
     query = query.order_by(Card.position, Card.created_at)
 
-    cards = query.options(joinedload(Card.comments).joinedload(CardComment.user)).offset(skip).limit(limit).all()
+    cards = (
+        query.options(joinedload(Card.comments).joinedload(CardComment.user))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
     # Filtrer les commentaires pour ne garder que les non supprimés
     for card in cards:
@@ -119,7 +141,9 @@ def get_cards(
     return cards
 
 
-def get_archived_cards(db: Session, skip: int = 0, limit: int = 100, user: Optional[User] = None) -> List[Card]:
+def get_archived_cards(
+    db: Session, skip: int = 0, limit: int = 100, user: Optional[User] = None
+) -> List[Card]:
     """Récupérer les cartes archivées."""
     query = db.query(Card).filter(Card.is_archived == True)
 
@@ -189,7 +213,10 @@ def create_card(db: Session, card: CardCreate, created_by: int) -> Card:
     # Créer une entrée d'historique pour la création de la carte
     try:
         history_entry = CardHistoryCreate(
-            card_id=db_card.id, user_id=created_by, action="create", description=f"Carte « {db_card.title} » créée"
+            card_id=db_card.id,
+            user_id=created_by,
+            action="create",
+            description=f"Carte « {db_card.title} » créée",
         )
         card_history_service.create_card_history_entry(db, history_entry)
     except Exception as e:
@@ -218,7 +245,9 @@ def update_card(
             update_data["list_id"] = lowest_list.id
 
         else:
-            raise ValueError("Aucune liste valide n'est disponible pour mettre à jour la carte")
+            raise ValueError(
+                "Aucune liste valide n'est disponible pour mettre à jour la carte"
+            )
     # Stocker les valeurs avant modification pour l'historique
     old_values = {}
     if "title" in update_data:
@@ -252,8 +281,12 @@ def update_card(
                     CardPriority.MEDIUM: "moyenne",
                     CardPriority.HIGH: "élevée",
                 }
-                old_priority_label = priority_labels.get(old_values["priority"], str(old_values["priority"]))
-                new_priority_label = priority_labels.get(db_card.priority, str(db_card.priority))
+                old_priority_label = priority_labels.get(
+                    old_values["priority"], str(old_values["priority"])
+                )
+                new_priority_label = priority_labels.get(
+                    db_card.priority, str(db_card.priority)
+                )
                 history_entry = CardHistoryCreate(
                     card_id=db_card.id,
                     user_id=updated_by,
@@ -263,10 +296,15 @@ def update_card(
                 card_history_service.create_card_history_entry(db, history_entry)
 
             # Assigné changé
-            if "assignee_id" in old_values and old_values["assignee_id"] != db_card.assignee_id:
+            if (
+                "assignee_id" in old_values
+                and old_values["assignee_id"] != db_card.assignee_id
+            ):
                 _assignee_changed(old_values, db, db_card, updated_by)
 
-            if other_changes := [key for key in old_values if key not in ["priority", "assignee_id"]]:
+            if other_changes := [
+                key for key in old_values if key not in ["priority", "assignee_id"]
+            ]:
                 history_entry = CardHistoryCreate(
                     card_id=db_card.id,
                     user_id=updated_by,
@@ -288,10 +326,16 @@ def _assignee_changed(old_values, db, db_card, updated_by):
     new_assignee = None
     if old_values["assignee_id"]:
         old_user = db.query(User).filter(User.id == old_values["assignee_id"]).first()
-        old_assignee = old_user.display_name if old_user else f"Utilisateur {old_values['assignee_id']}"
+        old_assignee = (
+            old_user.display_name
+            if old_user
+            else f"Utilisateur {old_values['assignee_id']}"
+        )
     if db_card.assignee_id:
         new_user = db.query(User).filter(User.id == db_card.assignee_id).first()
-        new_assignee = new_user.display_name if new_user else f"Utilisateur {db_card.assignee_id}"
+        new_assignee = (
+            new_user.display_name if new_user else f"Utilisateur {db_card.assignee_id}"
+        )
 
     old_assignee_text = old_assignee or "personne"
     new_assignee_text = new_assignee or "personne"
@@ -304,7 +348,9 @@ def _assignee_changed(old_values, db, db_card, updated_by):
     card_history_service.create_card_history_entry(db, history_entry)
 
 
-def update_card_list(db: Session, card_id: int, list_update: CardListUpdate) -> Optional[Card]:
+def update_card_list(
+    db: Session, card_id: int, list_update: CardListUpdate
+) -> Optional[Card]:
     """Mettre à jour la liste d'une carte."""
     db_card = get_card(db, card_id)
     if not db_card:
@@ -325,7 +371,9 @@ def update_card_list(db: Session, card_id: int, list_update: CardListUpdate) -> 
     return db_card
 
 
-def archive_card(db: Session, card_id: int, archived_by: Optional[int] = None) -> Optional[Card]:
+def archive_card(
+    db: Session, card_id: int, archived_by: Optional[int] = None
+) -> Optional[Card]:
     """Archiver une carte."""
     db_card = get_card(db, card_id)
     if not db_card:
@@ -351,7 +399,9 @@ def archive_card(db: Session, card_id: int, archived_by: Optional[int] = None) -
     return db_card
 
 
-def unarchive_card(db: Session, card_id: int, unarchived_by: Optional[int] = None) -> Optional[Card]:
+def unarchive_card(
+    db: Session, card_id: int, unarchived_by: Optional[int] = None
+) -> Optional[Card]:
     """Désarchiver une carte."""
     db_card = get_card(db, card_id)
     if not db_card:
@@ -395,7 +445,10 @@ def delete_card(db: Session, card_id: int) -> bool:
 
 
 def move_card(
-    db: Session, card_id: int, move_request: CardMoveRequest, moved_by: Optional[int] = None
+    db: Session,
+    card_id: int,
+    move_request: CardMoveRequest,
+    moved_by: Optional[int] = None,
 ) -> Optional[Card]:
     """Déplacer une carte entre listes avec gestion de position."""
     db_card = get_card(db, card_id)
@@ -427,7 +480,9 @@ def move_card(
             )
             target_position = (max_position + 1) if max_position is not None else 0
 
-        _reorder_cards_in_same_list(db, card_id, old_position, target_position, new_list_id)
+        _reorder_cards_in_same_list(
+            db, card_id, old_position, target_position, new_list_id
+        )
 
         # Normaliser les positions dans la liste pour qu'elles soient séquentielles
         _normalize_positions_in_list(db, new_list_id)
@@ -480,7 +535,9 @@ def move_card(
     return db_card
 
 
-def _reorder_cards_in_same_list(db: Session, card_id: int, old_position: int, new_position: int, list_id: int):
+def _reorder_cards_in_same_list(
+    db: Session, card_id: int, old_position: int, new_position: int, list_id: int
+):
     """Réorganiser les positions des cartes dans la même liste."""
     if old_position == new_position:
         return
@@ -517,24 +574,33 @@ def _reorder_cards_in_same_list(db: Session, card_id: int, old_position: int, ne
 
 def _compact_positions_after_removal(db: Session, list_id: int, removed_position: int):
     """Compacter les positions après suppression d'une carte."""
-    db.query(Card).filter(Card.list_id == list_id, Card.position > removed_position, Card.is_archived == False).update(
-        {Card.position: Card.position - 1}
-    )
+    db.query(Card).filter(
+        Card.list_id == list_id,
+        Card.position > removed_position,
+        Card.is_archived == False,
+    ).update({Card.position: Card.position - 1})
     db.commit()
 
 
 def _shift_positions_for_insertion(db: Session, list_id: int, insert_position: int):
     """Décaler les positions pour faire de la place à une nouvelle carte."""
-    db.query(Card).filter(Card.list_id == list_id, Card.position >= insert_position, Card.is_archived == False).update(
-        {Card.position: Card.position + 1}
-    )
+    db.query(Card).filter(
+        Card.list_id == list_id,
+        Card.position >= insert_position,
+        Card.is_archived == False,
+    ).update({Card.position: Card.position + 1})
     db.commit()
 
 
 def _normalize_positions_in_list(db: Session, list_id: int):
     """Normaliser les positions des cartes non archivées dans une liste pour qu'elles soient séquentielles (0, 1, 2, ...)."""
     # Récupérer uniquement les cartes non archivées de la liste triées par position actuelle
-    cards = db.query(Card).filter(Card.list_id == list_id, Card.is_archived == False).order_by(Card.position).all()
+    cards = (
+        db.query(Card)
+        .filter(Card.list_id == list_id, Card.is_archived == False)
+        .order_by(Card.position)
+        .all()
+    )
 
     # Mettre à jour les positions pour qu'elles soient séquentielles en commençant à 0
     for new_position, card in enumerate(cards):
@@ -553,7 +619,9 @@ def bulk_move_cards(db: Session, bulk_move_request: BulkCardMoveRequest) -> List
     # Obtenir la position maximale dans la liste de destination (uniquement les cartes non archivées)
     max_position = (
         db.query(func.max(Card.position))
-        .filter(Card.list_id == bulk_move_request.target_list_id, Card.is_archived == False)
+        .filter(
+            Card.list_id == bulk_move_request.target_list_id, Card.is_archived == False
+        )
         .scalar()
     )
     next_position = (max_position + 1) if max_position is not None else 0

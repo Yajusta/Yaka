@@ -1,13 +1,15 @@
 """Routeur pour la gestion de l'historique des cartes."""
 
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
+from ..models import User
 from ..multi_database import get_dynamic_db as get_db
 from ..schemas import CardHistoryCreate, CardHistoryResponse
 from ..services import card_history as card_history_service
 from ..utils.dependencies import get_current_active_user
-from ..models import User
 
 router = APIRouter(prefix="/cards/{card_id}/history", tags=["historique cartes"])
 
@@ -24,7 +26,9 @@ async def get_card_history(
 
     db_card = card_service.get_card(db, card_id=card_id)
     if db_card is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée"
+        )
 
     return card_history_service.get_card_history(db, card_id=card_id)
 
@@ -42,6 +46,8 @@ async def create_card_history_entry(
 
     db_card = card_service.get_card(db, card_id=card_id)
     if db_card is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée"
+        )
 
     return card_history_service.create_card_history_entry(db, history_entry)

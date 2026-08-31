@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import { Button } from '../ui/button';
-import { Mic, MicOff, Trash2 } from 'lucide-react';
+import { useEffect, useState } from "react";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
+import { Button } from "../ui/button";
+import { Mic, MicOff, Trash2 } from "lucide-react";
 
 export const VoiceRecognitionTest = () => {
   const {
@@ -10,7 +12,7 @@ export const VoiceRecognitionTest = () => {
     resetTranscript,
     browserSupportsSpeechRecognition,
     browserSupportsContinuousListening,
-    isMicrophoneAvailable
+    isMicrophoneAvailable,
   } = useSpeechRecognition();
 
   const [shouldAutoRestart, setShouldAutoRestart] = useState(false);
@@ -19,43 +21,57 @@ export const VoiceRecognitionTest = () => {
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+    setLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
   };
 
   useEffect(() => {
-    addLog('✅ Composant chargé');
-    addLog(`📱 Navigateur: ${/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop'}`);
-    addLog(`🔊 Support reconnaissance: ${browserSupportsSpeechRecognition ? '✅' : '❌'}`);
-    addLog(`🔄 Support mode continu: ${browserSupportsContinuousListening ? '✅' : '❌'}`);
-    addLog(`🎤 Micro disponible: ${isMicrophoneAvailable ? '✅' : '❌'}`);
-    addLog(`🔒 Protocole: ${window.location.protocol === 'https:' ? 'HTTPS ✅' : 'HTTP ⚠️'}`);
-    
+    addLog("✅ Composant chargé");
+    addLog(
+      `📱 Navigateur: ${/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? "Mobile" : "Desktop"}`,
+    );
+    addLog(
+      `🔊 Support reconnaissance: ${browserSupportsSpeechRecognition ? "✅" : "❌"}`,
+    );
+    addLog(
+      `🔄 Support mode continu: ${browserSupportsContinuousListening ? "✅" : "❌"}`,
+    );
+    addLog(`🎤 Micro disponible: ${isMicrophoneAvailable ? "✅" : "❌"}`);
+    addLog(
+      `🔒 Protocole: ${window.location.protocol === "https:" ? "HTTPS ✅" : "HTTP ⚠️"}`,
+    );
+
     // Log native recognition events for debugging
     const recognition = SpeechRecognition.getRecognition();
     if (recognition) {
-      const handleStart = () => addLog('🎬 [Native] Recognition started');
-      const handleEnd = () => addLog('🛑 [Native] Recognition ended');
+      const handleStart = () => addLog("🎬 [Native] Recognition started");
+      const handleEnd = () => addLog("🛑 [Native] Recognition ended");
       const handleError = (e: any) => addLog(`❌ [Native] Error: ${e.error}`);
       const handleResult = (e: any) => {
         const last = e.results[e.results.length - 1];
         const text = last[0].transcript;
         const isFinal = last.isFinal;
-        addLog(`📢 [Native] Result: "${text}" (${isFinal ? 'FINAL' : 'interim'})`);
+        addLog(
+          `📢 [Native] Result: "${text}" (${isFinal ? "FINAL" : "interim"})`,
+        );
       };
-      
-      recognition.addEventListener('start', handleStart);
-      recognition.addEventListener('end', handleEnd);
-      recognition.addEventListener('error', handleError);
-      recognition.addEventListener('result', handleResult);
-      
+
+      recognition.addEventListener("start", handleStart);
+      recognition.addEventListener("end", handleEnd);
+      recognition.addEventListener("error", handleError);
+      recognition.addEventListener("result", handleResult);
+
       return () => {
-        recognition.removeEventListener('start', handleStart);
-        recognition.removeEventListener('end', handleEnd);
-        recognition.removeEventListener('error', handleError);
-        recognition.removeEventListener('result', handleResult);
+        recognition.removeEventListener("start", handleStart);
+        recognition.removeEventListener("end", handleEnd);
+        recognition.removeEventListener("error", handleError);
+        recognition.removeEventListener("result", handleResult);
       };
     }
-  }, [browserSupportsSpeechRecognition, browserSupportsContinuousListening, isMicrophoneAvailable]);
+  }, [
+    browserSupportsSpeechRecognition,
+    browserSupportsContinuousListening,
+    isMicrophoneAvailable,
+  ]);
 
   // Auto-restart logic for non-continuous mode
   useEffect(() => {
@@ -63,26 +79,26 @@ export const VoiceRecognitionTest = () => {
       const recognition = SpeechRecognition.getRecognition();
       if (recognition) {
         const handleEnd = () => {
-          addLog('⏹️ Reconnaissance terminée (event: end)');
-          
+          addLog("⏹️ Reconnaissance terminée (event: end)");
+
           // Auto-restart if needed
           if (shouldAutoRestart && !listening) {
-            addLog('🔄 Auto-restart dans 100ms...');
+            addLog("🔄 Auto-restart dans 100ms...");
             setTimeout(() => {
               if (shouldAutoRestart) {
-                addLog('▶️ Redémarrage automatique');
+                addLog("▶️ Redémarrage automatique");
                 SpeechRecognition.startListening({
                   continuous: false,
-                  language: 'fr-FR'
+                  language: "fr-FR",
                 });
               }
             }, 100);
           }
         };
 
-        recognition.addEventListener('end', handleEnd);
+        recognition.addEventListener("end", handleEnd);
         return () => {
-          recognition.removeEventListener('end', handleEnd);
+          recognition.removeEventListener("end", handleEnd);
         };
       }
     }
@@ -91,33 +107,37 @@ export const VoiceRecognitionTest = () => {
   // Monitor listening state changes
   useEffect(() => {
     if (listening) {
-      addLog('🎤 État: EN ÉCOUTE');
+      addLog("🎤 État: EN ÉCOUTE");
     } else {
-      addLog('⏸️ État: ARRÊTÉ');
+      addLog("⏸️ État: ARRÊTÉ");
     }
   }, [listening]);
 
   // Monitor transcript changes
   useEffect(() => {
     if (transcript) {
-      addLog(`📝 Transcript mis à jour: "${transcript.substring(0, 50)}${transcript.length > 50 ? '...' : ''}"`);
+      addLog(
+        `📝 Transcript mis à jour: "${transcript.substring(0, 50)}${transcript.length > 50 ? "..." : ""}"`,
+      );
     }
   }, [transcript]);
 
   const startListening = () => {
-    addLog(`▶️ Démarrage demandé (mode: ${useContinuousMode ? 'continu' : 'non-continu + auto-restart'})`);
+    addLog(
+      `▶️ Démarrage demandé (mode: ${useContinuousMode ? "continu" : "non-continu + auto-restart"})`,
+    );
     setShouldAutoRestart(true);
-    
+
     // Ne pas réinitialiser le transcript en mode continu, seulement au premier démarrage
     if (!listening) {
-      addLog('🗑️ Reset du transcript avant démarrage');
+      addLog("🗑️ Reset du transcript avant démarrage");
       resetTranscript();
     }
-    
+
     try {
       SpeechRecognition.startListening({
         continuous: useContinuousMode,
-        language: 'fr-FR'
+        language: "fr-FR",
       });
     } catch (error: any) {
       addLog(`❌ Erreur démarrage: ${error.message}`);
@@ -125,9 +145,9 @@ export const VoiceRecognitionTest = () => {
   };
 
   const stopListening = () => {
-    addLog('⏹️ Arrêt demandé');
+    addLog("⏹️ Arrêt demandé");
     setShouldAutoRestart(false);
-    
+
     try {
       SpeechRecognition.stopListening();
     } catch (error: any) {
@@ -138,14 +158,16 @@ export const VoiceRecognitionTest = () => {
   const handleClear = () => {
     resetTranscript();
     setLogs([]);
-    addLog('🗑️ Texte et logs effacés');
+    addLog("🗑️ Texte et logs effacés");
   };
 
   const toggleMode = () => {
     const newMode = !useContinuousMode;
     setUseContinuousMode(newMode);
-    addLog(`🔄 Mode changé: ${newMode ? 'Continu' : 'Non-continu + auto-restart'}`);
-    
+    addLog(
+      `🔄 Mode changé: ${newMode ? "Continu" : "Non-continu + auto-restart"}`,
+    );
+
     // Si on écoute, redémarrer avec le nouveau mode
     if (listening) {
       stopListening();
@@ -160,7 +182,9 @@ export const VoiceRecognitionTest = () => {
       <div className="min-h-screen bg-background p-8">
         <div className="max-w-4xl mx-auto">
           <div className="bg-destructive/10 border-2 border-destructive rounded-lg p-6">
-            <h2 className="text-2xl font-bold text-destructive mb-2">❌ Non supporté</h2>
+            <h2 className="text-2xl font-bold text-destructive mb-2">
+              ❌ Non supporté
+            </h2>
             <p>Votre navigateur ne supporte pas la reconnaissance vocale.</p>
           </div>
         </div>
@@ -173,7 +197,9 @@ export const VoiceRecognitionTest = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-card border-2 border-border rounded-lg p-6">
-          <h1 className="text-3xl font-bold mb-2">🎤 Test Reconnaissance Vocale</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            🎤 Test Reconnaissance Vocale
+          </h1>
           <p className="text-muted-foreground">
             Page de test pour react-speech-recognition
           </p>
@@ -183,56 +209,56 @@ export const VoiceRecognitionTest = () => {
         <div className="bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <strong>Support reconnaissance:</strong>{' '}
-              {browserSupportsSpeechRecognition ? '✅ Oui' : '❌ Non'}
+              <strong>Support reconnaissance:</strong>{" "}
+              {browserSupportsSpeechRecognition ? "✅ Oui" : "❌ Non"}
             </div>
             <div>
-              <strong>Support mode continu:</strong>{' '}
-              {browserSupportsContinuousListening ? '✅ Oui' : '❌ Non'}
+              <strong>Support mode continu:</strong>{" "}
+              {browserSupportsContinuousListening ? "✅ Oui" : "❌ Non"}
             </div>
             <div>
-              <strong>Micro disponible:</strong>{' '}
-              {isMicrophoneAvailable ? '✅ Oui' : '❌ Non'}
+              <strong>Micro disponible:</strong>{" "}
+              {isMicrophoneAvailable ? "✅ Oui" : "❌ Non"}
             </div>
             <div>
-              <strong>Protocole:</strong>{' '}
-              {window.location.protocol === 'https:' ? '🔒 HTTPS' : '⚠️ HTTP'}
+              <strong>Protocole:</strong>{" "}
+              {window.location.protocol === "https:" ? "🔒 HTTPS" : "⚠️ HTTP"}
             </div>
           </div>
         </div>
 
         {/* Warning for HTTP on mobile */}
-        {window.location.protocol !== 'https:' && 
-         window.location.hostname !== 'localhost' && 
-         window.location.hostname !== '127.0.0.1' && (
-          <div className="bg-yellow-50 dark:bg-yellow-950 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg p-4">
-            <strong>⚠️ Attention:</strong> La reconnaissance vocale nécessite HTTPS sur mobile.
-            <br />
-            <strong>Solution:</strong> Utilisez ngrok ou testez sur localhost (desktop uniquement).
-          </div>
-        )}
+        {window.location.protocol !== "https:" &&
+          window.location.hostname !== "localhost" &&
+          window.location.hostname !== "127.0.0.1" && (
+            <div className="bg-yellow-50 dark:bg-yellow-950 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg p-4">
+              <strong>⚠️ Attention:</strong> La reconnaissance vocale nécessite
+              HTTPS sur mobile.
+              <br />
+              <strong>Solution:</strong> Utilisez ngrok ou testez sur localhost
+              (desktop uniquement).
+            </div>
+          )}
 
         {/* Mode Toggle */}
         <div className="bg-card border-2 border-border rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
-              <strong>Mode actuel:</strong>{' '}
+              <strong>Mode actuel:</strong>{" "}
               <span className="text-primary font-mono">
-                {useContinuousMode ? 'continuous: true' : 'continuous: false + auto-restart'}
+                {useContinuousMode
+                  ? "continuous: true"
+                  : "continuous: false + auto-restart"}
               </span>
             </div>
-            <Button
-              onClick={toggleMode}
-              variant="outline"
-              disabled={listening}
-            >
+            <Button onClick={toggleMode} variant="outline" disabled={listening}>
               Changer de mode
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            {useContinuousMode 
-              ? '🖥️ Mode continu natif (recommandé desktop)'
-              : '📱 Mode non-continu avec auto-restart (recommandé mobile)'}
+            {useContinuousMode
+              ? "🖥️ Mode continu natif (recommandé desktop)"
+              : "📱 Mode non-continu avec auto-restart (recommandé mobile)"}
           </p>
         </div>
 
@@ -268,22 +294,20 @@ export const VoiceRecognitionTest = () => {
             <MicOff className="mr-2 h-5 w-5" />
             Arrêter
           </Button>
-          <Button
-            onClick={handleClear}
-            variant="outline"
-            size="lg"
-          >
+          <Button onClick={handleClear} variant="outline" size="lg">
             <Trash2 className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Status */}
-        <div className={`border-2 rounded-lg p-4 font-bold ${
-          listening 
-            ? 'bg-green-50 dark:bg-green-950 border-green-500 text-green-700 dark:text-green-300'
-            : 'bg-red-50 dark:bg-red-950 border-red-500 text-red-700 dark:text-red-300'
-        }`}>
-          État: {listening ? '🎤 EN ÉCOUTE' : '⏸️ ARRÊTÉ'}
+        <div
+          className={`border-2 rounded-lg p-4 font-bold ${
+            listening
+              ? "bg-green-50 dark:bg-green-950 border-green-500 text-green-700 dark:text-green-300"
+              : "bg-red-50 dark:bg-red-950 border-red-500 text-red-700 dark:text-red-300"
+          }`}
+        >
+          État: {listening ? "🎤 EN ÉCOUTE" : "⏸️ ARRÊTÉ"}
         </div>
 
         {/* Debug Logs */}
@@ -299,4 +323,3 @@ export const VoiceRecognitionTest = () => {
     </div>
   );
 };
-

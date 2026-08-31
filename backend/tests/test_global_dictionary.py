@@ -28,7 +28,9 @@ TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_global_dictionary.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -48,8 +50,12 @@ def db_session():
 def sample_entries(db_session):
     """Fixture to create sample global dictionary entries."""
     entries = [
-        GlobalDictionary(term="Sprint", definition="Une période de travail de 2 semaines"),
-        GlobalDictionary(term="Epic", definition="Un grand ensemble de fonctionnalités"),
+        GlobalDictionary(
+            term="Sprint", definition="Une période de travail de 2 semaines"
+        ),
+        GlobalDictionary(
+            term="Epic", definition="Un grand ensemble de fonctionnalités"
+        ),
         GlobalDictionary(term="Story", definition="Une fonctionnalité utilisateur"),
     ]
 
@@ -124,7 +130,9 @@ class TestCreateEntry:
 
     def test_create_entry_successfully(self, db_session):
         """Test creating an entry successfully."""
-        entry_data = GlobalDictionaryCreate(term="Backlog", definition="Liste de tâches à faire")
+        entry_data = GlobalDictionaryCreate(
+            term="Backlog", definition="Liste de tâches à faire"
+        )
         entry = create_entry(db_session, entry_data)
 
         assert entry.id is not None
@@ -133,14 +141,18 @@ class TestCreateEntry:
 
     def test_create_entry_duplicate_term(self, db_session, sample_entries):
         """Test creating an entry with a duplicate term."""
-        entry_data = GlobalDictionaryCreate(term="Sprint", definition="Autre définition")
+        entry_data = GlobalDictionaryCreate(
+            term="Sprint", definition="Autre définition"
+        )
 
         with pytest.raises(SQLAlchemyError):
             create_entry(db_session, entry_data)
 
     def test_create_entry_with_special_characters(self, db_session):
         """Test creating an entry with special characters."""
-        entry_data = GlobalDictionaryCreate(term="Café", definition="Un lieu de rencontre")
+        entry_data = GlobalDictionaryCreate(
+            term="Café", definition="Un lieu de rencontre"
+        )
         entry = create_entry(db_session, entry_data)
 
         assert entry.term == "Café"
@@ -251,4 +263,3 @@ class TestSecurityAndValidation:
 
         with pytest.raises(ValidationError):
             GlobalDictionaryCreate(term="Test", definition=too_long_definition)
-

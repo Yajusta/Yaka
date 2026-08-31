@@ -21,7 +21,9 @@ TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_integration_dictionary.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -120,7 +122,11 @@ class TestGlobalDictionaryAPI:
         app.dependency_overrides[get_current_active_user] = lambda: admin_user
 
         response = client.post(
-            "/global-dictionary/", json={"term": "Scrum", "definition": "Une méthode agile de gestion de projet"}
+            "/global-dictionary/",
+            json={
+                "term": "Scrum",
+                "definition": "Une méthode agile de gestion de projet",
+            },
         )
         assert response.status_code == 200
         data = response.json()
@@ -133,7 +139,11 @@ class TestGlobalDictionaryAPI:
         app.dependency_overrides[get_current_active_user] = lambda: editor_user
 
         response = client.post(
-            "/global-dictionary/", json={"term": "Scrum", "definition": "Une méthode agile de gestion de projet"}
+            "/global-dictionary/",
+            json={
+                "term": "Scrum",
+                "definition": "Une méthode agile de gestion de projet",
+            },
         )
         assert response.status_code == 403
 
@@ -152,12 +162,16 @@ class TestGlobalDictionaryAPI:
 
         # Create entry first
         create_response = client.post(
-            "/global-dictionary/", json={"term": "Kanban", "definition": "Méthode de gestion visuelle"}
+            "/global-dictionary/",
+            json={"term": "Kanban", "definition": "Méthode de gestion visuelle"},
         )
         entry_id = create_response.json()["id"]
 
         # Update entry
-        response = client.put(f"/global-dictionary/{entry_id}", json={"definition": "Méthode agile visuelle"})
+        response = client.put(
+            f"/global-dictionary/{entry_id}",
+            json={"definition": "Méthode agile visuelle"},
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["definition"] == "Méthode agile visuelle"
@@ -168,7 +182,8 @@ class TestGlobalDictionaryAPI:
 
         # Create entry first
         create_response = client.post(
-            "/global-dictionary/", json={"term": "DevOps", "definition": "Culture de collaboration"}
+            "/global-dictionary/",
+            json={"term": "DevOps", "definition": "Culture de collaboration"},
         )
         entry_id = create_response.json()["id"]
 
@@ -189,7 +204,8 @@ class TestPersonalDictionaryAPI:
         app.dependency_overrides[get_current_active_user] = lambda: editor_user
 
         response = client.post(
-            "/personal-dictionary/", json={"term": "MyTerm", "definition": "My personal definition"}
+            "/personal-dictionary/",
+            json={"term": "MyTerm", "definition": "My personal definition"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -202,7 +218,8 @@ class TestPersonalDictionaryAPI:
         app.dependency_overrides[get_current_active_user] = lambda: visitor_user
 
         response = client.post(
-            "/personal-dictionary/", json={"term": "MyTerm", "definition": "My personal definition"}
+            "/personal-dictionary/",
+            json={"term": "MyTerm", "definition": "My personal definition"},
         )
         assert response.status_code == 403
 
@@ -210,11 +227,17 @@ class TestPersonalDictionaryAPI:
         """Test that users can only see their own personal dictionary entries."""
         # Create entry as admin
         app.dependency_overrides[get_current_active_user] = lambda: admin_user
-        client.post("/personal-dictionary/", json={"term": "AdminTerm", "definition": "Admin definition"})
+        client.post(
+            "/personal-dictionary/",
+            json={"term": "AdminTerm", "definition": "Admin definition"},
+        )
 
         # Create entry as editor
         app.dependency_overrides[get_current_active_user] = lambda: editor_user
-        client.post("/personal-dictionary/", json={"term": "EditorTerm", "definition": "Editor definition"})
+        client.post(
+            "/personal-dictionary/",
+            json={"term": "EditorTerm", "definition": "Editor definition"},
+        )
 
         # Editor should only see their own entries
         response = client.get("/personal-dictionary/")
@@ -230,18 +253,23 @@ class TestPersonalDictionaryAPI:
         # Create entry as editor
         app.dependency_overrides[get_current_active_user] = lambda: editor_user
         create_response = client.post(
-            "/personal-dictionary/", json={"term": "UpdateTest", "definition": "Original definition"}
+            "/personal-dictionary/",
+            json={"term": "UpdateTest", "definition": "Original definition"},
         )
         entry_id = create_response.json()["id"]
 
         # Try to update as admin (should fail)
         app.dependency_overrides[get_current_active_user] = lambda: admin_user
-        response = client.put(f"/personal-dictionary/{entry_id}", json={"definition": "Admin's change"})
+        response = client.put(
+            f"/personal-dictionary/{entry_id}", json={"definition": "Admin's change"}
+        )
         assert response.status_code == 403
 
         # Update as editor (should succeed)
         app.dependency_overrides[get_current_active_user] = lambda: editor_user
-        response = client.put(f"/personal-dictionary/{entry_id}", json={"definition": "Editor's change"})
+        response = client.put(
+            f"/personal-dictionary/{entry_id}", json={"definition": "Editor's change"}
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["definition"] == "Editor's change"
@@ -251,7 +279,8 @@ class TestPersonalDictionaryAPI:
         # Create entry as editor
         app.dependency_overrides[get_current_active_user] = lambda: editor_user
         create_response = client.post(
-            "/personal-dictionary/", json={"term": "DeleteTest", "definition": "To be deleted"}
+            "/personal-dictionary/",
+            json={"term": "DeleteTest", "definition": "To be deleted"},
         )
         entry_id = create_response.json()["id"]
 
@@ -275,7 +304,10 @@ class TestDictionaryValidation:
 
         response = client.post(
             "/global-dictionary/",
-            json={"term": "<script>alert('XSS')</script>", "definition": "Malicious entry"},
+            json={
+                "term": "<script>alert('XSS')</script>",
+                "definition": "Malicious entry",
+            },
         )
         assert response.status_code == 422
 
@@ -293,13 +325,16 @@ class TestDictionaryValidation:
         """Test that terms exceeding max length are rejected."""
         app.dependency_overrides[get_current_active_user] = lambda: admin_user
 
-        response = client.post("/global-dictionary/", json={"term": "A" * 33, "definition": "Test"})
+        response = client.post(
+            "/global-dictionary/", json={"term": "A" * 33, "definition": "Test"}
+        )
         assert response.status_code == 422
 
     def test_create_entry_with_too_long_definition(self, client, admin_user):
         """Test that definitions exceeding max length are rejected."""
         app.dependency_overrides[get_current_active_user] = lambda: admin_user
 
-        response = client.post("/global-dictionary/", json={"term": "Test", "definition": "A" * 251})
+        response = client.post(
+            "/global-dictionary/", json={"term": "Test", "definition": "A" * 251}
+        )
         assert response.status_code == 422
-

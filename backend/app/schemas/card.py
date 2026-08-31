@@ -14,10 +14,14 @@ from .label import LabelResponse
 class CardBase(BaseModel):
     """Schéma de base pour les cartes."""
 
-    title: str = Field(..., min_length=1, max_length=200, description="Titre de la carte")
+    title: str = Field(
+        ..., min_length=1, max_length=200, description="Titre de la carte"
+    )
     description: Optional[str] = Field(None, description="Description de la carte")
     due_date: Optional[date] = Field(None, description="Date d'échéance de la carte")
-    priority: CardPriority = Field(CardPriority.MEDIUM, description="Priorité de la carte")
+    priority: CardPriority = Field(
+        CardPriority.MEDIUM, description="Priorité de la carte"
+    )
     assignee_id: Optional[int] = Field(None, description="ID de l'utilisateur assigné")
 
 
@@ -30,20 +34,26 @@ class CardCreate(CardBase):
         ge=0,
         description="Position dans la liste (optionnel, ajouté à la fin si non spécifié)",
     )
-    label_ids: List[int] = Field(default_factory=list, description="Liste des IDs des étiquettes")
+    label_ids: List[int] = Field(
+        default_factory=list, description="Liste des IDs des étiquettes"
+    )
 
 
 class CardUpdate(BaseModel):
     """Schéma pour la mise à jour d'une carte."""
 
-    title: Optional[str] = Field(None, min_length=1, max_length=200, description="Titre de la carte")
+    title: Optional[str] = Field(
+        None, min_length=1, max_length=200, description="Titre de la carte"
+    )
     description: Optional[str] = Field(None, description="Description de la carte")
     due_date: Optional[date] = Field(None, description="Date d'échéance de la carte")
     priority: Optional[CardPriority] = Field(None, description="Priorité de la carte")
     list_id: Optional[int] = Field(None, description="ID de la liste Kanban")
     position: Optional[int] = Field(None, ge=0, description="Position dans la liste")
     assignee_id: Optional[int] = Field(None, description="ID de l'utilisateur assigné")
-    label_ids: Optional[List[int]] = Field(None, description="Liste des IDs des étiquettes")
+    label_ids: Optional[List[int]] = Field(
+        None, description="Liste des IDs des étiquettes"
+    )
 
 
 class CardListUpdate(BaseModel):
@@ -65,7 +75,9 @@ class CardResponse(CardBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     labels: List[LabelResponse] = Field(default_factory=list)
-    assignee_name: Optional[str] = Field(default=None, description="Nom de l'utilisateur assigné")
+    assignee_name: Optional[str] = Field(
+        default=None, description="Nom de l'utilisateur assigné"
+    )
     items: List[CardItemResponse] = Field(default_factory=list)
     comments: List[CardCommentResponse] = Field(default_factory=list)
 
@@ -82,11 +94,17 @@ class CardFilter(BaseModel):
     """Schéma pour les filtres de cartes."""
 
     list_id: Optional[int] = Field(default=None, description="ID de la liste Kanban")
-    assignee_id: Optional[int] = Field(default=None, description="ID de l'utilisateur assigné")
-    priority: Optional[CardPriority] = Field(default=None, description="Priorité de la carte")
+    assignee_id: Optional[int] = Field(
+        default=None, description="ID de l'utilisateur assigné"
+    )
+    priority: Optional[CardPriority] = Field(
+        default=None, description="Priorité de la carte"
+    )
     label_id: Optional[int] = Field(default=None, description="ID de l'étiquette")
     search: Optional[str] = Field(default=None, description="Terme de recherche")
-    include_archived: bool = Field(default=False, description="Inclure les cartes archivées")
+    include_archived: bool = Field(
+        default=False, description="Inclure les cartes archivées"
+    )
 
 
 class CardMoveRequest(BaseModel):
@@ -94,7 +112,9 @@ class CardMoveRequest(BaseModel):
 
     source_list_id: int = Field(..., description="ID de la liste source")
     target_list_id: int = Field(..., description="ID de la liste de destination")
-    position: Optional[int] = Field(None, ge=0, description="Position dans la liste de destination")
+    position: Optional[int] = Field(
+        None, ge=0, description="Position dans la liste de destination"
+    )
 
 
 class BulkCardMoveRequest(BaseModel):

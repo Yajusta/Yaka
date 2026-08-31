@@ -29,7 +29,9 @@ TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_personal_dictionary.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -79,9 +81,19 @@ def sample_users(db_session):
 def sample_entries(db_session, sample_users):
     """Fixture to create sample personal dictionary entries."""
     entries = [
-        PersonalDictionary(user_id=sample_users[0].id, term="Repo", definition="Référentiel de code source"),
-        PersonalDictionary(user_id=sample_users[0].id, term="PR", definition="Pull Request"),
-        PersonalDictionary(user_id=sample_users[1].id, term="CI/CD", definition="Integration et déploiement continu"),
+        PersonalDictionary(
+            user_id=sample_users[0].id,
+            term="Repo",
+            definition="Référentiel de code source",
+        ),
+        PersonalDictionary(
+            user_id=sample_users[0].id, term="PR", definition="Pull Request"
+        ),
+        PersonalDictionary(
+            user_id=sample_users[1].id,
+            term="CI/CD",
+            definition="Integration et déploiement continu",
+        ),
     ]
 
     for entry in entries:
@@ -139,7 +151,9 @@ class TestGetEntriesByUser:
         entries = get_entries_by_user(db_session, new_user.id)
         assert len(entries) == 0
 
-    def test_get_entries_with_pagination(self, db_session, sample_entries, sample_users):
+    def test_get_entries_with_pagination(
+        self, db_session, sample_entries, sample_users
+    ):
         """Test retrieving entries with pagination."""
         entries = get_entries_by_user(db_session, sample_users[0].id, skip=1, limit=1)
         assert len(entries) == 1
@@ -148,7 +162,9 @@ class TestGetEntriesByUser:
 class TestGetEntryByUserAndTerm:
     """Tests for the get_entry_by_user_and_term function."""
 
-    def test_get_existing_entry_by_user_and_term(self, db_session, sample_entries, sample_users):
+    def test_get_existing_entry_by_user_and_term(
+        self, db_session, sample_entries, sample_users
+    ):
         """Test retrieving an existing entry by user and term."""
         entry = get_entry_by_user_and_term(db_session, sample_users[0].id, "Repo")
         assert entry is not None
@@ -157,7 +173,9 @@ class TestGetEntryByUserAndTerm:
 
     def test_get_nonexistent_entry_by_user_and_term(self, db_session, sample_users):
         """Test retrieving a nonexistent entry by user and term."""
-        entry = get_entry_by_user_and_term(db_session, sample_users[0].id, "NonExistent")
+        entry = get_entry_by_user_and_term(
+            db_session, sample_users[0].id, "NonExistent"
+        )
         assert entry is None
 
     def test_get_entry_for_wrong_user(self, db_session, sample_entries, sample_users):
@@ -172,7 +190,9 @@ class TestCreateEntry:
 
     def test_create_entry_successfully(self, db_session, sample_users):
         """Test creating an entry successfully."""
-        entry_data = PersonalDictionaryCreate(term="MVP", definition="Minimum Viable Product")
+        entry_data = PersonalDictionaryCreate(
+            term="MVP", definition="Minimum Viable Product"
+        )
         entry = create_entry(db_session, entry_data, sample_users[0].id)
 
         assert entry.id is not None
@@ -180,17 +200,25 @@ class TestCreateEntry:
         assert entry.term == "MVP"
         assert entry.definition == "Minimum Viable Product"
 
-    def test_create_entry_duplicate_term_for_same_user(self, db_session, sample_entries, sample_users):
+    def test_create_entry_duplicate_term_for_same_user(
+        self, db_session, sample_entries, sample_users
+    ):
         """Test creating an entry with a duplicate term for the same user."""
-        entry_data = PersonalDictionaryCreate(term="Repo", definition="Autre définition")
+        entry_data = PersonalDictionaryCreate(
+            term="Repo", definition="Autre définition"
+        )
 
         with pytest.raises(SQLAlchemyError):
             create_entry(db_session, entry_data, sample_users[0].id)
 
-    def test_create_entry_same_term_for_different_users(self, db_session, sample_entries, sample_users):
+    def test_create_entry_same_term_for_different_users(
+        self, db_session, sample_entries, sample_users
+    ):
         """Test creating an entry with the same term for different users."""
         # User 2 can create an entry with term "Repo" even though User 1 has it
-        entry_data = PersonalDictionaryCreate(term="Repo", definition="Repository of source code")
+        entry_data = PersonalDictionaryCreate(
+            term="Repo", definition="Repository of source code"
+        )
         entry = create_entry(db_session, entry_data, sample_users[1].id)
 
         assert entry.id is not None
@@ -303,4 +331,3 @@ class TestSecurityAndValidation:
 
         with pytest.raises(ValidationError):
             PersonalDictionaryCreate(term="Test", definition=too_long_definition)
-

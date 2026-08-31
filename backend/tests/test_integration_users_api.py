@@ -20,7 +20,9 @@ async def test_users_listing_hides_emails_for_non_admins(
         )
         assert admin_response.status_code == 200
         admin_payload = admin_response.json()
-        member_entry = next(user for user in admin_payload if user["display_name"] == "Member")
+        member_entry = next(
+            user for user in admin_payload if user["display_name"] == "Member"
+        )
         assert member_entry["email"] == "member@example.com"
 
         user_token = await login_user(client, "member@example.com", "Userpass123")
@@ -30,12 +32,16 @@ async def test_users_listing_hides_emails_for_non_admins(
         )
         assert user_response.status_code == 200
         user_payload = user_response.json()
-        member_for_user = next(user for user in user_payload if user["display_name"] == "Member")
+        member_for_user = next(
+            user for user in user_payload if user["display_name"] == "Member"
+        )
         assert member_for_user["email"] is None
 
 
 @pytest.mark.asyncio
-async def test_user_management_requires_admin(async_client_factory, seed_admin_user, create_regular_user, login_user):
+async def test_user_management_requires_admin(
+    async_client_factory, seed_admin_user, create_regular_user, login_user
+):
     seed_admin_user()
     create_regular_user("observer@example.com", "Observer123", display_name="Observer")
 
@@ -82,7 +88,9 @@ async def test_user_management_requires_admin(async_client_factory, seed_admin_u
 
 
 @pytest.mark.asyncio
-async def test_user_can_update_language(async_client_factory, seed_admin_user, create_regular_user, login_user):
+async def test_user_can_update_language(
+    async_client_factory, seed_admin_user, create_regular_user, login_user
+):
     seed_admin_user()
     create_regular_user("languser@example.com", "Langpass123", display_name="Lang User")
 

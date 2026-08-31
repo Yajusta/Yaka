@@ -7,7 +7,9 @@ from app.routers.labels import router as labels_router
 
 
 @pytest.mark.asyncio
-async def test_label_crud_permissions(async_client_factory, seed_admin_user, create_regular_user, login_user):
+async def test_label_crud_permissions(
+    async_client_factory, seed_admin_user, create_regular_user, login_user
+):
     seed_admin_user()
     create_regular_user("labeluser@example.com", "Label123", display_name="Label User")
 
@@ -75,7 +77,9 @@ async def test_label_deletion_detaches_from_cards(
 ):
     seed_admin_user()
     list_id = create_list_record("Backlog", 1)
-    create_regular_user("labelowner@example.com", "LabelOwner123!", display_name="Owner")
+    create_regular_user(
+        "labelowner@example.com", "LabelOwner123!", display_name="Owner"
+    )
 
     async with async_client_factory(auth_router, labels_router, cards_router) as client:
         admin_token = await login_user(client, "admin@yaka.local", "Admin123")
@@ -89,7 +93,9 @@ async def test_label_deletion_detaches_from_cards(
         assert label_response.status_code == 200
         label_id = label_response.json()["id"]
 
-        owner_token = await login_user(client, "labelowner@example.com", "LabelOwner123!")
+        owner_token = await login_user(
+            client, "labelowner@example.com", "LabelOwner123!"
+        )
         owner_headers = {"Authorization": f"Bearer {owner_token}"}
 
         card_response = await client.post(

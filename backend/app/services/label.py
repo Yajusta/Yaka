@@ -25,14 +25,21 @@ def get_label_by_name(db: Session, name: str) -> Optional[Label]:
 
 def create_label(db: Session, label: LabelCreate, created_by: int) -> Label:
     """Créer un nouveau libellé."""
-    db_label = Label(name=label.name, color=label.color, description=label.description, created_by=created_by)
+    db_label = Label(
+        name=label.name,
+        color=label.color,
+        description=label.description,
+        created_by=created_by,
+    )
     db.add(db_label)
     db.commit()
     db.refresh(db_label)
     return db_label
 
 
-def update_label(db: Session, label_id: int, label_update: LabelUpdate) -> Optional[Label]:
+def update_label(
+    db: Session, label_id: int, label_update: LabelUpdate
+) -> Optional[Label]:
     """Mettre à jour un libellé."""
     db_label = get_label(db, label_id)
     if not db_label:

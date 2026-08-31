@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { boardSettingsService } from '../services/api';
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { boardSettingsService } from "../services/api";
 
 export interface BoardSettings {
   id: number;
@@ -13,7 +13,9 @@ export interface BoardSettings {
 
 export const useBoardSettings = () => {
   const { t } = useTranslation();
-  const [boardTitle, setBoardTitle] = useState<string>('Yaka (Yet Another Kanban App)');
+  const [boardTitle, setBoardTitle] = useState<string>(
+    "Yaka (Yet Another Kanban App)",
+  );
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,8 +25,8 @@ export const useBoardSettings = () => {
       const data = await boardSettingsService.getBoardTitle();
       setBoardTitle(data.title);
     } catch (err) {
-      console.error('Error fetching board title:', err);
-      setError(t('boardSettings.loadError'));
+      console.error("Error fetching board title:", err);
+      setError(t("boardSettings.loadError"));
     } finally {
       setLoading(false);
     }
@@ -37,8 +39,9 @@ export const useBoardSettings = () => {
       setBoardTitle(data.title);
       return true;
     } catch (err: any) {
-      console.error('Error updating board title:', err);
-      const errorMessage = err?.response?.data?.detail || t('boardSettings.updateError');
+      console.error("Error updating board title:", err);
+      const errorMessage =
+        err?.response?.data?.detail || t("boardSettings.updateError");
       setError(errorMessage);
       return false;
     }

@@ -33,7 +33,10 @@ class BoardContextMiddleware(BaseHTTPMiddleware):
                 # Check that the database exists before continuing
                 if not self._board_database_exists(board_uid):
                     return JSONResponse(
-                        status_code=401, content={"detail": f"Board '{board_uid}' not found or access denied"}
+                        status_code=401,
+                        content={
+                            "detail": f"Board '{board_uid}' not found or access denied"
+                        },
                     )
 
                 set_current_board_uid(board_uid)
@@ -50,7 +53,12 @@ class BoardContextMiddleware(BaseHTTPMiddleware):
             # Intercept board not found errors from multi-database manager
             if "not found" in str(e):
                 return JSONResponse(
-                    status_code=401, content={"detail": str(e).replace("not found", "not found or access denied")}
+                    status_code=401,
+                    content={
+                        "detail": str(e).replace(
+                            "not found", "not found or access denied"
+                        )
+                    },
                 )
             raise
         finally:

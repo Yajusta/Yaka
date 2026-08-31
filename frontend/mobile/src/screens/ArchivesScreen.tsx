@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { cardService } from '@shared/services/api';
-import { listsApi } from '@shared/services/listsApi';
-import { Card, KanbanList } from '@shared/types';
-import { ArrowLeft, Archive, Loader2, RotateCcw } from 'lucide-react';
-import { useToast } from '@shared/hooks/use-toast';
-import { format } from 'date-fns';
-import { fr, enUS } from 'date-fns/locale';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { cardService } from "@shared/services/api";
+import { listsApi } from "@shared/services/listsApi";
+import { Card, KanbanList } from "@shared/types";
+import { ArrowLeft, Archive, Loader2, RotateCcw } from "lucide-react";
+import { useToast } from "@shared/hooks/use-toast";
+import { format } from "date-fns";
+import { fr, enUS } from "date-fns/locale";
 
 interface ArchivedCard extends Card {
   archived_at?: string;
@@ -31,16 +31,16 @@ const ArchivesScreen = () => {
       setLoading(true);
       const [cardsData, listsData] = await Promise.all([
         cardService.getCards({ is_archived: true }),
-        listsApi.getLists()
+        listsApi.getLists(),
       ]);
       setArchivedCards(cardsData as ArchivedCard[]);
       setAvailableLists(listsData);
     } catch (error: any) {
-      console.error('Error loading archived cards:', error);
+      console.error("Error loading archived cards:", error);
       toast({
-        title: t('common.error'),
-        description: t('archive.loadError'),
-        variant: 'destructive'
+        title: t("common.error"),
+        description: t("archive.loadError"),
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -52,13 +52,15 @@ const ArchivesScreen = () => {
       setRestoringCardId(card.id);
 
       // Find the original list or use the first available list
-      const targetList = availableLists.find(list => list.id === card.list_id) || availableLists[0];
+      const targetList =
+        availableLists.find((list) => list.id === card.list_id) ||
+        availableLists[0];
 
       if (!targetList) {
         toast({
-          title: t('common.error'),
-          description: t('archive.noListAvailable'),
-          variant: 'destructive'
+          title: t("common.error"),
+          description: t("archive.noListAvailable"),
+          variant: "destructive",
         });
         return;
       }
@@ -67,22 +69,23 @@ const ArchivesScreen = () => {
       await cardService.unarchiveCard(card.id);
 
       // Update local state
-      setArchivedCards(prev => prev.filter(c => c.id !== card.id));
+      setArchivedCards((prev) => prev.filter((c) => c.id !== card.id));
 
       toast({
-        title: t('archive.cardRestored'),
-        description: t('archive.cardRestoredDescription', { 
-          cardTitle: card.title, 
-          listName: targetList.name 
+        title: t("archive.cardRestored"),
+        description: t("archive.cardRestoredDescription", {
+          cardTitle: card.title,
+          listName: targetList.name,
         }),
-        variant: 'success'
+        variant: "success",
       });
     } catch (error: any) {
-      console.error('Error restoring card:', error);
+      console.error("Error restoring card:", error);
       toast({
-        title: t('archive.restoreError'),
-        description: error.response?.data?.detail || t('archive.restoreErrorDescription'),
-        variant: 'destructive'
+        title: t("archive.restoreError"),
+        description:
+          error.response?.data?.detail || t("archive.restoreErrorDescription"),
+        variant: "destructive",
       });
     } finally {
       setRestoringCardId(null);
@@ -91,13 +94,13 @@ const ArchivesScreen = () => {
 
   const formatDate = (dateString?: string): string => {
     if (!dateString) {
-      return t('common.unknownDate');
+      return t("common.unknownDate");
     }
     try {
-      const locale = i18n.language === 'fr' ? fr : enUS;
-      return format(new Date(dateString), 'dd MMMM yyyy', { locale });
+      const locale = i18n.language === "fr" ? fr : enUS;
+      return format(new Date(dateString), "dd MMMM yyyy", { locale });
     } catch {
-      return t('common.unknownDate');
+      return t("common.unknownDate");
     }
   };
 
@@ -106,7 +109,7 @@ const ArchivesScreen = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">{t('archive.loading')}</p>
+          <p className="text-muted-foreground">{t("archive.loading")}</p>
         </div>
       </div>
     );
@@ -126,7 +129,7 @@ const ArchivesScreen = () => {
           <div className="flex-1 ml-3">
             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
               <Archive className="w-5 h-5" />
-              {t('mobile.archives')}
+              {t("mobile.archives")}
             </h1>
           </div>
         </div>
@@ -138,10 +141,10 @@ const ArchivesScreen = () => {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Archive className="w-16 h-16 text-muted-foreground/50 mb-4" />
             <h2 className="text-lg font-semibold text-foreground mb-2">
-              {t('archive.noCards')}
+              {t("archive.noCards")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {t('archive.noCardsDescription')}
+              {t("archive.noCardsDescription")}
             </p>
           </div>
         ) : (
@@ -171,9 +174,9 @@ const ArchivesScreen = () => {
                         key={label.id}
                         className="text-xs px-2 py-0.5 font-medium border-opacity-50 rounded-md border"
                         style={{
-                          backgroundColor: label.color + '15',
-                          borderColor: label.color + '40',
-                          color: label.color
+                          backgroundColor: label.color + "15",
+                          borderColor: label.color + "40",
+                          color: label.color,
                         }}
                       >
                         {label.name}
@@ -185,7 +188,9 @@ const ArchivesScreen = () => {
                 {/* Footer with date and restore button */}
                 <div className="flex items-center justify-between pt-3 border-t border-border">
                   <span className="text-xs text-muted-foreground">
-                    {t('archive.archivedOn', { date: formatDate(card.archived_at || card.updated_at) })}
+                    {t("archive.archivedOn", {
+                      date: formatDate(card.archived_at || card.updated_at),
+                    })}
                   </span>
                   <button
                     onClick={() => handleRestoreCard(card)}
@@ -195,12 +200,12 @@ const ArchivesScreen = () => {
                     {restoringCardId === card.id ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>{t('common.loading')}</span>
+                        <span>{t("common.loading")}</span>
                       </>
                     ) : (
                       <>
                         <RotateCcw className="w-4 h-4" />
-                        <span>{t('archive.restore')}</span>
+                        <span>{t("archive.restore")}</span>
                       </>
                     )}
                   </button>
@@ -215,4 +220,3 @@ const ArchivesScreen = () => {
 };
 
 export default ArchivesScreen;
-

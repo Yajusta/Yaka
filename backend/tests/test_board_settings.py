@@ -1,35 +1,38 @@
 """Tests pour le service BoardSettings."""
 
-import pytest
-import sys
 import os
+import sys
 from unittest.mock import patch
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+
+import pytest
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from app.database import Base
 from app.models.board_settings import BoardSettings
 from app.services.board_settings import (
-    get_setting,
-    get_all_settings,
-    create_or_update_setting,
-    update_settings,
-    delete_setting,
-    get_board_title,
-    set_board_title,
-    initialize_default_settings,
     DEFAULT_BOARD_TITLE,
+    create_or_update_setting,
+    delete_setting,
+    get_all_settings,
+    get_board_title,
+    get_setting,
+    initialize_default_settings,
+    set_board_title,
+    update_settings,
 )
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # Configuration de la base de données de test
 TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_board_settings.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -49,9 +52,21 @@ def db_session():
 def sample_settings(db_session):
     """Fixture pour créer des paramètres d'exemple."""
     settings = [
-        BoardSettings(setting_key="test_key_1", setting_value="test_value_1", description="Description test 1"),
-        BoardSettings(setting_key="test_key_2", setting_value="test_value_2", description="Description test 2"),
-        BoardSettings(setting_key="board_title", setting_value="Custom Board Title", description="Titre personnalisé"),
+        BoardSettings(
+            setting_key="test_key_1",
+            setting_value="test_value_1",
+            description="Description test 1",
+        ),
+        BoardSettings(
+            setting_key="test_key_2",
+            setting_value="test_value_2",
+            description="Description test 2",
+        ),
+        BoardSettings(
+            setting_key="board_title",
+            setting_value="Custom Board Title",
+            description="Titre personnalisé",
+        ),
     ]
 
     for setting in settings:
@@ -110,7 +125,10 @@ class TestCreateOrUpdateSetting:
     def test_create_new_setting(self, db_session):
         """Test de création d'un nouveau paramètre."""
         setting = create_or_update_setting(
-            db_session, setting_key="new_key", setting_value="new_value", description="New description"
+            db_session,
+            setting_key="new_key",
+            setting_value="new_value",
+            description="New description",
         )
 
         assert setting.setting_key == "new_key"
@@ -125,7 +143,10 @@ class TestCreateOrUpdateSetting:
     def test_update_existing_setting(self, db_session, sample_settings):
         """Test de mise à jour d'un paramètre existant."""
         setting = create_or_update_setting(
-            db_session, setting_key="test_key_1", setting_value="updated_value", description="Updated description"
+            db_session,
+            setting_key="test_key_1",
+            setting_value="updated_value",
+            description="Updated description",
         )
 
         assert setting.setting_key == "test_key_1"
@@ -138,19 +159,27 @@ class TestCreateOrUpdateSetting:
         assert retrieved.setting_value == "updated_value"
         assert retrieved.description == "Updated description"
 
-    def test_update_existing_setting_without_description(self, db_session, sample_settings):
+    def test_update_existing_setting_without_description(
+        self, db_session, sample_settings
+    ):
         """Test de mise à jour d'un paramètre existant sans changer la description."""
         original_setting = get_setting(db_session, "test_key_1")
-        original_description = original_setting.description if original_setting else None
+        original_description = (
+            original_setting.description if original_setting else None
+        )
 
-        setting = create_or_update_setting(db_session, setting_key="test_key_1", setting_value="updated_value")
+        setting = create_or_update_setting(
+            db_session, setting_key="test_key_1", setting_value="updated_value"
+        )
 
         assert setting.setting_value == "updated_value"
         assert setting.description == original_description
 
     def test_create_setting_without_description(self, db_session):
         """Test de création d'un paramètre sans description."""
-        setting = create_or_update_setting(db_session, setting_key="new_key_no_desc", setting_value="new_value")
+        setting = create_or_update_setting(
+            db_session, setting_key="new_key_no_desc", setting_value="new_value"
+        )
 
         assert setting.setting_key == "new_key_no_desc"
         assert setting.setting_value == "new_value"
@@ -158,7 +187,9 @@ class TestCreateOrUpdateSetting:
 
     def test_create_setting_with_empty_strings(self, db_session):
         """Test de création d'un paramètre avec des chaînes vides."""
-        setting = create_or_update_setting(db_session, setting_key="empty_strings", setting_value="", description="")
+        setting = create_or_update_setting(
+            db_session, setting_key="empty_strings", setting_value="", description=""
+        )
 
         assert setting.setting_key == "empty_strings"
         assert setting.setting_value == ""
@@ -170,14 +201,20 @@ class TestCreateOrUpdateSetting:
         mock_update_settings.side_effect = SQLAlchemyError("Database error")
 
         with pytest.raises(SQLAlchemyError):
-            create_or_update_setting(db_session, setting_key="error_key", setting_value="error_value")
+            create_or_update_setting(
+                db_session, setting_key="error_key", setting_value="error_value"
+            )
 
     def test_concurrent_creation(self, db_session):
         """Test de création concurrente du même paramètre."""
         # Créer le même paramètre deux fois
-        create_or_update_setting(db_session, setting_key="concurrent_key", setting_value="value1")
+        create_or_update_setting(
+            db_session, setting_key="concurrent_key", setting_value="value1"
+        )
 
-        setting2 = create_or_update_setting(db_session, setting_key="concurrent_key", setting_value="value2")
+        setting2 = create_or_update_setting(
+            db_session, setting_key="concurrent_key", setting_value="value2"
+        )
 
         # Le second appel devrait mettre à jour le premier
         assert setting2.setting_value == "value2"
@@ -223,7 +260,11 @@ class TestDeleteSetting:
 
     def test_delete_setting_integrity_error(self, db_session, sample_settings):
         """Test de gestion des erreurs d'intégrité lors de la suppression."""
-        with patch.object(db_session, "commit", side_effect=IntegrityError("statement", "params", Exception("orig"))):
+        with patch.object(
+            db_session,
+            "commit",
+            side_effect=IntegrityError("statement", "params", Exception("orig")),
+        ):
             result = delete_setting(db_session, "test_key_1")
             assert result is False
 
@@ -308,7 +349,9 @@ class TestInitializeDefaultSettings:
         assert title_setting.setting_value == DEFAULT_BOARD_TITLE
         assert title_setting.description == "Titre affiché du tableau Kanban"
 
-    def test_initialize_default_settings_existing_settings(self, db_session, sample_settings):
+    def test_initialize_default_settings_existing_settings(
+        self, db_session, sample_settings
+    ):
         """Test d'initialisation des paramètres par défaut quand ils existent déjà."""
         # Le paramètre board_title existe déjà
         original_title = get_setting(db_session, "board_title")
@@ -324,7 +367,9 @@ class TestInitializeDefaultSettings:
     def test_initialize_default_settings_partial_existing(self, db_session):
         """Test d'initialisation quand certains paramètres existent déjà."""
         # Créer seulement un paramètre qui n'est pas dans les defaults
-        create_or_update_setting(db_session, setting_key="other_setting", setting_value="other_value")
+        create_or_update_setting(
+            db_session, setting_key="other_setting", setting_value="other_value"
+        )
 
         initialize_default_settings(db_session)
 
@@ -360,7 +405,9 @@ class TestSecurityAndEdgeCases:
         malicious_key = "test_key'; DROP TABLE board_settings; --"
         malicious_value = "test_value"
 
-        setting = create_or_update_setting(db_session, setting_key=malicious_key, setting_value=malicious_value)
+        setting = create_or_update_setting(
+            db_session, setting_key=malicious_key, setting_value=malicious_value
+        )
 
         # La clé doit être stockée telle quelle (pas d'exécution SQL)
         assert setting.setting_key == malicious_key
@@ -370,7 +417,9 @@ class TestSecurityAndEdgeCases:
         """Test de tentative XSS dans la valeur."""
         xss_value = "<script>alert('XSS')</script>"
 
-        setting = create_or_update_setting(db_session, setting_key="xss_test", setting_value=xss_value)
+        setting = create_or_update_setting(
+            db_session, setting_key="xss_test", setting_value=xss_value
+        )
 
         assert setting.setting_value == xss_value
 
@@ -397,7 +446,10 @@ class TestSecurityAndEdgeCases:
         long_description = "y" * 500
 
         setting = create_or_update_setting(
-            db_session, setting_key=long_key, setting_value=long_value, description=long_description
+            db_session,
+            setting_key=long_key,
+            setting_value=long_value,
+            description=long_description,
         )
 
         assert setting.setting_key == long_key
@@ -406,7 +458,9 @@ class TestSecurityAndEdgeCases:
 
     def test_null_and_none_values(self, db_session):
         """Test avec des valeurs nulles."""
-        setting = create_or_update_setting(db_session, setting_key="null_test", setting_value="null", description=None)
+        setting = create_or_update_setting(
+            db_session, setting_key="null_test", setting_value="null", description=None
+        )
 
         assert setting.setting_value == "null"
         assert setting.description is None
@@ -430,7 +484,10 @@ class TestSecurityAndEdgeCases:
         unicode_value = "🎯_value_测试"
 
         setting = create_or_update_setting(
-            db_session, setting_key=unicode_key, setting_value=unicode_value, description="📝_description_测试"
+            db_session,
+            setting_key=unicode_key,
+            setting_value=unicode_value,
+            description="📝_description_测试",
         )
 
         assert setting.setting_key == unicode_key

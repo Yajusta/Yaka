@@ -69,7 +69,11 @@ async def read_users(
 
 
 @router.post("/", response_model=UserResponse)
-async def create_user(user: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+async def create_user(
+    user: UserCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
     """Créer un nouvel utilisateur (Admin uniquement)."""
     if user is None:
         raise HTTPException(
@@ -79,11 +83,14 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db), current_u
     try:
         if user_service.get_user_by_email(db, email=user.email):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Un utilisateur avec cet email existe déjà"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Un utilisateur avec cet email existe déjà",
             )
         return user_service.create_user(db=db, user=user)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
     except HTTPException:
         raise
     except Exception as exc:
@@ -95,17 +102,21 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db), current_u
 
 @router.post("/invite", response_model=UserResponse)
 async def invite_user(
-    payload: InvitePayload, db: Session = Depends(get_db), current_user: User = Depends(require_admin)
+    payload: InvitePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ):
     """Inviter un utilisateur par email (Admin uniquement)."""
     if payload is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Données invalides pour l'invitation"
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Données invalides pour l'invitation",
         )
     try:
         if user_service.get_user_by_email(db, email=payload.email):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Un utilisateur avec cet email existe déjà"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Un utilisateur avec cet email existe déjà",
             )
         return user_service.invite_user(
             db=db,
@@ -115,7 +126,9 @@ async def invite_user(
             board_uid=payload.board_uid,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
     except HTTPException:
         raise
     except Exception as exc:
@@ -126,17 +139,26 @@ async def invite_user(
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-async def read_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+async def read_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
     """Récupérer un utilisateur par son ID (Admin uniquement)."""
     db_user = user_service.get_user(db, user_id=user_id)
     if db_user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé"
+        )
     return db_user
 
 
 @router.put("/{user_id}", response_model=UserResponse)
 async def update_user(
-    user_id: int, user_update: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)
+    user_id: int,
+    user_update: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ):
     """Mettre à jour un utilisateur (Admin uniquement)."""
     if user_update is None:
@@ -147,7 +169,9 @@ async def update_user(
     try:
         db_user = user_service.update_user(db, user_id=user_id, user_update=user_update)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
     except HTTPException:
         raise
     except Exception as exc:
@@ -156,18 +180,23 @@ async def update_user(
             detail="Erreur interne lors de la mise à jour de l'utilisateur",
         ) from exc
     if db_user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé"
+        )
     return db_user
 
 
 @router.put("/me/language", response_model=UserResponse)
 async def update_user_language(
-    payload: LanguageUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)
+    payload: LanguageUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Mettre à jour la langue de l'utilisateur connecté."""
     if payload.language not in ["fr", "en"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Langue non supportée. Les langues supportées sont: fr, en"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Langue non supportée. Les langues supportées sont: fr, en",
         )
 
     # Mettre à jour directement le champ language
@@ -188,11 +217,14 @@ async def resend_invitation(
     """Renvoyer une invitation à un utilisateur existant (Admin uniquement)."""
     db_user = user_service.get_user(db, user_id=user_id)
     if db_user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé"
+        )
 
     if db_user.status != UserStatus.INVITED:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="L'utilisateur n'est pas dans un état d'invitation"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="L'utilisateur n'est pas dans un état d'invitation",
         )
 
     # Vérifier le délai d'une minute
@@ -230,22 +262,32 @@ async def resend_invitation(
         from ..services import email as email_service
 
         email_service.send_invitation(
-            email=db_user.email, display_name=db_user.display_name, token=new_token, board_uid=payload.board_uid
+            email=db_user.email,
+            display_name=db_user.display_name,
+            token=new_token,
+            board_uid=payload.board_uid,
         )
     return db_user
 
 
 @router.delete("/{user_id}")
-async def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+async def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
     """Supprimer un utilisateur (Admin uniquement)."""
     if user_id == current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Vous ne pouvez pas supprimer votre propre compte"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Vous ne pouvez pas supprimer votre propre compte",
         )
     try:
         success = user_service.delete_user(db, user_id=user_id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
     except HTTPException:
         raise
     except Exception as exc:
@@ -255,7 +297,9 @@ async def delete_user(user_id: int, db: Session = Depends(get_db), current_user:
         ) from exc
     if success:
         return {"message": "Utilisateur supprimé avec succès"}
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé"
+    )
 
 
 @router.post("/set-password")
@@ -266,12 +310,19 @@ async def set_password(payload: SetPasswordPayload, db: Session = Depends(get_db
     """
     user = user_service.get_user_by_any_token(db, token=payload.token)
     if not user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token invalide ou expiré")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Token invalide ou expiré"
+        )
 
-    if updated := user_service.set_password_from_invite(db, user=user, password=payload.password):
+    if updated := user_service.set_password_from_invite(
+        db, user=user, password=payload.password
+    ):
         return {"message": "Mot de passe défini avec succès"}
     else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Impossible de définir le mot de passe")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Impossible de définir le mot de passe",
+        )
 
 
 @router.put("/{user_id}/view-scope", response_model=UserResponse)
@@ -292,12 +343,16 @@ async def update_user_view_scope(
     # Get target user
     target_user = user_service.get_user(db, user_id)
     if not target_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé"
+        )
 
     # Update view scope
     user_update = UserUpdate.model_construct(view_scope=view_scope_update.view_scope)
     updated_user = user_service.update_user(db, user_id, user_update)
     if not updated_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvé"
+        )
 
     return updated_user

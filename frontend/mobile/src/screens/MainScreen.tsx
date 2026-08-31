@@ -1,21 +1,21 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '@shared/hooks/useAuth';
-import { useBoardSettings } from '@shared/hooks/useBoardSettings';
-import { useUsers } from '@shared/hooks/useUsers';
-import { listsApi } from '@shared/services/listsApi';
-import { cardService } from '@shared/services/api';
-import { labelService } from '@shared/services/api';
-import { KanbanList, Card, Label } from '@shared/types';
-import BoardHeader from '../components/board/BoardHeader';
-import ListsView from '../components/board/ListsView';
-import BottomNav from '../components/navigation/BottomNav';
-import SettingsMenu from '../components/settings/SettingsMenu';
-import CardDetail from '../components/card/CardDetail';
-import VoiceInputDialog from '../components/voice/VoiceInputDialog';
-import { FilterScreen } from './FilterScreen';
-import { Loader2 } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "@shared/hooks/useAuth";
+import { useBoardSettings } from "@shared/hooks/useBoardSettings";
+import { useUsers } from "@shared/hooks/useUsers";
+import { listsApi } from "@shared/services/listsApi";
+import { cardService } from "@shared/services/api";
+import { labelService } from "@shared/services/api";
+import { KanbanList, Card, Label } from "@shared/types";
+import BoardHeader from "../components/board/BoardHeader";
+import ListsView from "../components/board/ListsView";
+import BottomNav from "../components/navigation/BottomNav";
+import SettingsMenu from "../components/settings/SettingsMenu";
+import CardDetail from "../components/card/CardDetail";
+import VoiceInputDialog from "../components/voice/VoiceInputDialog";
+import { FilterScreen } from "./FilterScreen";
+import { Loader2 } from "lucide-react";
 
 const MainScreen = () => {
   const { t } = useTranslation();
@@ -28,7 +28,7 @@ const MainScreen = () => {
   const [allCards, setAllCards] = useState<Card[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showVoiceInput, setShowVoiceInput] = useState<boolean>(false);
@@ -36,18 +36,18 @@ const MainScreen = () => {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [filters, setFilters] = useState({
-    search: '',
+    search: "",
     assignee_ids: null as number[] | null,
     priorities: null as string[] | null,
     label_ids: null as number[] | null,
   });
   const [voiceFilterIds, setVoiceFilterIds] = useState<number[] | null>(null);
-  const [voiceFilterDescription, setVoiceFilterDescription] = useState<string>('');
+  const [voiceFilterDescription, setVoiceFilterDescription] =
+    useState<string>("");
 
-  
   const loadData = async (isRefresh = false) => {
     if (!user) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
@@ -57,16 +57,15 @@ const MainScreen = () => {
       } else {
         setLoading(true);
       }
-      setError('');
+      setError("");
 
       // Load lists, cards and labels in parallel
       const [listsData, cardsData, labelsData] = await Promise.all([
         listsApi.getLists(),
         cardService.getCards({}),
-        labelService.getLabels()
+        labelService.getLabels(),
       ]);
 
-      
       // Sort lists by order
       const sortedLists = listsData.sort((a, b) => a.order - b.order);
       setLists(sortedLists);
@@ -76,8 +75,8 @@ const MainScreen = () => {
       // Refresh users list
       refreshUsers();
     } catch (err: any) {
-      console.error('Error loading data:', err);
-      setError(err.response?.data?.detail || t('app.loadDataError'));
+      console.error("Error loading data:", err);
+      setError(err.response?.data?.detail || t("app.loadDataError"));
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -94,36 +93,42 @@ const MainScreen = () => {
 
     // Voice filter has priority over other filters
     if (voiceFilterIds && voiceFilterIds.length > 0) {
-      filteredCards = filteredCards.filter(card => voiceFilterIds.includes(card.id));
+      filteredCards = filteredCards.filter((card) =>
+        voiceFilterIds.includes(card.id),
+      );
     } else {
       // Apply other filters only if no voice filter is active
       // Search filter
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
-        filteredCards = filteredCards.filter(card =>
-          card.title.toLowerCase().includes(searchTerm) ||
-          (card.description && card.description.toLowerCase().includes(searchTerm))
+        filteredCards = filteredCards.filter(
+          (card) =>
+            card.title.toLowerCase().includes(searchTerm) ||
+            (card.description &&
+              card.description.toLowerCase().includes(searchTerm)),
         );
       }
 
       // Assignee filter (multiple)
       if (filters.assignee_ids && filters.assignee_ids.length > 0) {
-        filteredCards = filteredCards.filter(card =>
-          card.assignee_id && filters.assignee_ids!.includes(card.assignee_id)
+        filteredCards = filteredCards.filter(
+          (card) =>
+            card.assignee_id &&
+            filters.assignee_ids!.includes(card.assignee_id),
         );
       }
 
       // Priority filter (multiple)
       if (filters.priorities && filters.priorities.length > 0) {
-        filteredCards = filteredCards.filter(card =>
-          filters.priorities!.includes(card.priority)
+        filteredCards = filteredCards.filter((card) =>
+          filters.priorities!.includes(card.priority),
         );
       }
 
       // Label filter (multiple)
       if (filters.label_ids && filters.label_ids.length > 0) {
-        filteredCards = filteredCards.filter(card =>
-          card.labels?.some(label => filters.label_ids!.includes(label.id))
+        filteredCards = filteredCards.filter((card) =>
+          card.labels?.some((label) => filters.label_ids!.includes(label.id)),
         );
       }
     }
@@ -134,9 +139,9 @@ const MainScreen = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login');
+      navigate("/login");
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error("Logout error:", err);
     }
   };
 
@@ -146,17 +151,17 @@ const MainScreen = () => {
 
   const handleCardUpdate = (updatedCard: Card) => {
     // Update the card in the local state
-    setCards(prevCards =>
-      prevCards.map(card =>
-        card.id === updatedCard.id ? updatedCard : card
-      )
+    setCards((prevCards) =>
+      prevCards.map((card) =>
+        card.id === updatedCard.id ? updatedCard : card,
+      ),
     );
   };
 
   const handleCardSave = (savedCard: Card) => {
     // If it's a new card, add it to the list
     if (isCreatingNewCard) {
-      setCards(prevCards => [...prevCards, savedCard]);
+      setCards((prevCards) => [...prevCards, savedCard]);
       setIsCreatingNewCard(false);
     } else {
       // Otherwise update existing card
@@ -167,9 +172,9 @@ const MainScreen = () => {
   const handleCardDelete = async (cardId: number) => {
     try {
       await cardService.deleteCard(cardId);
-      setCards(prevCards => prevCards.filter(card => card.id !== cardId));
+      setCards((prevCards) => prevCards.filter((card) => card.id !== cardId));
     } catch (error: any) {
-      console.error('Error deleting card:', error);
+      console.error("Error deleting card:", error);
     }
   };
 
@@ -204,42 +209,40 @@ const MainScreen = () => {
 
   const handleVoiceFilterClear = () => {
     setVoiceFilterIds(null);
-    setVoiceFilterDescription('');
+    setVoiceFilterDescription("");
   };
 
   const handleVoiceCardSave = (savedCard: Card) => {
     // Check if this is a new card or an update
-    const existingCard = cards.find(c => c.id === savedCard.id);
+    const existingCard = cards.find((c) => c.id === savedCard.id);
     if (existingCard) {
       // Update existing card
-      setCards(prevCards =>
-        prevCards.map(card =>
-          card.id === savedCard.id ? savedCard : card
-        )
+      setCards((prevCards) =>
+        prevCards.map((card) => (card.id === savedCard.id ? savedCard : card)),
       );
     } else {
       // Add new card
-      setCards(prevCards => [...prevCards, savedCard]);
+      setCards((prevCards) => [...prevCards, savedCard]);
     }
   };
 
   // Pull to refresh handlers
-  
+
   const handleNewCardClick = () => {
     // Create a new card object with minimal data
     const newCard: Card = {
       id: 0, // Temporary ID, will be replaced by backend
-      title: '',
-      description: '',
-      priority: 'medium',
+      title: "",
+      description: "",
+      priority: "medium",
       assignee_id: null,
       label_id: null,
-      colonne: '',
+      colonne: "",
       list_id: lists.length > 0 ? lists[0].id : 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       labels: [],
-      items: []
+      items: [],
     };
     setIsCreatingNewCard(true);
     setSelectedCard(newCard);
@@ -254,7 +257,7 @@ const MainScreen = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">{t('common.loading')}</p>
+          <p className="text-muted-foreground">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -271,7 +274,7 @@ const MainScreen = () => {
             onClick={() => window.location.reload()}
             className="btn-touch bg-primary text-primary-foreground px-6 rounded-lg"
           >
-            {t('common.retry')}
+            {t("common.retry")}
           </button>
         </div>
       </div>
@@ -358,4 +361,3 @@ const MainScreen = () => {
 };
 
 export default MainScreen;
-

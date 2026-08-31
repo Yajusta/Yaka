@@ -6,18 +6,17 @@ from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
-from openai import OpenAI
-
 from app.models.user import User, UserStatus
 from app.routers.voice_control import VoiceControlRequest, process_voice_transcript
 from app.services.llm_service import (
-    LLMService,
     AutoIntentResponse,
     CardEditResponse,
     CardFilterResponse,
+    LLMService,
     ResponseType,
     UnknownResponse,
 )
+from openai import OpenAI
 
 
 def _make_service_without_init() -> LLMService:
@@ -25,7 +24,9 @@ def _make_service_without_init() -> LLMService:
     service = LLMService.__new__(LLMService)
     service.model_name = "test-model"
     # Client factice pour satisfaire les attributs attendus
-    fake_client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(parse=MagicMock())))
+    fake_client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(parse=MagicMock()))
+    )
     service.client = cast(OpenAI, fake_client)
     return service
 
@@ -76,10 +77,20 @@ def test_analyze_transcript_auto_intent_routes_to_filter(monkeypatch):
         )
 
     monkeypatch.setattr(LLMService, "_analyze_with_openai", fake_analyze)
-    monkeypatch.setattr(LLMService, "_build_filter_instructions", lambda self, ctx: "filter instructions")
-    monkeypatch.setattr(LLMService, "_build_card_edit_instructions", lambda self, ctx: "card instructions")
+    monkeypatch.setattr(
+        LLMService,
+        "_build_filter_instructions",
+        lambda self, ctx: "filter instructions",
+    )
+    monkeypatch.setattr(
+        LLMService,
+        "_build_card_edit_instructions",
+        lambda self, ctx: "card instructions",
+    )
 
-    result = service.analyze_transcript("texte", user_context="{}", response_type=ResponseType.AUTO_INTENT)
+    result = service.analyze_transcript(
+        "texte", user_context="{}", response_type=ResponseType.AUTO_INTENT
+    )
 
     data = json.loads(result)
     assert data["response_type"] == ResponseType.FILTER.value
@@ -105,10 +116,20 @@ def test_analyze_transcript_auto_intent_returns_unknown(monkeypatch):
         return payload.model_dump_json()
 
     monkeypatch.setattr(LLMService, "_analyze_with_openai", fake_analyze)
-    monkeypatch.setattr(LLMService, "_build_filter_instructions", lambda *args, **kwargs: pytest.fail("Ne doit pas etre appele"))
-    monkeypatch.setattr(LLMService, "_build_card_edit_instructions", lambda *args, **kwargs: pytest.fail("Ne doit pas etre appele"))
+    monkeypatch.setattr(
+        LLMService,
+        "_build_filter_instructions",
+        lambda *args, **kwargs: pytest.fail("Ne doit pas etre appele"),
+    )
+    monkeypatch.setattr(
+        LLMService,
+        "_build_card_edit_instructions",
+        lambda *args, **kwargs: pytest.fail("Ne doit pas etre appele"),
+    )
 
-    result = service.analyze_transcript("texte", user_context="{}", response_type=ResponseType.AUTO_INTENT)
+    result = service.analyze_transcript(
+        "texte", user_context="{}", response_type=ResponseType.AUTO_INTENT
+    )
 
     data = json.loads(result)
     assert data["response_type"] == UnknownResponse().response_type.value
@@ -122,13 +143,25 @@ def test_analyze_transcript_card_update_uses_card_instructions(monkeypatch):
 
     def fake_analyze(self, transcript, instructions, response_type):
         call_sequence.append((instructions, response_type))
-        return json.dumps({"response_type": ResponseType.CARD_UPDATE.value, "title": "Nouvelle tache"})
+        return json.dumps(
+            {"response_type": ResponseType.CARD_UPDATE.value, "title": "Nouvelle tache"}
+        )
 
     monkeypatch.setattr(LLMService, "_analyze_with_openai", fake_analyze)
-    monkeypatch.setattr(LLMService, "_build_card_edit_instructions", lambda self, ctx: "card instructions")
-    monkeypatch.setattr(LLMService, "_build_filter_instructions", lambda *args, **kwargs: pytest.fail("Instruction filtre inutile"))
+    monkeypatch.setattr(
+        LLMService,
+        "_build_card_edit_instructions",
+        lambda self, ctx: "card instructions",
+    )
+    monkeypatch.setattr(
+        LLMService,
+        "_build_filter_instructions",
+        lambda *args, **kwargs: pytest.fail("Instruction filtre inutile"),
+    )
 
-    result = service.analyze_transcript("texte", user_context="{}", response_type=ResponseType.CARD_UPDATE)
+    result = service.analyze_transcript(
+        "texte", user_context="{}", response_type=ResponseType.CARD_UPDATE
+    )
 
     data = json.loads(result)
     assert data["response_type"] == ResponseType.CARD_UPDATE.value
@@ -141,7 +174,13 @@ async def test_process_voice_transcript_forwards_response_type_and_cleans(monkey
     captured: dict[str, Any] = {}
 
     class DummyService:
-        def analyze_transcript(self, transcript, user_context, instructions="", response_type=ResponseType.AUTO_INTENT):
+        def analyze_transcript(
+            self,
+            transcript,
+            user_context,
+            instructions="",
+            response_type=ResponseType.AUTO_INTENT,
+        ):
             captured["transcript"] = transcript
             captured["user_context"] = user_context
             captured["response_type"] = response_type
@@ -160,7 +199,9 @@ async def test_process_voice_transcript_forwards_response_type_and_cleans(monkey
 
     monkeypatch.setattr("app.routers.voice_control.LLMService", lambda: DummyService())
 
-    request = VoiceControlRequest(transcript="bonjour", response_type=ResponseType.FILTER)
+    request = VoiceControlRequest(
+        transcript="bonjour", response_type=ResponseType.FILTER
+    )
     current_user = User(
         id=3,
         email="tester@example.com",
@@ -169,12 +210,17 @@ async def test_process_voice_transcript_forwards_response_type_and_cleans(monkey
         status=UserStatus.ACTIVE,
     )
 
-    response = await process_voice_transcript(request, db=MagicMock(), current_user=current_user)
+    response = await process_voice_transcript(
+        request, db=MagicMock(), current_user=current_user
+    )
     payload_bytes = bytes(response.body)  # JSONResponse.body peut etre un buffer
     payload = json.loads(payload_bytes.decode("utf-8"))
 
     assert captured["response_type"] == ResponseType.FILTER
-    assert json.loads(captured["user_context"]) == {"user_id": 3, "user_name": "Testeur"}
+    assert json.loads(captured["user_context"]) == {
+        "user_id": 3,
+        "user_name": "Testeur",
+    }
     assert payload["cards"] == [{"id": 1}, {"id": 2}]
     assert payload["labels"] == [{"label_id": 42}]
     assert payload["checklist"] == [{"item_id": 7, "item_name": "Preparer"}]

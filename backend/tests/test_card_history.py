@@ -1,30 +1,37 @@
 """Tests pour le service CardHistory."""
 
-import pytest
-import sys
 import os
-from unittest.mock import patch
+import sys
 from datetime import datetime, timedelta
+from unittest.mock import patch
+
+import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from app.database import Base
+from app.models.card import Card, CardPriority
+from app.models.card_history import CardHistory
+from app.models.kanban_list import KanbanList
+from app.models.user import User, UserRole, UserStatus
+from app.schemas.card_history import CardHistoryCreate
+from app.services.card_history import (
+    create_card_history_entry,
+    get_card_history,
+    get_card_history_with_users,
+)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.database import Base
-from app.models.card_history import CardHistory
-from app.models.card import Card, CardPriority
-from app.models.user import User, UserRole, UserStatus
-from app.models.kanban_list import KanbanList
-from app.schemas.card_history import CardHistoryCreate
-from app.services.card_history import create_card_history_entry, get_card_history, get_card_history_with_users
 
 # Configuration de la base de données de test
 TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_card_history.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -43,7 +50,12 @@ def db_session():
 @pytest.fixture
 def sample_user(db_session):
     """Fixture pour créer un utilisateur de test."""
-    user = User(email="test@example.com", display_name="Test User", role=UserRole.EDITOR, status=UserStatus.ACTIVE)
+    user = User(
+        email="test@example.com",
+        display_name="Test User",
+        role=UserRole.EDITOR,
+        status=UserStatus.ACTIVE,
+    )
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
@@ -80,8 +92,18 @@ def sample_card(db_session, sample_kanban_list, sample_user):
 def sample_history_entries(db_session, sample_card, sample_user):
     """Fixture pour créer des entrées d'historique de test."""
     entries = [
-        CardHistory(card_id=sample_card.id, user_id=sample_user.id, action="created", description="Carte créée"),
-        CardHistory(card_id=sample_card.id, user_id=sample_user.id, action="updated", description="Titre mis à jour"),
+        CardHistory(
+            card_id=sample_card.id,
+            user_id=sample_user.id,
+            action="created",
+            description="Carte créée",
+        ),
+        CardHistory(
+            card_id=sample_card.id,
+            user_id=sample_user.id,
+            action="updated",
+            description="Titre mis à jour",
+        ),
         CardHistory(
             card_id=sample_card.id,
             user_id=sample_user.id,
@@ -106,7 +128,10 @@ class TestCreateCardHistoryEntry:
     def test_create_history_entry_success(self, db_session, sample_card, sample_user):
         """Test de création réussie d'une entrée d'historique."""
         history_data = CardHistoryCreate(
-            card_id=sample_card.id, user_id=sample_user.id, action="created", description="Carte créée avec succès"
+            card_id=sample_card.id,
+            user_id=sample_user.id,
+            action="created",
+            description="Carte créée avec succès",
         )
 
         result = create_card_history_entry(db_session, history_data)
@@ -118,13 +143,18 @@ class TestCreateCardHistoryEntry:
         assert result.description == "Carte créée avec succès"
         assert result.created_at is not None
 
-    def test_create_history_entry_different_actions(self, db_session, sample_card, sample_user):
+    def test_create_history_entry_different_actions(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de création d'entrées avec différents types d'actions."""
         actions = ["created", "updated", "deleted", "moved", "assigned", "commented"]
 
         for action in actions:
             history_data = CardHistoryCreate(
-                card_id=sample_card.id, user_id=sample_user.id, action=action, description=f"Action {action} effectuée"
+                card_id=sample_card.id,
+                user_id=sample_user.id,
+                action=action,
+                description=f"Action {action} effectuée",
             )
 
             result = create_card_history_entry(db_session, history_data)
@@ -132,7 +162,9 @@ class TestCreateCardHistoryEntry:
             assert result.action == action
             assert result.description == f"Action {action} effectuée"
 
-    def test_create_history_entry_unicode_content(self, db_session, sample_card, sample_user):
+    def test_create_history_entry_unicode_content(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de création d'entrée avec contenu Unicode."""
         history_data = CardHistoryCreate(
             card_id=sample_card.id,
@@ -143,32 +175,48 @@ class TestCreateCardHistoryEntry:
 
         result = create_card_history_entry(db_session, history_data)
 
-        assert result.description == "Mise à jour avec caractères spéciaux: éèàçù 🚀 中文"
+        assert (
+            result.description == "Mise à jour avec caractères spéciaux: éèàçù 🚀 中文"
+        )
 
-    def test_create_history_entry_long_description(self, db_session, sample_card, sample_user):
+    def test_create_history_entry_long_description(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de création d'entrée avec une description très longue."""
         long_description = "x" * 5000
         history_data = CardHistoryCreate(
-            card_id=sample_card.id, user_id=sample_user.id, action="updated", description=long_description
+            card_id=sample_card.id,
+            user_id=sample_user.id,
+            action="updated",
+            description=long_description,
         )
 
         result = create_card_history_entry(db_session, history_data)
 
         assert result.description == long_description
 
-    def test_create_history_entry_empty_strings(self, db_session, sample_card, sample_user):
+    def test_create_history_entry_empty_strings(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de création d'entrée avec des chaînes vides."""
-        history_data = CardHistoryCreate(card_id=sample_card.id, user_id=sample_user.id, action="", description="")
+        history_data = CardHistoryCreate(
+            card_id=sample_card.id, user_id=sample_user.id, action="", description=""
+        )
 
         result = create_card_history_entry(db_session, history_data)
 
         assert result.action == ""
         assert result.description == ""
 
-    def test_create_history_entry_whitespace_only(self, db_session, sample_card, sample_user):
+    def test_create_history_entry_whitespace_only(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de création d'entrée avec des espaces uniquement."""
         history_data = CardHistoryCreate(
-            card_id=sample_card.id, user_id=sample_user.id, action="  ", description="  Description avec espaces  "
+            card_id=sample_card.id,
+            user_id=sample_user.id,
+            action="  ",
+            description="  Description avec espaces  ",
         )
 
         result = create_card_history_entry(db_session, history_data)
@@ -176,13 +224,20 @@ class TestCreateCardHistoryEntry:
         assert result.action == "  "
         assert result.description == "  Description avec espaces  "
 
-    def test_create_history_entry_database_error(self, db_session, sample_card, sample_user):
+    def test_create_history_entry_database_error(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de gestion des erreurs de base de données."""
         history_data = CardHistoryCreate(
-            card_id=sample_card.id, user_id=sample_user.id, action="created", description="Test erreur"
+            card_id=sample_card.id,
+            user_id=sample_user.id,
+            action="created",
+            description="Test erreur",
         )
 
-        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
+        with patch.object(
+            db_session, "commit", side_effect=SQLAlchemyError("Database error")
+        ):
             with pytest.raises(SQLAlchemyError):
                 create_card_history_entry(db_session, history_data)
 
@@ -210,13 +265,18 @@ class TestCreateCardHistoryEntry:
             # Si une erreur est levée, c'est que les contraintes sont actives
             pass
 
-    def test_create_history_entry_sql_injection_attempt(self, db_session, sample_card, sample_user):
+    def test_create_history_entry_sql_injection_attempt(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de tentative d'injection SQL."""
         malicious_action = "created'; DROP TABLE card_history; --"
         malicious_description = "Description'; DROP TABLE card_history; --"
 
         history_data = CardHistoryCreate(
-            card_id=sample_card.id, user_id=sample_user.id, action=malicious_action, description=malicious_description
+            card_id=sample_card.id,
+            user_id=sample_user.id,
+            action=malicious_action,
+            description=malicious_description,
         )
 
         result = create_card_history_entry(db_session, history_data)
@@ -263,7 +323,10 @@ class TestGetCardHistory:
         """Test de récupération d'une seule entrée d'historique."""
         # Créer une seule entrée
         entry = CardHistory(
-            card_id=sample_card.id, user_id=sample_user.id, action="created", description="Seule entrée"
+            card_id=sample_card.id,
+            user_id=sample_user.id,
+            action="created",
+            description="Seule entrée",
         )
         db_session.add(entry)
         db_session.commit()
@@ -275,7 +338,9 @@ class TestGetCardHistory:
         assert history[0].action == "created"
         assert history[0].description == "Seule entrée"
 
-    def test_get_card_history_multiple_cards(self, db_session, sample_user, sample_kanban_list):
+    def test_get_card_history_multiple_cards(
+        self, db_session, sample_user, sample_kanban_list
+    ):
         """Test de récupération d'historique pour plusieurs cartes différentes."""
         # Créer deux cartes
         card1 = Card(
@@ -299,8 +364,18 @@ class TestGetCardHistory:
         db_session.refresh(card2)
 
         # Ajouter de l'historique pour chaque carte
-        entry1 = CardHistory(card_id=card1.id, user_id=sample_user.id, action="created", description="Card 1 créée")
-        entry2 = CardHistory(card_id=card2.id, user_id=sample_user.id, action="created", description="Card 2 créée")
+        entry1 = CardHistory(
+            card_id=card1.id,
+            user_id=sample_user.id,
+            action="created",
+            description="Card 1 créée",
+        )
+        entry2 = CardHistory(
+            card_id=card2.id,
+            user_id=sample_user.id,
+            action="created",
+            description="Card 2 créée",
+        )
         db_session.add(entry1)
         db_session.add(entry2)
         db_session.commit()
@@ -320,7 +395,10 @@ class TestGetCardHistory:
         entries = []
         for i in range(5):
             entry = CardHistory(
-                card_id=sample_card.id, user_id=sample_user.id, action=f"action_{i}", description=f"Description {i}"
+                card_id=sample_card.id,
+                user_id=sample_user.id,
+                action=f"action_{i}",
+                description=f"Description {i}",
             )
             db_session.add(entry)
             entries.append(entry)
@@ -345,7 +423,9 @@ class TestGetCardHistory:
 class TestGetCardHistoryWithUsers:
     """Tests pour la fonction get_card_history_with_users."""
 
-    def test_get_card_history_with_users_success(self, db_session, sample_history_entries, sample_user):
+    def test_get_card_history_with_users_success(
+        self, db_session, sample_history_entries, sample_user
+    ):
         """Test de récupération réussie de l'historique avec les informations utilisateur."""
         card_id = sample_history_entries[0].card_id
         history = get_card_history_with_users(db_session, card_id)
@@ -361,8 +441,18 @@ class TestGetCardHistoryWithUsers:
     def test_get_card_history_with_users_multiple_users(self, db_session, sample_card):
         """Test avec plusieurs utilisateurs différents."""
         # Créer plusieurs utilisateurs
-        user1 = User(email="user1@example.com", display_name="User 1", role=UserRole.EDITOR, status=UserStatus.ACTIVE)
-        user2 = User(email="user2@example.com", display_name="User 2", role=UserRole.EDITOR, status=UserStatus.ACTIVE)
+        user1 = User(
+            email="user1@example.com",
+            display_name="User 1",
+            role=UserRole.EDITOR,
+            status=UserStatus.ACTIVE,
+        )
+        user2 = User(
+            email="user2@example.com",
+            display_name="User 2",
+            role=UserRole.EDITOR,
+            status=UserStatus.ACTIVE,
+        )
         db_session.add(user1)
         db_session.add(user2)
         db_session.commit()
@@ -370,9 +460,17 @@ class TestGetCardHistoryWithUsers:
         db_session.refresh(user2)
 
         # Créer des entrées d'historique avec différents utilisateurs
-        entry1 = CardHistory(card_id=sample_card.id, user_id=user1.id, action="created", description="Créé par user1")
+        entry1 = CardHistory(
+            card_id=sample_card.id,
+            user_id=user1.id,
+            action="created",
+            description="Créé par user1",
+        )
         entry2 = CardHistory(
-            card_id=sample_card.id, user_id=user2.id, action="updated", description="Mis à jour par user2"
+            card_id=sample_card.id,
+            user_id=user2.id,
+            action="updated",
+            description="Mis à jour par user2",
         )
         db_session.add(entry1)
         db_session.add(entry2)
@@ -395,10 +493,15 @@ class TestGetCardHistoryWithUsers:
 
         assert len(history) == 0
 
-    def test_get_card_history_with_users_user_attributes(self, db_session, sample_card, sample_user):
+    def test_get_card_history_with_users_user_attributes(
+        self, db_session, sample_card, sample_user
+    ):
         """Test que tous les attributs utilisateur sont disponibles."""
         entry = CardHistory(
-            card_id=sample_card.id, user_id=sample_user.id, action="created", description="Test user attributes"
+            card_id=sample_card.id,
+            user_id=sample_user.id,
+            action="created",
+            description="Test user attributes",
         )
         db_session.add(entry)
         db_session.commit()
@@ -419,7 +522,9 @@ class TestGetCardHistoryWithUsers:
 class TestCardHistoryIntegration:
     """Tests d'intégration pour le service CardHistory."""
 
-    def test_create_and_retrieve_history_flow(self, db_session, sample_card, sample_user):
+    def test_create_and_retrieve_history_flow(
+        self, db_session, sample_card, sample_user
+    ):
         """Test du flux complet de création et récupération d'historique."""
         # Créer plusieurs entrées d'historique
         actions = [
@@ -431,7 +536,10 @@ class TestCardHistoryIntegration:
 
         for action, description in actions:
             history_data = CardHistoryCreate(
-                card_id=sample_card.id, user_id=sample_user.id, action=action, description=description
+                card_id=sample_card.id,
+                user_id=sample_user.id,
+                action=action,
+                description=description,
             )
             create_card_history_entry(db_session, history_data)
 
@@ -456,7 +564,10 @@ class TestCardHistoryIntegration:
         # Créer plusieurs entrées séquentiellement (version simplifiée)
         for i in range(5):
             history_data = CardHistoryCreate(
-                card_id=sample_card.id, user_id=sample_user.id, action=f"action_{i}", description=f"Description {i}"
+                card_id=sample_card.id,
+                user_id=sample_user.id,
+                action=f"action_{i}",
+                description=f"Description {i}",
             )
             create_card_history_entry(db_session, history_data)
 
@@ -464,7 +575,9 @@ class TestCardHistoryIntegration:
         history = get_card_history(db_session, sample_card.id)
         assert len(history) >= 5  # Au moins 5 entrées (plus celles existantes)
 
-    def test_history_performance_large_dataset(self, db_session, sample_card, sample_user):
+    def test_history_performance_large_dataset(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de performance avec un grand nombre d'entrées d'historique."""
         import time
 
@@ -473,7 +586,10 @@ class TestCardHistoryIntegration:
 
         for i in range(100):
             history_data = CardHistoryCreate(
-                card_id=sample_card.id, user_id=sample_user.id, action=f"action_{i}", description=f"Description {i}"
+                card_id=sample_card.id,
+                user_id=sample_user.id,
+                action=f"action_{i}",
+                description=f"Description {i}",
             )
             create_card_history_entry(db_session, history_data)
 
@@ -494,10 +610,15 @@ class TestSecurityAndEdgeCases:
 
     def test_xss_in_description(self, db_session, sample_card, sample_user):
         """Test de tentative XSS dans la description."""
-        xss_description = "<script>alert('XSS')</script><img src='x' onerror='alert(1)'>"
+        xss_description = (
+            "<script>alert('XSS')</script><img src='x' onerror='alert(1)'>"
+        )
 
         history_data = CardHistoryCreate(
-            card_id=sample_card.id, user_id=sample_user.id, action="updated", description=xss_description
+            card_id=sample_card.id,
+            user_id=sample_user.id,
+            action="updated",
+            description=xss_description,
         )
 
         result = create_card_history_entry(db_session, history_data)
@@ -523,7 +644,9 @@ class TestSecurityAndEdgeCases:
     def test_null_values_not_allowed(self, db_session, sample_card, sample_user):
         """Test que les valeurs nulles sont correctement gérées."""
         # Les champs ne peuvent pas être nuls selon le schéma, donc on teste avec des chaînes vides
-        history_data = CardHistoryCreate(card_id=sample_card.id, user_id=sample_user.id, action="", description="")
+        history_data = CardHistoryCreate(
+            card_id=sample_card.id, user_id=sample_user.id, action="", description=""
+        )
 
         result = create_card_history_entry(db_session, history_data)
 
@@ -535,14 +658,19 @@ class TestSecurityAndEdgeCases:
         long_action = "a" * 1000
 
         history_data = CardHistoryCreate(
-            card_id=sample_card.id, user_id=sample_user.id, action=long_action, description="Long action test"
+            card_id=sample_card.id,
+            user_id=sample_user.id,
+            action=long_action,
+            description="Long action test",
         )
 
         result = create_card_history_entry(db_session, history_data)
 
         assert result.action == long_action
 
-    def test_history_entry_with_special_characters(self, db_session, sample_card, sample_user):
+    def test_history_entry_with_special_characters(
+        self, db_session, sample_card, sample_user
+    ):
         """Test avec des caractères spéciaux variés."""
         history_data = CardHistoryCreate(
             card_id=sample_card.id,

@@ -1,16 +1,24 @@
-import { useState, FormEvent, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '@shared/hooks/useAuth';
-import { boardSettingsService, authService } from '@shared/services/api';
-import { AlertTriangle, Copy, Eye, Loader2, Settings, Trash, Zap } from 'lucide-react';
-import i18n from '../i18n';
+import { useState, FormEvent, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "@shared/hooks/useAuth";
+import { boardSettingsService, authService } from "@shared/services/api";
+import {
+  AlertTriangle,
+  Copy,
+  Eye,
+  Loader2,
+  Settings,
+  Trash,
+  Zap,
+} from "lucide-react";
+import i18n from "../i18n";
 
 // Declaration for global variables injected by nginx
 declare global {
-    interface Window {
-        DEMO_MODE: string;
-    }
+  interface Window {
+    DEMO_MODE: string;
+  }
 }
 
 const LoginScreen = () => {
@@ -18,25 +26,25 @@ const LoginScreen = () => {
   const navigate = useNavigate();
   const { boardName } = useParams();
   const { login } = useAuth();
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string>('');
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [boardTitle, setBoardTitle] = useState<string>('Yaka'); // Default fallback
+  const [boardTitle, setBoardTitle] = useState<string>("Yaka"); // Default fallback
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
 
   // Load demo mode configuration and fetch board title on component mount
   useEffect(() => {
     // Load demo config securely
-    fetch('/demo-config.js')
-      .then(response => response.text())
-      .then(script => {
+    fetch("/demo-config.js")
+      .then((response) => response.text())
+      .then((script) => {
         // Parse the script to extract DEMO_MODE value without using eval
         const match = script.match(/window\.DEMO_MODE\s*=\s*['"]([^'"]*)['"]/);
-        const demoMode = match ? match[1] === 'true' : false;
+        const demoMode = match ? match[1] === "true" : false;
         setIsDemoMode(demoMode);
       })
-      .catch(_error => {
+      .catch((_error) => {
         setIsDemoMode(false);
       });
 
@@ -46,7 +54,7 @@ const LoginScreen = () => {
         const titleData = await boardSettingsService.getBoardTitle();
         setBoardTitle(titleData.title);
       } catch (error) {
-        console.error('Failed to fetch board title:', error);
+        console.error("Failed to fetch board title:", error);
         // Keep default 'Yaka' title on error
       }
     };
@@ -58,9 +66,10 @@ const LoginScreen = () => {
   useEffect(() => {
     if (boardName) {
       const resolveEndpoint = (name: string): string => {
-        const apiBaseUrl = (window as any).API_BASE_URL || 'http://localhost:8000';
+        const apiBaseUrl =
+          (window as any).API_BASE_URL || "http://localhost:8000";
 
-        if (name.trim().toLowerCase() === 'localhost') {
+        if (name.trim().toLowerCase() === "localhost") {
           return apiBaseUrl;
         } else {
           return `${apiBaseUrl}/board/${encodeURIComponent(name.trim())}`;
@@ -68,14 +77,14 @@ const LoginScreen = () => {
       };
 
       // Update localStorage with the board name from URL
-      localStorage.setItem('board_name', boardName.trim());
-      localStorage.setItem('api_base_url', resolveEndpoint(boardName));
+      localStorage.setItem("board_name", boardName.trim());
+      localStorage.setItem("api_base_url", resolveEndpoint(boardName));
     }
   }, [boardName]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
@@ -85,8 +94,8 @@ const LoginScreen = () => {
       const currentUser = authService.getCurrentUserFromStorage();
       if (currentUser?.language) {
         // Force update localStorage first (authService.login should have done this, but let's be sure)
-        localStorage.setItem('i18nextLng', currentUser.language);
-        
+        localStorage.setItem("i18nextLng", currentUser.language);
+
         // Then change the language in i18n
         await i18n.changeLanguage(currentUser.language);
       }
@@ -95,21 +104,21 @@ const LoginScreen = () => {
       if (boardName) {
         navigate(`/board/${boardName}`);
       } else {
-        navigate('/');
+        navigate("/");
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('auth.loginError'));
+      setError(err.response?.data?.detail || t("auth.loginError"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleConfigClick = () => {
-    const currentBoardName = localStorage.getItem('board_name') || '';
+    const currentBoardName = localStorage.getItem("board_name") || "";
     if (currentBoardName) {
       navigate(`/config?prefill=${encodeURIComponent(currentBoardName)}`);
     } else {
-      navigate('/config');
+      navigate("/config");
     }
   };
 
@@ -117,13 +126,13 @@ const LoginScreen = () => {
     try {
       await navigator.clipboard.writeText(text);
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
+      console.error("Failed to copy to clipboard:", error);
     }
   };
 
   const fillDemoCredentials = (): void => {
-    setEmail('admin@yaka.local');
-    setPassword('Admin123');
+    setEmail("admin@yaka.local");
+    setPassword("Admin123");
   };
 
   return (
@@ -142,11 +151,9 @@ const LoginScreen = () => {
           <div className="flex justify-center mb-4">
             <img src="/yaka.svg" alt="Yaka" className="w-32 h-32" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">
-            {boardTitle}
-          </h1>
+          <h1 className="text-3xl font-bold text-foreground">{boardTitle}</h1>
           <p className="mt-2 text-muted-foreground">
-            {t('auth.connectToAccount')}
+            {t("auth.connectToAccount")}
           </p>
         </div>
 
@@ -159,23 +166,23 @@ const LoginScreen = () => {
                 <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <div className="text-amber-800 text-sm font-medium">
-                    🔄 {t('auth.demoModeEnabled')}
+                    🔄 {t("auth.demoModeEnabled")}
                   </div>
                   <div className="text-amber-700 text-sm mt-1">
-                    {t('auth.email')} : <strong>admin@yaka.local</strong>
+                    {t("auth.email")} : <strong>admin@yaka.local</strong>
                     <button
-                      onClick={() => copyToClipboard('admin@yaka.local')}
+                      onClick={() => copyToClipboard("admin@yaka.local")}
                       className="ml-2 p-1 hover:bg-amber-200 rounded transition-colors"
-                      title={t('auth.copyEmail')}
+                      title={t("auth.copyEmail")}
                     >
                       <Copy className="h-3 w-3 text-amber-600" />
                     </button>
                     <br />
-                    {t('auth.password')} : <strong>Admin123</strong>
+                    {t("auth.password")} : <strong>Admin123</strong>
                     <button
-                      onClick={() => copyToClipboard('Admin123')}
+                      onClick={() => copyToClipboard("Admin123")}
                       className="ml-2 p-1 hover:bg-amber-200 rounded transition-colors"
-                      title={t('auth.copyPassword')}
+                      title={t("auth.copyPassword")}
                     >
                       <Copy className="h-3 w-3 text-amber-600" />
                     </button>
@@ -190,7 +197,7 @@ const LoginScreen = () => {
                   className="bg-amber-100 border border-amber-300 text-amber-800 hover:bg-amber-200 hover:border-amber-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
                 >
                   <Zap className="h-4 w-4 mr-2" />
-                  {t('auth.fillDemoCredentials')}
+                  {t("auth.fillDemoCredentials")}
                 </button>
               </div>
             </div>
@@ -199,8 +206,9 @@ const LoginScreen = () => {
             <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
               <Trash className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
               <div className="text-red-700 text-sm">
-                <strong>{t('auth.databaseDeletedRegularly')}</strong><br />
-                {t('auth.dataResetHourly')}
+                <strong>{t("auth.databaseDeletedRegularly")}</strong>
+                <br />
+                {t("auth.dataResetHourly")}
               </div>
             </div>
 
@@ -208,8 +216,9 @@ const LoginScreen = () => {
             <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
               <Eye className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
               <div className="text-red-700 text-sm">
-                <strong>{t('auth.publicEnvironment')}</strong><br />
-                {t('auth.noSensitiveInfo')}
+                <strong>{t("auth.publicEnvironment")}</strong>
+                <br />
+                {t("auth.noSensitiveInfo")}
               </div>
             </div>
           </div>
@@ -222,7 +231,7 @@ const LoginScreen = () => {
               htmlFor="email"
               className="block text-sm font-medium text-foreground mb-2"
             >
-              {t('auth.email')}
+              {t("auth.email")}
             </label>
             <input
               id="email"
@@ -241,7 +250,7 @@ const LoginScreen = () => {
               htmlFor="password"
               className="block text-sm font-medium text-foreground mb-2"
             >
-              {t('auth.password')}
+              {t("auth.password")}
             </label>
             <input
               id="password"
@@ -267,15 +276,13 @@ const LoginScreen = () => {
             className="w-full btn-touch bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 active:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           >
             {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-            {t('auth.login')}
+            {t("auth.login")}
           </button>
         </form>
 
         {/* Board name info */}
         <div className="text-center text-xs text-muted-foreground">
-          <p>
-            Board: {localStorage.getItem('board_name') || 'Not configured'}
-          </p>
+          <p>Board: {localStorage.getItem("board_name") || "Not configured"}</p>
         </div>
       </div>
     </div>
@@ -283,4 +290,3 @@ const LoginScreen = () => {
 };
 
 export default LoginScreen;
-

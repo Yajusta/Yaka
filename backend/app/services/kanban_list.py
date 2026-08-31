@@ -23,7 +23,9 @@ class KanbanListService:
         return db.query(KanbanList).filter(KanbanList.id == list_id).first()
 
     @staticmethod
-    def get_list_with_cards_count(db: Session, list_id: int) -> Tuple[Optional[KanbanList], int]:
+    def get_list_with_cards_count(
+        db: Session, list_id: int
+    ) -> Tuple[Optional[KanbanList], int]:
         """
         Récupérer une liste avec le nombre de cartes actives qu'elle contient.
         Ne compte que les cartes non archivées (is_archived = False).
@@ -45,7 +47,11 @@ class KanbanListService:
 
         try:
             # Ne compter que les cartes actives (non archivées)
-            cards_count = db.query(Card).filter(Card.list_id == list_id, Card.is_archived == False).count()
+            cards_count = (
+                db.query(Card)
+                .filter(Card.list_id == list_id, Card.is_archived == False)
+                .count()
+            )
             return kanban_list, cards_count
         except Exception as e:
             raise ValueError(f"Erreur lors du comptage des cartes: {str(e)}") from e
@@ -70,7 +76,9 @@ class KanbanListService:
             .filter(func.lower(KanbanList.name) == func.lower(list_data.name))
             .first()
         ):
-            raise ValueError(f"Une liste avec le nom '{list_data.name}' existe déjà (la casse est ignorée)")
+            raise ValueError(
+                f"Une liste avec le nom '{list_data.name}' existe déjà (la casse est ignorée)"
+            )
 
         # Validation de l'ordre - vérifier les limites
         if list_data.order < 1:
@@ -86,12 +94,20 @@ class KanbanListService:
                 "Nombre maximum de listes atteint (50). Supprimez des listes existantes avant d'en créer de nouvelles."
             )
 
-        if existing_order := db.query(KanbanList).filter(KanbanList.order == list_data.order).first():
+        if (
+            existing_order := db.query(KanbanList)
+            .filter(KanbanList.order == list_data.order)
+            .first()
+        ):
             # Décaler tous les ordres supérieurs ou égaux
             KanbanListService._shift_orders_up(db, list_data.order)
 
         try:
-            db_list = KanbanList(name=list_data.name, description=list_data.description, order=list_data.order)
+            db_list = KanbanList(
+                name=list_data.name,
+                description=list_data.description,
+                order=list_data.order,
+            )
 
             db.add(db_list)
             db.commit()
@@ -102,7 +118,9 @@ class KanbanListService:
             raise ValueError(f"Erreur lors de la création de la liste: {str(e)}") from e
 
     @staticmethod
-    def update_list(db: Session, list_id: int, list_data: KanbanListUpdate) -> Optional[KanbanList]:
+    def update_list(
+        db: Session, list_id: int, list_data: KanbanListUpdate
+    ) -> Optional[KanbanList]:
         """
         Mettre à jour une liste avec validation complète.
 
@@ -137,7 +155,9 @@ class KanbanListService:
                 )
                 .first()
             ):
-                raise ValueError(f"Une liste avec le nom '{update_data['name']}' existe déjà (la casse est ignorée)")
+                raise ValueError(
+                    f"Une liste avec le nom '{update_data['name']}' existe déjà (la casse est ignorée)"
+                )
 
         # Gérer le changement d'ordre si fourni
         if "order" in update_data:
@@ -153,10 +173,14 @@ class KanbanListService:
 
             if new_order != old_order:
                 if existing_order := (
-                    db.query(KanbanList).filter(KanbanList.order == new_order, KanbanList.id != list_id).first()
+                    db.query(KanbanList)
+                    .filter(KanbanList.order == new_order, KanbanList.id != list_id)
+                    .first()
                 ):
                     # Réorganiser les ordres
-                    KanbanListService._reorder_lists_for_update(db, list_id, old_order, new_order)
+                    KanbanListService._reorder_lists_for_update(
+                        db, list_id, old_order, new_order
+                    )
 
         try:
             # Appliquer les modifications
@@ -168,7 +192,9 @@ class KanbanListService:
             return db_list
         except Exception as e:
             db.rollback()
-            raise ValueError(f"Erreur lors de la mise à jour de la liste: {str(e)}") from e
+            raise ValueError(
+                f"Erreur lors de la mise à jour de la liste: {str(e)}"
+            ) from e
 
     @staticmethod
     def delete_list(db: Session, list_id: int, target_list_id: int) -> bool:
@@ -191,7 +217,9 @@ class KanbanListService:
             raise ValueError("L'ID de la liste à supprimer doit être un entier positif")
 
         if target_list_id <= 0:
-            raise ValueError("L'ID de la liste de destination doit être un entier positif")
+            raise ValueError(
+                "L'ID de la liste de destination doit être un entier positif"
+            )
 
         # Vérifier qu'il restera au moins une liste après suppression (Requirement 4.1)
         total_lists = db.query(KanbanList).count()
@@ -208,10 +236,14 @@ class KanbanListService:
         # Vérifier que la liste de destination existe et est différente (Requirement 4.2)
         target_list = KanbanListService.get_list(db, target_list_id)
         if not target_list:
-            raise ValueError(f"La liste de destination avec l'ID {target_list_id} n'existe pas")
+            raise ValueError(
+                f"La liste de destination avec l'ID {target_list_id} n'existe pas"
+            )
 
         if list_id == target_list_id:
-            raise ValueError("La liste de destination ne peut pas être la même que la liste à supprimer")
+            raise ValueError(
+                "La liste de destination ne peut pas être la même que la liste à supprimer"
+            )
 
         try:
             # Compter les cartes à déplacer pour information
@@ -219,7 +251,11 @@ class KanbanListService:
 
             # Déplacer toutes les cartes vers la liste de destination (Requirement 4.4)
             if cards_count > 0:
-                cards_moved = db.query(Card).filter(Card.list_id == list_id).update({Card.list_id: target_list_id})
+                cards_moved = (
+                    db.query(Card)
+                    .filter(Card.list_id == list_id)
+                    .update({Card.list_id: target_list_id})
+                )
 
                 if cards_moved != cards_count:
                     raise ValueError(
@@ -240,7 +276,9 @@ class KanbanListService:
             if isinstance(e, ValueError):
                 raise e
             else:
-                raise ValueError(f"Erreur lors de la suppression de la liste: {str(e)}") from e
+                raise ValueError(
+                    f"Erreur lors de la suppression de la liste: {str(e)}"
+                ) from e
 
     @staticmethod
     def reorder_lists(db: Session, list_orders: Dict[int, int]) -> bool:
@@ -276,7 +314,9 @@ class KanbanListService:
 
         # Appliquer les nouveaux ordres
         for list_id, new_order in list_orders.items():
-            db.query(KanbanList).filter(KanbanList.id == list_id).update({KanbanList.order: new_order})
+            db.query(KanbanList).filter(KanbanList.id == list_id).update(
+                {KanbanList.order: new_order}
+            )
 
         db.commit()
         return True
@@ -296,17 +336,23 @@ class KanbanListService:
         )
 
     @staticmethod
-    def _reorder_lists_for_update(db: Session, list_id: int, old_order: int, new_order: int) -> None:
+    def _reorder_lists_for_update(
+        db: Session, list_id: int, old_order: int, new_order: int
+    ) -> None:
         """Réorganiser les ordres lors de la mise à jour d'une liste."""
         if new_order > old_order:
             # Déplacer vers le bas : décaler les listes entre old_order+1 et new_order vers le haut
             db.query(KanbanList).filter(
-                KanbanList.order > old_order, KanbanList.order <= new_order, KanbanList.id != list_id
+                KanbanList.order > old_order,
+                KanbanList.order <= new_order,
+                KanbanList.id != list_id,
             ).update({KanbanList.order: KanbanList.order - 1})
         else:
             # Déplacer vers le haut : décaler les listes entre new_order et old_order-1 vers le bas
             db.query(KanbanList).filter(
-                KanbanList.order >= new_order, KanbanList.order < old_order, KanbanList.id != list_id
+                KanbanList.order >= new_order,
+                KanbanList.order < old_order,
+                KanbanList.id != list_id,
             ).update({KanbanList.order: KanbanList.order + 1})
 
 
@@ -321,7 +367,9 @@ def get_list(db: Session, list_id: int) -> Optional[KanbanList]:
     return KanbanListService.get_list(db, list_id)
 
 
-def get_list_with_cards_count(db: Session, list_id: int) -> Tuple[Optional[KanbanList], int]:
+def get_list_with_cards_count(
+    db: Session, list_id: int
+) -> Tuple[Optional[KanbanList], int]:
     """Récupérer une liste avec le nombre de cartes qu'elle contient."""
     return KanbanListService.get_list_with_cards_count(db, list_id)
 
@@ -331,7 +379,9 @@ def create_list(db: Session, list_data: KanbanListCreate) -> KanbanList:
     return KanbanListService.create_list(db, list_data)
 
 
-def update_list(db: Session, list_id: int, list_data: KanbanListUpdate) -> Optional[KanbanList]:
+def update_list(
+    db: Session, list_id: int, list_data: KanbanListUpdate
+) -> Optional[KanbanList]:
     """Mettre à jour une liste."""
     return KanbanListService.update_list(db, list_id, list_data)
 

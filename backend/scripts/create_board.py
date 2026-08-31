@@ -45,7 +45,9 @@ def create_board_database(board_uid: str, admin_email: Optional[str] = None):
         from sqlalchemy.orm import sessionmaker
 
         db_path = db_manager.get_database_path(board_uid)
-        engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+        engine = create_engine(
+            f"sqlite:///{db_path}", connect_args={"check_same_thread": False}
+        )
 
         # Create all tables
         Base.metadata.create_all(bind=engine)
@@ -79,7 +81,9 @@ def create_board_database(board_uid: str, admin_email: Optional[str] = None):
                 print("Board settings initialized")
 
                 # Send automatic invitation (this creates the admin user)
-                invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN, board_uid)
+                invited_user = user_service.invite_user(
+                    db, admin_email, None, UserRole.ADMIN, board_uid
+                )
                 print(f"Invitation sent to {admin_email}")
                 print(f"  Token: {invited_user.invite_token}")
 

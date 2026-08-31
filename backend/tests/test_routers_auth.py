@@ -26,7 +26,9 @@ from sqlalchemy.orm import sessionmaker
 def db_session():
     """Fixture pour créer une session de base de données de test."""
     SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
@@ -69,8 +71,12 @@ def test_app():
 
     # Override the database dependency
     def override_get_db():
-        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-        TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        engine = create_engine(
+            "sqlite:///:memory:", connect_args={"check_same_thread": False}
+        )
+        TestingSessionLocal = sessionmaker(
+            autocommit=False, autoflush=False, bind=engine
+        )
         Base.metadata.create_all(bind=engine)
         db = TestingSessionLocal()
         try:
@@ -96,8 +102,12 @@ class TestAuthRouter:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
                 # Test the login function directly
-                form_data = OAuth2PasswordRequestForm(username="test@example.com", password="password123")
-                result = asyncio.run(login(form_data, mock_db.return_value.__enter__.return_value))
+                form_data = OAuth2PasswordRequestForm(
+                    username="test@example.com", password="password123"
+                )
+                result = asyncio.run(
+                    login(form_data, mock_db.return_value.__enter__.return_value)
+                )
 
                 assert "access_token" in result
                 assert result["token_type"] == "bearer"
@@ -113,10 +123,14 @@ class TestAuthRouter:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
                 # Test the login function directly
-                form_data = OAuth2PasswordRequestForm(username="invalid@example.com", password="wrongpassword")
+                form_data = OAuth2PasswordRequestForm(
+                    username="invalid@example.com", password="wrongpassword"
+                )
 
                 with pytest.raises(HTTPException) as exc_info:
-                    asyncio.run(login(form_data, mock_db.return_value.__enter__.return_value))
+                    asyncio.run(
+                        login(form_data, mock_db.return_value.__enter__.return_value)
+                    )
 
                 assert exc_info.value.status_code == 401
                 assert exc_info.value.detail == "Email ou mot de passe incorrect"
@@ -141,7 +155,9 @@ class TestAuthRouter:
 
     def test_request_password_reset_existing_user(self, test_user):
         """Test de demande de réinitialisation de mot de passe pour un utilisateur existant."""
-        with patch("app.routers.auth.user_service.request_password_reset") as mock_reset:
+        with patch(
+            "app.routers.auth.user_service.request_password_reset"
+        ) as mock_reset:
             mock_reset.return_value = None
 
             # Mock the database session
@@ -150,14 +166,23 @@ class TestAuthRouter:
 
                 # Test the function directly
                 request_data = PasswordResetRequest(email="test@example.com")
-                result = asyncio.run(request_password_reset(request_data, mock_db.return_value.__enter__.return_value))
+                result = asyncio.run(
+                    request_password_reset(
+                        request_data, mock_db.return_value.__enter__.return_value
+                    )
+                )
 
-                assert result["message"] == "Si cet email existe, un lien de réinitialisation a été envoyé"
+                assert (
+                    result["message"]
+                    == "Si cet email existe, un lien de réinitialisation a été envoyé"
+                )
                 mock_reset.assert_called_once()
 
     def test_request_password_reset_nonexistent_user(self):
         """Test de demande de réinitialisation de mot de passe pour un utilisateur inexistant."""
-        with patch("app.routers.auth.user_service.request_password_reset") as mock_reset:
+        with patch(
+            "app.routers.auth.user_service.request_password_reset"
+        ) as mock_reset:
             mock_reset.return_value = None
 
             # Mock the database session
@@ -166,10 +191,17 @@ class TestAuthRouter:
 
                 # Test the function directly
                 request_data = PasswordResetRequest(email="nonexistent@example.com")
-                result = asyncio.run(request_password_reset(request_data, mock_db.return_value.__enter__.return_value))
+                result = asyncio.run(
+                    request_password_reset(
+                        request_data, mock_db.return_value.__enter__.return_value
+                    )
+                )
 
                 # Le message est le même pour des raisons de sécurité
-                assert result["message"] == "Si cet email existe, un lien de réinitialisation a été envoyé"
+                assert (
+                    result["message"]
+                    == "Si cet email existe, un lien de réinitialisation a été envoyé"
+                )
 
     def test_login_with_invalid_form_data(self):
         """Test de connexion avec des données de formulaire invalides."""

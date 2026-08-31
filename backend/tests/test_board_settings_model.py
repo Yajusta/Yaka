@@ -20,7 +20,9 @@ TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_board_settings_model.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -41,11 +43,19 @@ def sample_board_settings(db_session):
     """Fixture pour créer des paramètres de tableau de test."""
     settings = [
         BoardSettings(
-            setting_key="board_title", setting_value="Mon Tableau Kanban", description="Titre principal du tableau"
+            setting_key="board_title",
+            setting_value="Mon Tableau Kanban",
+            description="Titre principal du tableau",
         ),
-        BoardSettings(setting_key="theme_color", setting_value="#3b82f6", description="Couleur du thème"),
         BoardSettings(
-            setting_key="notifications_enabled", setting_value="true", description="Activer les notifications"
+            setting_key="theme_color",
+            setting_value="#3b82f6",
+            description="Couleur du thème",
+        ),
+        BoardSettings(
+            setting_key="notifications_enabled",
+            setting_value="true",
+            description="Activer les notifications",
         ),
     ]
 
@@ -89,7 +99,9 @@ class TestBoardSettingsModel:
     def test_create_board_settings_successfully(self, db_session):
         """Test de création réussie d'un paramètre de tableau."""
         setting = BoardSettings(
-            setting_key="test_setting", setting_value="test_value", description="Test setting description"
+            setting_key="test_setting",
+            setting_value="test_value",
+            description="Test setting description",
         )
 
         db_session.add(setting)
@@ -105,7 +117,9 @@ class TestBoardSettingsModel:
 
     def test_create_board_settings_minimal(self, db_session):
         """Test de création avec les champs minimum requis."""
-        setting = BoardSettings(setting_key="minimal_setting", setting_value="minimal_value")
+        setting = BoardSettings(
+            setting_key="minimal_setting", setting_value="minimal_value"
+        )
 
         db_session.add(setting)
         db_session.commit()
@@ -118,7 +132,9 @@ class TestBoardSettingsModel:
 
     def test_board_settings_timestamps(self, db_session):
         """Test que les timestamps sont correctement gérés."""
-        setting = BoardSettings(setting_key="timestamp_test", setting_value="timestamp_value")
+        setting = BoardSettings(
+            setting_key="timestamp_test", setting_value="timestamp_value"
+        )
 
         db_session.add(setting)
         db_session.commit()
@@ -172,13 +188,21 @@ class TestBoardSettingsModel:
     def test_board_settings_query(self, db_session, sample_board_settings):
         """Test de requêtes sur les paramètres de tableau."""
         # Query par clé
-        setting = db_session.query(BoardSettings).filter(BoardSettings.setting_key == "board_title").first()
+        setting = (
+            db_session.query(BoardSettings)
+            .filter(BoardSettings.setting_key == "board_title")
+            .first()
+        )
 
         assert setting is not None
         assert setting.setting_value == "Mon Tableau Kanban"
 
         # Query avec like
-        settings = db_session.query(BoardSettings).filter(BoardSettings.setting_key.like("theme_%")).all()
+        settings = (
+            db_session.query(BoardSettings)
+            .filter(BoardSettings.setting_key.like("theme_%"))
+            .all()
+        )
 
         assert len(settings) == 1
         assert settings[0].setting_key == "theme_color"
@@ -192,7 +216,11 @@ class TestBoardSettingsModel:
         db_session.commit()
 
         # Vérifier que le paramètre a été supprimé
-        deleted_setting = db_session.query(BoardSettings).filter(BoardSettings.id == setting_id).first()
+        deleted_setting = (
+            db_session.query(BoardSettings)
+            .filter(BoardSettings.id == setting_id)
+            .first()
+        )
         assert deleted_setting is None
 
     def test_board_settings_string_fields(self, db_session):
@@ -202,7 +230,9 @@ class TestBoardSettingsModel:
         long_value = "very_long_setting_value_" + "b" * 1000
         long_description = "very_long_description_" + "c" * 500
 
-        setting = BoardSettings(setting_key=long_key, setting_value=long_value, description=long_description)
+        setting = BoardSettings(
+            setting_key=long_key, setting_value=long_value, description=long_description
+        )
 
         db_session.add(setting)
         db_session.commit()
@@ -214,7 +244,9 @@ class TestBoardSettingsModel:
 
     def test_board_settings_empty_strings(self, db_session):
         """Test avec des chaînes vides."""
-        setting = BoardSettings(setting_key="empty_strings", setting_value="", description="")
+        setting = BoardSettings(
+            setting_key="empty_strings", setting_value="", description=""
+        )
 
         db_session.add(setting)
         db_session.commit()
@@ -240,7 +272,9 @@ class TestBoardSettingsModel:
     def test_board_settings_unicode_emojis(self, db_session):
         """Test avec des emojis Unicode."""
         setting = BoardSettings(
-            setting_key="emoji_test_🚀", setting_value="valeur_avec_emojis_🎯🚀", description="description_📝✨"
+            setting_key="emoji_test_🚀",
+            setting_value="valeur_avec_emojis_🎯🚀",
+            description="description_📝✨",
         )
 
         db_session.add(setting)
@@ -255,7 +289,9 @@ class TestBoardSettingsModel:
         html_content = "<div>HTML Content</div><script>alert('test')</script>"
 
         setting = BoardSettings(
-            setting_key="html_test", setting_value=html_content, description="<span>HTML Description</span>"
+            setting_key="html_test",
+            setting_value=html_content,
+            description="<span>HTML Description</span>",
         )
 
         db_session.add(setting)
@@ -269,7 +305,11 @@ class TestBoardSettingsModel:
         """Test avec des valeurs JSON."""
         json_value = '{"theme": "dark", "fontSize": 14, "features": ["notifications", "autosave"]}'
 
-        setting = BoardSettings(setting_key="json_config", setting_value=json_value, description="Configuration JSON")
+        setting = BoardSettings(
+            setting_key="json_config",
+            setting_value=json_value,
+            description="Configuration JSON",
+        )
 
         db_session.add(setting)
         db_session.commit()
@@ -291,7 +331,11 @@ class TestBoardSettingsModel:
 
     def test_board_settings_numeric_values(self, db_session):
         """Test avec des valeurs numériques (comme chaînes)."""
-        setting = BoardSettings(setting_key="numeric_test", setting_value="42", description="Number as string")
+        setting = BoardSettings(
+            setting_key="numeric_test",
+            setting_value="42",
+            description="Number as string",
+        )
 
         db_session.add(setting)
         db_session.commit()
@@ -316,7 +360,9 @@ class TestBoardSettingsModel:
 
     def test_board_settings_null_values(self, db_session):
         """Test avec des valeurs NULL."""
-        setting = BoardSettings(setting_key="null_test", setting_value="null_value", description=None)
+        setting = BoardSettings(
+            setting_key="null_test", setting_value="null_value", description=None
+        )
 
         db_session.add(setting)
         db_session.commit()
@@ -341,7 +387,9 @@ class TestBoardSettingsModel:
     def test_board_settings_ordering(self, db_session, sample_board_settings):
         """Test de tri des paramètres."""
         # Trier par clé
-        settings = db_session.query(BoardSettings).order_by(BoardSettings.setting_key).all()
+        settings = (
+            db_session.query(BoardSettings).order_by(BoardSettings.setting_key).all()
+        )
 
         keys = [s.setting_key for s in settings]
         assert keys == sorted(keys)
@@ -350,7 +398,9 @@ class TestBoardSettingsModel:
         """Test de pagination des résultats."""
         # Créer plusieurs paramètres
         for i in range(10):
-            setting = BoardSettings(setting_key=f"setting_{i:03d}", setting_value=f"value_{i}")
+            setting = BoardSettings(
+                setting_key=f"setting_{i:03d}", setting_value=f"value_{i}"
+            )
             db_session.add(setting)
 
         db_session.commit()
@@ -368,10 +418,16 @@ class TestBoardSettingsModel:
         count = db_session.query(BoardSettings).count()
         assert count == len(sample_board_settings)
 
-    def test_board_settings_filter_by_description(self, db_session, sample_board_settings):
+    def test_board_settings_filter_by_description(
+        self, db_session, sample_board_settings
+    ):
         """Test de filtrage par description."""
         # Chercher les paramètres avec "Couleur" dans la description
-        settings = db_session.query(BoardSettings).filter(BoardSettings.description.like("%Couleur%")).all()
+        settings = (
+            db_session.query(BoardSettings)
+            .filter(BoardSettings.description.like("%Couleur%"))
+            .all()
+        )
 
         assert len(settings) == 1
         assert settings[0].setting_key == "theme_color"
@@ -379,7 +435,11 @@ class TestBoardSettingsModel:
     def test_board_settings_filter_by_value(self, db_session, sample_board_settings):
         """Test de filtrage par valeur."""
         # Chercher les paramètres avec "true" comme valeur
-        settings = db_session.query(BoardSettings).filter(BoardSettings.setting_value == "true").all()
+        settings = (
+            db_session.query(BoardSettings)
+            .filter(BoardSettings.setting_value == "true")
+            .all()
+        )
 
         assert len(settings) == 1
         assert settings[0].setting_key == "notifications_enabled"
@@ -389,21 +449,29 @@ class TestBoardSettingsModel:
         # Créer plusieurs paramètres en lot
         settings = []
         for i in range(5):
-            setting = BoardSettings(setting_key=f"batch_{i}", setting_value=f"batch_value_{i}")
+            setting = BoardSettings(
+                setting_key=f"batch_{i}", setting_value=f"batch_value_{i}"
+            )
             settings.append(setting)
 
         db_session.add_all(settings)
         db_session.commit()
 
         # Vérifier que tous ont été créés
-        count = db_session.query(BoardSettings).filter(BoardSettings.setting_key.like("batch_%")).count()
+        count = (
+            db_session.query(BoardSettings)
+            .filter(BoardSettings.setting_key.like("batch_%"))
+            .count()
+        )
         assert count == 5
 
     def test_board_settings_relationships(self, db_session):
         """Test que le modèle n'a pas de relations problématiques."""
         # BoardSettings n'a pas de relations définies, mais on vérifie
         # qu'il peut être utilisé sans erreurs
-        setting = BoardSettings(setting_key="relationship_test", setting_value="test_value")
+        setting = BoardSettings(
+            setting_key="relationship_test", setting_value="test_value"
+        )
 
         db_session.add(setting)
         db_session.commit()
@@ -436,7 +504,9 @@ class TestBoardSettingsModel:
     def test_board_settings_database_constraints(self, db_session):
         """Test des contraintes de base de données."""
         # Test que setting_key ne peut pas être NULL
-        setting = BoardSettings(setting_key=None, setting_value="test")  # Devrait échouer
+        setting = BoardSettings(
+            setting_key=None, setting_value="test"
+        )  # Devrait échouer
 
         db_session.add(setting)
         with pytest.raises(Exception):
@@ -445,7 +515,9 @@ class TestBoardSettingsModel:
         db_session.rollback()
 
         # Test que setting_value ne peut pas être NULL
-        setting = BoardSettings(setting_key="test_key", setting_value=None)  # Devrait échouer
+        setting = BoardSettings(
+            setting_key="test_key", setting_value=None
+        )  # Devrait échouer
 
         db_session.add(setting)
         with pytest.raises(Exception):
@@ -454,7 +526,9 @@ class TestBoardSettingsModel:
     def test_board_settings_transactions(self, db_session):
         """Test de transactions."""
         # Créer un paramètre
-        setting = BoardSettings(setting_key="transaction_test", setting_value="original_value")
+        setting = BoardSettings(
+            setting_key="transaction_test", setting_value="original_value"
+        )
         db_session.add(setting)
         db_session.commit()
 
@@ -471,14 +545,24 @@ class TestBoardSettingsModel:
     def test_board_settings_concurrent_access(self, db_session):
         """Test d'accès concurrent (simplifié)."""
         # Créer un paramètre
-        setting = BoardSettings(setting_key="concurrent_test", setting_value="initial_value")
+        setting = BoardSettings(
+            setting_key="concurrent_test", setting_value="initial_value"
+        )
         db_session.add(setting)
         db_session.commit()
 
         # Simuler des modifications concurrentes
-        setting1 = db_session.query(BoardSettings).filter(BoardSettings.setting_key == "concurrent_test").first()
+        setting1 = (
+            db_session.query(BoardSettings)
+            .filter(BoardSettings.setting_key == "concurrent_test")
+            .first()
+        )
 
-        setting2 = db_session.query(BoardSettings).filter(BoardSettings.setting_key == "concurrent_test").first()
+        setting2 = (
+            db_session.query(BoardSettings)
+            .filter(BoardSettings.setting_key == "concurrent_test")
+            .first()
+        )
 
         # Les deux devraient être le même objet
         assert setting1.id == setting2.id
@@ -496,8 +580,12 @@ class TestBoardSettingsModel:
     def test_board_settings_error_handling(self, db_session):
         """Test de gestion des erreurs."""
         # Simuler une erreur de base de données
-        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
-            setting = BoardSettings(setting_key="error_test", setting_value="test_value")
+        with patch.object(
+            db_session, "commit", side_effect=SQLAlchemyError("Database error")
+        ):
+            setting = BoardSettings(
+                setting_key="error_test", setting_value="test_value"
+            )
 
             db_session.add(setting)
             with pytest.raises(SQLAlchemyError):
@@ -506,14 +594,20 @@ class TestBoardSettingsModel:
     def test_board_settings_session_isolation(self, db_session):
         """Test d'isolation des sessions."""
         # Créer un paramètre
-        setting = BoardSettings(setting_key="session_test", setting_value="session_value")
+        setting = BoardSettings(
+            setting_key="session_test", setting_value="session_value"
+        )
         db_session.add(setting)
 
         # Ne pas commiter encore
         # L'objet ne devrait pas être visible dans une nouvelle session
         new_session = TestingSessionLocal()
         try:
-            count = new_session.query(BoardSettings).filter(BoardSettings.setting_key == "session_test").count()
+            count = (
+                new_session.query(BoardSettings)
+                .filter(BoardSettings.setting_key == "session_test")
+                .count()
+            )
             assert count == 0
         finally:
             new_session.close()
@@ -524,7 +618,11 @@ class TestBoardSettingsModel:
         # Maintenant il devrait être visible
         new_session = TestingSessionLocal()
         try:
-            count = new_session.query(BoardSettings).filter(BoardSettings.setting_key == "session_test").count()
+            count = (
+                new_session.query(BoardSettings)
+                .filter(BoardSettings.setting_key == "session_test")
+                .count()
+            )
             assert count == 1
         finally:
             new_session.close()
@@ -533,7 +631,9 @@ class TestBoardSettingsModel:
         """Test de la validation au niveau applicatif."""
         # Le modèle SQLAlchemy lui-même n'a pas de validation Pydantic
         # mais on peut tester des contraintes de base
-        setting = BoardSettings(setting_key="validation_test", setting_value="x" * 10000)  # Très longue valeur
+        setting = BoardSettings(
+            setting_key="validation_test", setting_value="x" * 10000
+        )  # Très longue valeur
 
         # Devrait fonctionner (pas de limitation de longueur dans le modèle)
         db_session.add(setting)
@@ -545,7 +645,9 @@ class TestBoardSettingsModel:
         """Test des opérations en cascade."""
         # BoardSettings n'a pas de relations, donc pas de cascade à tester
         # Mais on vérifie que les opérations de base fonctionnent
-        setting = BoardSettings(setting_key="cascade_test", setting_value="cascade_value")
+        setting = BoardSettings(
+            setting_key="cascade_test", setting_value="cascade_value"
+        )
 
         db_session.add(setting)
         db_session.commit()
@@ -557,7 +659,11 @@ class TestBoardSettingsModel:
         db_session.commit()
 
         # Vérifier que l'objet est bien supprimé
-        deleted = db_session.query(BoardSettings).filter(BoardSettings.id == setting_id).first()
+        deleted = (
+            db_session.query(BoardSettings)
+            .filter(BoardSettings.id == setting_id)
+            .first()
+        )
         assert deleted is None
 
     def test_board_settings_index_usage(self, db_session, sample_board_settings):
@@ -566,7 +672,11 @@ class TestBoardSettingsModel:
         # mais on peut vérifier que les requêtes fonctionnent
 
         # Recherche par clé (devrait utiliser l'index)
-        setting = db_session.query(BoardSettings).filter(BoardSettings.setting_key == "board_title").first()
+        setting = (
+            db_session.query(BoardSettings)
+            .filter(BoardSettings.setting_key == "board_title")
+            .first()
+        )
 
         assert setting is not None
         assert setting.setting_value == "Mon Tableau Kanban"
@@ -576,22 +686,26 @@ class TestBoardSettingsModel:
         # Créer plusieurs paramètres
         settings = []
         for i in range(3):
-            setting = BoardSettings(setting_key=f"bulk_update_{i}", setting_value=f"initial_{i}")
+            setting = BoardSettings(
+                setting_key=f"bulk_update_{i}", setting_value=f"initial_{i}"
+            )
             settings.append(setting)
 
         db_session.add_all(settings)
         db_session.commit()
 
         # Mettre à jour en masse
-        db_session.query(BoardSettings).filter(BoardSettings.setting_key.like("bulk_update_%")).update(
-            {"setting_value": "bulk_updated"}
-        )
+        db_session.query(BoardSettings).filter(
+            BoardSettings.setting_key.like("bulk_update_%")
+        ).update({"setting_value": "bulk_updated"})
 
         db_session.commit()
 
         # Vérifier les mises à jour
         updated_settings = (
-            db_session.query(BoardSettings).filter(BoardSettings.setting_key.like("bulk_update_%")).all()
+            db_session.query(BoardSettings)
+            .filter(BoardSettings.setting_key.like("bulk_update_%"))
+            .all()
         )
 
         for setting in updated_settings:
@@ -617,6 +731,10 @@ class TestBoardSettingsModel:
 
         # Vérifier que toutes les valeurs sont stockées correctement
         for key, expected_value in test_data:
-            setting = db_session.query(BoardSettings).filter(BoardSettings.setting_key == key).first()
+            setting = (
+                db_session.query(BoardSettings)
+                .filter(BoardSettings.setting_key == key)
+                .first()
+            )
             assert setting is not None
             assert setting.setting_value == expected_value

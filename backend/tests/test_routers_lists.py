@@ -20,7 +20,13 @@ from app.routers.lists import get_list_cards_count, read_lists
 from app.routers.lists import reorder_lists as reorder_lists_route
 from app.routers.lists import require_admin
 from app.routers.lists import update_list as update_list_route
-from app.schemas import KanbanListCreate, KanbanListResponse, KanbanListUpdate, ListDeletionRequest, ListReorderRequest
+from app.schemas import (
+    KanbanListCreate,
+    KanbanListResponse,
+    KanbanListUpdate,
+    ListDeletionRequest,
+    ListReorderRequest,
+)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -30,7 +36,9 @@ from sqlalchemy.orm import sessionmaker
 def db_session():
     """Fixture pour créer une session de base de données de test."""
     SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
@@ -113,14 +121,20 @@ class TestListsRouter:
             ]
             mock_get_lists.return_value = mock_lists
 
-            with patch("app.routers.lists.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.lists.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
                 with patch("app.routers.lists.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(read_lists(mock_db.return_value.__enter__.return_value, admin_user))
+                    result = asyncio.run(
+                        read_lists(
+                            mock_db.return_value.__enter__.return_value, admin_user
+                        )
+                    )
 
                     assert len(result) == 1
                     assert result[0].name == "À faire"
@@ -139,14 +153,20 @@ class TestListsRouter:
             ]
             mock_get_lists.return_value = mock_lists
 
-            with patch("app.routers.lists.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.lists.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = regular_user
 
                 # Mock database session
                 with patch("app.routers.lists.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(read_lists(mock_db.return_value.__enter__.return_value, regular_user))
+                    result = asyncio.run(
+                        read_lists(
+                            mock_db.return_value.__enter__.return_value, regular_user
+                        )
+                    )
 
                     assert len(result) == 1
                     assert result[0].name == "En cours"
@@ -156,14 +176,20 @@ class TestListsRouter:
         with patch("app.routers.lists.list_service.get_lists") as mock_get_lists:
             mock_get_lists.return_value = []
 
-            with patch("app.routers.lists.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.lists.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
                 with patch("app.routers.lists.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(read_lists(mock_db.return_value.__enter__.return_value, admin_user))
+                    result = asyncio.run(
+                        read_lists(
+                            mock_db.return_value.__enter__.return_value, admin_user
+                        )
+                    )
 
                     assert len(result) == 0
 
@@ -190,7 +216,11 @@ class TestListsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        create_list_route(list_data, mock_db.return_value.__enter__.return_value, admin_user)
+                        create_list_route(
+                            list_data,
+                            mock_db.return_value.__enter__.return_value,
+                            admin_user,
+                        )
                     )
 
                     assert result.name == "Nouvelle liste"
@@ -201,7 +231,9 @@ class TestListsRouter:
         list_data = KanbanListCreate(name="Nouvelle liste", order=3)
 
         with patch("app.routers.lists.require_admin") as mock_require_admin:
-            mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+            mock_require_admin.side_effect = HTTPException(
+                status_code=403, detail="Accès réservé aux administrateurs"
+            )
 
             # Mock database session
             with patch("app.routers.lists.get_db") as mock_db:
@@ -209,7 +241,11 @@ class TestListsRouter:
 
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
-                        create_list_route(list_data, mock_db.return_value.__enter__.return_value, mock_require_admin())
+                        create_list_route(
+                            list_data,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin(),
+                        )
                     )
 
                 assert exc_info.value.status_code == 403
@@ -232,7 +268,10 @@ class TestListsRouter:
 
         # Verify it's a validation error
         assert len(exc_info.value.errors()) > 0
-        assert any("String should have at least 1 character" in str(error) for error in exc_info.value.errors())
+        assert any(
+            "String should have at least 1 character" in str(error)
+            for error in exc_info.value.errors()
+        )
 
     def test_create_list_duplicate_name(self, admin_user):
         """Test de création d'une liste avec un nom dupliqué."""
@@ -246,11 +285,17 @@ class TestListsRouter:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
                 with patch("app.routers.lists.list_service.create_list") as mock_create:
-                    mock_create.side_effect = ValueError("Une liste avec ce nom existe déjà")
+                    mock_create.side_effect = ValueError(
+                        "Une liste avec ce nom existe déjà"
+                    )
 
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
-                            create_list_route(list_data, mock_db.return_value.__enter__.return_value, admin_user)
+                            create_list_route(
+                                list_data,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
+                            )
                         )
 
                     assert exc_info.value.status_code == 400
@@ -279,7 +324,12 @@ class TestListsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        update_list_route(1, update_data, mock_db.return_value.__enter__.return_value, admin_user)
+                        update_list_route(
+                            1,
+                            update_data,
+                            mock_db.return_value.__enter__.return_value,
+                            admin_user,
+                        )
                     )
 
                     assert result.name == "Liste mise à jour"
@@ -289,7 +339,9 @@ class TestListsRouter:
         update_data = KanbanListUpdate(name="Liste mise à jour", order=1)
 
         with patch("app.routers.lists.require_admin") as mock_require_admin:
-            mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+            mock_require_admin.side_effect = HTTPException(
+                status_code=403, detail="Accès réservé aux administrateurs"
+            )
 
             # Mock database session
             with patch("app.routers.lists.get_db") as mock_db:
@@ -298,7 +350,10 @@ class TestListsRouter:
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
                         update_list_route(
-                            1, update_data, mock_db.return_value.__enter__.return_value, mock_require_admin()
+                            1,
+                            update_data,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin(),
                         )
                     )
 
@@ -322,7 +377,10 @@ class TestListsRouter:
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
                             update_list_route(
-                                999, update_data, mock_db.return_value.__enter__.return_value, admin_user
+                                999,
+                                update_data,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
                             )
                         )
 
@@ -344,7 +402,12 @@ class TestListsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        delete_list_route(1, deletion_request, mock_db.return_value.__enter__.return_value, admin_user)
+                        delete_list_route(
+                            1,
+                            deletion_request,
+                            mock_db.return_value.__enter__.return_value,
+                            admin_user,
+                        )
                     )
 
                     assert result["message"] == "Liste supprimée avec succès"
@@ -354,7 +417,9 @@ class TestListsRouter:
         deletion_request = ListDeletionRequest(target_list_id=2)
 
         with patch("app.routers.lists.require_admin") as mock_require_admin:
-            mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+            mock_require_admin.side_effect = HTTPException(
+                status_code=403, detail="Accès réservé aux administrateurs"
+            )
 
             # Mock database session
             with patch("app.routers.lists.get_db") as mock_db:
@@ -363,7 +428,10 @@ class TestListsRouter:
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
                         delete_list_route(
-                            1, deletion_request, mock_db.return_value.__enter__.return_value, mock_require_admin()
+                            1,
+                            deletion_request,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin(),
                         )
                     )
 
@@ -387,7 +455,10 @@ class TestListsRouter:
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
                             delete_list_route(
-                                999, deletion_request, mock_db.return_value.__enter__.return_value, admin_user
+                                999,
+                                deletion_request,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
                             )
                         )
 
@@ -396,12 +467,16 @@ class TestListsRouter:
 
     def test_get_list_with_cards_count_success(self, admin_user):
         """Test de récupération d'une liste avec le nombre de cartes."""
-        with patch("app.routers.lists.list_service.get_list_with_cards_count") as mock_get_list:
+        with patch(
+            "app.routers.lists.list_service.get_list_with_cards_count"
+        ) as mock_get_list:
             mock_list = MagicMock()
             mock_list.name = "À faire"
             mock_get_list.return_value = (mock_list, 5)
 
-            with patch("app.routers.lists.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.lists.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
@@ -409,7 +484,9 @@ class TestListsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        get_list_cards_count(1, mock_db.return_value.__enter__.return_value, admin_user)
+                        get_list_cards_count(
+                            1, mock_db.return_value.__enter__.return_value, admin_user
+                        )
                     )
 
                     assert result["list_name"] == "À faire"
@@ -430,7 +507,11 @@ class TestListsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        reorder_lists_route(reorder_request, mock_db.return_value.__enter__.return_value, admin_user)
+                        reorder_lists_route(
+                            reorder_request,
+                            mock_db.return_value.__enter__.return_value,
+                            admin_user,
+                        )
                     )
 
                     assert result["message"] == "Listes réorganisées avec succès"
@@ -440,7 +521,9 @@ class TestListsRouter:
         reorder_request = ListReorderRequest(list_orders={1: 2, 2: 1})
 
         with patch("app.routers.lists.require_admin") as mock_require_admin:
-            mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+            mock_require_admin.side_effect = HTTPException(
+                status_code=403, detail="Accès réservé aux administrateurs"
+            )
 
             # Mock database session
             with patch("app.routers.lists.get_db") as mock_db:
@@ -449,7 +532,9 @@ class TestListsRouter:
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
                         reorder_lists_route(
-                            reorder_request, mock_db.return_value.__enter__.return_value, mock_require_admin()
+                            reorder_request,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin(),
                         )
                     )
 
@@ -483,7 +568,9 @@ class TestListsRouter:
         with patch("app.routers.lists.list_service.get_lists") as mock_get_lists:
             mock_get_lists.side_effect = Exception("Database error")
 
-            with patch("app.routers.lists.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.lists.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
@@ -491,7 +578,11 @@ class TestListsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     with pytest.raises(Exception) as exc_info:
-                        asyncio.run(read_lists(mock_db.return_value.__enter__.return_value, admin_user))
+                        asyncio.run(
+                            read_lists(
+                                mock_db.return_value.__enter__.return_value, admin_user
+                            )
+                        )
 
                     # The exception should propagate since read_lists doesn't have error handling
                     assert "Database error" in str(exc_info.value)

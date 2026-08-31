@@ -163,7 +163,15 @@ def generate_csv_export(db: Session) -> bytes:
     writer = csv.writer(output, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
     # En-têtes (sans la colonne Checklist)
-    headers = ["Liste", "Titre", "Description", "Etiquettes", "Priorité", "Date d'échéance", "Assigné à"]
+    headers = [
+        "Liste",
+        "Titre",
+        "Description",
+        "Etiquettes",
+        "Priorité",
+        "Date d'échéance",
+        "Assigné à",
+    ]
     writer.writerow(headers)
 
     # Données
@@ -209,7 +217,16 @@ def generate_excel_export(db: Session) -> bytes:
     ws.title = "Export Tâches"
 
     # En-têtes avec style
-    headers = ["Liste", "Titre", "Description", "Checklist", "Etiquettes", "Priorité", "Date d'échéance", "Assigné à"]
+    headers = [
+        "Liste",
+        "Titre",
+        "Description",
+        "Checklist",
+        "Etiquettes",
+        "Priorité",
+        "Date d'échéance",
+        "Assigné à",
+    ]
 
     for col_num, header in enumerate(headers, start=1):
         cell = ws.cell(row=1, column=col_num, value=header)
@@ -224,7 +241,11 @@ def generate_excel_export(db: Session) -> bytes:
         ws.cell(row=row_num, column=5, value=format_labels(card))
         ws.cell(row=row_num, column=6, value=format_priority(card.priority))
         ws.cell(row=row_num, column=7, value=format_due_date(card.due_date))
-        ws.cell(row=row_num, column=8, value=card.assignee.display_name if card.assignee else "")
+        ws.cell(
+            row=row_num,
+            column=8,
+            value=card.assignee.display_name if card.assignee else "",
+        )
 
     # Ajuster la largeur des colonnes
     ws.column_dimensions["A"].width = 20  # Liste

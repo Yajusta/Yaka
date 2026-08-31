@@ -6,9 +6,8 @@ Create Date: 2025-09-08 18:34:26.314646
 
 """
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "756429e64d69"
@@ -27,7 +26,10 @@ def upgrade() -> None:
         sa.Column("comment", sa.Text(), nullable=False),
         sa.Column("is_deleted", sa.Boolean(), nullable=False, default=False),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.text("(CURRENT_TIMESTAMP)"), nullable=False
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            nullable=False,
         ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(["card_id"], ["cards.id"], ondelete="CASCADE"),

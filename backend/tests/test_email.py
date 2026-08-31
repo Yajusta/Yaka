@@ -57,7 +57,9 @@ def temp_env_vars(**kwargs):
 @pytest.fixture
 def mock_smtp():
     """Fixture pour mocker le serveur SMTP."""
-    with patch("smtplib.SMTP") as mock_smtp_class, patch("smtplib.SMTP_SSL") as mock_smtp_ssl_class:
+    with patch("smtplib.SMTP") as mock_smtp_class, patch(
+        "smtplib.SMTP_SSL"
+    ) as mock_smtp_ssl_class:
 
         # Créer des instances mock
         mock_smtp_instance = MagicMock()
@@ -88,13 +90,21 @@ def sample_email_data():
 @pytest.fixture
 def sample_invitation_data():
     """Fixture pour les données d'invitation de test."""
-    return {"email": "user@example.com", "display_name": "John Doe", "token": "test-token-123"}
+    return {
+        "email": "user@example.com",
+        "display_name": "John Doe",
+        "token": "test-token-123",
+    }
 
 
 @pytest.fixture
 def sample_reset_data():
     """Fixture pour les données de réinitialisation de test."""
-    return {"email": "user@example.com", "display_name": "Jane Doe", "token": "reset-token-456"}
+    return {
+        "email": "user@example.com",
+        "display_name": "Jane Doe",
+        "token": "reset-token-456",
+    }
 
 
 class TestSendMail:
@@ -116,7 +126,9 @@ class TestSendMail:
             mock_smtp["smtp"].ehlo.assert_called()
             mock_smtp["smtp"].starttls.assert_called_once()
             mock_smtp["smtp"].ehlo.assert_called()
-            mock_smtp["smtp"].login.assert_called_once_with("test@example.com", "password123")
+            mock_smtp["smtp"].login.assert_called_once_with(
+                "test@example.com", "password123"
+            )
             mock_smtp["smtp"].send_message.assert_called_once()
 
     def test_send_mail_success_ssl(self, mock_smtp, sample_email_data):
@@ -132,14 +144,16 @@ class TestSendMail:
             mock_smtp["smtp_class"].assert_not_called()
 
             # Vérifier les appels de méthode
-            mock_smtp["smtp_ssl"].login.assert_called_once_with("test@example.com", "password123")
+            mock_smtp["smtp_ssl"].login.assert_called_once_with(
+                "test@example.com", "password123"
+            )
             mock_smtp["smtp_ssl"].send_message.assert_called_once()
 
     def test_send_mail_success_none(self, mock_smtp, sample_email_data):
         """Test d'envoi réussi sans sécurité (none)."""
-        with patch("app.services.email.SMTP_SECURE", "none"), patch("app.services.email.SMTP_USER", ""), patch(
-            "app.services.email.SMTP_PASS", ""
-        ):
+        with patch("app.services.email.SMTP_SECURE", "none"), patch(
+            "app.services.email.SMTP_USER", ""
+        ), patch("app.services.email.SMTP_PASS", ""):
 
             send_mail(**sample_email_data)
 
@@ -155,9 +169,9 @@ class TestSendMail:
 
     def test_send_mail_no_auth(self, mock_smtp, sample_email_data):
         """Test d'envoi sans authentification."""
-        with patch("app.services.email.SMTP_SECURE", "starttls"), patch("app.services.email.SMTP_USER", ""), patch(
-            "app.services.email.SMTP_PASS", ""
-        ):
+        with patch("app.services.email.SMTP_SECURE", "starttls"), patch(
+            "app.services.email.SMTP_USER", ""
+        ), patch("app.services.email.SMTP_PASS", ""):
 
             send_mail(**sample_email_data)
 
@@ -184,7 +198,9 @@ class TestSendMail:
 
     def test_send_mail_smtp_exception_starttls(self, mock_smtp, sample_email_data):
         """Test de gestion d'exception SMTP avec STARTTLS."""
-        mock_smtp["smtp"].send_message.side_effect = smtplib.SMTPException("Connection failed")
+        mock_smtp["smtp"].send_message.side_effect = smtplib.SMTPException(
+            "Connection failed"
+        )
 
         with temp_env_vars(SMTP_SECURE="starttls"):
             with pytest.raises(smtplib.SMTPException, match="Connection failed"):
@@ -192,7 +208,9 @@ class TestSendMail:
 
     def test_send_mail_smtp_exception_ssl(self, mock_smtp, sample_email_data):
         """Test de gestion d'exception SMTP avec SSL."""
-        mock_smtp["smtp_ssl"].send_message.side_effect = smtplib.SMTPException("SSL connection failed")
+        mock_smtp["smtp_ssl"].send_message.side_effect = smtplib.SMTPException(
+            "SSL connection failed"
+        )
 
         with patch("app.services.email.SMTP_SECURE", "ssl"):
             with pytest.raises(smtplib.SMTPException, match="SSL connection failed"):
@@ -268,6 +286,7 @@ class TestSendInvitation:
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -296,11 +315,16 @@ class TestSendInvitation:
 
     def test_send_invitation_no_display_name(self, mock_smtp):
         """Test d'invitation sans nom d'affichage."""
-        data = {"email": "user@example.com", "display_name": None, "token": "test-token"}
+        data = {
+            "email": "user@example.com",
+            "display_name": None,
+            "token": "test-token",
+        }
 
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -327,6 +351,7 @@ class TestSendInvitation:
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -356,6 +381,7 @@ class TestSendInvitation:
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -383,6 +409,7 @@ class TestSendInvitation:
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -405,11 +432,14 @@ class TestSendInvitation:
             # Restore original module state to not affect other tests
             importlib.reload(app.services.email)
 
-    def test_send_invitation_html_and_plain_content(self, mock_smtp, sample_invitation_data):
+    def test_send_invitation_html_and_plain_content(
+        self, mock_smtp, sample_invitation_data
+    ):
         """Test que les versions HTML et plain text sont générées."""
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -430,13 +460,18 @@ class TestSendInvitation:
             # Restore original module state to not affect other tests
             importlib.reload(app.services.email)
 
-    def test_send_invitation_smtp_error_handling(self, mock_smtp, sample_invitation_data):
+    def test_send_invitation_smtp_error_handling(
+        self, mock_smtp, sample_invitation_data
+    ):
         """Test de gestion d'erreur SMTP dans l'invitation."""
-        mock_smtp["smtp"].send_message.side_effect = smtplib.SMTPException("SMTP server down")
+        mock_smtp["smtp"].send_message.side_effect = smtplib.SMTPException(
+            "SMTP server down"
+        )
 
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -456,6 +491,7 @@ class TestSendPasswordReset:
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -484,11 +520,16 @@ class TestSendPasswordReset:
 
     def test_send_password_reset_no_display_name(self, mock_smtp):
         """Test de réinitialisation sans nom d'affichage."""
-        data = {"email": "user@example.com", "display_name": None, "token": "reset-token"}
+        data = {
+            "email": "user@example.com",
+            "display_name": None,
+            "token": "reset-token",
+        }
 
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -518,6 +559,7 @@ class TestSendPasswordReset:
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -547,6 +589,7 @@ class TestSendPasswordReset:
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -573,6 +616,7 @@ class TestSendPasswordReset:
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -592,11 +636,14 @@ class TestSendPasswordReset:
             # Restore original module state to not affect other tests
             importlib.reload(app.services.email)
 
-    def test_send_password_reset_html_and_plain_content(self, mock_smtp, sample_reset_data):
+    def test_send_password_reset_html_and_plain_content(
+        self, mock_smtp, sample_reset_data
+    ):
         """Test que les versions HTML et plain text sont générées."""
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -617,13 +664,18 @@ class TestSendPasswordReset:
             # Restore original module state to not affect other tests
             importlib.reload(app.services.email)
 
-    def test_send_password_reset_smtp_error_handling(self, mock_smtp, sample_reset_data):
+    def test_send_password_reset_smtp_error_handling(
+        self, mock_smtp, sample_reset_data
+    ):
         """Test de gestion d'erreur SMTP dans la réinitialisation."""
-        mock_smtp["smtp"].send_message.side_effect = smtplib.SMTPException("Connection timeout")
+        mock_smtp["smtp"].send_message.side_effect = smtplib.SMTPException(
+            "Connection timeout"
+        )
 
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -636,12 +688,17 @@ class TestSendPasswordReset:
 
     def test_send_password_reset_different_from_invitation(self, mock_smtp):
         """Test que les emails de reset et invitation sont différents."""
-        invitation_data = {"email": "test@example.com", "display_name": "Test User", "token": "same-token"}
+        invitation_data = {
+            "email": "test@example.com",
+            "display_name": "Test User",
+            "token": "same-token",
+        }
         reset_data = invitation_data.copy()
 
         with temp_env_vars(SMTP_SECURE="none"):
             # Force reload to pick up new environment
             import importlib
+
             import app.services.email
 
             importlib.reload(app.services.email)
@@ -692,15 +749,23 @@ class TestEmailIntegration:
 
     def test_full_invitation_workflow(self):
         """Test du workflow complet d'invitation."""
-        user_data = {"email": "new.user@example.com", "display_name": "New User", "token": "secure-invite-token-123"}
+        user_data = {
+            "email": "new.user@example.com",
+            "display_name": "New User",
+            "token": "secure-invite-token-123",
+        }
 
         # Create local mocks
-        with patch("smtplib.SMTP") as mock_smtp_class, patch("smtplib.SMTP_SSL") as mock_smtp_ssl_class:
+        with patch("smtplib.SMTP") as mock_smtp_class, patch(
+            "smtplib.SMTP_SSL"
+        ) as mock_smtp_ssl_class:
             mock_smtp_instance = MagicMock()
             mock_smtp_ssl_instance = MagicMock()
 
             mock_smtp_class.return_value.__enter__.return_value = mock_smtp_instance
-            mock_smtp_ssl_class.return_value.__enter__.return_value = mock_smtp_ssl_instance
+            mock_smtp_ssl_class.return_value.__enter__.return_value = (
+                mock_smtp_ssl_instance
+            )
 
             # Use environment variable approach like the working debug script
             test_env = test_env_vars.copy()
@@ -711,6 +776,7 @@ class TestEmailIntegration:
             with patch.dict(os.environ, test_env, clear=True):
                 # Force reload to pick up new environment
                 import importlib
+
                 import app.services.email
 
                 importlib.reload(app.services.email)
@@ -723,7 +789,9 @@ class TestEmailIntegration:
                 mock_smtp_instance.ehlo.assert_called()
                 mock_smtp_instance.starttls.assert_called_once()
                 mock_smtp_instance.ehlo.assert_called()
-                mock_smtp_instance.login.assert_called_once_with("test@example.com", "password123")
+                mock_smtp_instance.login.assert_called_once_with(
+                    "test@example.com", "password123"
+                )
                 mock_smtp_instance.send_message.assert_called_once()
 
                 # Vérifier le contenu de l'email
@@ -734,6 +802,7 @@ class TestEmailIntegration:
 
                 # Restore original module state to not affect other tests
                 import importlib
+
                 import app.services.email
 
                 importlib.reload(app.services.email)
@@ -747,12 +816,16 @@ class TestEmailIntegration:
         }
 
         # Create local mocks
-        with patch("smtplib.SMTP") as mock_smtp_class, patch("smtplib.SMTP_SSL") as mock_smtp_ssl_class:
+        with patch("smtplib.SMTP") as mock_smtp_class, patch(
+            "smtplib.SMTP_SSL"
+        ) as mock_smtp_ssl_class:
             mock_smtp_instance = MagicMock()
             mock_smtp_ssl_instance = MagicMock()
 
             mock_smtp_class.return_value.__enter__.return_value = mock_smtp_instance
-            mock_smtp_ssl_class.return_value.__enter__.return_value = mock_smtp_ssl_instance
+            mock_smtp_ssl_class.return_value.__enter__.return_value = (
+                mock_smtp_ssl_instance
+            )
 
             # Use environment variable approach like the working debug script
             test_env = test_env_vars.copy()
@@ -763,6 +836,7 @@ class TestEmailIntegration:
             with patch.dict(os.environ, test_env, clear=True):
                 # Force reload to pick up new environment
                 import importlib
+
                 import app.services.email
 
                 importlib.reload(app.services.email)
@@ -772,7 +846,9 @@ class TestEmailIntegration:
                 # Vérifier que SSL a été utilisé
                 mock_smtp_ssl_class.assert_called_once()
                 mock_smtp_class.assert_not_called()
-                mock_smtp_ssl_instance.login.assert_called_once_with("test@example.com", "password123")
+                mock_smtp_ssl_instance.login.assert_called_once_with(
+                    "test@example.com", "password123"
+                )
                 mock_smtp_ssl_instance.send_message.assert_called_once()
 
                 # Vérifier le contenu de l'email
@@ -783,6 +859,7 @@ class TestEmailIntegration:
 
                 # Restore original module state to not affect other tests
                 import importlib
+
                 import app.services.email
 
                 importlib.reload(app.services.email)
@@ -800,16 +877,21 @@ class TestEmailIntegration:
         ]
 
         # Use local mocks to avoid interference from other tests
-        with patch("smtplib.SMTP") as mock_smtp_class, patch("smtplib.SMTP_SSL") as mock_smtp_ssl_class:
+        with patch("smtplib.SMTP") as mock_smtp_class, patch(
+            "smtplib.SMTP_SSL"
+        ) as mock_smtp_ssl_class:
             mock_smtp_instance = MagicMock()
             mock_smtp_ssl_instance = MagicMock()
 
             mock_smtp_class.return_value.__enter__.return_value = mock_smtp_instance
-            mock_smtp_ssl_class.return_value.__enter__.return_value = mock_smtp_ssl_instance
+            mock_smtp_ssl_class.return_value.__enter__.return_value = (
+                mock_smtp_ssl_instance
+            )
 
             with temp_env_vars(SMTP_SECURE="none"):
                 # Force reload to pick up new environment
                 import importlib
+
                 import app.services.email
 
                 importlib.reload(app.services.email)
@@ -821,7 +903,9 @@ class TestEmailIntegration:
                 assert mock_smtp_instance.send_message.call_count == 3
 
                 # Vérifier que chaque email a le bon destinataire
-                for i, call_args in enumerate(mock_smtp_instance.send_message.call_args_list):
+                for i, call_args in enumerate(
+                    mock_smtp_instance.send_message.call_args_list
+                ):
                     message = call_args[0][0]
                     assert message["To"] == f"user{i}@example.com"
 
@@ -839,12 +923,16 @@ class TestEmailIntegration:
         ]
 
         # Use local mocks to avoid interference from other tests
-        with patch("smtplib.SMTP") as mock_smtp_class, patch("smtplib.SMTP_SSL") as mock_smtp_ssl_class:
+        with patch("smtplib.SMTP") as mock_smtp_class, patch(
+            "smtplib.SMTP_SSL"
+        ) as mock_smtp_ssl_class:
             mock_smtp_instance = MagicMock()
             mock_smtp_ssl_instance = MagicMock()
 
             mock_smtp_class.return_value.__enter__.return_value = mock_smtp_instance
-            mock_smtp_ssl_class.return_value.__enter__.return_value = mock_smtp_ssl_instance
+            mock_smtp_ssl_class.return_value.__enter__.return_value = (
+                mock_smtp_ssl_instance
+            )
 
             for error in error_scenarios:
                 mock_smtp_instance.send_message.side_effect = error
@@ -852,12 +940,18 @@ class TestEmailIntegration:
                 with temp_env_vars(SMTP_SECURE="none"):
                     # Force reload to pick up new environment
                     import importlib
+
                     import app.services.email
 
                     importlib.reload(app.services.email)
 
                     with pytest.raises(type(error)):
-                        send_mail(to="test@example.com", subject="Test", html_body="<p>Test</p>", plain_body="Test")
+                        send_mail(
+                            to="test@example.com",
+                            subject="Test",
+                            html_body="<p>Test</p>",
+                            plain_body="Test",
+                        )
 
                 # Reset pour le prochain test
                 mock_smtp_instance.reset_mock()
@@ -897,16 +991,21 @@ class TestEmailSecurity:
         data["token"] = dangerous_token
 
         # Use local mocks to avoid interference from other tests
-        with patch("smtplib.SMTP") as mock_smtp_class, patch("smtplib.SMTP_SSL") as mock_smtp_ssl_class:
+        with patch("smtplib.SMTP") as mock_smtp_class, patch(
+            "smtplib.SMTP_SSL"
+        ) as mock_smtp_ssl_class:
             mock_smtp_instance = MagicMock()
             mock_smtp_ssl_instance = MagicMock()
 
             mock_smtp_class.return_value.__enter__.return_value = mock_smtp_instance
-            mock_smtp_ssl_class.return_value.__enter__.return_value = mock_smtp_ssl_instance
+            mock_smtp_ssl_class.return_value.__enter__.return_value = (
+                mock_smtp_ssl_instance
+            )
 
             with temp_env_vars(SMTP_SECURE="none"):
                 # Force reload to pick up new environment
                 import importlib
+
                 import app.services.email
 
                 importlib.reload(app.services.email)
@@ -929,7 +1028,11 @@ class TestEmailSecurity:
     def test_no_sensitive_data_logging(self, mock_smtp, sample_email_data):
         """Test que les données sensibles ne sont pas loguées."""
         # Ce test vérifie que les mots de passe ne sont pas logués
-        with temp_env_vars(SMTP_SECURE="starttls", SMTP_USER="secret@example.com", SMTP_PASS="secret_password_123"):
+        with temp_env_vars(
+            SMTP_SECURE="starttls",
+            SMTP_USER="secret@example.com",
+            SMTP_PASS="secret_password_123",
+        ):
             with patch("app.services.email.logger") as mock_logger:
                 send_mail(**sample_email_data)
 

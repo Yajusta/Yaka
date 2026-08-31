@@ -8,7 +8,14 @@ from .permissions import (
     ensure_can_edit_comment,
     ensure_can_modify_card,
 )
-from .security import Token, TokenData, create_access_token, get_password_hash, verify_password, verify_token
+from .security import (
+    Token,
+    TokenData,
+    create_access_token,
+    get_password_hash,
+    verify_password,
+    verify_token,
+)
 
 __all__ = [
     "Token",

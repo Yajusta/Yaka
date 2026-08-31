@@ -12,7 +12,9 @@ from pydantic import BaseModel
 load_dotenv()
 
 # JWT configuration
-SECRET_KEY = os.getenv("JWT_SECRET", "your_jwt_secret_key_here")  # to change in production
+SECRET_KEY = os.getenv(
+    "JWT_SECRET", "your_jwt_secret_key_here"
+)  # to change in production
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
@@ -34,7 +36,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against its hash."""
     password_byte_enc = plain_password.encode("utf-8")
     hashed_password_bytes = hashed_password.encode("utf-8")
-    return bcrypt.checkpw(password=password_byte_enc, hashed_password=hashed_password_bytes)
+    return bcrypt.checkpw(
+        password=password_byte_enc, hashed_password=hashed_password_bytes
+    )
 
 
 def get_password_hash(password: str) -> str:

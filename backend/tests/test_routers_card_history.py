@@ -25,7 +25,9 @@ from sqlalchemy.orm import sessionmaker
 def db_session():
     """Fixture pour créer une session de base de données de test."""
     SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
@@ -97,7 +99,9 @@ class TestCardHistoryRouter:
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = test_card
 
-            with patch("app.services.card_history.get_card_history") as mock_get_history:
+            with patch(
+                "app.services.card_history.get_card_history"
+            ) as mock_get_history:
                 mock_history = [
                     CardHistoryResponse(
                         id=1,
@@ -110,7 +114,9 @@ class TestCardHistoryRouter:
                 ]
                 mock_get_history.return_value = mock_history
 
-                with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.card_history.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock the database session
@@ -119,7 +125,9 @@ class TestCardHistoryRouter:
 
                         result = asyncio.run(
                             get_card_history(
-                                1, mock_db.return_value.__enter__.return_value, mock_current_user.return_value
+                                1,
+                                mock_db.return_value.__enter__.return_value,
+                                mock_current_user.return_value,
                             )
                         )
 
@@ -133,7 +141,9 @@ class TestCardHistoryRouter:
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = None
 
-            with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_history.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock the database session
@@ -143,7 +153,9 @@ class TestCardHistoryRouter:
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
                             get_card_history(
-                                999, mock_db.return_value.__enter__.return_value, mock_current_user.return_value
+                                999,
+                                mock_db.return_value.__enter__.return_value,
+                                mock_current_user.return_value,
                             )
                         )
 
@@ -156,10 +168,14 @@ class TestCardHistoryRouter:
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = test_card
 
-            with patch("app.services.card_history.get_card_history") as mock_get_history:
+            with patch(
+                "app.services.card_history.get_card_history"
+            ) as mock_get_history:
                 mock_get_history.return_value = []
 
-                with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.card_history.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock the database session
@@ -168,26 +184,39 @@ class TestCardHistoryRouter:
 
                         result = asyncio.run(
                             get_card_history(
-                                1, mock_db.return_value.__enter__.return_value, mock_current_user.return_value
+                                1,
+                                mock_db.return_value.__enter__.return_value,
+                                mock_current_user.return_value,
                             )
                         )
 
                         assert isinstance(result, list)
                         assert len(result) == 0
 
-    def test_create_card_history_entry_success(self, test_user, test_card, test_history_entry):
+    def test_create_card_history_entry_success(
+        self, test_user, test_card, test_history_entry
+    ):
         """Test de création d'une entrée d'historique avec succès."""
         from app.routers.card_history import create_card_history_entry
 
-        history_data = {"card_id": 1, "user_id": 1, "action": "card_updated", "description": "Carte mise à jour"}
+        history_data = {
+            "card_id": 1,
+            "user_id": 1,
+            "action": "card_updated",
+            "description": "Carte mise à jour",
+        }
 
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = test_card
 
-            with patch("app.services.card_history.create_card_history_entry") as mock_create:
+            with patch(
+                "app.services.card_history.create_card_history_entry"
+            ) as mock_create:
                 mock_create.return_value = test_history_entry
 
-                with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.card_history.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock the database session
@@ -210,12 +239,19 @@ class TestCardHistoryRouter:
         """Test de création d'une entrée d'historique pour une carte qui n'existe pas."""
         from app.routers.card_history import create_card_history_entry
 
-        history_data = {"card_id": 999, "user_id": 1, "action": "card_updated", "description": "Carte mise à jour"}
+        history_data = {
+            "card_id": 999,
+            "user_id": 1,
+            "action": "card_updated",
+            "description": "Carte mise à jour",
+        }
 
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = None
 
-            with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_history.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock the database session
@@ -238,7 +274,9 @@ class TestCardHistoryRouter:
     def test_get_card_history_invalid_card_id(self, test_user):
         """Test de récupération de l'historique avec un ID de carte invalide."""
 
-        with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.card_history.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Mock the database session
@@ -251,7 +289,9 @@ class TestCardHistoryRouter:
                     with pytest.raises(Exception) as exc_info:
                         asyncio.run(
                             get_card_history(
-                                "invalid", mock_db.return_value.__enter__.return_value, mock_current_user.return_value
+                                "invalid",
+                                mock_db.return_value.__enter__.return_value,
+                                mock_current_user.return_value,
                             )
                         )
 
@@ -268,7 +308,9 @@ class TestCardHistoryRouter:
             "description": "Carte mise à jour",
         }
 
-        with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.card_history.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Mock the database session
@@ -294,7 +336,9 @@ class TestCardHistoryRouter:
             # Missing action and description
         }
 
-        with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.card_history.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Mock the database session
@@ -324,7 +368,9 @@ class TestCardHistoryRouter:
             "description": "Carte mise à jour",
         }
 
-        with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.card_history.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Mock the database session
@@ -334,7 +380,9 @@ class TestCardHistoryRouter:
                 with patch("app.services.card.get_card") as mock_get_card:
                     mock_get_card.return_value = test_card
 
-                    with patch("app.services.card_history.create_card_history_entry") as mock_create:
+                    with patch(
+                        "app.services.card_history.create_card_history_entry"
+                    ) as mock_create:
                         mock_create.side_effect = ValueError("Action cannot be empty")
 
                         with pytest.raises(ValueError) as exc_info:
@@ -360,7 +408,9 @@ class TestCardHistoryRouter:
             "description": "   ",  # Use whitespace instead of empty string
         }
 
-        with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.card_history.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Mock the database session
@@ -370,8 +420,12 @@ class TestCardHistoryRouter:
                 with patch("app.services.card.get_card") as mock_get_card:
                     mock_get_card.return_value = test_card
 
-                    with patch("app.services.card_history.create_card_history_entry") as mock_create:
-                        mock_create.side_effect = ValueError("Description cannot be empty")
+                    with patch(
+                        "app.services.card_history.create_card_history_entry"
+                    ) as mock_create:
+                        mock_create.side_effect = ValueError(
+                            "Description cannot be empty"
+                        )
 
                         with pytest.raises(ValueError) as exc_info:
                             asyncio.run(
@@ -389,9 +443,16 @@ class TestCardHistoryRouter:
         """Test de création d'une entrée d'historique avec un ID de carte négatif."""
         from app.routers.card_history import create_card_history_entry
 
-        history_data = {"card_id": -1, "user_id": 1, "action": "card_updated", "description": "Carte mise à jour"}
+        history_data = {
+            "card_id": -1,
+            "user_id": 1,
+            "action": "card_updated",
+            "description": "Carte mise à jour",
+        }
 
-        with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.card_history.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Mock the database session
@@ -416,9 +477,16 @@ class TestCardHistoryRouter:
 
     def test_create_card_history_entry_negative_user_id(self, test_user):
         """Test de création d'une entrée d'historique avec un ID d'utilisateur négatif."""
-        history_data = {"card_id": 1, "user_id": -1, "action": "card_updated", "description": "Carte mise à jour"}
+        history_data = {
+            "card_id": 1,
+            "user_id": -1,
+            "action": "card_updated",
+            "description": "Carte mise à jour",
+        }
 
-        with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.card_history.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Mock the database session
@@ -443,10 +511,14 @@ class TestCardHistoryRouter:
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = test_card
 
-            with patch("app.services.card_history.get_card_history") as mock_get_history:
+            with patch(
+                "app.services.card_history.get_card_history"
+            ) as mock_get_history:
                 mock_get_history.side_effect = Exception("Database error")
 
-                with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.card_history.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock the database session
@@ -456,7 +528,9 @@ class TestCardHistoryRouter:
                         with pytest.raises(Exception) as exc_info:
                             asyncio.run(
                                 get_card_history(
-                                    1, mock_db.return_value.__enter__.return_value, mock_current_user.return_value
+                                    1,
+                                    mock_db.return_value.__enter__.return_value,
+                                    mock_current_user.return_value,
                                 )
                             )
 
@@ -470,15 +544,24 @@ class TestCardHistoryRouter:
         """Test de création d'une entrée d'historique avec une erreur du service."""
         from app.routers.card_history import create_card_history_entry
 
-        history_data = {"card_id": 1, "user_id": 1, "action": "card_updated", "description": "Carte mise à jour"}
+        history_data = {
+            "card_id": 1,
+            "user_id": 1,
+            "action": "card_updated",
+            "description": "Carte mise à jour",
+        }
 
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = test_card
 
-            with patch("app.services.card_history.create_card_history_entry") as mock_create:
+            with patch(
+                "app.services.card_history.create_card_history_entry"
+            ) as mock_create:
                 mock_create.side_effect = Exception("Service error")
 
-                with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.card_history.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock the database session
@@ -507,7 +590,9 @@ class TestCardHistoryRouter:
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.side_effect = Exception("Card service error")
 
-            with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_history.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock the database session
@@ -517,7 +602,9 @@ class TestCardHistoryRouter:
                     with pytest.raises(Exception) as exc_info:
                         asyncio.run(
                             get_card_history(
-                                1, mock_db.return_value.__enter__.return_value, mock_current_user.return_value
+                                1,
+                                mock_db.return_value.__enter__.return_value,
+                                mock_current_user.return_value,
                             )
                         )
 
@@ -531,12 +618,19 @@ class TestCardHistoryRouter:
         """Test de création d'une entrée d'historique avec une erreur du service de carte."""
         from app.routers.card_history import create_card_history_entry
 
-        history_data = {"card_id": 1, "user_id": 1, "action": "card_updated", "description": "Carte mise à jour"}
+        history_data = {
+            "card_id": 1,
+            "user_id": 1,
+            "action": "card_updated",
+            "description": "Carte mise à jour",
+        }
 
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.side_effect = Exception("Card service error")
 
-            with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.card_history.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock the database session
@@ -562,7 +656,9 @@ class TestCardHistoryRouter:
     def test_get_card_history_zero_card_id(self, test_user):
         """Test de récupération de l'historique avec un ID de carte zéro."""
 
-        with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.card_history.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Mock the database session
@@ -576,7 +672,9 @@ class TestCardHistoryRouter:
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
                             get_card_history(
-                                0, mock_db.return_value.__enter__.return_value, mock_current_user.return_value
+                                0,
+                                mock_db.return_value.__enter__.return_value,
+                                mock_current_user.return_value,
                             )
                         )
 
@@ -587,9 +685,16 @@ class TestCardHistoryRouter:
         """Test de création d'une entrée d'historique avec un ID de carte zéro."""
         from app.routers.card_history import create_card_history_entry
 
-        history_data = {"card_id": 0, "user_id": 1, "action": "card_updated", "description": "Carte mise à jour"}
+        history_data = {
+            "card_id": 0,
+            "user_id": 1,
+            "action": "card_updated",
+            "description": "Carte mise à jour",
+        }
 
-        with patch("app.routers.card_history.get_current_active_user") as mock_current_user:
+        with patch(
+            "app.routers.card_history.get_current_active_user"
+        ) as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Mock the database session

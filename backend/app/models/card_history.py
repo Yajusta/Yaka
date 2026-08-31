@@ -18,8 +18,12 @@ class CardHistory(Base):
     __tablename__ = "card_history"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    card_id: Mapped[int] = mapped_column(Integer, ForeignKey("cards.id"), nullable=False)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    card_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("cards.id"), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False
+    )
     action: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(

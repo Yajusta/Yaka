@@ -21,7 +21,9 @@ TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_label_model.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -238,7 +240,9 @@ class TestLabelModel:
 
     def test_label_query_by_creator(self, db_session, sample_labels, sample_user):
         """Test de recherche par créateur."""
-        labels = db_session.query(Label).filter(Label.created_by == sample_user.id).all()
+        labels = (
+            db_session.query(Label).filter(Label.created_by == sample_user.id).all()
+        )
 
         assert len(labels) >= 1
         assert all(label.created_by == sample_user.id for label in labels)
@@ -265,7 +269,9 @@ class TestLabelModel:
         db_session.commit()
 
         # Rechercher les étiquettes contenant "Priority"
-        priority_labels = db_session.query(Label).filter(Label.name.like("%Priority%")).all()
+        priority_labels = (
+            db_session.query(Label).filter(Label.name.like("%Priority%")).all()
+        )
 
         assert len(priority_labels) == 3
         assert all("Priority" in label.name for label in priority_labels)
@@ -341,7 +347,11 @@ class TestLabelModel:
 
         # Vérifier que toutes les étiquettes ont été créées
         for color in color_formats:
-            label = db_session.query(Label).filter(Label.name == f"Color Test {color}").first()
+            label = (
+                db_session.query(Label)
+                .filter(Label.name == f"Color Test {color}")
+                .first()
+            )
             assert label is not None
             assert label.color == color
 
@@ -542,7 +552,11 @@ class TestLabelModel:
         # Chercher les étiquettes avec des colors "chaudes" (rouge/orange)
         from sqlalchemy import or_
 
-        warm_colors = db_session.query(Label).filter(or_(Label.color == "#FF0000", Label.color == "#FFA500")).all()
+        warm_colors = (
+            db_session.query(Label)
+            .filter(or_(Label.color == "#FF0000", Label.color == "#FFA500"))
+            .all()
+        )
 
         assert len(warm_colors) == 2
 
@@ -590,7 +604,9 @@ class TestLabelModel:
     def test_label_error_handling(self, db_session, sample_user):
         """Test de gestion des erreurs."""
         # Simuler une erreur de base de données
-        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
+        with patch.object(
+            db_session, "commit", side_effect=SQLAlchemyError("Database error")
+        ):
             label = Label(
                 name="Error Test",
                 color="#FF0000",
@@ -748,11 +764,22 @@ class TestLabelModel:
                 full_name = f"{category}: {label_name}"
                 # Assigner des colors différentes par catégorie
                 if category == "Priority":
-                    color = "#FF" + {"High": "0000", "Medium": "8000", "Low": "FFFF"}[label_name]
+                    color = (
+                        "#FF"
+                        + {"High": "0000", "Medium": "8000", "Low": "FFFF"}[label_name]
+                    )
                 elif category == "Type":
-                    color = {"Bug": "#FF0000", "Feature": "#00FF00", "Enhancement": "#0000FF"}[label_name]
+                    color = {
+                        "Bug": "#FF0000",
+                        "Feature": "#00FF00",
+                        "Enhancement": "#0000FF",
+                    }[label_name]
                 else:  # Status
-                    color = {"New": "#CCCCCC", "InProgress": "#FFA500", "Review": "#800080"}[label_name]
+                    color = {
+                        "New": "#CCCCCC",
+                        "InProgress": "#FFA500",
+                        "Review": "#800080",
+                    }[label_name]
 
                 label = Label(
                     name=full_name,

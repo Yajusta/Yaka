@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from ..multi_database import get_dynamic_db as get_db
 from ..models import User
+from ..multi_database import get_dynamic_db as get_db
 from ..services import export_service
 from ..utils.dependencies import get_current_active_user
 
@@ -36,7 +36,8 @@ async def export_cards(
         from fastapi import HTTPException, status
 
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Format invalide. Utilisez 'csv' ou 'xlsx'."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Format invalide. Utilisez 'csv' ou 'xlsx'.",
         )
 
     # Générer le contenu selon le format
@@ -52,5 +53,7 @@ async def export_cards(
 
     # Retourner la réponse avec le fichier
     return StreamingResponse(
-        iter([content]), media_type=media_type, headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        iter([content]),
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

@@ -1,52 +1,52 @@
 """Schémas Pydantic de l'application Kanban."""
 
-from .user import (
-    UserBase,
-    UserCreate,
-    UserUpdate,
-    UserResponse,
-    UserLogin,
-    SetPasswordPayload,
-    PasswordResetRequest,
-    UserListItem,
-    LanguageUpdate,
-    ViewScopeUpdate,
-)
-from .label import LabelBase, LabelCreate, LabelUpdate, LabelResponse
 from .card import (
+    BulkCardMoveRequest,
     CardBase,
     CardCreate,
-    CardUpdate,
-    CardListUpdate,
-    CardResponse,
     CardFilter,
+    CardListUpdate,
     CardMoveRequest,
-    BulkCardMoveRequest,
+    CardResponse,
+    CardUpdate,
 )
 from .card_history import (
     CardHistoryBase,
     CardHistoryCreate,
     CardHistoryResponse,
 )
-from .kanban_list import (
-    KanbanListBase,
-    KanbanListCreate,
-    KanbanListUpdate,
-    KanbanListResponse,
-    ListDeletionRequest,
-    ListReorderRequest,
-)
 from .global_dictionary import (
     GlobalDictionaryBase,
     GlobalDictionaryCreate,
-    GlobalDictionaryUpdate,
     GlobalDictionaryResponse,
+    GlobalDictionaryUpdate,
 )
+from .kanban_list import (
+    KanbanListBase,
+    KanbanListCreate,
+    KanbanListResponse,
+    KanbanListUpdate,
+    ListDeletionRequest,
+    ListReorderRequest,
+)
+from .label import LabelBase, LabelCreate, LabelResponse, LabelUpdate
 from .personal_dictionary import (
     PersonalDictionaryBase,
     PersonalDictionaryCreate,
-    PersonalDictionaryUpdate,
     PersonalDictionaryResponse,
+    PersonalDictionaryUpdate,
+)
+from .user import (
+    LanguageUpdate,
+    PasswordResetRequest,
+    SetPasswordPayload,
+    UserBase,
+    UserCreate,
+    UserListItem,
+    UserLogin,
+    UserResponse,
+    UserUpdate,
+    ViewScopeUpdate,
 )
 
 __all__ = [

@@ -16,7 +16,9 @@ async def test_card_history_endpoints(
     seed_admin_user()
     list_id = create_list_record("Backlog", 1)
 
-    async with async_client_factory(auth_router, cards_router, card_history_router) as client:
+    async with async_client_factory(
+        auth_router, cards_router, card_history_router
+    ) as client:
         token = await login_user(client, "admin@yaka.local", "Admin123")
 
         me_response = await client.get(

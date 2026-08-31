@@ -1,14 +1,13 @@
 /* stylelint-disable at-rule-no-unknown */
 
-
 @import "tailwindcss";
 @import "tw-animate-css";
 
 /* Font loading optimization */
 /* Normal weight */
 @font-face {
-  font-family: 'Space Grotesk';
-  src: url('/fonts/space-grotesk.woff2') format('woff2');
+  font-family: "Space Grotesk";
+  src: url("/fonts/space-grotesk.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -16,19 +15,20 @@
 
 /* Bold weight (mapped to same file if only one weight is available) */
 @font-face {
-  font-family: 'Space Grotesk';
-  src: url('/fonts/space-grotesk.woff2') format('woff2');
+  font-family: "Space Grotesk";
+  src: url("/fonts/space-grotesk.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   /* Make Space Grotesk the default sans-serif font for Tailwind (v4 tokens) */
-  --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans:
+    "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -193,14 +193,32 @@
 
   /* Base styles to prevent FOUC */
   html {
-    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family:
+      "Space Grotesk",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      "Helvetica Neue",
+      Arial,
+      sans-serif;
     width: 100%;
     overflow-x: hidden;
   }
 
   body {
-    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family:
+      "Space Grotesk",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      "Helvetica Neue",
+      Arial,
+      sans-serif;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -217,7 +235,9 @@
   .app-loading {
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition:
+      opacity 0.3s ease,
+      visibility 0.3s ease;
   }
 
   .app-loaded {
@@ -321,7 +341,8 @@
   }
 
   /* Animation activée après drop et quand les cartes remontent - MAIS PAS immédiatement après drop */
-  .kanban-column:not(.kanban-column-dragging):not(.just-dropped) .kanban-card-container {
+  .kanban-column:not(.kanban-column-dragging):not(.just-dropped)
+    .kanban-card-container {
     transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
@@ -367,7 +388,8 @@
 
   /* Animation de sortie pour le placeholder */
   .drop-indicator.exiting {
-    animation: placeholderExit 250ms cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+    animation: placeholderExit 250ms cubic-bezier(0.68, -0.55, 0.265, 1.55)
+      forwards;
   }
 
   @keyframes placeholderExit {
@@ -480,7 +502,7 @@
     transition: none !important;
   }
 
-  [data-sortable-context]>* {
+  [data-sortable-context] > * {
     transition: none !important;
   }
 
@@ -541,7 +563,6 @@
   }
 
   @keyframes dropIndicatorPulse {
-
     0%,
     100% {
       opacity: 0.8;
@@ -556,7 +577,8 @@
 
   /* Card transition animation from mouse position to destination */
   .card-transition-animation {
-    animation: cardSlideToDestination 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    animation: cardSlideToDestination 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+      forwards;
     pointer-events: none;
     z-index: 1001;
   }
@@ -568,12 +590,14 @@
     }
 
     50% {
-      transform: translate(var(--dest-x, 0px), var(--dest-y, 0px)) scale(1.05) rotate(1deg);
+      transform: translate(var(--dest-x, 0px), var(--dest-y, 0px)) scale(1.05)
+        rotate(1deg);
       opacity: 0.9;
     }
 
     100% {
-      transform: translate(var(--dest-x, 0px), var(--dest-y, 0px)) scale(0.98) rotate(0deg);
+      transform: translate(var(--dest-x, 0px), var(--dest-y, 0px)) scale(0.98)
+        rotate(0deg);
       opacity: 0;
     }
   }
@@ -641,7 +665,6 @@
   .kanban-horizontal-scroll::-webkit-scrollbar-thumb:hover {
     background-color: rgba(156, 163, 175, 0.7);
   }
-
 
   /* Ensure columns maintain proper spacing in horizontal layout */
   .kanban-lists-container {
@@ -748,7 +771,9 @@
 .priority-medium,
 .priority-low {
   position: relative;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   border-width: 2px;
   border-style: solid;
   border-radius: 8px 24px 8px 8px;
@@ -770,7 +795,7 @@
 .priority-high::before,
 .priority-medium::before,
 .priority-low::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -785,12 +810,16 @@
 
 /* High priority glow (red) */
 .priority-high::before {
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4), 0 0 16px rgba(239, 68, 68, 0.2);
+  box-shadow:
+    0 0 8px rgba(239, 68, 68, 0.4),
+    0 0 16px rgba(239, 68, 68, 0.2);
 }
 
 .priority-high:hover::before {
   opacity: 1;
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.6), 0 0 24px rgba(239, 68, 68, 0.3);
+  box-shadow:
+    0 0 12px rgba(239, 68, 68, 0.6),
+    0 0 24px rgba(239, 68, 68, 0.3);
 }
 
 .priority-high:hover:not(.no-drag-effect) {
@@ -799,17 +828,23 @@
 
 .priority-high:hover.no-drag-effect::before {
   opacity: 1;
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.6), 0 0 24px rgba(239, 68, 68, 0.3);
+  box-shadow:
+    0 0 12px rgba(239, 68, 68, 0.6),
+    0 0 24px rgba(239, 68, 68, 0.3);
 }
 
 /* Medium priority glow (orange) */
 .priority-medium::before {
-  box-shadow: 0 0 8px rgba(14, 165, 233, 0.4), 0 0 16px rgba(14, 165, 233, 0.2);
+  box-shadow:
+    0 0 8px rgba(14, 165, 233, 0.4),
+    0 0 16px rgba(14, 165, 233, 0.2);
 }
 
 .priority-medium:hover::before {
   opacity: 1;
-  box-shadow: 0 0 12px rgba(14, 165, 233, 0.6), 0 0 24px rgba(14, 165, 233, 0.3);
+  box-shadow:
+    0 0 12px rgba(14, 165, 233, 0.6),
+    0 0 24px rgba(14, 165, 233, 0.3);
 }
 
 .priority-medium:hover:not(.no-drag-effect) {
@@ -818,12 +853,16 @@
 
 /* Low priority glow (gray) */
 .priority-low::before {
-  box-shadow: 0 0 8px rgba(156, 163, 175, 0.4), 0 0 16px rgba(156, 163, 175, 0.2);
+  box-shadow:
+    0 0 8px rgba(156, 163, 175, 0.4),
+    0 0 16px rgba(156, 163, 175, 0.2);
 }
 
 .priority-low:hover::before {
   opacity: 1;
-  box-shadow: 0 0 12px rgba(156, 163, 175, 0.6), 0 0 24px rgba(156, 163, 175, 0.3);
+  box-shadow:
+    0 0 12px rgba(156, 163, 175, 0.6),
+    0 0 24px rgba(156, 163, 175, 0.3);
 }
 
 .priority-low:hover:not(.no-drag-effect) {
@@ -848,7 +887,7 @@
 }
 
 /* Smooth transition for card content */
-.card-compact>*>*>*,
-.card-extended>*>*>* {
+.card-compact > * > * > *,
+.card-extended > * > * > * {
   transition: opacity 0.2s ease-in-out;
 }

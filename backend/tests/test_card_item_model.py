@@ -23,7 +23,9 @@ TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_card_item_model.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -319,7 +321,9 @@ class TestCardItemModel:
         db_session.commit()
 
         # Rechercher les éléments de la carte
-        items = db_session.query(CardItem).filter(CardItem.card_id == sample_card.id).all()
+        items = (
+            db_session.query(CardItem).filter(CardItem.card_id == sample_card.id).all()
+        )
 
         assert len(items) >= 3
         assert all(item.card_id == sample_card.id for item in items)
@@ -342,7 +346,9 @@ class TestCardItemModel:
         done_items = db_session.query(CardItem).filter(CardItem.is_done).all()
 
         # Rechercher les éléments non terminés
-        pending_items = db_session.query(CardItem).filter(CardItem.is_done == False).all()
+        pending_items = (
+            db_session.query(CardItem).filter(CardItem.is_done == False).all()
+        )
 
         assert len(done_items) >= 1
         assert len(pending_items) >= 1
@@ -364,7 +370,9 @@ class TestCardItemModel:
         db_session.commit()
 
         # Rechercher les éléments contenant "task"
-        task_items = db_session.query(CardItem).filter(CardItem.text.like("%task%")).all()
+        task_items = (
+            db_session.query(CardItem).filter(CardItem.text.like("%task%")).all()
+        )
 
         assert len(task_items) == 2
         assert all("task" in item.text for item in task_items)
@@ -590,7 +598,9 @@ Notes supplémentaires"""
         except Exception:
             db_session.rollback()
 
-    def test_card_item_relationships_loading(self, db_session, sample_items, sample_card):
+    def test_card_item_relationships_loading(
+        self, db_session, sample_items, sample_card
+    ):
         """Test que les relations sont correctement chargées."""
         item = sample_items[0]
 
@@ -635,7 +645,11 @@ Notes supplémentaires"""
         db_session.commit()
 
         # Vérifier que tous ont été créés
-        count = db_session.query(CardItem).filter(CardItem.text.like("Batch item %")).count()
+        count = (
+            db_session.query(CardItem)
+            .filter(CardItem.text.like("Batch item %"))
+            .count()
+        )
         assert count == 10
 
     def test_card_item_bulk_update(self, db_session, sample_card):
@@ -653,12 +667,16 @@ Notes supplémentaires"""
         db_session.commit()
 
         # Marquer tous les éléments comme terminés
-        db_session.query(CardItem).filter(CardItem.card_id == sample_card.id).update({"is_done": True})
+        db_session.query(CardItem).filter(CardItem.card_id == sample_card.id).update(
+            {"is_done": True}
+        )
 
         db_session.commit()
 
         # Vérifier que tous les éléments sont maintenant terminés
-        done_items = db_session.query(CardItem).filter(CardItem.card_id == sample_card.id).all()
+        done_items = (
+            db_session.query(CardItem).filter(CardItem.card_id == sample_card.id).all()
+        )
 
         assert all(item.is_done for item in done_items)
 
@@ -686,7 +704,11 @@ Notes supplémentaires"""
         # Chercher les éléments terminés contenant "task"
         from sqlalchemy import and_
 
-        completed_tasks = db_session.query(CardItem).filter(and_(CardItem.is_done, CardItem.text.like("%task%"))).all()
+        completed_tasks = (
+            db_session.query(CardItem)
+            .filter(and_(CardItem.is_done, CardItem.text.like("%task%")))
+            .all()
+        )
 
         assert len(completed_tasks) == 1
         assert completed_tasks[0].text == "Important task"
@@ -736,7 +758,9 @@ Notes supplémentaires"""
         db_session.commit()
 
         # Compter les éléments par statut
-        active_count = db_session.query(CardItem).filter(CardItem.is_done == False).count()
+        active_count = (
+            db_session.query(CardItem).filter(CardItem.is_done == False).count()
+        )
 
         completed_count = db_session.query(CardItem).filter(CardItem.is_done).count()
 
@@ -746,7 +770,9 @@ Notes supplémentaires"""
     def test_card_item_error_handling(self, db_session, sample_card):
         """Test de gestion des erreurs."""
         # Simuler une erreur de base de données
-        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
+        with patch.object(
+            db_session, "commit", side_effect=SQLAlchemyError("Database error")
+        ):
             item = CardItem(
                 card_id=sample_card.id,
                 text="Error test",
@@ -865,7 +891,9 @@ Notes supplémentaires"""
         db_session.commit()
 
         # Calculer la progression
-        all_items = db_session.query(CardItem).filter(CardItem.card_id == sample_card.id).all()
+        all_items = (
+            db_session.query(CardItem).filter(CardItem.card_id == sample_card.id).all()
+        )
 
         done_items = [item for item in all_items if item.is_done]
 
@@ -899,7 +927,10 @@ Notes supplémentaires"""
 
         # Vérifier le nouvel ordre
         reordered_items = (
-            db_session.query(CardItem).filter(CardItem.card_id == sample_card.id).order_by(CardItem.position).all()
+            db_session.query(CardItem)
+            .filter(CardItem.card_id == sample_card.id)
+            .order_by(CardItem.position)
+            .all()
         )
 
         expected_texts = ["Original 2", "Original 0", "Original 1"]
@@ -931,7 +962,10 @@ Notes supplémentaires"""
 
         # Vérifier la checklist
         all_checklist_items = (
-            db_session.query(CardItem).filter(CardItem.card_id == sample_card.id).order_by(CardItem.position).all()
+            db_session.query(CardItem)
+            .filter(CardItem.card_id == sample_card.id)
+            .order_by(CardItem.position)
+            .all()
         )
 
         assert len(all_checklist_items) == len(checklist_items)

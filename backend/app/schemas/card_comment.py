@@ -9,7 +9,9 @@ from .user import UserResponse
 
 
 class CardCommentBase(BaseModel):
-    comment: str = Field(..., min_length=1, max_length=1000, description="Texte du commentaire")
+    comment: str = Field(
+        ..., min_length=1, max_length=1000, description="Texte du commentaire"
+    )
 
     @field_validator("comment")
     @classmethod
@@ -20,7 +22,13 @@ class CardCommentBase(BaseModel):
             raise ValueError("Le commentaire ne peut pas être vide")
 
         # Prévention contre les injections XSS et scripts malveillants
-        dangerous_patterns = ["<script", "</script>", "javascript:", "<iframe", "</iframe>"]
+        dangerous_patterns = [
+            "<script",
+            "</script>",
+            "javascript:",
+            "<iframe",
+            "</iframe>",
+        ]
 
         value_lower = value.lower()
         for pattern in dangerous_patterns:

@@ -9,7 +9,7 @@ from .global_dictionary import DictionaryEntryBase
 
 class PersonalDictionaryBase(DictionaryEntryBase):
     """Base schema for personal dictionary entries.
-    
+
     Inherits term and definition validation from DictionaryEntryBase.
     """
 
@@ -25,8 +25,14 @@ class PersonalDictionaryCreate(PersonalDictionaryBase):
 class PersonalDictionaryUpdate(BaseModel):
     """Schema for updating a personal dictionary entry."""
 
-    term: Optional[str] = Field(default=None, max_length=32, description="Term or expression (32 characters max)")
-    definition: Optional[str] = Field(default=None, max_length=250, description="Definition (250 characters max)")
+    term: Optional[str] = Field(
+        default=None,
+        max_length=32,
+        description="Term or expression (32 characters max)",
+    )
+    definition: Optional[str] = Field(
+        default=None, max_length=250, description="Definition (250 characters max)"
+    )
 
 
 class PersonalDictionaryResponse(PersonalDictionaryBase):
@@ -36,4 +42,3 @@ class PersonalDictionaryResponse(PersonalDictionaryBase):
     user_id: int
 
     model_config = ConfigDict(from_attributes=True)
-

@@ -1,10 +1,9 @@
 """Integration tests for the card items router."""
 
 import pytest
-
 from app.routers.auth import router as auth_router
-from app.routers.cards import router as cards_router
 from app.routers.card_items import router as card_items_router
+from app.routers.cards import router as cards_router
 
 
 @pytest.mark.asyncio
@@ -19,11 +18,15 @@ async def test_card_items_crud(
     list_id = create_list_record("Backlog", 1)
     create_regular_user("items@example.com", "Items123!", display_name="Items User")
 
-    async with async_client_factory(auth_router, cards_router, card_items_router) as client:
+    async with async_client_factory(
+        auth_router, cards_router, card_items_router
+    ) as client:
         token = await login_user(client, "items@example.com", "Items123!")
 
         # Get user ID
-        me_response = await client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+        me_response = await client.get(
+            "/auth/me", headers={"Authorization": f"Bearer {token}"}
+        )
         assert me_response.status_code == 200
         user_id = me_response.json()["id"]
 

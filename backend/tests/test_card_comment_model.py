@@ -23,7 +23,9 @@ TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_card_comment_model.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -192,7 +194,9 @@ class TestCardCommentModel:
         expected_protected_fields = {"id", "card_id", "user_id", "created_at"}
         assert CardComment.PROTECTED_FIELDS == expected_protected_fields
 
-    def test_create_card_comment_successfully(self, db_session, sample_card, sample_user):
+    def test_create_card_comment_successfully(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de création réussie d'un commentaire."""
         before_creation = get_system_timezone_datetime()
 
@@ -256,7 +260,9 @@ class TestCardCommentModel:
 
         assert comment.is_deleted is True
 
-    def test_card_comment_timestamps_on_create(self, db_session, sample_card, sample_user):
+    def test_card_comment_timestamps_on_create(
+        self, db_session, sample_card, sample_user
+    ):
         """Test que les timestamps sont corrects à la création."""
         before_creation = get_system_timezone_datetime()
 
@@ -275,7 +281,9 @@ class TestCardCommentModel:
         assert comment.created_at == comment.updated_at
         assert before_creation <= comment.created_at.astimezone() <= after_creation
 
-    def test_card_comment_timestamp_on_update(self, db_session, sample_card, sample_user):
+    def test_card_comment_timestamp_on_update(
+        self, db_session, sample_card, sample_user
+    ):
         """Test que le timestamp updated_at est mis à jour lors de la modification."""
         comment = CardComment(
             card_id=sample_card.id,
@@ -348,7 +356,11 @@ class TestCardCommentModel:
         db_session.commit()
 
         # Rechercher les commentaires de la carte
-        comments = db_session.query(CardComment).filter(CardComment.card_id == sample_card.id).all()
+        comments = (
+            db_session.query(CardComment)
+            .filter(CardComment.card_id == sample_card.id)
+            .all()
+        )
 
         assert len(comments) == 3
         assert all(comment.card_id == sample_card.id for comment in comments)
@@ -367,21 +379,29 @@ class TestCardCommentModel:
         db_session.commit()
 
         # Rechercher les commentaires de l'utilisateur
-        comments = db_session.query(CardComment).filter(CardComment.user_id == sample_user.id).all()
+        comments = (
+            db_session.query(CardComment)
+            .filter(CardComment.user_id == sample_user.id)
+            .all()
+        )
 
         assert len(comments) >= 3
         assert all(comment.user_id == sample_user.id for comment in comments)
 
     def test_card_comment_query_active_only(self, db_session, sample_comments):
         """Test de recherche des commentaires actifs uniquement."""
-        active_comments = db_session.query(CardComment).filter(CardComment.is_deleted == False).all()
+        active_comments = (
+            db_session.query(CardComment).filter(CardComment.is_deleted == False).all()
+        )
 
         assert len(active_comments) == 2  # Seulement les commentaires non supprimés
         assert all(not comment.is_deleted for comment in active_comments)
 
     def test_card_comment_query_deleted_only(self, db_session, sample_comments):
         """Test de recherche des commentaires supprimés uniquement."""
-        deleted_comments = db_session.query(CardComment).filter(CardComment.is_deleted).all()
+        deleted_comments = (
+            db_session.query(CardComment).filter(CardComment.is_deleted).all()
+        )
 
         assert len(deleted_comments) == 1
         assert all(comment.is_deleted for comment in deleted_comments)
@@ -390,9 +410,15 @@ class TestCardCommentModel:
         """Test de recherche textuelle dans les commentaires."""
         # Créer des commentaires avec du text spécifique
         comments = [
-            CardComment(card_id=sample_card.id, user_id=sample_user.id, comment="Hello World"),
-            CardComment(card_id=sample_card.id, user_id=sample_user.id, comment="Hello Python"),
-            CardComment(card_id=sample_card.id, user_id=sample_user.id, comment="Goodbye World"),
+            CardComment(
+                card_id=sample_card.id, user_id=sample_user.id, comment="Hello World"
+            ),
+            CardComment(
+                card_id=sample_card.id, user_id=sample_user.id, comment="Hello Python"
+            ),
+            CardComment(
+                card_id=sample_card.id, user_id=sample_user.id, comment="Goodbye World"
+            ),
         ]
 
         for comment in comments:
@@ -401,12 +427,18 @@ class TestCardCommentModel:
         db_session.commit()
 
         # Rechercher les commentaires contenant "Hello"
-        hello_comments = db_session.query(CardComment).filter(CardComment.comment.like("%Hello%")).all()
+        hello_comments = (
+            db_session.query(CardComment)
+            .filter(CardComment.comment.like("%Hello%"))
+            .all()
+        )
 
         assert len(hello_comments) == 2
         assert all("Hello" in comment.comment for comment in hello_comments)
 
-    def test_card_comment_order_by_creation_date(self, db_session, sample_card, sample_user):
+    def test_card_comment_order_by_creation_date(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de tri par date de création."""
         # Créer des commentaires avec un délai
         comments = []
@@ -426,13 +458,17 @@ class TestCardCommentModel:
             time.sleep(0.01)
 
         # Récupérer les commentaires triés par date de création
-        sorted_comments = db_session.query(CardComment).order_by(CardComment.created_at).all()
+        sorted_comments = (
+            db_session.query(CardComment).order_by(CardComment.created_at).all()
+        )
 
         # Vérifier qu'ils sont dans l'ordre chronologique
         for i in range(len(sorted_comments) - 1):
             assert sorted_comments[i].created_at <= sorted_comments[i + 1].created_at
 
-    def test_card_comment_order_by_update_date(self, db_session, sample_card, sample_user):
+    def test_card_comment_order_by_update_date(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de tri par date de mise à jour."""
         # Créer des commentaires
         comments = []
@@ -459,7 +495,9 @@ class TestCardCommentModel:
         db_session.commit()
 
         # Récupérer les commentaires triés par date de mise à jour
-        sorted_comments = db_session.query(CardComment).order_by(CardComment.updated_at.desc()).all()
+        sorted_comments = (
+            db_session.query(CardComment).order_by(CardComment.updated_at.desc()).all()
+        )
 
         # Le premier commentaire devrait être celui mis à jour en dernier
         assert sorted_comments[0].comment == "Updated first"
@@ -473,7 +511,9 @@ class TestCardCommentModel:
         db_session.commit()
 
         # Vérifier que le commentaire a été supprimé
-        deleted_comment = db_session.query(CardComment).filter(CardComment.id == comment_id).first()
+        deleted_comment = (
+            db_session.query(CardComment).filter(CardComment.id == comment_id).first()
+        )
         assert deleted_comment is None
 
     def test_card_comment_soft_delete(self, db_session, sample_card, sample_user):
@@ -494,13 +534,20 @@ class TestCardCommentModel:
         db_session.refresh(comment)
 
         # Le commentaire devrait toujours exister en base
-        assert db_session.query(CardComment).filter(CardComment.id == comment.id).first() is not None
+        assert (
+            db_session.query(CardComment).filter(CardComment.id == comment.id).first()
+            is not None
+        )
 
         # Mais ne devrait pas apparaître dans les requêtes actives
-        active_comments = db_session.query(CardComment).filter(not CardComment.is_deleted).all()
+        active_comments = (
+            db_session.query(CardComment).filter(not CardComment.is_deleted).all()
+        )
         assert comment not in active_comments
 
-    def test_card_comment_string_fields_validation(self, db_session, sample_card, sample_user):
+    def test_card_comment_string_fields_validation(
+        self, db_session, sample_card, sample_user
+    ):
         """Test des validations des champs text."""
         # Test avec commentaire long
         long_comment = "x" * 1000  # Longueur maximale raisonnable
@@ -516,7 +563,9 @@ class TestCardCommentModel:
 
         assert comment.comment == long_comment
 
-    def test_card_comment_special_characters(self, db_session, sample_card, sample_user):
+    def test_card_comment_special_characters(
+        self, db_session, sample_card, sample_user
+    ):
         """Test avec des caractères spéciaux."""
         comment = CardComment(
             card_id=sample_card.id,
@@ -544,7 +593,9 @@ class TestCardCommentModel:
 
     def test_card_comment_html_content(self, db_session, sample_card, sample_user):
         """Test avec contenu HTML."""
-        html_content = "<div>HTML Content</div><script>alert('test')</script><p>Paragraph</p>"
+        html_content = (
+            "<div>HTML Content</div><script>alert('test')</script><p>Paragraph</p>"
+        )
 
         comment = CardComment(
             card_id=sample_card.id,
@@ -649,7 +700,9 @@ With some special characters: éèàç"""
         except Exception:
             db_session.rollback()
 
-    def test_card_comment_relationships_loading(self, db_session, sample_comments, sample_card, sample_user):
+    def test_card_comment_relationships_loading(
+        self, db_session, sample_comments, sample_card, sample_user
+    ):
         """Test que les relations sont correctement chargées."""
         comment = sample_comments[0]
 
@@ -680,7 +733,9 @@ With some special characters: éèàç"""
         db_session.commit()
 
         # Le commentaire devrait être supprimé en cascade
-        deleted_comment = db_session.query(CardComment).filter(CardComment.id == comment_id).first()
+        deleted_comment = (
+            db_session.query(CardComment).filter(CardComment.id == comment_id).first()
+        )
         assert deleted_comment is None
 
     def test_card_comment_batch_operations(self, db_session, sample_card, sample_user):
@@ -699,18 +754,26 @@ With some special characters: éèàç"""
         db_session.commit()
 
         # Vérifier que tous ont été créés
-        count = db_session.query(CardComment).filter(CardComment.comment.like("Batch comment %")).count()
+        count = (
+            db_session.query(CardComment)
+            .filter(CardComment.comment.like("Batch comment %"))
+            .count()
+        )
         assert count == 10
 
     def test_card_comment_bulk_update(self, db_session, sample_comments):
         """Test de mises à jour en masse."""
         # Mettre à jour tous les commentaires non supprimés pour les marquer comme supprimés
-        db_session.query(CardComment).filter(not CardComment.is_deleted).update({"is_deleted": True})
+        db_session.query(CardComment).filter(not CardComment.is_deleted).update(
+            {"is_deleted": True}
+        )
 
         db_session.commit()
 
         # Vérifier que tous les commentaires sont maintenant supprimés
-        active_comments = db_session.query(CardComment).filter(not CardComment.is_deleted).count()
+        active_comments = (
+            db_session.query(CardComment).filter(not CardComment.is_deleted).count()
+        )
         assert active_comments == 0
 
     def test_card_comment_complex_queries(self, db_session, sample_card, sample_user):
@@ -754,7 +817,12 @@ With some special characters: éèàç"""
 
         comments = (
             db_session.query(CardComment)
-            .filter(and_(CardComment.is_deleted == False, CardComment.comment.like("%comment%")))
+            .filter(
+                and_(
+                    CardComment.is_deleted == False,
+                    CardComment.comment.like("%comment%"),
+                )
+            )
             .order_by(CardComment.created_at.desc())
             .all()
         )
@@ -783,7 +851,9 @@ With some special characters: éèàç"""
         assert len(page2) == 5
         assert page1[0].id != page2[0].id
 
-    def test_card_comment_count_aggregations(self, db_session, sample_card, sample_user):
+    def test_card_comment_count_aggregations(
+        self, db_session, sample_card, sample_user
+    ):
         """Test d'agrégations et de comptage."""
         # Créer des commentaires avec différents états
         for i in range(5):
@@ -807,9 +877,15 @@ With some special characters: éèàç"""
         db_session.commit()
 
         # Compter les commentaires par statut
-        active_count = db_session.query(CardComment).filter(CardComment.is_deleted == False).count()
+        active_count = (
+            db_session.query(CardComment)
+            .filter(CardComment.is_deleted == False)
+            .count()
+        )
 
-        deleted_count = db_session.query(CardComment).filter(CardComment.is_deleted).count()
+        deleted_count = (
+            db_session.query(CardComment).filter(CardComment.is_deleted).count()
+        )
 
         assert active_count == 5
         assert deleted_count == 3
@@ -817,7 +893,9 @@ With some special characters: éèàç"""
     def test_card_comment_error_handling(self, db_session, sample_card, sample_user):
         """Test de gestion des erreurs."""
         # Simuler une erreur de base de données
-        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
+        with patch.object(
+            db_session, "commit", side_effect=SQLAlchemyError("Database error")
+        ):
             comment = CardComment(
                 card_id=sample_card.id,
                 user_id=sample_user.id,
@@ -865,7 +943,9 @@ With some special characters: éèàç"""
         assert comment1 != comment2
         assert comment1.id != comment2.id
 
-    def test_card_comment_unique_constraints(self, db_session, sample_card, sample_user):
+    def test_card_comment_unique_constraints(
+        self, db_session, sample_card, sample_user
+    ):
         """Test des contraintes d'unicité."""
         # Le modèle CardComment n'a pas de contraintes d'unicité spécifiques
         # plusieurs commentaires peuvent avoir le même contenu
@@ -952,7 +1032,9 @@ With some special characters: éèàç"""
         # Le commentaire devrait être celui d'avant la modification
         assert comment.comment == original_comment
 
-    def test_card_comment_concurrent_modification(self, db_session, sample_card, sample_user):
+    def test_card_comment_concurrent_modification(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de modification concurrente (simplifié)."""
         # Créer un commentaire
         comment = CardComment(
@@ -964,8 +1046,12 @@ With some special characters: éèàç"""
         db_session.commit()
 
         # Simuler des modifications concurrentes
-        comment1 = db_session.query(CardComment).filter(CardComment.id == comment.id).first()
-        comment2 = db_session.query(CardComment).filter(CardComment.id == comment.id).first()
+        comment1 = (
+            db_session.query(CardComment).filter(CardComment.id == comment.id).first()
+        )
+        comment2 = (
+            db_session.query(CardComment).filter(CardComment.id == comment.id).first()
+        )
 
         # Les deux devraient être le même objet
         assert comment1.id == comment2.id
@@ -994,7 +1080,11 @@ With some special characters: éèàç"""
         # L'objet ne devrait pas être visible dans une nouvelle session
         new_session = TestingSessionLocal()
         try:
-            count = new_session.query(CardComment).filter(CardComment.comment == "Session test").count()
+            count = (
+                new_session.query(CardComment)
+                .filter(CardComment.comment == "Session test")
+                .count()
+            )
             assert count == 0
         finally:
             new_session.close()
@@ -1005,12 +1095,18 @@ With some special characters: éèàç"""
         # Maintenant il devrait être visible
         new_session = TestingSessionLocal()
         try:
-            count = new_session.query(CardComment).filter(CardComment.comment == "Session test").count()
+            count = (
+                new_session.query(CardComment)
+                .filter(CardComment.comment == "Session test")
+                .count()
+            )
             assert count == 1
         finally:
             new_session.close()
 
-    def test_card_comment_relationships_eager_loading(self, db_session, sample_card, sample_user):
+    def test_card_comment_relationships_eager_loading(
+        self, db_session, sample_card, sample_user
+    ):
         """Test du chargement eager des relations."""
         from sqlalchemy.orm import joinedload
 
@@ -1035,13 +1131,30 @@ With some special characters: éèàç"""
         assert loaded_comment.card is not None
         assert loaded_comment.user is not None
 
-    def test_card_comment_filtering_combined(self, db_session, sample_card, sample_user):
+    def test_card_comment_filtering_combined(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de filtrage combiné."""
         # Créer des commentaires variés
         comments = [
-            CardComment(card_id=sample_card.id, user_id=sample_user.id, comment="Important active", is_deleted=False),
-            CardComment(card_id=sample_card.id, user_id=sample_user.id, comment="Important deleted", is_deleted=True),
-            CardComment(card_id=sample_card.id, user_id=sample_user.id, comment="Normal active", is_deleted=False),
+            CardComment(
+                card_id=sample_card.id,
+                user_id=sample_user.id,
+                comment="Important active",
+                is_deleted=False,
+            ),
+            CardComment(
+                card_id=sample_card.id,
+                user_id=sample_user.id,
+                comment="Important deleted",
+                is_deleted=True,
+            ),
+            CardComment(
+                card_id=sample_card.id,
+                user_id=sample_user.id,
+                comment="Normal active",
+                is_deleted=False,
+            ),
         ]
 
         for comment in comments:
@@ -1054,7 +1167,12 @@ With some special characters: éèàç"""
 
         important_active = (
             db_session.query(CardComment)
-            .filter(and_(CardComment.is_deleted == False, CardComment.comment.like("%Important%")))
+            .filter(
+                and_(
+                    CardComment.is_deleted == False,
+                    CardComment.comment.like("%Important%"),
+                )
+            )
             .all()
         )
 

@@ -39,12 +39,14 @@ VISITOR
 **Best for:** External stakeholders, clients, or observers who need visibility without interaction.
 
 **What they can do:**
+
 - ✅ View the Kanban board
 - ✅ See all tasks and their details
 - ✅ Read all comments
 - ✅ View task history and changes
 
 **What they cannot do:**
+
 - ❌ Create or modify anything
 - ❌ Add comments
 - ❌ Assign themselves to tasks
@@ -60,11 +62,13 @@ VISITOR
 **Inherits from:** VISITOR (all read permissions)
 
 **Additional capabilities:**
+
 - ✅ Add comments on any task
 - ✅ Edit their own comments
 - ✅ Delete their own comments
 
 **What they cannot do:**
+
 - ❌ Modify tasks
 - ❌ Change task status or priority
 - ❌ Assign tasks
@@ -80,11 +84,13 @@ VISITOR
 **Inherits from:** COMMENTER (all read + comment permissions)
 
 **Additional capabilities:**
+
 - ✅ Self-assign to available tasks
 - ✅ Check/uncheck checklist items on their assigned tasks
 - ✅ Move their assigned tasks between lists (if workflow rules allow)
 
 **What they cannot do:**
+
 - ❌ Create new tasks
 - ❌ Modify task content (title, description)
 - ❌ Change task metadata (priority, due date)
@@ -101,6 +107,7 @@ VISITOR
 **Inherits from:** CONTRIBUTOR (all previous permissions)
 
 **Additional capabilities:**
+
 - ✅ Create new tasks (automatically assigned to themselves)
 - ✅ Fully modify their assigned tasks:
   - Edit title and description
@@ -110,6 +117,7 @@ VISITOR
   - Reassign to someone else (with approval)
 
 **What they cannot do:**
+
 - ❌ Modify tasks assigned to others
 - ❌ Create tasks for other team members directly
 - ❌ Delete or archive tasks
@@ -125,6 +133,7 @@ VISITOR
 **Inherits from:** EDITOR (all previous permissions)
 
 **Additional capabilities:**
+
 - ✅ Create tasks and assign them to anyone
 - ✅ Modify **ALL** tasks (not just own):
   - Edit title and description
@@ -136,6 +145,7 @@ VISITOR
 - ✅ Delete and archive tasks
 
 **What they cannot do:**
+
 - ❌ Manage users and their roles
 - ❌ Configure board settings (lists, labels)
 - ❌ Access system administration features
@@ -143,6 +153,7 @@ VISITOR
 **Use case:** A team lead who organizes the sprint, adjusts task priorities, redistributes work when team members are unavailable, and ensures the board accurately reflects the team's status.
 
 **Real-world scenario:**
+
 - Bob is on vacation → Supervisor reassigns Bob's tasks to Alice
 - A task needs clarification → Supervisor updates the description
 - Sprint priorities change → Supervisor adjusts due dates and priorities across all tasks
@@ -157,6 +168,7 @@ VISITOR
 **Inherits from:** SUPERVISOR (all task management permissions)
 
 **Additional capabilities:**
+
 - ✅ Everything a SUPERVISOR can do
 - ✅ Invite new users to the board
 - ✅ Change user roles
@@ -168,6 +180,7 @@ VISITOR
 - ✅ Access all administrative features
 
 **Responsibilities:**
+
 - Managing the team roster
 - Configuring the board structure
 - Maintaining labels and lists
@@ -182,14 +195,14 @@ VISITOR
 
 When assigning roles to team members, consider these guidelines:
 
-| If the user needs to... | Assign this role |
-|--------------------------|------------------|
-| Just observe the project | **VISITOR** |
-| Provide feedback and questions | **COMMENTER** |
-| Work on specific assigned tasks | **CONTRIBUTOR** |
-| Manage their own workload independently | **EDITOR** |
-| Coordinate team work and adjust priorities | **SUPERVISOR** |
-| Administer the board and manage users | **ADMIN** |
+| If the user needs to...                    | Assign this role |
+| ------------------------------------------ | ---------------- |
+| Just observe the project                   | **VISITOR**      |
+| Provide feedback and questions             | **COMMENTER**    |
+| Work on specific assigned tasks            | **CONTRIBUTOR**  |
+| Manage their own workload independently    | **EDITOR**       |
+| Coordinate team work and adjust priorities | **SUPERVISOR**   |
+| Administer the board and manage users      | **ADMIN**        |
 
 ### Role Assignment Best Practices
 
@@ -203,6 +216,7 @@ When assigning roles to team members, consider these guidelines:
 ### Common Role Scenarios
 
 #### Scenario 1: Development Team
+
 - **Product Owner:** COMMENTER (provides requirements and feedback)
 - **Scrum Master:** SUPERVISOR (manages sprint and workflow)
 - **Senior Developers:** EDITOR (create and manage their own tickets)
@@ -210,6 +224,7 @@ When assigning roles to team members, consider these guidelines:
 - **Stakeholders:** VISITOR (track progress)
 
 #### Scenario 2: Marketing Team
+
 - **Marketing Director:** ADMIN (board owner)
 - **Campaign Managers:** SUPERVISOR (coordinate campaigns)
 - **Content Creators:** EDITOR (manage their own content tasks)
@@ -217,6 +232,7 @@ When assigning roles to team members, consider these guidelines:
 - **Executives:** VISITOR (monitor progress)
 
 #### Scenario 3: Support Team
+
 - **Support Manager:** SUPERVISOR (prioritize and distribute tickets)
 - **Senior Support Agents:** EDITOR (handle and document complex cases)
 - **Support Agents:** CONTRIBUTOR (resolve assigned tickets)
@@ -226,68 +242,76 @@ When assigning roles to team members, consider these guidelines:
 
 ### Permissions Quick Reference
 
-| Action | Visitor | Commenter | Contributor | Editor | Supervisor | Admin |
-|--------|---------|-----------|-------------|--------|------------|-------|
-| View board and tasks | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Read comments | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Add comments | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Edit own comments | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Self-assign tasks | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Check items (own tasks) | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Move own tasks | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Create tasks | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| Modify own tasks | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| Create tasks for others | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Modify all tasks | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Check items (all tasks) | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Move all tasks | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Delete/archive tasks | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Manage users | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Manage lists/labels | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Board settings | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Action                  | Visitor | Commenter | Contributor | Editor | Supervisor | Admin |
+| ----------------------- | ------- | --------- | ----------- | ------ | ---------- | ----- |
+| View board and tasks    | ✅      | ✅        | ✅          | ✅     | ✅         | ✅    |
+| Read comments           | ✅      | ✅        | ✅          | ✅     | ✅         | ✅    |
+| Add comments            | ❌      | ✅        | ✅          | ✅     | ✅         | ✅    |
+| Edit own comments       | ❌      | ✅        | ✅          | ✅     | ✅         | ✅    |
+| Self-assign tasks       | ❌      | ❌        | ✅          | ✅     | ✅         | ✅    |
+| Check items (own tasks) | ❌      | ❌        | ✅          | ✅     | ✅         | ✅    |
+| Move own tasks          | ❌      | ❌        | ✅          | ✅     | ✅         | ✅    |
+| Create tasks            | ❌      | ❌        | ❌          | ✅     | ✅         | ✅    |
+| Modify own tasks        | ❌      | ❌        | ❌          | ✅     | ✅         | ✅    |
+| Create tasks for others | ❌      | ❌        | ❌          | ❌     | ✅         | ✅    |
+| Modify all tasks        | ❌      | ❌        | ❌          | ❌     | ✅         | ✅    |
+| Check items (all tasks) | ❌      | ❌        | ❌          | ❌     | ✅         | ✅    |
+| Move all tasks          | ❌      | ❌        | ❌          | ❌     | ✅         | ✅    |
+| Delete/archive tasks    | ❌      | ❌        | ❌          | ❌     | ✅         | ✅    |
+| Manage users            | ❌      | ❌        | ❌          | ❌     | ❌         | ✅    |
+| Manage lists/labels     | ❌      | ❌        | ❌          | ❌     | ❌         | ✅    |
+| Board settings          | ❌      | ❌        | ❌          | ❌     | ❌         | ✅    |
 
 ---
 
 ### Frequently Asked Questions
 
 #### Q: Can I have multiple ADMINs on a board?
+
 **A:** Yes! You can assign the ADMIN role to multiple trusted users. This is useful for shared responsibility and backup administration.
 
 #### Q: What happens if I change someone's role?
+
 **A:** The change takes effect immediately. The user's permissions will be updated on their next action or page refresh.
 
 #### Q: Can a CONTRIBUTOR create tasks?
+
 **A:** No, only EDITOR and above can create tasks. CONTRIBUTOR can self-assign to existing tasks.
 
 #### Q: Can an EDITOR modify other people's tasks?
+
 **A:** No, EDITOR can only fully modify their own assigned tasks. To modify all tasks, you need the SUPERVISOR role.
 
 #### Q: What's the difference between SUPERVISOR and ADMIN?
+
 **A:** SUPERVISOR can manage all tasks but cannot configure the board (users, lists, labels, settings). ADMIN has full administrative access.
 
 #### Q: Can I customize these roles or create new ones?
+
 **A:** Currently, the role system is fixed with these six roles. This ensures consistent permissions across the application.
 
 #### Q: Can a user have different roles on different boards?
+
 **A:** Currently, roles are per-board. Each user has one role for the board they're invited to.
 
 ---
 
 ## Managing Tasks
 
-*(This section will cover task creation, editing, moving, etc.)*
+_(This section will cover task creation, editing, moving, etc.)_
 
 ---
 
 ## Collaboration Features
 
-*(This section will cover comments, mentions, notifications, etc.)*
+_(This section will cover comments, mentions, notifications, etc.)_
 
 ---
 
 ## Need Help?
 
 If you have questions or need assistance:
+
 - Contact your board administrator
 - Check the technical documentation for advanced features
 - Report issues through your organization's support channel

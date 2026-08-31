@@ -31,7 +31,9 @@ TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_card_comment.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -167,11 +169,15 @@ class TestGetCommentsForCard:
         db_session.commit()
 
         # Test avec limit=5, offset=0
-        comments_page1 = get_comments_for_card(db_session, sample_card.id, limit=5, offset=0)
+        comments_page1 = get_comments_for_card(
+            db_session, sample_card.id, limit=5, offset=0
+        )
         assert len(comments_page1) == 5
 
         # Test avec limit=5, offset=5
-        comments_page2 = get_comments_for_card(db_session, sample_card.id, limit=5, offset=5)
+        comments_page2 = get_comments_for_card(
+            db_session, sample_card.id, limit=5, offset=5
+        )
         assert len(comments_page2) == 5
 
         # Vérifier que les commentaires sont différents
@@ -208,7 +214,9 @@ class TestGetCommentsForCard:
 
         assert len(comments) == 0
 
-    def test_get_comments_multiple_cards(self, db_session, sample_kanban_list, sample_user):
+    def test_get_comments_multiple_cards(
+        self, db_session, sample_kanban_list, sample_user
+    ):
         """Test de récupération de commentaires pour plusieurs cartes différentes."""
         # Créer deux cartes
         card1 = Card(
@@ -232,8 +240,12 @@ class TestGetCommentsForCard:
         db_session.refresh(card2)
 
         # Ajouter des commentaires à chaque carte
-        comment1 = CardComment(card_id=card1.id, user_id=sample_user.id, comment="Card 1 Comment")
-        comment2 = CardComment(card_id=card2.id, user_id=sample_user.id, comment="Card 2 Comment")
+        comment1 = CardComment(
+            card_id=card1.id, user_id=sample_user.id, comment="Card 1 Comment"
+        )
+        comment2 = CardComment(
+            card_id=card2.id, user_id=sample_user.id, comment="Card 2 Comment"
+        )
         db_session.add(comment1)
         db_session.add(comment2)
         db_session.commit()
@@ -283,7 +295,9 @@ class TestGetCommentsForCard:
         assert len(retrieved_comments) == 3
         # Vérifier qu'ils sont triés par date décroissante
         for i in range(len(retrieved_comments) - 1):
-            assert retrieved_comments[i].created_at >= retrieved_comments[i + 1].created_at
+            assert (
+                retrieved_comments[i].created_at >= retrieved_comments[i + 1].created_at
+            )
 
 
 class TestCreateComment:
@@ -291,7 +305,9 @@ class TestCreateComment:
 
     def test_create_comment_success(self, db_session, sample_card, sample_user):
         """Test de création réussie d'un commentaire."""
-        comment_data = CardCommentCreate(card_id=sample_card.id, comment="Nouveau commentaire de test")
+        comment_data = CardCommentCreate(
+            card_id=sample_card.id, comment="Nouveau commentaire de test"
+        )
 
         result = create_comment(db_session, comment_data, sample_user.id)
 
@@ -306,14 +322,18 @@ class TestCreateComment:
 
     def test_create_comment_nonexistent_card(self, db_session, sample_user):
         """Test de création d'un commentaire pour une carte inexistante."""
-        comment_data = CardCommentCreate(card_id=99999, comment="Commentaire carte inexistante")
+        comment_data = CardCommentCreate(
+            card_id=99999, comment="Commentaire carte inexistante"
+        )
 
         with pytest.raises(ValueError, match="Carte introuvable"):
             create_comment(db_session, comment_data, sample_user.id)
 
     def test_create_comment_nonexistent_user(self, db_session, sample_card):
         """Test de création d'un commentaire par un utilisateur inexistant."""
-        comment_data = CardCommentCreate(card_id=sample_card.id, comment="Commentaire utilisateur inexistant")
+        comment_data = CardCommentCreate(
+            card_id=sample_card.id, comment="Commentaire utilisateur inexistant"
+        )
 
         with pytest.raises(ValueError, match="Utilisateur introuvable"):
             create_comment(db_session, comment_data, 99999)
@@ -338,29 +358,46 @@ class TestCreateComment:
 
     def test_create_comment_integrity_error(self, db_session, sample_card, sample_user):
         """Test de gestion des erreurs d'intégrité."""
-        comment_data = CardCommentCreate(card_id=sample_card.id, comment="Test d'intégrité")
+        comment_data = CardCommentCreate(
+            card_id=sample_card.id, comment="Test d'intégrité"
+        )
 
-        with patch.object(db_session, "commit", side_effect=IntegrityError("Mock error", {}, None)):
-            with pytest.raises(ValueError, match="Erreur d'intégrité lors de la création du commentaire"):
+        with patch.object(
+            db_session, "commit", side_effect=IntegrityError("Mock error", {}, None)
+        ):
+            with pytest.raises(
+                ValueError,
+                match="Erreur d'intégrité lors de la création du commentaire",
+            ):
                 create_comment(db_session, comment_data, sample_user.id)
 
     def test_create_comment_reload_error(self, db_session, sample_card, sample_user):
         """Test de gestion d'erreur lors du rechargement."""
-        comment_data = CardCommentCreate(card_id=sample_card.id, comment="Test rechargement")
+        comment_data = CardCommentCreate(
+            card_id=sample_card.id, comment="Test rechargement"
+        )
 
         with patch.object(db_session, "query") as mock_query:
-            mock_query.return_value.options.return_value.filter.return_value.first.return_value = None
+            mock_query.return_value.options.return_value.filter.return_value.first.return_value = (
+                None
+            )
 
-            with pytest.raises(ValueError, match="Erreur lors de la création du commentaire"):
+            with pytest.raises(
+                ValueError, match="Erreur lors de la création du commentaire"
+            ):
                 create_comment(db_session, comment_data, sample_user.id)
 
-    def test_create_comment_whitespace_content(self, db_session, sample_card, sample_user):
+    def test_create_comment_whitespace_content(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de création avec contenu qui n'est que des espaces."""
         # La validation Pydantic devrait rejeter les espaces seulement (trim() vide)
         with pytest.raises(ValidationError):
             CardCommentCreate(card_id=sample_card.id, comment="   ")
 
-    def test_create_comment_very_long_comment(self, db_session, sample_card, sample_user):
+    def test_create_comment_very_long_comment(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de création avec un commentaire très long."""
         long_comment = "x" * 1001  # Dépasse la limite de 1000
 
@@ -391,12 +428,16 @@ class TestUpdateComment:
         with pytest.raises(ValueError, match="Commentaire introuvable"):
             update_comment(db_session, 99999, comment_update, sample_user.id)
 
-    def test_update_comment_unauthorized_user(self, db_session, sample_comments, sample_user_2):
+    def test_update_comment_unauthorized_user(
+        self, db_session, sample_comments, sample_user_2
+    ):
         """Test de mise à jour par un utilisateur non autorisé."""
         comment = sample_comments[0]  # Créé par sample_user
         comment_update = CardCommentUpdate(comment="Tentative de modification")
 
-        with pytest.raises(ValueError, match="Vous ne pouvez modifier que vos propres commentaires"):
+        with pytest.raises(
+            ValueError, match="Vous ne pouvez modifier que vos propres commentaires"
+        ):
             update_comment(db_session, comment.id, comment_update, sample_user_2.id)
 
     def test_update_comment_deleted(self, db_session, sample_comments, sample_user):
@@ -404,10 +445,14 @@ class TestUpdateComment:
         comment = sample_comments[2]  # Commentaire supprimé par sample_user
         comment_update = CardCommentUpdate(comment="Tentative de modification")
 
-        with pytest.raises(ValueError, match="Impossible de modifier un commentaire supprimé"):
+        with pytest.raises(
+            ValueError, match="Impossible de modifier un commentaire supprimé"
+        ):
             update_comment(db_session, comment.id, comment_update, sample_user.id)
 
-    def test_update_comment_protected_fields(self, db_session, sample_comments, sample_user):
+    def test_update_comment_protected_fields(
+        self, db_session, sample_comments, sample_user
+    ):
         """Test que les champs protégés ne sont pas modifiés."""
         comment = sample_comments[0]
         original_id = comment.id
@@ -425,7 +470,9 @@ class TestUpdateComment:
         assert result.user_id == original_user_id
         assert result.created_at == original_created_at
 
-    def test_update_comment_partial_update(self, db_session, sample_comments, sample_user):
+    def test_update_comment_partial_update(
+        self, db_session, sample_comments, sample_user
+    ):
         """Test de mise à jour partielle."""
         comment = sample_comments[0]
 
@@ -438,7 +485,9 @@ class TestUpdateComment:
         assert result.card_id == comment.card_id
         assert result.user_id == comment.user_id
 
-    def test_update_comment_unicode_text(self, db_session, sample_comments, sample_user):
+    def test_update_comment_unicode_text(
+        self, db_session, sample_comments, sample_user
+    ):
         """Test de mise à jour avec text Unicode."""
         comment = sample_comments[0]
         unicode_text = "Commentaire mis à jour avec caractères spéciaux: éèàçù 🚀 中文"
@@ -449,22 +498,33 @@ class TestUpdateComment:
         assert result is not None
         assert result.comment == unicode_text
 
-    def test_update_comment_integrity_error(self, db_session, sample_comments, sample_user):
+    def test_update_comment_integrity_error(
+        self, db_session, sample_comments, sample_user
+    ):
         """Test de gestion des erreurs d'intégrité."""
         comment = sample_comments[0]
         comment_update = CardCommentUpdate(comment="Test d'intégrité")
 
-        with patch.object(db_session, "commit", side_effect=IntegrityError("Mock error", {}, None)):
-            with pytest.raises(ValueError, match="Erreur d'intégrité lors de la mise à jour du commentaire"):
+        with patch.object(
+            db_session, "commit", side_effect=IntegrityError("Mock error", {}, None)
+        ):
+            with pytest.raises(
+                ValueError,
+                match="Erreur d'intégrité lors de la mise à jour du commentaire",
+            ):
                 update_comment(db_session, comment.id, comment_update, sample_user.id)
 
-    def test_update_comment_reload_error(self, db_session, sample_comments, sample_user):
+    def test_update_comment_reload_error(
+        self, db_session, sample_comments, sample_user
+    ):
         """Test de gestion d'erreur lors du rechargement."""
         comment = sample_comments[0]
         comment_update = CardCommentUpdate(comment="Test rechargement")
 
         with patch.object(db_session, "query") as mock_query:
-            mock_query.return_value.options.return_value.filter.return_value.first.return_value = None
+            mock_query.return_value.options.return_value.filter.return_value.first.return_value = (
+                None
+            )
 
             with pytest.raises(ValueError):
                 update_comment(db_session, comment.id, comment_update, sample_user.id)
@@ -482,7 +542,9 @@ class TestDeleteComment:
         assert result is True
 
         # Vérifier que le commentaire est marqué comme supprimé
-        deleted_comment = db_session.query(CardComment).filter(CardComment.id == comment.id).first()
+        deleted_comment = (
+            db_session.query(CardComment).filter(CardComment.id == comment.id).first()
+        )
         assert deleted_comment.is_deleted is True
 
         # Vérifier qu'il n'apparaît plus dans les résultats
@@ -495,14 +557,20 @@ class TestDeleteComment:
 
         assert result is False
 
-    def test_delete_comment_unauthorized_user(self, db_session, sample_comments, sample_user_2):
+    def test_delete_comment_unauthorized_user(
+        self, db_session, sample_comments, sample_user_2
+    ):
         """Test de suppression par un utilisateur non autorisé."""
         comment = sample_comments[0]  # Créé par sample_user
 
-        with pytest.raises(ValueError, match="Vous ne pouvez supprimer que vos propres commentaires"):
+        with pytest.raises(
+            ValueError, match="Vous ne pouvez supprimer que vos propres commentaires"
+        ):
             delete_comment(db_session, comment.id, sample_user_2.id)
 
-    def test_delete_comment_already_deleted(self, db_session, sample_comments, sample_user):
+    def test_delete_comment_already_deleted(
+        self, db_session, sample_comments, sample_user
+    ):
         """Test de suppression d'un commentaire déjà supprimé."""
         comment = sample_comments[2]  # Déjà supprimé par sample_user
 
@@ -512,15 +580,24 @@ class TestDeleteComment:
         # Le commentaire reste marqué comme supprimé
         assert comment.is_deleted is True
 
-    def test_delete_comment_integrity_error(self, db_session, sample_comments, sample_user):
+    def test_delete_comment_integrity_error(
+        self, db_session, sample_comments, sample_user
+    ):
         """Test de gestion des erreurs d'intégrité."""
         comment = sample_comments[0]
 
-        with patch.object(db_session, "commit", side_effect=IntegrityError("Mock error", {}, None)):
-            with pytest.raises(ValueError, match="Erreur d'intégrité lors de la suppression du commentaire"):
+        with patch.object(
+            db_session, "commit", side_effect=IntegrityError("Mock error", {}, None)
+        ):
+            with pytest.raises(
+                ValueError,
+                match="Erreur d'intégrité lors de la suppression du commentaire",
+            ):
                 delete_comment(db_session, comment.id, sample_user.id)
 
-    def test_delete_comment_multiple_deletes(self, db_session, sample_comments, sample_user):
+    def test_delete_comment_multiple_deletes(
+        self, db_session, sample_comments, sample_user
+    ):
         """Test de suppressions multiples."""
         comment = sample_comments[0]
 
@@ -532,7 +609,9 @@ class TestDeleteComment:
         result2 = delete_comment(db_session, comment.id, sample_user.id)
         assert result2 is True  # Devrait toujours retourner True
 
-    def test_delete_comment_check_relationships(self, db_session, sample_comments, sample_user):
+    def test_delete_comment_check_relationships(
+        self, db_session, sample_comments, sample_user
+    ):
         """Test que les relations sont préservées après suppression."""
         comment = sample_comments[0]
         original_user = comment.user
@@ -541,7 +620,9 @@ class TestDeleteComment:
         delete_comment(db_session, comment.id, sample_user.id)
 
         # Vérifier que les relations existent toujours
-        db_comment = db_session.query(CardComment).filter(CardComment.id == comment.id).first()
+        db_comment = (
+            db_session.query(CardComment).filter(CardComment.id == comment.id).first()
+        )
         assert db_comment.user == original_user
         assert db_comment.card == original_card
 
@@ -573,7 +654,9 @@ class TestGetCommentById:
 
         assert result is None
 
-    def test_get_comment_by_id_with_user_relationship(self, db_session, sample_comments):
+    def test_get_comment_by_id_with_user_relationship(
+        self, db_session, sample_comments
+    ):
         """Test que la relation user est bien chargée."""
         comment = sample_comments[0]
         result = get_comment_by_id(db_session, comment.id)
@@ -591,12 +674,16 @@ class TestCardCommentIntegration:
     def test_create_update_delete_flow(self, db_session, sample_card, sample_user):
         """Test du flux complet CRUD."""
         # Créer
-        comment_data = CardCommentCreate(card_id=sample_card.id, comment="Commentaire de test")
+        comment_data = CardCommentCreate(
+            card_id=sample_card.id, comment="Commentaire de test"
+        )
         created_comment = create_comment(db_session, comment_data, sample_user.id)
 
         # Mettre à jour
         update_data = CardCommentUpdate(comment="Commentaire modifié")
-        updated_comment = update_comment(db_session, created_comment.id, update_data, sample_user.id)
+        updated_comment = update_comment(
+            db_session, created_comment.id, update_data, sample_user.id
+        )
 
         assert updated_comment is not None
         assert updated_comment.comment == "Commentaire modifié"
@@ -609,7 +696,9 @@ class TestCardCommentIntegration:
         retrieved_comment = get_comment_by_id(db_session, created_comment.id)
         assert retrieved_comment is None
 
-    def test_multiple_comments_per_card(self, db_session, sample_card, sample_user, sample_user_2):
+    def test_multiple_comments_per_card(
+        self, db_session, sample_card, sample_user, sample_user_2
+    ):
         """Test de gestion de multiples commentaires par carte."""
         # Créer plusieurs commentaires par différents utilisateurs
         comments_data = [
@@ -642,7 +731,9 @@ class TestCardCommentIntegration:
         # Créer plusieurs commentaires séquentiellement
         comments = []
         for i in range(5):
-            comment_data = CardCommentCreate(card_id=sample_card.id, comment=f"Commentaire {i}")
+            comment_data = CardCommentCreate(
+                card_id=sample_card.id, comment=f"Commentaire {i}"
+            )
             comment = create_comment(db_session, comment_data, sample_user.id)
             comments.append(comment)
 
@@ -653,7 +744,9 @@ class TestCardCommentIntegration:
         # Mettre à jour plusieurs commentaires
         for i, comment in enumerate(comments):
             update_data = CardCommentUpdate(comment=f"Commentaire modifié {i}")
-            updated_comment = update_comment(db_session, comment.id, update_data, sample_user.id)
+            updated_comment = update_comment(
+                db_session, comment.id, update_data, sample_user.id
+            )
             assert updated_comment is not None
             assert updated_comment.comment == f"Commentaire modifié {i}"
 
@@ -700,16 +793,24 @@ class TestCardCommentSecurity:
         comment = sample_comments[0]  # Créé par sample_user
 
         # Tenter de modifier le commentaire de quelqu'un d'autre
-        update_data = CardCommentUpdate(comment="Tentative de modification non autorisée")
+        update_data = CardCommentUpdate(
+            comment="Tentative de modification non autorisée"
+        )
 
-        with pytest.raises(ValueError, match="Vous ne pouvez modifier que vos propres commentaires"):
+        with pytest.raises(
+            ValueError, match="Vous ne pouvez modifier que vos propres commentaires"
+        ):
             update_comment(db_session, comment.id, update_data, sample_user_2.id)
 
         # Tenter de supprimer le commentaire de quelqu'un d'autre
-        with pytest.raises(ValueError, match="Vous ne pouvez supprimer que vos propres commentaires"):
+        with pytest.raises(
+            ValueError, match="Vous ne pouvez supprimer que vos propres commentaires"
+        ):
             delete_comment(db_session, comment.id, sample_user_2.id)
 
-    def test_comment_content_sanitization_storage(self, db_session, sample_card, sample_user):
+    def test_comment_content_sanitization_storage(
+        self, db_session, sample_card, sample_user
+    ):
         """Test que le contenu dangereux est bloqué par la validation."""
         dangerous_content = "<script>alert('danger')</script>"
 

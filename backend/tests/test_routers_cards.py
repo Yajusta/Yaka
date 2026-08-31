@@ -27,7 +27,14 @@ from app.routers.cards import (
     unarchive_card,
     update_card,
 )
-from app.schemas import BulkCardMoveRequest, CardCreate, CardHistoryResponse, CardMoveRequest, CardResponse, CardUpdate
+from app.schemas import (
+    BulkCardMoveRequest,
+    CardCreate,
+    CardHistoryResponse,
+    CardMoveRequest,
+    CardResponse,
+    CardUpdate,
+)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -37,7 +44,9 @@ from sqlalchemy.orm import sessionmaker
 def db_session():
     """Fixture pour créer une session de base de données de test."""
     SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
@@ -111,7 +120,9 @@ class TestCardsRouter:
             ]
             mock_get_cards.return_value = mock_cards
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -157,7 +168,9 @@ class TestCardsRouter:
             ]
             mock_get_cards.return_value = mock_cards
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -203,7 +216,9 @@ class TestCardsRouter:
             ]
             mock_get_archived.return_value = mock_cards
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -212,7 +227,10 @@ class TestCardsRouter:
 
                     result = asyncio.run(
                         read_archived_cards(
-                            skip=0, limit=10, db=mock_db.return_value.__enter__.return_value, current_user=test_user
+                            skip=0,
+                            limit=10,
+                            db=mock_db.return_value.__enter__.return_value,
+                            current_user=test_user,
                         )
                     )
 
@@ -222,7 +240,10 @@ class TestCardsRouter:
     def test_create_card_success(self, test_user):
         """Test de création d'une carte avec succès."""
         card_data = CardCreate(
-            title="New Card", description="New description", list_id=1, priority=CardPriority.MEDIUM
+            title="New Card",
+            description="New description",
+            list_id=1,
+            priority=CardPriority.MEDIUM,
         )
 
         mock_card = CardResponse(
@@ -242,10 +263,14 @@ class TestCardsRouter:
         with patch("app.services.card.create_card") as mock_create:
             mock_create.return_value = mock_card
 
-            with patch("app.services.card_history.create_card_history_entry") as mock_history:
+            with patch(
+                "app.services.card_history.create_card_history_entry"
+            ) as mock_history:
                 mock_history.return_value = None
 
-                with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.cards.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock database session
@@ -253,7 +278,11 @@ class TestCardsRouter:
                         mock_db.return_value.__enter__.return_value = MagicMock()
 
                         result = asyncio.run(
-                            create_card(card_data, mock_db.return_value.__enter__.return_value, test_user)
+                            create_card(
+                                card_data,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
                         )
 
                         assert result.title == "New Card"
@@ -264,14 +293,19 @@ class TestCardsRouter:
         """Test de création d'une carte avec des données invalides."""
         # Créer un objet CardCreate valide
         card_data = CardCreate(
-            title="Test Card", description="Test description", list_id=1, priority=CardPriority.MEDIUM
+            title="Test Card",
+            description="Test description",
+            list_id=1,
+            priority=CardPriority.MEDIUM,
         )
 
         with patch("app.services.card.create_card") as mock_create:
             # Simuler une erreur du service (par exemple, liste inexistante)
             mock_create.side_effect = ValueError("Liste non trouvée")
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -279,7 +313,13 @@ class TestCardsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(create_card(card_data, mock_db.return_value.__enter__.return_value, test_user))
+                        asyncio.run(
+                            create_card(
+                                card_data,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                     assert exc_info.value.status_code == 400
                     assert exc_info.value.detail == "Liste non trouvée"
@@ -288,7 +328,12 @@ class TestCardsRouter:
         """Test de validation Pydantic pour un title vide."""
         # Tester que Pydantic rejette les données invalides
         with pytest.raises(Exception) as exc_info:
-            CardCreate(title="", description="New description", list_id=1, priority=CardPriority.MEDIUM)
+            CardCreate(
+                title="",
+                description="New description",
+                list_id=1,
+                priority=CardPriority.MEDIUM,
+            )
 
         # Vérifier que c'est bien une erreur de validation Pydantic
         assert "title" in str(exc_info.value)
@@ -312,14 +357,20 @@ class TestCardsRouter:
             )
             mock_get_card.return_value = mock_card
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
                 with patch("app.routers.cards.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(read_card(1, mock_db.return_value.__enter__.return_value, test_user))
+                    result = asyncio.run(
+                        read_card(
+                            1, mock_db.return_value.__enter__.return_value, test_user
+                        )
+                    )
 
                     assert result.title == "Test Card"
                     assert result.id == 1
@@ -329,7 +380,9 @@ class TestCardsRouter:
         with patch("app.services.card.get_card") as mock_get_card:
             mock_get_card.return_value = None
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -337,14 +390,24 @@ class TestCardsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(read_card(999, mock_db.return_value.__enter__.return_value, test_user))
+                        asyncio.run(
+                            read_card(
+                                999,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                     assert exc_info.value.status_code == 404
                     assert exc_info.value.detail == "Carte non trouvée"
 
     def test_update_card_success(self, test_user):
         """Test de mise à jour d'une carte avec succès."""
-        update_data = CardUpdate(title="Updated Card", description="Updated description", priority=CardPriority.HIGH)
+        update_data = CardUpdate(
+            title="Updated Card",
+            description="Updated description",
+            priority=CardPriority.HIGH,
+        )
 
         mock_card = CardResponse(
             id=1,
@@ -363,10 +426,14 @@ class TestCardsRouter:
         with patch("app.services.card.update_card") as mock_update:
             mock_update.return_value = mock_card
 
-            with patch("app.services.card_history.create_card_history_entry") as mock_history:
+            with patch(
+                "app.services.card_history.create_card_history_entry"
+            ) as mock_history:
                 mock_history.return_value = None
 
-                with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.cards.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock database session
@@ -374,7 +441,12 @@ class TestCardsRouter:
                         mock_db.return_value.__enter__.return_value = MagicMock()
 
                         result = asyncio.run(
-                            update_card(1, update_data, mock_db.return_value.__enter__.return_value, test_user)
+                            update_card(
+                                1,
+                                update_data,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
                         )
 
                         assert result.title == "Updated Card"
@@ -387,7 +459,9 @@ class TestCardsRouter:
         with patch("app.services.card.update_card") as mock_update:
             mock_update.return_value = None
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -396,7 +470,12 @@ class TestCardsRouter:
 
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
-                            update_card(999, update_data, mock_db.return_value.__enter__.return_value, test_user)
+                            update_card(
+                                999,
+                                update_data,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
                         )
 
                     assert exc_info.value.status_code == 404
@@ -421,17 +500,27 @@ class TestCardsRouter:
         with patch("app.services.card.archive_card") as mock_archive:
             mock_archive.return_value = mock_card
 
-            with patch("app.services.card_history.create_card_history_entry") as mock_history:
+            with patch(
+                "app.services.card_history.create_card_history_entry"
+            ) as mock_history:
                 mock_history.return_value = None
 
-                with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.cards.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock database session
                     with patch("app.routers.cards.get_db") as mock_db:
                         mock_db.return_value.__enter__.return_value = MagicMock()
 
-                        result = asyncio.run(archive_card(1, mock_db.return_value.__enter__.return_value, test_user))
+                        result = asyncio.run(
+                            archive_card(
+                                1,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                         assert result.is_archived is True
 
@@ -440,7 +529,9 @@ class TestCardsRouter:
         with patch("app.services.card.archive_card") as mock_archive:
             mock_archive.return_value = None
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -448,7 +539,13 @@ class TestCardsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(archive_card(999, mock_db.return_value.__enter__.return_value, test_user))
+                        asyncio.run(
+                            archive_card(
+                                999,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                     assert exc_info.value.status_code == 404
                     assert exc_info.value.detail == "Carte non trouvée"
@@ -472,17 +569,27 @@ class TestCardsRouter:
         with patch("app.services.card.unarchive_card") as mock_unarchive:
             mock_unarchive.return_value = mock_card
 
-            with patch("app.services.card_history.create_card_history_entry") as mock_history:
+            with patch(
+                "app.services.card_history.create_card_history_entry"
+            ) as mock_history:
                 mock_history.return_value = None
 
-                with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.cards.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock database session
                     with patch("app.routers.cards.get_db") as mock_db:
                         mock_db.return_value.__enter__.return_value = MagicMock()
 
-                        result = asyncio.run(unarchive_card(1, mock_db.return_value.__enter__.return_value, test_user))
+                        result = asyncio.run(
+                            unarchive_card(
+                                1,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                         assert result.is_archived is False
 
@@ -507,10 +614,14 @@ class TestCardsRouter:
         with patch("app.services.card.move_card") as mock_move:
             mock_move.return_value = mock_card
 
-            with patch("app.services.card_history.create_card_history_entry") as mock_history:
+            with patch(
+                "app.services.card_history.create_card_history_entry"
+            ) as mock_history:
                 mock_history.return_value = None
 
-                with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.cards.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock database session
@@ -518,7 +629,12 @@ class TestCardsRouter:
                         mock_db.return_value.__enter__.return_value = MagicMock()
 
                         result = asyncio.run(
-                            move_card(1, move_data, mock_db.return_value.__enter__.return_value, test_user)
+                            move_card(
+                                1,
+                                move_data,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
                         )
 
                         assert result.list_id == 2
@@ -546,10 +662,14 @@ class TestCardsRouter:
         with patch("app.services.card.bulk_move_cards") as mock_bulk_move:
             mock_bulk_move.return_value = mock_cards
 
-            with patch("app.services.card_history.create_card_history_entry") as mock_history:
+            with patch(
+                "app.services.card_history.create_card_history_entry"
+            ) as mock_history:
                 mock_history.return_value = None
 
-                with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.cards.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock database session
@@ -557,7 +677,11 @@ class TestCardsRouter:
                         mock_db.return_value.__enter__.return_value = MagicMock()
 
                         result = asyncio.run(
-                            bulk_move_cards(move_data, mock_db.return_value.__enter__.return_value, test_user)
+                            bulk_move_cards(
+                                move_data,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
                         )
 
                         assert len(result) == 1
@@ -568,17 +692,27 @@ class TestCardsRouter:
         with patch("app.services.card.delete_card") as mock_delete:
             mock_delete.return_value = True
 
-            with patch("app.services.card_history.create_card_history_entry") as mock_history:
+            with patch(
+                "app.services.card_history.create_card_history_entry"
+            ) as mock_history:
                 mock_history.return_value = None
 
-                with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+                with patch(
+                    "app.routers.cards.get_current_active_user"
+                ) as mock_current_user:
                     mock_current_user.return_value = test_user
 
                     # Mock database session
                     with patch("app.routers.cards.get_db") as mock_db:
                         mock_db.return_value.__enter__.return_value = MagicMock()
 
-                        result = asyncio.run(delete_card(1, mock_db.return_value.__enter__.return_value, test_user))
+                        result = asyncio.run(
+                            delete_card(
+                                1,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                         assert result["message"] == "Carte supprimée avec succès"
 
@@ -587,7 +721,9 @@ class TestCardsRouter:
         with patch("app.services.card.delete_card") as mock_delete:
             mock_delete.return_value = False
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -595,7 +731,13 @@ class TestCardsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(delete_card(999, mock_db.return_value.__enter__.return_value, test_user))
+                        asyncio.run(
+                            delete_card(
+                                999,
+                                mock_db.return_value.__enter__.return_value,
+                                test_user,
+                            )
+                        )
 
                     assert exc_info.value.status_code == 404
                     assert exc_info.value.detail == "Carte non trouvée"
@@ -615,14 +757,20 @@ class TestCardsRouter:
             ]
             mock_get_history.return_value = mock_history
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
                 with patch("app.routers.cards.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(get_card_history(1, mock_db.return_value.__enter__.return_value, test_user))
+                    result = asyncio.run(
+                        get_card_history(
+                            1, mock_db.return_value.__enter__.return_value, test_user
+                        )
+                    )
 
                     assert len(result) == 1
                     assert result[0].action == "created"
@@ -633,7 +781,9 @@ class TestCardsRouter:
             # Simuler que le service renvoie None pour un ID invalide
             mock_get_card.return_value = None
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session
@@ -641,7 +791,11 @@ class TestCardsRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                 with pytest.raises(HTTPException) as exc_info:
-                    asyncio.run(read_card(-1, mock_db.return_value.__enter__.return_value, test_user))
+                    asyncio.run(
+                        read_card(
+                            -1, mock_db.return_value.__enter__.return_value, test_user
+                        )
+                    )
 
                 assert exc_info.value.status_code == 404
                 assert exc_info.value.detail == "Carte non trouvée"
@@ -651,7 +805,9 @@ class TestCardsRouter:
         with patch("app.services.card.get_cards") as mock_get_cards:
             mock_get_cards.side_effect = Exception("Database error")
 
-            with patch("app.routers.cards.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.cards.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = test_user
 
                 # Mock database session

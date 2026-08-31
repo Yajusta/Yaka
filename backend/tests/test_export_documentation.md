@@ -15,7 +15,7 @@ Ce document décrit les tests créés pour la fonctionnalité d'export CSV et Ex
 - **test_format_checklist_empty**: Vérifie le formatage d'une checklist vide
 - **test_format_checklist_with_items**: Vérifie le formatage d'une checklist avec items cochés/non cochés
 - **test_format_labels_empty**: Vérifie le formatage sans étiquettes
-- **test_format_labels_with_multiple**: Vérifie le formatage de plusieurs étiquettes séparées par ` + `
+- **test_format_labels_with_multiple**: Vérifie le formatage de plusieurs étiquettes séparées par `+`
 - **test_format_due_date_none**: Vérifie le formatage d'une date nulle
 - **test_format_due_date_with_date**: Vérifie le formatage d'une date au format YYYY-MM-DD
 - **test_format_due_date_with_string**: Vérifie le formatage d'une date sous forme de chaîne
@@ -78,22 +78,26 @@ Ce document décrit les tests créés pour la fonctionnalité d'export CSV et Ex
 Les tests couvrent :
 
 ✅ **Fonctionnalités de base** :
+
 - Export CSV avec nettoyage des retours à la ligne
 - Export Excel avec préservation du formatage
 - Formatage correct de toutes les colonnes
 
 ✅ **Validation** :
+
 - Format de fichier valide (csv/xlsx)
 - Authentification requise
 - Gestion des erreurs
 
 ✅ **Règles métier** :
+
 - Exclusion des cartes archivées
 - Tri par liste et position
 - Différences CSV/Excel (checklist)
 - Permissions (visiteur peut exporter)
 
 ✅ **Cas limites** :
+
 - Base de données vide
 - Valeurs nulles
 - Chaînes vides
@@ -102,16 +106,19 @@ Les tests couvrent :
 ## Exécution des Tests
 
 ### Tous les tests d'export :
+
 ```bash
 python -m pytest tests/test_export_service.py tests/test_integration_export_api.py -v
 ```
 
 ### Tests unitaires uniquement :
+
 ```bash
 python -m pytest tests/test_export_service.py -v
 ```
 
 ### Tests d'intégration uniquement :
+
 ```bash
 python -m pytest tests/test_integration_export_api.py -v
 ```
@@ -123,4 +130,3 @@ python -m pytest tests/test_integration_export_api.py -v
 - **Total** : 35 tests ✅
 
 Tous les tests passent avec succès.
-

@@ -19,7 +19,12 @@ async def test_card_lifecycle(
     seed_admin_user()
     list_id = create_list_record("Backlog", 1)
     target_list_id = create_list_record("Done", 2)
-    create_regular_user("writer@example.com", "UserPass123!", display_name="Writer", role=UserRole.SUPERVISOR)
+    create_regular_user(
+        "writer@example.com",
+        "UserPass123!",
+        display_name="Writer",
+        role=UserRole.SUPERVISOR,
+    )
 
     async with async_client_factory(auth_router, cards_router) as client:
         token = await login_user(client, "writer@example.com", "UserPass123!")
@@ -122,7 +127,12 @@ async def test_card_filters_bulk_move_and_archive(
     seed_admin_user()
     list_a = create_list_record("Backlog", 1)
     list_b = create_list_record("Review", 2)
-    create_regular_user("bulk@example.com", "Bulk123!", display_name="Bulk User", role=UserRole.SUPERVISOR)
+    create_regular_user(
+        "bulk@example.com",
+        "Bulk123!",
+        display_name="Bulk User",
+        role=UserRole.SUPERVISOR,
+    )
     create_regular_user("assignee@example.com", "Assign123!", display_name="Assignee")
 
     async with async_client_factory(auth_router, labels_router, cards_router) as client:
@@ -281,7 +291,12 @@ async def test_legacy_statut_endpoint(
     list_a = create_list_record("A faire", 1)
     list_b = create_list_record("En cours", 2)
     list_c = create_list_record("Termin?", 3)
-    create_regular_user("legacy@example.com", "Legacy123!", display_name="Legacy", role=UserRole.SUPERVISOR)
+    create_regular_user(
+        "legacy@example.com",
+        "Legacy123!",
+        display_name="Legacy",
+        role=UserRole.SUPERVISOR,
+    )
 
     async with async_client_factory(auth_router, cards_router) as client:
         token = await login_user(client, "legacy@example.com", "Legacy123!")
@@ -341,7 +356,12 @@ async def test_card_update_assigns_and_labels(
 ):
     seed_admin_user()
     list_id = create_list_record("Backlog", 1)
-    create_regular_user("cardowner@example.com", "Owner123!", display_name="Owner", role=UserRole.SUPERVISOR)
+    create_regular_user(
+        "cardowner@example.com",
+        "Owner123!",
+        display_name="Owner",
+        role=UserRole.SUPERVISOR,
+    )
     create_regular_user("teammate@example.com", "Mate123!", display_name="Teammate")
 
     async with async_client_factory(auth_router, labels_router, cards_router) as client:
@@ -389,7 +409,9 @@ async def test_card_update_assigns_and_labels(
         updated_card = update_response.json()
         assert [label["id"] for label in updated_card["labels"]] == [label_id]
         assert updated_card["assignee_id"] == teammate_id
-        assert updated_card["assignee_name"] is not None  # Should have the teammate's name
+        assert (
+            updated_card["assignee_name"] is not None
+        )  # Should have the teammate's name
 
         clear_response = await client.put(
             f"/cards/{card_id}",
@@ -409,7 +431,11 @@ async def test_card_update_assigns_and_labels(
         actions = {entry["action"] for entry in history_entries}
         assert "create" in actions
         assert "assignee_change" in actions
-        descriptions = [entry["description"] for entry in history_entries if entry["action"] == "assignee_change"]
+        descriptions = [
+            entry["description"]
+            for entry in history_entries
+            if entry["action"] == "assignee_change"
+        ]
         assert any("Teammate" in desc or "personne" in desc for desc in descriptions)
 
         assert cleared_card["assignee_name"] is None  # Pas d'assigné = None
@@ -425,7 +451,12 @@ async def test_read_only_user_cannot_modify_cards(
 ):
     seed_admin_user()
     list_id = create_list_record("Lecture", 1)
-    create_regular_user("observer@example.com", "ReadOnly123!", display_name="Observer", role=UserRole.VISITOR)
+    create_regular_user(
+        "observer@example.com",
+        "ReadOnly123!",
+        display_name="Observer",
+        role=UserRole.VISITOR,
+    )
 
     async with async_client_factory(auth_router, cards_router) as client:
         admin_token = await login_user(client, "admin@yaka.local", "Admin123")
@@ -443,7 +474,9 @@ async def test_read_only_user_cannot_modify_cards(
         assert card_response.status_code == 200
         card_id = card_response.json()["id"]
 
-        readonly_token = await login_user(client, "observer@example.com", "ReadOnly123!")
+        readonly_token = await login_user(
+            client, "observer@example.com", "ReadOnly123!"
+        )
         readonly_headers = {"Authorization": f"Bearer {readonly_token}"}
 
         forbidden_create = await client.post(
@@ -481,9 +514,16 @@ async def test_comments_only_user_can_comment_but_not_edit(
 ):
     seed_admin_user()
     list_id = create_list_record("Commentaires", 1)
-    create_regular_user("commenter@example.com", "Comment123!", display_name="Commenter", role=UserRole.COMMENTER)
+    create_regular_user(
+        "commenter@example.com",
+        "Comment123!",
+        display_name="Commenter",
+        role=UserRole.COMMENTER,
+    )
 
-    async with async_client_factory(auth_router, cards_router, card_comments_router) as client:
+    async with async_client_factory(
+        auth_router, cards_router, card_comments_router
+    ) as client:
         admin_token = await login_user(client, "admin@yaka.local", "Admin123")
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         card_response = await client.post(
@@ -498,7 +538,9 @@ async def test_comments_only_user_can_comment_but_not_edit(
         assert card_response.status_code == 200
         card_id = card_response.json()["id"]
 
-        commenter_token = await login_user(client, "commenter@example.com", "Comment123!")
+        commenter_token = await login_user(
+            client, "commenter@example.com", "Comment123!"
+        )
         commenter_headers = {"Authorization": f"Bearer {commenter_token}"}
 
         comment_create = await client.post(
@@ -540,7 +582,12 @@ async def test_assigned_only_user_restrictions(
 ):
     seed_admin_user()
     list_id = create_list_record("Assignments", 1)
-    create_regular_user("doer@example.com", "Assigned123!", display_name="Doer", role=UserRole.CONTRIBUTOR)
+    create_regular_user(
+        "doer@example.com",
+        "Assigned123!",
+        display_name="Doer",
+        role=UserRole.CONTRIBUTOR,
+    )
     create_regular_user("other@example.com", "UserPass123!", display_name="Other")
 
     async with async_client_factory(auth_router, cards_router) as client:

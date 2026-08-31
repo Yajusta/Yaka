@@ -16,7 +16,9 @@ async def test_public_endpoint_returns_default_title(async_client_factory):
 
 
 @pytest.mark.asyncio
-async def test_admin_can_update_board_title(async_client_factory, seed_admin_user, login_user):
+async def test_admin_can_update_board_title(
+    async_client_factory, seed_admin_user, login_user
+):
     seed_admin_user()
 
     async with async_client_factory(auth_router, board_settings_router) as client:
@@ -62,7 +64,9 @@ async def test_non_admin_cannot_update_board_settings(
 
 
 @pytest.mark.asyncio
-async def test_admin_can_list_settings(async_client_factory, seed_admin_user, login_user):
+async def test_admin_can_list_settings(
+    async_client_factory, seed_admin_user, login_user
+):
     seed_admin_user()
 
     async with async_client_factory(auth_router, board_settings_router) as client:

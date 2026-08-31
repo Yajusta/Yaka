@@ -23,7 +23,9 @@ TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_card_history_model.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -139,7 +141,9 @@ class TestCardHistoryModel:
         """Test que le nom de la table est correct."""
         assert CardHistory.__tablename__ == "card_history"
 
-    def test_create_card_history_successfully(self, db_session, sample_card, sample_user):
+    def test_create_card_history_successfully(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de création réussie d'une entrée d'historique."""
         before_creation = datetime.datetime.now()
 
@@ -186,7 +190,9 @@ class TestCardHistoryModel:
         assert history.description == "Minimal description"
         assert history.created_at is not None
 
-    def test_card_history_timestamp_on_create(self, db_session, sample_card, sample_user):
+    def test_card_history_timestamp_on_create(
+        self, db_session, sample_card, sample_user
+    ):
         """Test que le timestamp est correct à la création."""
         before_creation = datetime.datetime.now()
 
@@ -247,7 +253,11 @@ class TestCardHistoryModel:
         db_session.commit()
 
         # Rechercher les entrées d'historique de la carte
-        history_entries = db_session.query(CardHistory).filter(CardHistory.card_id == sample_card.id).all()
+        history_entries = (
+            db_session.query(CardHistory)
+            .filter(CardHistory.card_id == sample_card.id)
+            .all()
+        )
 
         assert len(history_entries) >= 3
         assert all(entry.card_id == sample_card.id for entry in history_entries)
@@ -267,7 +277,11 @@ class TestCardHistoryModel:
         db_session.commit()
 
         # Rechercher les entrées d'historique de l'utilisateur
-        history_entries = db_session.query(CardHistory).filter(CardHistory.user_id == sample_user.id).all()
+        history_entries = (
+            db_session.query(CardHistory)
+            .filter(CardHistory.user_id == sample_user.id)
+            .all()
+        )
 
         assert len(history_entries) >= 3
         assert all(entry.user_id == sample_user.id for entry in history_entries)
@@ -289,12 +303,16 @@ class TestCardHistoryModel:
         db_session.commit()
 
         # Rechercher les entrées avec l'action "created"
-        created_entries = db_session.query(CardHistory).filter(CardHistory.action == "created").all()
+        created_entries = (
+            db_session.query(CardHistory).filter(CardHistory.action == "created").all()
+        )
 
         assert len(created_entries) == 1
         assert created_entries[0].action == "created"
 
-    def test_card_history_query_by_description(self, db_session, sample_card, sample_user):
+    def test_card_history_query_by_description(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de recherche textuelle dans la description."""
         # Créer des entrées avec des descriptions spécifiques
         descriptions = [
@@ -316,12 +334,18 @@ class TestCardHistoryModel:
         db_session.commit()
 
         # Rechercher les entrées contenant "title"
-        title_entries = db_session.query(CardHistory).filter(CardHistory.description.like("%title%")).all()
+        title_entries = (
+            db_session.query(CardHistory)
+            .filter(CardHistory.description.like("%title%"))
+            .all()
+        )
 
         assert len(title_entries) == 1
         assert "title" in title_entries[0].description
 
-    def test_card_history_order_by_creation_date(self, db_session, sample_card, sample_user):
+    def test_card_history_order_by_creation_date(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de tri par date de création."""
         # Créer des entrées avec un délai
         entries = []
@@ -342,13 +366,17 @@ class TestCardHistoryModel:
             time.sleep(0.01)
 
         # Récupérer les entrées triées par date de création
-        sorted_entries = db_session.query(CardHistory).order_by(CardHistory.created_at).all()
+        sorted_entries = (
+            db_session.query(CardHistory).order_by(CardHistory.created_at).all()
+        )
 
         # Vérifier qu'elles sont dans l'ordre chronologique
         for i in range(len(sorted_entries) - 1):
             assert sorted_entries[i].created_at <= sorted_entries[i + 1].created_at
 
-    def test_card_history_order_by_creation_date_desc(self, db_session, sample_card, sample_user):
+    def test_card_history_order_by_creation_date_desc(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de tri par date de création décroissante."""
         # Créer des entrées
         for i in range(3):
@@ -367,7 +395,9 @@ class TestCardHistoryModel:
             time.sleep(0.01)
 
         # Récupérer les entrées triées par date de création décroissante
-        sorted_entries = db_session.query(CardHistory).order_by(CardHistory.created_at.desc()).all()
+        sorted_entries = (
+            db_session.query(CardHistory).order_by(CardHistory.created_at.desc()).all()
+        )
 
         # Vérifier qu'elles sont dans l'ordre chronologique inverse
         for i in range(len(sorted_entries) - 1):
@@ -382,10 +412,14 @@ class TestCardHistoryModel:
         db_session.commit()
 
         # Vérifier que l'entrée a été supprimée
-        deleted_entry = db_session.query(CardHistory).filter(CardHistory.id == entry_id).first()
+        deleted_entry = (
+            db_session.query(CardHistory).filter(CardHistory.id == entry_id).first()
+        )
         assert deleted_entry is None
 
-    def test_card_history_string_fields_validation(self, db_session, sample_card, sample_user):
+    def test_card_history_string_fields_validation(
+        self, db_session, sample_card, sample_user
+    ):
         """Test des validations des champs text."""
         # Test avec action longue
         long_action = "a" * 100
@@ -406,7 +440,9 @@ class TestCardHistoryModel:
         assert history.action == long_action
         assert history.description == long_description
 
-    def test_card_history_special_characters(self, db_session, sample_card, sample_user):
+    def test_card_history_special_characters(
+        self, db_session, sample_card, sample_user
+    ):
         """Test avec des caractères spéciaux."""
         history = CardHistory(
             card_id=sample_card.id,
@@ -451,7 +487,9 @@ class TestCardHistoryModel:
         assert history.action == ""
         assert history.description == ""
 
-    def test_card_history_multiline_description(self, db_session, sample_card, sample_user):
+    def test_card_history_multiline_description(
+        self, db_session, sample_card, sample_user
+    ):
         """Test avec une description multiligne."""
         multiline_desc = """Ceci est une description multiligne.
 Ligne 2
@@ -474,7 +512,10 @@ Avec des caractères spéciaux: éèàç"""
         """Test que les champs requis ne peuvent pas être NULL."""
         # Créer une carte et un utilisateur pour le test
         user = User(
-            email="nulltest@example.com", display_name="Null Test", role=UserRole.EDITOR, status=UserStatus.ACTIVE
+            email="nulltest@example.com",
+            display_name="Null Test",
+            role=UserRole.EDITOR,
+            status=UserStatus.ACTIVE,
         )
         kanban_list = KanbanList(name="Null Test List", order=1)
         card = Card(title="Null Test Card", list_id=1, created_by=1)
@@ -570,7 +611,9 @@ Avec des caractères spéciaux: éèàç"""
         except Exception:
             db_session.rollback()
 
-    def test_card_history_relationships_loading(self, db_session, sample_history, sample_card, sample_user):
+    def test_card_history_relationships_loading(
+        self, db_session, sample_history, sample_card, sample_user
+    ):
         """Test que les relations sont correctement chargées."""
         entry = sample_history[0]
 
@@ -602,7 +645,9 @@ Avec des caractères spéciaux: éèàç"""
         db_session.commit()
 
         # L'entrée d'historique devrait être supprimée en cascade
-        deleted_entry = db_session.query(CardHistory).filter(CardHistory.id == history_id).first()
+        deleted_entry = (
+            db_session.query(CardHistory).filter(CardHistory.id == history_id).first()
+        )
         assert deleted_entry is None
 
     def test_card_history_batch_operations(self, db_session, sample_card, sample_user):
@@ -622,7 +667,11 @@ Avec des caractères spéciaux: éèàç"""
         db_session.commit()
 
         # Vérifier que toutes ont été créées
-        count = db_session.query(CardHistory).filter(CardHistory.action.like("batch_action_%")).count()
+        count = (
+            db_session.query(CardHistory)
+            .filter(CardHistory.action.like("batch_action_%"))
+            .count()
+        )
         assert count == 10
 
     def test_card_history_bulk_update(self, db_session, sample_card, sample_user):
@@ -640,14 +689,23 @@ Avec des caractères spéciaux: éèàç"""
         db_session.commit()
 
         # Mettre à jour toutes les entrées avec "updated_" comme préfixe
-        db_session.query(CardHistory).filter(CardHistory.card_id == sample_card.id).update(
-            {"action": CardHistory.action + "_updated", "description": CardHistory.description + " (updated)"}
+        db_session.query(CardHistory).filter(
+            CardHistory.card_id == sample_card.id
+        ).update(
+            {
+                "action": CardHistory.action + "_updated",
+                "description": CardHistory.description + " (updated)",
+            }
         )
 
         db_session.commit()
 
         # Vérifier que toutes les entrées ont été mises à jour
-        updated_entries = db_session.query(CardHistory).filter(CardHistory.card_id == sample_card.id).all()
+        updated_entries = (
+            db_session.query(CardHistory)
+            .filter(CardHistory.card_id == sample_card.id)
+            .all()
+        )
 
         for entry in updated_entries:
             assert entry.action.endswith("_updated")
@@ -683,7 +741,11 @@ Avec des caractères spéciaux: éèàç"""
         specific_actions = (
             db_session.query(CardHistory)
             .filter(
-                or_(CardHistory.action == "created", CardHistory.action == "updated", CardHistory.action == "moved")
+                or_(
+                    CardHistory.action == "created",
+                    CardHistory.action == "updated",
+                    CardHistory.action == "moved",
+                )
             )
             .order_by(CardHistory.created_at.desc())
             .all()
@@ -692,7 +754,11 @@ Avec des caractères spéciaux: éèàç"""
         assert len(specific_actions) == 3
 
         # Chercher les entrées contenant "Card" dans la description
-        card_entries = db_session.query(CardHistory).filter(CardHistory.description.like("%Card%")).all()
+        card_entries = (
+            db_session.query(CardHistory)
+            .filter(CardHistory.description.like("%Card%"))
+            .all()
+        )
 
         assert len(card_entries) == 5
 
@@ -718,7 +784,9 @@ Avec des caractères spéciaux: éèàç"""
         assert len(page2) == 5
         assert page1[0].id != page2[0].id
 
-    def test_card_history_count_aggregations(self, db_session, sample_card, sample_user):
+    def test_card_history_count_aggregations(
+        self, db_session, sample_card, sample_user
+    ):
         """Test d'agrégations et de comptage."""
         # Créer des entrées avec différentes actions
         actions_count = {"created": 2, "updated": 3, "moved": 1, "deleted": 1}
@@ -737,13 +805,19 @@ Avec des caractères spéciaux: éèàç"""
 
         # Compter les entrées par action
         for action, expected_count in actions_count.items():
-            actual_count = db_session.query(CardHistory).filter(CardHistory.action == action).count()
+            actual_count = (
+                db_session.query(CardHistory)
+                .filter(CardHistory.action == action)
+                .count()
+            )
             assert actual_count == expected_count
 
     def test_card_history_error_handling(self, db_session, sample_card, sample_user):
         """Test de gestion des erreurs."""
         # Simuler une erreur de base de données
-        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
+        with patch.object(
+            db_session, "commit", side_effect=SQLAlchemyError("Database error")
+        ):
             history = CardHistory(
                 card_id=sample_card.id,
                 user_id=sample_user.id,
@@ -827,10 +901,14 @@ Avec des caractères spéciaux: éèàç"""
         )
 
         # Vérifier que l'ordre des actions est préservé
-        timeline_actions = [entry.action for entry in timeline[-len(actions_sequence) :]]
+        timeline_actions = [
+            entry.action for entry in timeline[-len(actions_sequence) :]
+        ]
         assert timeline_actions == actions_sequence
 
-    def test_card_history_user_activity_tracking(self, db_session, sample_card, sample_user):
+    def test_card_history_user_activity_tracking(
+        self, db_session, sample_card, sample_user
+    ):
         """Test du suivi de l'activité utilisateur."""
         # Créer plusieurs entrées d'historique pour le même utilisateur
         user_actions = ["created", "updated_title", "added_comment", "moved_card"]
@@ -847,7 +925,11 @@ Avec des caractères spéciaux: éèàç"""
         db_session.commit()
 
         # Compter les actions de l'utilisateur
-        user_activity_count = db_session.query(CardHistory).filter(CardHistory.user_id == sample_user.id).count()
+        user_activity_count = (
+            db_session.query(CardHistory)
+            .filter(CardHistory.user_id == sample_user.id)
+            .count()
+        )
 
         assert user_activity_count >= len(user_actions)
 
@@ -887,13 +969,17 @@ Avec des caractères spéciaux: éèàç"""
         )
 
         # Vérifier que toutes les actions du cycle de vie sont présentes
-        history_actions = [entry.action for entry in full_history[-len(lifecycle_actions) :]]
+        history_actions = [
+            entry.action for entry in full_history[-len(lifecycle_actions) :]
+        ]
         lifecycle_actions_only = [action for action, _ in lifecycle_actions]
 
         for action in lifecycle_actions_only:
             assert action in history_actions
 
-    def test_card_history_search_functionality(self, db_session, sample_card, sample_user):
+    def test_card_history_search_functionality(
+        self, db_session, sample_card, sample_user
+    ):
         """Test de la fonctionnalité de recherche dans l'historique."""
         # Créer des entrées avec du text spécifique
         search_entries = [
@@ -916,12 +1002,18 @@ Avec des caractères spéciaux: éèàç"""
         db_session.commit()
 
         # Rechercher par mot-clé dans la description
-        card_results = db_session.query(CardHistory).filter(CardHistory.description.like("%card%")).all()
+        card_results = (
+            db_session.query(CardHistory)
+            .filter(CardHistory.description.like("%card%"))
+            .all()
+        )
 
         assert len(card_results) >= 2
 
         # Rechercher par action spécifique
-        updated_results = db_session.query(CardHistory).filter(CardHistory.action == "updated").all()
+        updated_results = (
+            db_session.query(CardHistory).filter(CardHistory.action == "updated").all()
+        )
 
         assert len(updated_results) == 1
         assert updated_results[0].action == "updated"
@@ -940,7 +1032,11 @@ Avec des caractères spéciaux: éèàç"""
         db_session.commit()
 
         # Récupérer l'entrée et vérifier que toutes les données sont intactes
-        retrieved_history = db_session.query(CardHistory).filter(CardHistory.id == original_history.id).first()
+        retrieved_history = (
+            db_session.query(CardHistory)
+            .filter(CardHistory.id == original_history.id)
+            .first()
+        )
 
         assert retrieved_history is not None
         assert retrieved_history.card_id == original_history.card_id
@@ -962,8 +1058,12 @@ Avec des caractères spéciaux: éèàç"""
         db_session.commit()
 
         # Simuler des accès concurrents
-        history1 = db_session.query(CardHistory).filter(CardHistory.id == history.id).first()
-        history2 = db_session.query(CardHistory).filter(CardHistory.id == history.id).first()
+        history1 = (
+            db_session.query(CardHistory).filter(CardHistory.id == history.id).first()
+        )
+        history2 = (
+            db_session.query(CardHistory).filter(CardHistory.id == history.id).first()
+        )
 
         # Les deux devraient être le même objet
         assert history1.id == history2.id

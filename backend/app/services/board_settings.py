@@ -12,7 +12,9 @@ DEFAULT_BOARD_TITLE = "Yaka (Yet Another Kanban App)"
 
 def get_setting(db: Session, setting_key: str) -> Optional[BoardSettings]:
     """Récupérer un paramètre par sa clé."""
-    return db.query(BoardSettings).filter(BoardSettings.setting_key == setting_key).first()
+    return (
+        db.query(BoardSettings).filter(BoardSettings.setting_key == setting_key).first()
+    )
 
 
 def get_all_settings(db: Session) -> List[BoardSettings]:
@@ -36,7 +38,11 @@ def create_or_update_setting(
             return update_settings(db, existing_setting)
         else:
             # Créer un nouveau paramètre
-            db_setting = BoardSettings(setting_key=setting_key, setting_value=setting_value, description=description)
+            db_setting = BoardSettings(
+                setting_key=setting_key,
+                setting_value=setting_value,
+                description=description,
+            )
             db.add(db_setting)
             return update_settings(db, db_setting)
     except SQLAlchemyError as e:
@@ -75,7 +81,10 @@ def get_board_title(db: Session, default: str = DEFAULT_BOARD_TITLE) -> str:
 def set_board_title(db: Session, title: str) -> BoardSettings:
     """Définir le titre du tableau."""
     return create_or_update_setting(
-        db, setting_key="board_title", setting_value=title, description="Titre affiché du tableau Kanban"
+        db,
+        setting_key="board_title",
+        setting_value=title,
+        description="Titre affiché du tableau Kanban",
     )
 
 

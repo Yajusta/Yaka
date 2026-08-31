@@ -26,13 +26,17 @@ class BoardInfo(BaseModel):
     path: str
 
 
-def verify_admin_api_key(credentials: HTTPAuthorizationCredentials = Security(security)):
+def verify_admin_api_key(
+    credentials: HTTPAuthorizationCredentials = Security(security),
+):
     """Verify the admin API key for secure operations."""
     # Read API key at runtime instead of module load time to support testing
     admin_api_key = os.getenv("YAKA_ADMIN_API_KEY")
 
     if not admin_api_key:
-        raise HTTPException(status_code=503, detail="Board creation service is not configured")
+        raise HTTPException(
+            status_code=503, detail="Board creation service is not configured"
+        )
 
     if credentials.credentials != admin_api_key:
         raise HTTPException(status_code=401, detail="Invalid or missing admin API key")
@@ -41,7 +45,9 @@ def verify_admin_api_key(credentials: HTTPAuthorizationCredentials = Security(se
 
 
 @router.post("/boards", status_code=201)
-async def create_board(request: CreateBoardRequest, authorized: bool = Depends(verify_admin_api_key)):
+async def create_board(
+    request: CreateBoardRequest, authorized: bool = Depends(verify_admin_api_key)
+):
     """
     Create a new database for a board.
 
@@ -70,12 +76,16 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
 
     # Check if board already exists
     if db_manager.ensure_database_exists(board_uid):
-        raise HTTPException(status_code=409, detail=f"Board '{board_uid}' already exists")
+        raise HTTPException(
+            status_code=409, detail=f"Board '{board_uid}' already exists"
+        )
 
     try:
         # Create engine directly
         db_path = db_manager.get_database_path(board_uid)
-        engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+        engine = create_engine(
+            f"sqlite:///{db_path}", connect_args={"check_same_thread": False}
+        )
 
         try:
             # Create all tables
@@ -99,7 +109,9 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
                 from ..models import UserRole
                 from ..services import user as user_service
 
-                SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+                SessionLocal = sessionmaker(
+                    autocommit=False, autoflush=False, bind=engine
+                )
                 db = SessionLocal()
 
                 try:
@@ -111,7 +123,9 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
                     initialize_default_settings(db)
 
                     # Send automatic invitation (this creates the admin user)
-                    invited_user = user_service.invite_user(db, admin_email, None, UserRole.ADMIN, board_uid)
+                    invited_user = user_service.invite_user(
+                        db, admin_email, None, UserRole.ADMIN, board_uid
+                    )
                     result["invitation_sent"] = str(True)
                     result["invited_email"] = admin_email
                     result["invitation_token"] = str(invited_user.invite_token)
@@ -124,7 +138,9 @@ async def create_board(request: CreateBoardRequest, authorized: bool = Depends(v
                 except Exception as e:
                     db.rollback()
                     # Log the error but don't fail the board creation
-                    result["invitation_warning"] = f"Board created but invitation failed: {str(e)}"
+                    result["invitation_warning"] = (
+                        f"Board created but invitation failed: {str(e)}"
+                    )
                 finally:
                     db.close()
 
@@ -176,17 +192,23 @@ async def get_board_info(board_uid: str):
 
 
 @router.delete("/boards/{board_uid}")
-async def delete_board(board_uid: str, authorized: bool = Depends(verify_admin_api_key)):
+async def delete_board(
+    board_uid: str, authorized: bool = Depends(verify_admin_api_key)
+):
     """
     Archive a board by moving its database to the deleted folder.
     The database file is renamed with a timestamp for safe keeping.
     Requires a valid admin API key.
     """
     if board_uid == "yaka":
-        raise HTTPException(status_code=403, detail="Cannot delete default board 'yaka'")
+        raise HTTPException(
+            status_code=403, detail="Cannot delete default board 'yaka'"
+        )
 
     if not db_manager.ensure_database_exists(board_uid):
-        raise HTTPException(status_code=404, detail=f"Board '{board_uid}' does not exist")
+        raise HTTPException(
+            status_code=404, detail=f"Board '{board_uid}' does not exist"
+        )
 
     try:
         import os

@@ -8,8 +8,15 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class DictionaryEntryBase(BaseModel):
     """Base schema for dictionary entries with common validation logic."""
 
-    term: str = Field(..., min_length=1, max_length=32, description="Term or expression (32 characters max)")
-    definition: str = Field(..., min_length=1, max_length=250, description="Definition (250 characters max)")
+    term: str = Field(
+        ...,
+        min_length=1,
+        max_length=32,
+        description="Term or expression (32 characters max)",
+    )
+    definition: str = Field(
+        ..., min_length=1, max_length=250, description="Definition (250 characters max)"
+    )
 
     @field_validator("term")
     @classmethod
@@ -20,7 +27,15 @@ class DictionaryEntryBase(BaseModel):
             raise ValueError("Term cannot be empty")
 
         # Prevent XSS injections by checking for HTML tags
-        dangerous_patterns = ["<script", "</script", "<img", "javascript:", "onerror=", "onclick=", "<iframe"]
+        dangerous_patterns = [
+            "<script",
+            "</script",
+            "<img",
+            "javascript:",
+            "onerror=",
+            "onclick=",
+            "<iframe",
+        ]
         value_lower = value.lower()
         for pattern in dangerous_patterns:
             if pattern in value_lower:
@@ -37,7 +52,15 @@ class DictionaryEntryBase(BaseModel):
             raise ValueError("Definition cannot be empty")
 
         # Prevent XSS injections by checking for HTML tags
-        dangerous_patterns = ["<script", "</script", "<img", "javascript:", "onerror=", "onclick=", "<iframe"]
+        dangerous_patterns = [
+            "<script",
+            "</script",
+            "<img",
+            "javascript:",
+            "onerror=",
+            "onclick=",
+            "<iframe",
+        ]
         value_lower = value.lower()
         for pattern in dangerous_patterns:
             if pattern in value_lower:
@@ -61,8 +84,14 @@ class GlobalDictionaryCreate(GlobalDictionaryBase):
 class GlobalDictionaryUpdate(BaseModel):
     """Schema for updating a global dictionary entry."""
 
-    term: Optional[str] = Field(default=None, max_length=32, description="Term or expression (32 characters max)")
-    definition: Optional[str] = Field(default=None, max_length=250, description="Definition (250 characters max)")
+    term: Optional[str] = Field(
+        default=None,
+        max_length=32,
+        description="Term or expression (32 characters max)",
+    )
+    definition: Optional[str] = Field(
+        default=None, max_length=250, description="Definition (250 characters max)"
+    )
 
 
 class GlobalDictionaryResponse(GlobalDictionaryBase):
@@ -71,4 +100,3 @@ class GlobalDictionaryResponse(GlobalDictionaryBase):
     id: int
 
     model_config = ConfigDict(from_attributes=True)
-

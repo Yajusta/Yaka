@@ -13,7 +13,9 @@ from fastapi import HTTPException, status
 
 from ..models import Card, CardComment, User, UserRole
 
-_FORBIDDEN = HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+_FORBIDDEN = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
+)
 
 
 def _raise_forbidden() -> None:
@@ -43,7 +45,12 @@ def is_editor_or_above(user: User) -> bool:
 
 def is_contributor_or_above(user: User) -> bool:
     """Check if user is contributor, editor, supervisor or admin."""
-    return user.role in (UserRole.CONTRIBUTOR, UserRole.EDITOR, UserRole.SUPERVISOR, UserRole.ADMIN)
+    return user.role in (
+        UserRole.CONTRIBUTOR,
+        UserRole.EDITOR,
+        UserRole.SUPERVISOR,
+        UserRole.ADMIN,
+    )
 
 
 def is_commenter_or_above(user: User) -> bool:

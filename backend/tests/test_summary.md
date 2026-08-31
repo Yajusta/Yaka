@@ -1,11 +1,13 @@
 # Test Summary for List Management Functionality
 
 ## Overview
+
 This document summarizes the comprehensive unit tests created for the custom list management functionality in the Kanban application.
 
 ## Backend Tests
 
 ### 1. Model Tests (`test_kanban_list_model.py`)
+
 Tests for the KanbanList SQLAlchemy model:
 
 - **test_create_kanban_list**: Verifies basic list creation with all required fields
@@ -21,9 +23,11 @@ Tests for the KanbanList SQLAlchemy model:
 - **test_kanban_list_cascade_delete_behavior**: Tests foreign key constraints when deleting lists
 
 ### 2. Service Tests (`test_kanban_list_service.py`)
+
 Tests for the KanbanListService business logic:
 
 #### Read Operations
+
 - **test_get_lists_empty**: Tests retrieving lists when none exist
 - **test_get_lists_ordered**: Tests that lists are returned in correct order
 - **test_get_list_existing**: Tests retrieving a specific list by ID
@@ -34,6 +38,7 @@ Tests for the KanbanListService business logic:
 - **test_get_list_with_cards_count_non_existing**: Tests card counting for non-existent lists
 
 #### Create Operations
+
 - **test_create_list_success**: Tests successful list creation
 - **test_create_list_duplicate_name**: Tests duplicate name validation
 - **test_create_list_duplicate_name_case_insensitive**: Tests case-insensitive name validation
@@ -42,6 +47,7 @@ Tests for the KanbanListService business logic:
 - **test_create_list_duplicate_order_shifts_others**: Tests automatic order adjustment
 
 #### Update Operations
+
 - **test_update_list_success**: Tests successful list updates
 - **test_update_list_non_existing**: Tests updating non-existent lists
 - **test_update_list_no_data**: Tests validation when no update data is provided
@@ -49,6 +55,7 @@ Tests for the KanbanListService business logic:
 - **test_update_list_order_change**: Tests order changes and automatic reordering
 
 #### Delete Operations
+
 - **test_delete_list_success**: Tests successful list deletion
 - **test_delete_list_last_list**: Tests prevention of deleting the last list
 - **test_delete_list_non_existing**: Tests deleting non-existent lists
@@ -58,20 +65,24 @@ Tests for the KanbanListService business logic:
 - **test_delete_list_invalid_ids**: Tests validation of invalid IDs
 
 #### Reorder Operations
+
 - **test_reorder_lists_success**: Tests successful list reordering
 - **test_reorder_lists_non_existing_list**: Tests reordering with non-existent lists
 - **test_reorder_lists_negative_order**: Tests validation of negative orders
 - **test_reorder_lists_duplicate_orders**: Tests validation of duplicate orders
 
 ### 3. API Tests (`test_kanban_list_api.py`)
+
 Tests for the FastAPI endpoints:
 
 #### Authentication & Authorization
+
 - Tests that regular users can read lists but cannot modify them
 - Tests that admin users can perform all operations
 - Tests proper error responses for unauthorized access
 
 #### CRUD Operations
+
 - **GET /lists/**: Tests retrieving all lists
 - **POST /lists/**: Tests creating new lists (admin only)
 - **GET /lists/{id}**: Tests retrieving specific lists
@@ -81,6 +92,7 @@ Tests for the FastAPI endpoints:
 - **POST /lists/reorder**: Tests reordering lists (admin only)
 
 #### Error Handling
+
 - Tests proper HTTP status codes (400, 401, 403, 404, 422, 500)
 - Tests validation error messages
 - Tests business logic error messages
@@ -88,6 +100,7 @@ Tests for the FastAPI endpoints:
 ## Frontend Tests
 
 ### 1. Simple API Tests (`simple-api.test.ts`)
+
 Basic tests to verify the testing setup and data structures:
 
 - **Basic functionality tests**: Verifies testing framework works correctly
@@ -96,6 +109,7 @@ Basic tests to verify the testing setup and data structures:
 - **Error handling validation**: Tests error response structures
 
 ### 2. API Logic Tests (`listsApi-simple.test.ts`)
+
 Comprehensive tests for API functionality and business logic:
 
 - **Data Structure Validation**: Tests for all data structures (lists, cards, requests, responses)
@@ -105,6 +119,7 @@ Comprehensive tests for API functionality and business logic:
 - **Mock Function Testing**: Tests for testing framework functionality
 
 ### 3. Component Tests (Templates Created)
+
 Test templates were created for the main components but require actual component implementations:
 
 - **ListManager Component Tests**: Tests for the admin list management interface
@@ -114,6 +129,7 @@ Test templates were created for the main components but require actual component
 ## Test Coverage
 
 ### Requirements Validation
+
 The tests validate all requirements from the specification:
 
 1. **Requirement 1**: Admin access to list management ✓
@@ -126,6 +142,7 @@ The tests validate all requirements from the specification:
 8. **Requirement 8**: Full-stack implementation ✓
 
 ### Edge Cases Covered
+
 - Empty databases
 - Maximum limits (50 lists, 100 character names)
 - Invalid inputs (negative orders, empty names)
@@ -136,6 +153,7 @@ The tests validate all requirements from the specification:
 - Concurrent operations
 
 ### Business Logic Validation
+
 - List ordering and reordering
 - Card migration during list deletion
 - Name uniqueness (case-insensitive)
@@ -145,6 +163,7 @@ The tests validate all requirements from the specification:
 ## Running the Tests
 
 ### Backend Tests
+
 ```bash
 cd backend
 python -m pytest tests/test_kanban_list_model.py -v
@@ -153,6 +172,7 @@ python -m pytest tests/test_kanban_list_api.py -v
 ```
 
 ### Frontend Tests
+
 ```bash
 cd frontend
 pnpm vitest src/test/simple-api.test.ts --run
@@ -160,6 +180,7 @@ pnpm vitest src/services/__tests__/listsApi-simple.test.ts --run
 ```
 
 ## Test Results
+
 - **Backend Model Tests**: 11/11 passing ✅
 - **Backend Service Tests**: 30/30 passing ✅
 - **Backend API Tests**: Comprehensive coverage (requires running application)
@@ -168,6 +189,7 @@ pnpm vitest src/services/__tests__/listsApi-simple.test.ts --run
 - **Total**: 69 tests passing with comprehensive coverage
 
 ## Notes
+
 - Some frontend component tests require the actual component implementations to be completed
 - API tests require a running backend server with proper authentication setup
 - Database constraints vary between SQLite (development) and PostgreSQL (production)

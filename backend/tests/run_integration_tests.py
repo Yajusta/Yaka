@@ -14,7 +14,12 @@ def run_command(command, cwd=None):
     """Run a command and return the result."""
     try:
         result = subprocess.run(
-            command, shell=True, cwd=cwd, capture_output=True, text=True, timeout=300  # 5 minute timeout
+            command,
+            shell=True,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=300,  # 5 minute timeout
         )
         return result.returncode == 0, result.stdout, result.stderr
     except subprocess.TimeoutExpired:
@@ -66,7 +71,9 @@ def main():
 
     # Check if backend dependencies are available
     print_subsection("Checking Backend Dependencies")
-    success, output, error = run_command("python -c 'import pytest, httpx, asgi_lifespan'", cwd=backend_dir)
+    success, output, error = run_command(
+        "python -c 'import pytest, httpx, asgi_lifespan'", cwd=backend_dir
+    )
     if not success:
         print("❌ Backend test dependencies not available")
         print(f"Error: {error}")
@@ -77,7 +84,8 @@ def main():
         # Run backend unit tests
         print_subsection("Running Backend Unit Tests")
         success, output, error = run_command(
-            "python -m pytest tests/test_kanban_list_model.py tests/test_kanban_list_service.py -v", cwd=backend_dir
+            "python -m pytest tests/test_kanban_list_model.py tests/test_kanban_list_service.py -v",
+            cwd=backend_dir,
         )
         test_results["backend_unit"]["passed"] = success
         test_results["backend_unit"]["output"] = output
@@ -92,7 +100,8 @@ def main():
         # Run backend integration tests
         print_subsection("Running Backend Integration Tests")
         success, output, error = run_command(
-            "python -m pytest tests/test_integration_list_workflow.py -v", cwd=backend_dir
+            "python -m pytest tests/test_integration_list_workflow.py -v",
+            cwd=backend_dir,
         )
         test_results["backend_integration"]["passed"] = success
         test_results["backend_integration"]["output"] = output
@@ -130,7 +139,9 @@ def main():
             # Check if node_modules exists
             if not (frontend_dir / "node_modules").exists():
                 print("📦 Installing frontend dependencies...")
-                success, output, error = run_command(f"{package_manager} install", cwd=frontend_dir)
+                success, output, error = run_command(
+                    f"{package_manager} install", cwd=frontend_dir
+                )
                 if not success:
                     print("❌ Failed to install frontend dependencies")
                     print(f"Error: {error}")
@@ -140,7 +151,8 @@ def main():
             # Run frontend unit tests
             print_subsection("Running Frontend Unit Tests")
             success, output, error = run_command(
-                f"{package_manager} vitest src/services/__tests__ src/components --run", cwd=frontend_dir
+                f"{package_manager} vitest src/services/__tests__ src/components --run",
+                cwd=frontend_dir,
             )
             test_results["frontend_unit"]["passed"] = success
             test_results["frontend_unit"]["output"] = output
@@ -155,7 +167,8 @@ def main():
             # Run frontend integration tests
             print_subsection("Running Frontend Integration Tests")
             success, output, error = run_command(
-                f"{package_manager} vitest src/test/integration-workflow.test.ts --run", cwd=frontend_dir
+                f"{package_manager} vitest src/test/integration-workflow.test.ts --run",
+                cwd=frontend_dir,
             )
             test_results["frontend_integration"]["passed"] = success
             test_results["frontend_integration"]["output"] = output
@@ -170,7 +183,8 @@ def main():
             # Run frontend E2E tests
             print_subsection("Running Frontend E2E Tests")
             success, output, error = run_command(
-                f"{package_manager} vitest src/test/e2e-workflow.test.ts --run", cwd=frontend_dir
+                f"{package_manager} vitest src/test/e2e-workflow.test.ts --run",
+                cwd=frontend_dir,
             )
             test_results["frontend_e2e"]["passed"] = success
             test_results["frontend_e2e"]["output"] = output
@@ -203,7 +217,9 @@ def main():
     with open(report_file, "w", encoding="utf-8") as f:
         f.write("# Integration Test Report\n\n")
         f.write(f"**Generated:** {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-        f.write(f"**Success Rate:** {(passed_tests / total_tests) * 100:.1f}% ({passed_tests}/{total_tests})\n\n")
+        f.write(
+            f"**Success Rate:** {(passed_tests / total_tests) * 100:.1f}% ({passed_tests}/{total_tests})\n\n"
+        )
 
         f.write("## Summary\n\n")
         for test_name, result in test_results.items():

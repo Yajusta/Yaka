@@ -15,7 +15,13 @@ def get_entry(db: Session, entry_id: int) -> Optional[GlobalDictionary]:
 
 def get_entries(db: Session, skip: int = 0, limit: int = 100) -> List[GlobalDictionary]:
     """Get a list of global dictionary entries."""
-    return db.query(GlobalDictionary).order_by(GlobalDictionary.term).offset(skip).limit(limit).all()
+    return (
+        db.query(GlobalDictionary)
+        .order_by(GlobalDictionary.term)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 def get_entry_by_term(db: Session, term: str) -> Optional[GlobalDictionary]:
@@ -32,7 +38,9 @@ def create_entry(db: Session, entry: GlobalDictionaryCreate) -> GlobalDictionary
     return db_entry
 
 
-def update_entry(db: Session, entry_id: int, entry_update: GlobalDictionaryUpdate) -> Optional[GlobalDictionary]:
+def update_entry(
+    db: Session, entry_id: int, entry_update: GlobalDictionaryUpdate
+) -> Optional[GlobalDictionary]:
     """Update a global dictionary entry."""
     db_entry = get_entry(db, entry_id)
     if not db_entry:
@@ -56,4 +64,3 @@ def delete_entry(db: Session, entry_id: int) -> bool:
     db.delete(db_entry)
     db.commit()
     return True
-

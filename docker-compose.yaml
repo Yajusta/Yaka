@@ -27,7 +27,13 @@ services:
       - ./data/:/app/data/
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')" ]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import requests; requests.get('http://localhost:8000/health')",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -60,7 +66,15 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/" ]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:80/",
+        ]
       interval: 300s
       timeout: 10s
       retries: 3
@@ -97,7 +111,15 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/" ]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:80/",
+        ]
       interval: 300s
       timeout: 10s
       retries: 3

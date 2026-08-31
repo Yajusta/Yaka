@@ -46,7 +46,9 @@ class ViewScope(enum.Enum):
     """View scope enumeration for card access permissions."""
 
     ALL = "all"  # User can see all cards
-    UNASSIGNED_PLUS_MINE = "unassigned_plus_mine"  # User can see unassigned cards + their assigned cards
+    UNASSIGNED_PLUS_MINE = (
+        "unassigned_plus_mine"  # User can see unassigned cards + their assigned cards
+    )
     MINE_ONLY = "mine_only"  # User can only see their assigned cards
 
 
@@ -60,23 +62,44 @@ class User(Base):
     password_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     display_name: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole, native_enum=False, values_callable=lambda obj: [e.value for e in obj], length=20),
+        Enum(
+            UserRole,
+            native_enum=False,
+            values_callable=lambda obj: [e.value for e in obj],
+            length=20,
+        ),
         default=UserRole.VISITOR,
         nullable=False,
     )
     status: Mapped[UserStatus] = mapped_column(
-        Enum(UserStatus, native_enum=False, values_callable=lambda obj: [e.value for e in obj], length=20),
+        Enum(
+            UserStatus,
+            native_enum=False,
+            values_callable=lambda obj: [e.value for e in obj],
+            length=20,
+        ),
         default=UserStatus.ACTIVE,
         nullable=False,
     )
-    language: Mapped[Optional[str]] = mapped_column(String(2), nullable=True, server_default="fr")
+    language: Mapped[Optional[str]] = mapped_column(
+        String(2), nullable=True, server_default="fr"
+    )
     view_scope: Mapped[ViewScope] = mapped_column(
-        Enum(ViewScope, native_enum=False, values_callable=lambda obj: [e.value for e in obj], length=25),
+        Enum(
+            ViewScope,
+            native_enum=False,
+            values_callable=lambda obj: [e.value for e in obj],
+            length=25,
+        ),
         default=ViewScope.ALL,
         nullable=False,
     )
-    invite_token: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
-    invited_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    invite_token: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, index=True
+    )
+    invited_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime(timezone=True), default=get_system_timezone_datetime
     )
@@ -105,9 +128,15 @@ class User(Base):
     assigned_cards: Mapped[List["Card"]] = relationship(
         "Card", foreign_keys="Card.assignee_id", back_populates="assignee"
     )
-    created_labels: Mapped[List["Label"]] = relationship("Label", back_populates="creator")
-    card_comments: Mapped[List["CardComment"]] = relationship("CardComment", back_populates="user")
-    card_actions: Mapped[List["CardHistory"]] = relationship("CardHistory", back_populates="user")
+    created_labels: Mapped[List["Label"]] = relationship(
+        "Label", back_populates="creator"
+    )
+    card_comments: Mapped[List["CardComment"]] = relationship(
+        "CardComment", back_populates="user"
+    )
+    card_actions: Mapped[List["CardHistory"]] = relationship(
+        "CardHistory", back_populates="user"
+    )
     personal_dictionary_entries: Mapped[List["PersonalDictionary"]] = relationship(
         "PersonalDictionary", back_populates="user"
     )

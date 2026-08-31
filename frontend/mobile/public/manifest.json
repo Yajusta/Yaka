@@ -33,15 +33,8 @@
       "purpose": "maskable"
     }
   ],
-  "categories": [
-    "productivity",
-    "kanban",
-    "task management"
-  ],
-  "lang": [
-    "en-US",
-    "fr-FR"
-  ],
+  "categories": ["productivity", "kanban", "task management"],
+  "lang": ["en-US", "fr-FR"],
   "dir": "ltr",
   "prefer_related_applications": false
 }

@@ -48,7 +48,9 @@ async def test_admin_creates_lists_and_users_can_read(
 
 
 @pytest.mark.asyncio
-async def test_admin_can_update_and_delete_lists(async_client_factory, seed_admin_user, login_user):
+async def test_admin_can_update_and_delete_lists(
+    async_client_factory, seed_admin_user, login_user
+):
     seed_admin_user()
 
     async with async_client_factory(auth_router, lists_router) as client:

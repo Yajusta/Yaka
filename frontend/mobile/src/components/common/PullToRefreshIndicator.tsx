@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
-import { RefreshCw } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useState, useRef, useEffect } from "react";
+import { RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface PullToRefreshIndicatorProps {
   onRefresh: () => Promise<void>;
@@ -11,7 +11,7 @@ interface PullToRefreshIndicatorProps {
 export const PullToRefreshIndicator: React.FC<PullToRefreshIndicatorProps> = ({
   onRefresh,
   children,
-  isRefreshing: externalRefreshing = false
+  isRefreshing: externalRefreshing = false,
 }) => {
   const { t } = useTranslation();
   const [isPulling, setIsPulling] = useState(false);
@@ -73,14 +73,18 @@ export const PullToRefreshIndicator: React.FC<PullToRefreshIndicatorProps> = ({
       setPullDistance(0);
     };
 
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd, { passive: false });
+    container.addEventListener("touchstart", handleTouchStart, {
+      passive: false,
+    });
+    container.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
+    container.addEventListener("touchend", handleTouchEnd, { passive: false });
 
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
     };
   }, [onRefresh, isRefreshing, pullDistance]);
 
@@ -92,25 +96,24 @@ export const PullToRefreshIndicator: React.FC<PullToRefreshIndicatorProps> = ({
         style={{
           height: `${isPulling ? Math.min(pullDistance, 150) : 0}px`,
           opacity: isPulling ? 1 : 0,
-          transform: `translateY(${isPulling ? 0 : -20}px)`
+          transform: `translateY(${isPulling ? 0 : -20}px)`,
         }}
       >
         <div className="flex flex-col items-center justify-center">
           <RefreshCw
             className={`w-6 h-6 mb-2 transition-transform duration-300 ${
-              isRefreshing ? 'animate-spin' : ''
-            } ${pullDistance >= PULL_THRESHOLD ? 'text-primary' : 'text-muted-foreground'}`}
+              isRefreshing ? "animate-spin" : ""
+            } ${pullDistance >= PULL_THRESHOLD ? "text-primary" : "text-muted-foreground"}`}
             style={{
-              transform: `rotate(${Math.min(pullDistance * 2, 360)}deg)`
+              transform: `rotate(${Math.min(pullDistance * 2, 360)}deg)`,
             }}
           />
           <span className="text-sm text-muted-foreground">
             {isRefreshing
-              ? t('pullToRefresh.refreshing')
+              ? t("pullToRefresh.refreshing")
               : pullDistance >= PULL_THRESHOLD
-                ? t('pullToRefresh.releaseToRefresh')
-                : t('pullToRefresh.pullToRefresh')
-            }
+                ? t("pullToRefresh.releaseToRefresh")
+                : t("pullToRefresh.pullToRefresh")}
           </span>
         </div>
       </div>
@@ -120,7 +123,9 @@ export const PullToRefreshIndicator: React.FC<PullToRefreshIndicatorProps> = ({
         ref={containerRef}
         className="flex-1 overflow-y-auto smooth-scroll"
         style={{
-          transform: isPulling ? `translateY(${Math.min(pullDistance, 150)}px)` : 'translateY(0)'
+          transform: isPulling
+            ? `translateY(${Math.min(pullDistance, 150)}px)`
+            : "translateY(0)",
         }}
       >
         {children}

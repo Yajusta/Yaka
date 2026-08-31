@@ -1,11 +1,5 @@
-
 """Services de l'application Kanban."""
 
-from . import user
-from . import label
-from . import card
-from . import kanban_list
-from . import card_history
+from . import card, card_history, kanban_list, label, user
 
 __all__ = ["user", "label", "card", "kanban_list", "card_history"]
-

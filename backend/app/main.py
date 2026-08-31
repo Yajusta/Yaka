@@ -45,15 +45,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
         user_count = db.query(User).count()
         if user_count > 0:
-            print("Base de donnees existante detectee, aucune initialisation automatique effectuee")
-            print("Pour reinitialiser en mode demo, utilisez l'endpoint POST /demo/reset")
+            print(
+                "Base de donnees existante detectee, aucune initialisation automatique effectuee"
+            )
+            print(
+                "Pour reinitialiser en mode demo, utilisez l'endpoint POST /demo/reset"
+            )
         else:
             # Base de données vide ou nouvellement créée, configurer avec les données de base
             print("Base de donnees vide detectee, configuration initiale...")
             setup_fresh_database()
 
     # Afficher la configuration d'envoi d'emails utilisée au démarrage
-    print(f"Mail config: FROM_ADDRESS={FROM_ADDRESS}, SMTP_USER={SMTP_USER or 'None'}, SMTP_HOST={SMTP_HOST}")
+    print(
+        f"Mail config: FROM_ADDRESS={FROM_ADDRESS}, SMTP_USER={SMTP_USER or 'None'}, SMTP_HOST={SMTP_HOST}"
+    )
 
     yield  # L'application commence à recevoir des requêtes ici
 
@@ -90,11 +96,21 @@ def ensure_database_exists():
             from sqlalchemy import text
 
             with engine.connect() as conn:
-                conn.execute(text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)"))
-                conn.execute(text(f"INSERT INTO alembic_version (version_num) VALUES ('{latest_version}')"))
+                conn.execute(
+                    text(
+                        "CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)"
+                    )
+                )
+                conn.execute(
+                    text(
+                        f"INSERT INTO alembic_version (version_num) VALUES ('{latest_version}')"
+                    )
+                )
                 conn.commit()
 
-            print(f"Base de données créée avec succès (version alembic: {latest_version})")
+            print(
+                f"Base de données créée avec succès (version alembic: {latest_version})"
+            )
         else:
             print("Base de données existante détectée")
 
@@ -124,17 +140,31 @@ def run_migrations_for_database(db_path: str, db_name: str):
             # Vérifier si les tables principales existent déjà
             main_tables = ["users", "cards", "lists", "labels"]
             if existing_main_tables := [t for t in main_tables if t in tables]:
-                print(f"[{db_name}] Tables existantes détectées: {existing_main_tables}")
-                print(f"[{db_name}] Initialisation d'alembic_version à la version précédente...")
+                print(
+                    f"[{db_name}] Tables existantes détectées: {existing_main_tables}"
+                )
+                print(
+                    f"[{db_name}] Initialisation d'alembic_version à la version précédente..."
+                )
 
                 # Créer la table alembic_version et l'initialiser à la version avant le language
                 with db_engine.connect() as conn:
-                    conn.execute(text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)"))
-                    conn.execute(text("INSERT INTO alembic_version (version_num) VALUES ('756429e64d69')"))
+                    conn.execute(
+                        text(
+                            "CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)"
+                        )
+                    )
+                    conn.execute(
+                        text(
+                            "INSERT INTO alembic_version (version_num) VALUES ('756429e64d69')"
+                        )
+                    )
                     conn.commit()
 
             else:
-                print(f"[{db_name}] Base de données vide, exécution de toutes les migrations...")
+                print(
+                    f"[{db_name}] Base de données vide, exécution de toutes les migrations..."
+                )
 
             # Maintenant exécuter les migrations manquantes
             alembic_cfg = Config("alembic.ini")
@@ -176,7 +206,9 @@ def upgrade_if_needed(conn, text, db_url: str, db_name: str):
     latest_version = script.get_current_head()
 
     if current_version != latest_version:
-        print(f"[{db_name}] Migration nécessaire: {current_version} -> {latest_version}")
+        print(
+            f"[{db_name}] Migration nécessaire: {current_version} -> {latest_version}"
+        )
         command.upgrade(alembic_cfg, "head")
     else:
         print(f"[{db_name}] Base de données à jour (version {current_version})")
@@ -231,7 +263,9 @@ if allowed_from_config:
     allowed_origins.extend(allowed_from_config)
 
 # Ajouter les origines pour les applications mobiles (PWA → APK)
-mobile_origins = os.getenv("MOBILE_ORIGINS", "capacitor://localhost,ionic://localhost,http://localhost").split(",")
+mobile_origins = os.getenv(
+    "MOBILE_ORIGINS", "capacitor://localhost,ionic://localhost,http://localhost"
+).split(",")
 allowed_origins.extend(mobile_origins)
 
 # Ajouter file:// pour le développement mobile (uniquement si environnement de développement)
@@ -271,7 +305,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=()"
+        )
 
         # Content Security Policy (CSP)
         if os.getenv("ENVIRONMENT", "production").lower() == "production":
@@ -289,7 +325,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # HSTS en production HTTPS uniquement
         if os.getenv("ENVIRONMENT", "production").lower() == "production":
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains; preload"
+            )
 
         return response
 

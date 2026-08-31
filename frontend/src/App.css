@@ -75,7 +75,6 @@
 
 /* Tailwind layers using only supported CSS for the language server */
 @layer base {
-
   *,
   *::before,
   *::after {
@@ -99,7 +98,9 @@
   .drag-fade-enter-active {
     opacity: 1;
     transform: translateY(0);
-    transition: opacity 160ms ease, transform 160ms ease;
+    transition:
+      opacity 160ms ease,
+      transform 160ms ease;
   }
 
   /* Vertical writing mode for collapsed columns */

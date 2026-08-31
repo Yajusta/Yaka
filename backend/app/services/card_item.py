@@ -11,7 +11,12 @@ from ..schemas.card_item import CardItemCreate, CardItemUpdate
 
 
 def get_items_for_card(db: Session, card_id: int) -> List[CardItem]:
-    return db.query(CardItem).filter(CardItem.card_id == card_id).order_by(CardItem.position).all()
+    return (
+        db.query(CardItem)
+        .filter(CardItem.card_id == card_id)
+        .order_by(CardItem.position)
+        .all()
+    )
 
 
 def create_item(db: Session, item: CardItemCreate) -> CardItem:
@@ -29,13 +34,20 @@ def create_item(db: Session, item: CardItemCreate) -> CardItem:
                 if db.bind and db.bind.dialect.name != "sqlite":
                     db.execute(text("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE"))
 
-                max_pos = db.query(func.max(CardItem.position)).filter(CardItem.card_id == item.card_id).scalar()
+                max_pos = (
+                    db.query(func.max(CardItem.position))
+                    .filter(CardItem.card_id == item.card_id)
+                    .scalar()
+                )
                 position = (max_pos or 0) + 1
             else:
                 position = item.position
                 # shift existing items at or after position
-                db.query(CardItem).filter(CardItem.card_id == item.card_id, CardItem.position >= position).update(
-                    {CardItem.position: CardItem.position + 1}, synchronize_session="evaluate"
+                db.query(CardItem).filter(
+                    CardItem.card_id == item.card_id, CardItem.position >= position
+                ).update(
+                    {CardItem.position: CardItem.position + 1},
+                    synchronize_session="evaluate",
                 )
 
             db_item = CardItem(
@@ -54,11 +66,15 @@ def create_item(db: Session, item: CardItemCreate) -> CardItem:
                 raise
             # For auto-position, continue retrying
             if attempt == max_retries - 1:
-                raise ValueError(f"Could not assign unique position after {max_retries} retries") from e
+                raise ValueError(
+                    f"Could not assign unique position after {max_retries} retries"
+                ) from e
     raise ValueError("Could not assign unique position after several retries")
 
 
-def update_item(db: Session, item_id: int, item_update: CardItemUpdate) -> Optional[CardItem]:
+def update_item(
+    db: Session, item_id: int, item_update: CardItemUpdate
+) -> Optional[CardItem]:
     db_item = db.query(CardItem).filter(CardItem.id == item_id).first()
     if not db_item:
         return None
@@ -77,14 +93,20 @@ def update_item(db: Session, item_id: int, item_update: CardItemUpdate) -> Optio
                 CardItem.position > db_item.position,
                 CardItem.position <= new_position,
                 CardItem.id != db_item.id,
-            ).update({CardItem.position: CardItem.position - 1}, synchronize_session="evaluate")
+            ).update(
+                {CardItem.position: CardItem.position - 1},
+                synchronize_session="evaluate",
+            )
         else:
             db.query(CardItem).filter(
                 CardItem.card_id == db_item.card_id,
                 CardItem.position >= new_position,
                 CardItem.position < db_item.position,
                 CardItem.id != db_item.id,
-            ).update({CardItem.position: CardItem.position + 1}, synchronize_session="evaluate")
+            ).update(
+                {CardItem.position: CardItem.position + 1},
+                synchronize_session="evaluate",
+            )
         db_item.position = new_position
 
     db.commit()
@@ -101,8 +123,8 @@ def delete_item(db: Session, item_id: int) -> bool:
     db.delete(db_item)
     db.commit()
     # compact positions
-    db.query(CardItem).filter(CardItem.card_id == card_id, CardItem.position > removed_pos).update(
-        {CardItem.position: CardItem.position - 1}, synchronize_session="evaluate"
-    )
+    db.query(CardItem).filter(
+        CardItem.card_id == card_id, CardItem.position > removed_pos
+    ).update({CardItem.position: CardItem.position - 1}, synchronize_session="evaluate")
     db.commit()
     return True

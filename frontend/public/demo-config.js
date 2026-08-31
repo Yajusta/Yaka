@@ -1,1 +1,1 @@
-window.DEMO_MODE = 'false';
+window.DEMO_MODE = "false";

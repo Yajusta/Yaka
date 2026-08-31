@@ -27,7 +27,9 @@ TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_card_model.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -210,7 +212,9 @@ class TestCardModel:
         expected_protected_fields = {"id", "created_by", "created_at"}
         assert Card.PROTECTED_FIELDS == expected_protected_fields
 
-    def test_create_card_successfully(self, db_session, sample_kanban_lists, sample_user):
+    def test_create_card_successfully(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de création réussie d'une carte."""
         card = Card(
             title="Test Card",
@@ -262,7 +266,9 @@ class TestCardModel:
         assert card.assignee_id is None  # Optionnel
         assert card.is_archived is False  # Valeur par défaut
 
-    def test_create_card_with_due_date(self, db_session, sample_kanban_lists, sample_user):
+    def test_create_card_with_due_date(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de création avec date d'échéance."""
         due_date = datetime.date.today() + datetime.timedelta(days=7)
 
@@ -365,7 +371,9 @@ class TestCardModel:
 
     def test_card_query_by_priority(self, db_session, sample_cards):
         """Test de recherche par priorité."""
-        high_priority_cards = db_session.query(Card).filter(Card.priority == CardPriority.HIGH).all()
+        high_priority_cards = (
+            db_session.query(Card).filter(Card.priority == CardPriority.HIGH).all()
+        )
 
         assert len(high_priority_cards) == 1
         assert high_priority_cards[0].priority == CardPriority.HIGH
@@ -431,7 +439,11 @@ class TestCardModel:
         assert cards[0].title == "Card 1"
 
         # Recherche dans la description
-        cards = db_session.query(Card).filter(Card.description.like("%Description 2%")).all()
+        cards = (
+            db_session.query(Card)
+            .filter(Card.description.like("%Description 2%"))
+            .all()
+        )
 
         assert len(cards) == 1
         assert cards[0].description == "Description 2"
@@ -448,7 +460,9 @@ class TestCardModel:
         deleted_card = db_session.query(Card).filter(Card.id == card_id).first()
         assert deleted_card is None
 
-    def test_card_string_fields_validation(self, db_session, sample_kanban_lists, sample_user):
+    def test_card_string_fields_validation(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test des validations des champs text."""
         # Test avec title long
         long_title = "x" * 200  # Longueur maximale raisonnable
@@ -463,7 +477,9 @@ class TestCardModel:
 
         assert card.title == long_title
 
-    def test_card_special_characters(self, db_session, sample_kanban_lists, sample_user):
+    def test_card_special_characters(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test avec des caractères spéciaux."""
         card = Card(
             title="Carte spéciale: éèàçù 🚀 中文",
@@ -592,7 +608,9 @@ class TestCardModel:
 
         assert card.due_date == today
 
-    def test_card_position_management(self, db_session, sample_kanban_lists, sample_user):
+    def test_card_position_management(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de gestion des positions."""
         # Créer plusieurs cartes avec des positions spécifiques
         cards = []
@@ -612,7 +630,9 @@ class TestCardModel:
         positions = [card.position for card in cards]
         assert len(set(positions)) == len(positions)
 
-    def test_card_duplicate_position_in_same_list(self, db_session, sample_kanban_lists, sample_user):
+    def test_card_duplicate_position_in_same_list(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test que les positions en double dans la même liste sont gérées."""
         # Créer deux cartes avec la même position
         card1 = Card(
@@ -655,7 +675,9 @@ class TestCardModel:
             db_session.rollback()
             # C'est normal si la contrainte de clé étrangère est activée
 
-    def test_card_relationships_loading(self, db_session, sample_cards, sample_kanban_lists, sample_user):
+    def test_card_relationships_loading(
+        self, db_session, sample_cards, sample_kanban_lists, sample_user
+    ):
         """Test que les relations sont correctement chargées."""
         card = sample_cards[0]
 
@@ -677,12 +699,17 @@ class TestCardModel:
         card = sample_cards[0]
 
         # Ajouter des éléments liés
-        comment = CardComment(card_id=card.id, user_id=sample_cards[0].created_by, comment="Test comment")
+        comment = CardComment(
+            card_id=card.id, user_id=sample_cards[0].created_by, comment="Test comment"
+        )
 
         item = CardItem(card_id=card.id, text="Test item")
 
         history = CardHistory(
-            card_id=card.id, user_id=sample_cards[0].created_by, action="created", description="Card created"
+            card_id=card.id,
+            user_id=sample_cards[0].created_by,
+            action="created",
+            description="Card created",
         )
 
         db_session.add(comment)
@@ -695,9 +722,17 @@ class TestCardModel:
         db_session.commit()
 
         # Vérifier que les éléments liés sont aussi supprimés (cascade)
-        assert db_session.query(CardComment).filter(CardComment.card_id == card.id).count() == 0
-        assert db_session.query(CardItem).filter(CardItem.card_id == card.id).count() == 0
-        assert db_session.query(CardHistory).filter(CardHistory.card_id == card.id).count() == 0
+        assert (
+            db_session.query(CardComment).filter(CardComment.card_id == card.id).count()
+            == 0
+        )
+        assert (
+            db_session.query(CardItem).filter(CardItem.card_id == card.id).count() == 0
+        )
+        assert (
+            db_session.query(CardHistory).filter(CardHistory.card_id == card.id).count()
+            == 0
+        )
 
     def test_card_labels_relationship(self, db_session, sample_cards, sample_labels):
         """Test de la relation many-to-many avec les étiquettes."""
@@ -739,7 +774,9 @@ class TestCardModel:
     def test_card_bulk_update(self, db_session, sample_cards):
         """Test de mises à jour en masse."""
         # Mettre à jour toutes les cartes non archivées
-        db_session.query(Card).filter(Card.is_archived == False).update({"is_archived": True})
+        db_session.query(Card).filter(Card.is_archived == False).update(
+            {"is_archived": True}
+        )
 
         db_session.commit()
 
@@ -755,7 +792,10 @@ class TestCardModel:
             .filter(
                 and_(
                     Card.is_archived == False,
-                    or_(Card.priority == CardPriority.HIGH, Card.priority == CardPriority.MEDIUM),
+                    or_(
+                        Card.priority == CardPriority.HIGH,
+                        Card.priority == CardPriority.MEDIUM,
+                    ),
                 )
             )
             .all()
@@ -765,7 +805,12 @@ class TestCardModel:
 
         # Chercher les cartes créées par un utilisateur spécifique
         user_id = sample_cards[0].created_by
-        cards = db_session.query(Card).filter(Card.created_by == user_id).order_by(Card.position).all()
+        cards = (
+            db_session.query(Card)
+            .filter(Card.created_by == user_id)
+            .order_by(Card.position)
+            .all()
+        )
 
         assert len(cards) == 3
         # Vérifier que les positions sont en ordre
@@ -794,11 +839,16 @@ class TestCardModel:
         assert len(page2) == 5
         assert page1[0].id != page2[0].id
 
-    def test_card_count_aggregations(self, db_session, sample_cards, sample_kanban_lists):
+    def test_card_count_aggregations(
+        self, db_session, sample_cards, sample_kanban_lists
+    ):
         """Test d'agrégations et de comptage."""
         # Compter les cartes par liste
         list_counts = (
-            db_session.query(Card.list_id, db_session.query(Card.id).filter(Card.list_id == KanbanList.id).count())
+            db_session.query(
+                Card.list_id,
+                db_session.query(Card.id).filter(Card.list_id == KanbanList.id).count(),
+            )
             .join(KanbanList)
             .group_by(Card.list_id)
             .all()
@@ -808,7 +858,12 @@ class TestCardModel:
 
         # Compter les cartes par priorité
         priority_counts = (
-            db_session.query(Card.priority, db_session.query(Card.id).filter(Card.priority == Card.priority).count())
+            db_session.query(
+                Card.priority,
+                db_session.query(Card.id)
+                .filter(Card.priority == Card.priority)
+                .count(),
+            )
             .group_by(Card.priority)
             .all()
         )
@@ -818,7 +873,9 @@ class TestCardModel:
     def test_card_error_handling(self, db_session):
         """Test de gestion des erreurs."""
         # Simuler une erreur de base de données
-        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
+        with patch.object(
+            db_session, "commit", side_effect=SQLAlchemyError("Database error")
+        ):
             card = Card(
                 title="Error Test",
                 list_id=1,
@@ -860,7 +917,9 @@ class TestCardModel:
         assert card1 != card2
         assert card1.id != card2.id
 
-    def test_card_unique_constraints(self, db_session, sample_kanban_lists, sample_user):
+    def test_card_unique_constraints(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test des contraintes d'unicité."""
         # Le modèle Card n'a pas de contraintes d'unicité spécifiques
         # plusieurs cartes peuvent avoir le même title
@@ -998,14 +1057,20 @@ class TestCardModel:
         finally:
             new_session.close()
 
-    def test_card_relationships_eager_loading(self, db_session, sample_cards, sample_user):
+    def test_card_relationships_eager_loading(
+        self, db_session, sample_cards, sample_user
+    ):
         """Test du chargement eager des relations."""
         from sqlalchemy.orm import joinedload
 
         # Charger une carte avec ses relations
         card = (
             db_session.query(Card)
-            .options(joinedload(Card.creator), joinedload(Card.assignee), joinedload(Card.kanban_list))
+            .options(
+                joinedload(Card.creator),
+                joinedload(Card.assignee),
+                joinedload(Card.kanban_list),
+            )
             .filter(Card.id == sample_cards[0].id)
             .first()
         )

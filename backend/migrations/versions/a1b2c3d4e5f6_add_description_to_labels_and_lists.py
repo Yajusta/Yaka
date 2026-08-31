@@ -6,9 +6,8 @@ Create Date: 2025-10-06 10:00:00.000000
 
 """
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a1b2c3d4e5f6"
@@ -25,11 +24,15 @@ def upgrade() -> None:
     """
     # Add description column to labels table
     with op.batch_alter_table("labels", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("description", sa.String(length=255), nullable=True))
+        batch_op.add_column(
+            sa.Column("description", sa.String(length=255), nullable=True)
+        )
 
     # Add description column to kanban_lists table
     with op.batch_alter_table("kanban_lists", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("description", sa.String(length=255), nullable=True))
+        batch_op.add_column(
+            sa.Column("description", sa.String(length=255), nullable=True)
+        )
 
 
 def downgrade() -> None:

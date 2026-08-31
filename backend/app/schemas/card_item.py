@@ -1,12 +1,15 @@
 """Schémas Pydantic pour les éléments de checklist de carte."""
 
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CardItemBase(BaseModel):
-    text: str = Field(..., min_length=1, max_length=500, description="Texte de l'élément")
+    text: str = Field(
+        ..., min_length=1, max_length=500, description="Texte de l'élément"
+    )
     is_done: bool = Field(False, description="Statut de l'élément")
 
 
@@ -29,4 +32,3 @@ class CardItemResponse(CardItemBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-

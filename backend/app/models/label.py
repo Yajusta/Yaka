@@ -21,14 +21,18 @@ class Label(Base):
     name: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     color: Mapped[str] = mapped_column(String, nullable=False)  # Code hexadécimal
     description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False
+    )
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime(timezone=True), default=get_system_timezone_datetime
     )
 
     # Relations
     creator: Mapped["User"] = relationship("User", back_populates="created_labels")
-    cards: Mapped[List["Card"]] = relationship("Card", secondary="card_labels", back_populates="labels")
+    cards: Mapped[List["Card"]] = relationship(
+        "Card", secondary="card_labels", back_populates="labels"
+    )
 
 
 if TYPE_CHECKING:

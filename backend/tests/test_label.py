@@ -1,35 +1,38 @@
 """Tests pour le service Label."""
 
-import pytest
-import sys
 import os
+import sys
 from unittest.mock import patch
-from sqlalchemy.exc import SQLAlchemyError
+
+import pytest
 from pydantic import ValidationError
+from sqlalchemy.exc import SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from app.database import Base
 from app.models.label import Label
 from app.models.user import User, UserRole, UserStatus
 from app.schemas import LabelCreate, LabelUpdate
 from app.services.label import (
-    get_label,
-    get_labels,
-    get_label_by_name,
     create_label,
-    update_label,
     delete_label,
+    get_label,
+    get_label_by_name,
+    get_labels,
+    update_label,
 )
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # Configuration de la base de données de test
 TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_label.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -174,7 +177,9 @@ class TestGetLabelByName:
 
     def test_get_label_by_name_with_special_characters(self, db_session, sample_user):
         """Test de récupération d'un libellé avec caractères spéciaux."""
-        special_label = Label(name="Test Spécial", color="#123456", created_by=sample_user.id)
+        special_label = Label(
+            name="Test Spécial", color="#123456", created_by=sample_user.id
+        )
         db_session.add(special_label)
         db_session.commit()
 
@@ -188,7 +193,9 @@ class TestCreateLabel:
 
     def test_create_label_successfully(self, db_session, sample_user):
         """Test de création réussie d'un libellé."""
-        label_data = LabelCreate(name="Nouveau libellé", color="#FF00FF", description="Test description")
+        label_data = LabelCreate(
+            name="Nouveau libellé", color="#FF00FF", description="Test description"
+        )
         label = create_label(db_session, label_data, sample_user.id)
 
         assert label.id is not None
@@ -197,7 +204,7 @@ class TestCreateLabel:
         assert label.description == "Test description"
         assert label.created_by == sample_user.id
         assert label.created_at is not None
-    
+
     def test_create_label_without_description(self, db_session, sample_user):
         """Test de création d'un libellé sans description."""
         label_data = LabelCreate(name="No Description", color="#FF00FF")
@@ -300,7 +307,7 @@ class TestUpdateLabel:
         assert label is not None
         assert label.name == "Nouveau name"
         assert label.color == sample_labels[0].color  # La color ne change pas
-    
+
     def test_update_label_description(self, db_session, sample_labels):
         """Test de mise à jour de la description d'un libellé."""
         label_id = sample_labels[0].id
@@ -333,11 +340,13 @@ class TestUpdateLabel:
         assert label is not None
         assert label.name == "Complètement nouveau"
         assert label.color == "#ABCDEF"
-    
+
     def test_update_label_all_fields(self, db_session, sample_labels):
         """Test de mise à jour de tous les champs d'un libellé."""
         label_id = sample_labels[0].id
-        update_data = LabelUpdate(name="Tout nouveau", color="#ABCDEF", description="Nouvelle description")
+        update_data = LabelUpdate(
+            name="Tout nouveau", color="#ABCDEF", description="Nouvelle description"
+        )
 
         label = update_label(db_session, label_id, update_data)
 
@@ -367,7 +376,9 @@ class TestUpdateLabel:
     def test_update_label_with_same_values(self, db_session, sample_labels):
         """Test de mise à jour d'un libellé avec les mêmes valeurs."""
         label_id = sample_labels[0].id
-        update_data = LabelUpdate(name=sample_labels[0].name, color=sample_labels[0].color)
+        update_data = LabelUpdate(
+            name=sample_labels[0].name, color=sample_labels[0].color
+        )
 
         label = update_label(db_session, label_id, update_data)
 
@@ -429,7 +440,9 @@ class TestDeleteLabel:
 
     def test_delete_label_integrity_error(self, db_session, sample_labels):
         """Test de gestion des erreurs d'intégrité lors de la suppression."""
-        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
+        with patch.object(
+            db_session, "commit", side_effect=SQLAlchemyError("Database error")
+        ):
             # La fonction ne gère pas les exceptions, donc l'exception se propage
             with pytest.raises(SQLAlchemyError):
                 delete_label(db_session, sample_labels[0].id)
@@ -565,7 +578,9 @@ class TestSecurityAndEdgeCases:
         label_data = LabelCreate(name="Test Transaction", color="#FF0000")
 
         # Simuler une erreur pendant la création
-        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
+        with patch.object(
+            db_session, "commit", side_effect=SQLAlchemyError("Database error")
+        ):
             with pytest.raises(SQLAlchemyError):
                 create_label(db_session, label_data, sample_user.id)
 

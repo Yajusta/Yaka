@@ -27,7 +27,9 @@ class CardItem(Base):
         DateTime(timezone=True), default=get_system_timezone_datetime
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime(timezone=True), default=get_system_timezone_datetime, onupdate=get_system_timezone_datetime
+        DateTime(timezone=True),
+        default=get_system_timezone_datetime,
+        onupdate=get_system_timezone_datetime,
     )
 
     # Relations

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Search, X, Filter, ChevronLeft, Check } from 'lucide-react';
-import { cn } from '@shared/lib/utils';
-import { useAuth } from '@shared/hooks/useAuth';
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Search, X, Filter, ChevronLeft, Check } from "lucide-react";
+import { cn } from "@shared/lib/utils";
+import { useAuth } from "@shared/hooks/useAuth";
 
 interface User {
   id: number;
@@ -47,13 +47,19 @@ export const FilterScreen = ({
 }: FilterScreenProps) => {
   const { t } = useTranslation();
   const { aiAvailable } = useAuth();
-  const [searchValue, setSearchValue] = useState(filters.search || '');
-  const [selectedAssignees, setSelectedAssignees] = useState<number[]>(filters.assignee_ids || []);
-  const [selectedPriorities, setSelectedPriorities] = useState<string[]>(filters.priorities || []);
-  const [selectedLabels, setSelectedLabels] = useState<number[]>(filters.label_ids || []);
+  const [searchValue, setSearchValue] = useState(filters.search || "");
+  const [selectedAssignees, setSelectedAssignees] = useState<number[]>(
+    filters.assignee_ids || [],
+  );
+  const [selectedPriorities, setSelectedPriorities] = useState<string[]>(
+    filters.priorities || [],
+  );
+  const [selectedLabels, setSelectedLabels] = useState<number[]>(
+    filters.label_ids || [],
+  );
 
   useEffect(() => {
-    setSearchValue(filters.search || '');
+    setSearchValue(filters.search || "");
     setSelectedAssignees(filters.assignee_ids || []);
     setSelectedPriorities(filters.priorities || []);
     setSelectedLabels(filters.label_ids || []);
@@ -76,13 +82,13 @@ export const FilterScreen = ({
 
   const handleClearFilters = () => {
     const clearedFilters = {
-      search: '',
+      search: "",
       assignee_ids: null,
       priorities: null,
       label_ids: null,
     };
     onFiltersChange(clearedFilters);
-    setSearchValue('');
+    setSearchValue("");
     setSelectedAssignees([]);
     setSelectedPriorities([]);
     setSelectedLabels([]);
@@ -90,26 +96,31 @@ export const FilterScreen = ({
     onBack();
   };
 
-  const hasActiveFilters = !!(searchValue || selectedAssignees.length > 0 || selectedPriorities.length > 0 || selectedLabels.length > 0);
+  const hasActiveFilters = !!(
+    searchValue ||
+    selectedAssignees.length > 0 ||
+    selectedPriorities.length > 0 ||
+    selectedLabels.length > 0
+  );
   const hasVoiceFilter = !!(voiceFilterIds && voiceFilterIds.length > 0);
 
   const getSelectedUsers = (): User[] => {
-    return users.filter(u => selectedAssignees.includes(u.id));
+    return users.filter((u) => selectedAssignees.includes(u.id));
   };
 
   const getSelectedLabels = (): Label[] => {
-    return labels.filter(l => selectedLabels.includes(l.id));
+    return labels.filter((l) => selectedLabels.includes(l.id));
   };
 
   const handleClearAllFilters = () => {
     const clearedFilters = {
-      search: '',
+      search: "",
       assignee_ids: null,
       priorities: null,
       label_ids: null,
     };
     onFiltersChange(clearedFilters);
-    setSearchValue('');
+    setSearchValue("");
     setSelectedAssignees([]);
     setSelectedPriorities([]);
     setSelectedLabels([]);
@@ -122,7 +133,10 @@ export const FilterScreen = ({
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-card border-b-2 border-border p-4" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
+      <div
+        className="bg-card border-b-2 border-border p-4"
+        style={{ paddingTop: "calc(1rem + env(safe-area-inset-top))" }}
+      >
         <div className="flex items-center justify-between">
           <button
             onClick={() => {
@@ -130,17 +144,19 @@ export const FilterScreen = ({
               handleApplyFilters();
             }}
             className="p-2 text-muted-foreground hover:text-foreground active:bg-accent rounded-lg transition-colors"
-            aria-label={t('common.back')}
+            aria-label={t("common.back")}
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <h2 className="text-lg font-bold text-foreground">{t('common.filters')}</h2>
+          <h2 className="text-lg font-bold text-foreground">
+            {t("common.filters")}
+          </h2>
           <div className="flex items-center gap-2">
             {(hasActiveFilters || hasVoiceFilter) && (
               <button
                 onClick={handleClearAllFilters}
                 className="p-2 text-muted-foreground hover:text-foreground active:bg-accent rounded-lg transition-colors"
-                aria-label={t('common.clear')}
+                aria-label={t("common.clear")}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -155,12 +171,16 @@ export const FilterScreen = ({
           {/* Active Filters Summary */}
           {(hasActiveFilters || hasVoiceFilter) && (
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('filter.activeFilters')}</label>
+              <label className="text-sm font-medium text-foreground">
+                {t("filter.activeFilters")}
+              </label>
               <div className="p-3 bg-muted/30 border border-border rounded-lg">
                 <div className="space-y-2">
                   {hasVoiceFilter && voiceFilterDescription && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">🎤 {voiceFilterDescription}</span>
+                      <span className="text-sm">
+                        🎤 {voiceFilterDescription}
+                      </span>
                       {onVoiceFilterClear && (
                         <X
                           className="w-4 h-4 text-muted-foreground cursor-pointer hover:text-foreground"
@@ -171,16 +191,23 @@ export const FilterScreen = ({
                   )}
                   {searchValue && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">{t('common.search')}: {searchValue}</span>
+                      <span className="text-sm">
+                        {t("common.search")}: {searchValue}
+                      </span>
                       <X
                         className="w-4 h-4 text-muted-foreground cursor-pointer hover:text-foreground"
-                        onClick={() => setSearchValue('')}
+                        onClick={() => setSearchValue("")}
                       />
                     </div>
                   )}
                   {selectedPriorities.length > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">{t('card.priority')}: {selectedPriorities.map(p => t(`priority.${p}`)).join(', ')}</span>
+                      <span className="text-sm">
+                        {t("card.priority")}:{" "}
+                        {selectedPriorities
+                          .map((p) => t(`priority.${p}`))
+                          .join(", ")}
+                      </span>
                       <X
                         className="w-4 h-4 text-muted-foreground cursor-pointer hover:text-foreground"
                         onClick={() => setSelectedPriorities([])}
@@ -189,7 +216,15 @@ export const FilterScreen = ({
                   )}
                   {selectedAssignees.length > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">{t('card.assignee')}: {getSelectedUsers().map(u => u.display_name || u.email || t('user.noName')).join(', ')}</span>
+                      <span className="text-sm">
+                        {t("card.assignee")}:{" "}
+                        {getSelectedUsers()
+                          .map(
+                            (u) =>
+                              u.display_name || u.email || t("user.noName"),
+                          )
+                          .join(", ")}
+                      </span>
                       <X
                         className="w-4 h-4 text-muted-foreground cursor-pointer hover:text-foreground"
                         onClick={() => setSelectedAssignees([])}
@@ -198,7 +233,12 @@ export const FilterScreen = ({
                   )}
                   {selectedLabels.length > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">{t('card.labels')}: {getSelectedLabels().map(l => l.name).join(', ')}</span>
+                      <span className="text-sm">
+                        {t("card.labels")}:{" "}
+                        {getSelectedLabels()
+                          .map((l) => l.name)
+                          .join(", ")}
+                      </span>
                       <X
                         className="w-4 h-4 text-muted-foreground cursor-pointer hover:text-foreground"
                         onClick={() => setSelectedLabels([])}
@@ -210,136 +250,152 @@ export const FilterScreen = ({
             </div>
           )}
 
-        {/* Search */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">{t('common.search')}</label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <input
-              type="text"
-              placeholder={t('common.search')}
-              value={searchValue}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-        </div>
-
-        {/* Priority Filter */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">{t('card.priority')}</label>
-          <div className="grid grid-cols-1 gap-2">
-            {['high', 'medium', 'low'].map((priority) => {
-              const isSelected = selectedPriorities.includes(priority);
-              return (
-                <button
-                  key={priority}
-                  onClick={() => {
-                    if (isSelected) {
-                      setSelectedPriorities(selectedPriorities.filter(p => p !== priority));
-                    } else {
-                      setSelectedPriorities([...selectedPriorities, priority]);
-                    }
-                  }}
-                  className={cn(
-                    "p-3 text-left border border-border rounded-lg transition-colors",
-                    isSelected
-                      ? "bg-primary/10 border-primary text-primary"
-                      : "bg-background hover:bg-muted/50"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <span>{t(`priority.${priority}`)}</span>
-                    {isSelected && (
-                      <Check className="w-4 h-4 text-primary" />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Assignee Filter */}
-        {users.length > 0 && (
+          {/* Search */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">{t('card.assignee')}</label>
+            <label className="text-sm font-medium text-foreground">
+              {t("common.search")}
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <input
+                type="text"
+                placeholder={t("common.search")}
+                value={searchValue}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Priority Filter */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              {t("card.priority")}
+            </label>
             <div className="grid grid-cols-1 gap-2">
-              {users.map((user) => {
-                const isSelected = selectedAssignees.includes(user.id);
+              {["high", "medium", "low"].map((priority) => {
+                const isSelected = selectedPriorities.includes(priority);
                 return (
                   <button
-                    key={user.id}
+                    key={priority}
                     onClick={() => {
                       if (isSelected) {
-                        setSelectedAssignees(selectedAssignees.filter(id => id !== user.id));
+                        setSelectedPriorities(
+                          selectedPriorities.filter((p) => p !== priority),
+                        );
                       } else {
-                        setSelectedAssignees([...selectedAssignees, user.id]);
+                        setSelectedPriorities([
+                          ...selectedPriorities,
+                          priority,
+                        ]);
                       }
                     }}
                     className={cn(
                       "p-3 text-left border border-border rounded-lg transition-colors",
                       isSelected
                         ? "bg-primary/10 border-primary text-primary"
-                        : "bg-background hover:bg-muted/50"
+                        : "bg-background hover:bg-muted/50",
                     )}
                   >
                     <div className="flex items-center justify-between">
-                      <span>{user.display_name || user.email || t('user.noName')}</span>
-                      {isSelected && (
-                        <Check className="w-4 h-4 text-primary" />
-                      )}
+                      <span>{t(`priority.${priority}`)}</span>
+                      {isSelected && <Check className="w-4 h-4 text-primary" />}
                     </div>
                   </button>
                 );
               })}
             </div>
           </div>
-        )}
 
-        {/* Label Filter */}
-        {labels.length > 0 && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">{t('card.labels')}</label>
-            <div className="grid grid-cols-1 gap-2">
-              {labels.map((label) => {
-                const isSelected = selectedLabels.includes(label.id);
-                return (
-                  <button
-                    key={label.id}
-                    onClick={() => {
-                      if (isSelected) {
-                        setSelectedLabels(selectedLabels.filter(id => id !== label.id));
-                      } else {
-                        setSelectedLabels([...selectedLabels, label.id]);
-                      }
-                    }}
-                    className={cn(
-                      "p-3 text-left border border-border rounded-lg transition-colors",
-                      isSelected
-                        ? "bg-primary/10 border-primary text-primary"
-                        : "bg-background hover:bg-muted/50"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full border border-border/50"
-                          style={{ backgroundColor: label.color }}
-                        />
-                        <span>{label.name}</span>
+          {/* Assignee Filter */}
+          {users.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                {t("card.assignee")}
+              </label>
+              <div className="grid grid-cols-1 gap-2">
+                {users.map((user) => {
+                  const isSelected = selectedAssignees.includes(user.id);
+                  return (
+                    <button
+                      key={user.id}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedAssignees(
+                            selectedAssignees.filter((id) => id !== user.id),
+                          );
+                        } else {
+                          setSelectedAssignees([...selectedAssignees, user.id]);
+                        }
+                      }}
+                      className={cn(
+                        "p-3 text-left border border-border rounded-lg transition-colors",
+                        isSelected
+                          ? "bg-primary/10 border-primary text-primary"
+                          : "bg-background hover:bg-muted/50",
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>
+                          {user.display_name || user.email || t("user.noName")}
+                        </span>
+                        {isSelected && (
+                          <Check className="w-4 h-4 text-primary" />
+                        )}
                       </div>
-                      {isSelected && (
-                        <Check className="w-4 h-4 text-primary" />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
+          {/* Label Filter */}
+          {labels.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                {t("card.labels")}
+              </label>
+              <div className="grid grid-cols-1 gap-2">
+                {labels.map((label) => {
+                  const isSelected = selectedLabels.includes(label.id);
+                  return (
+                    <button
+                      key={label.id}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedLabels(
+                            selectedLabels.filter((id) => id !== label.id),
+                          );
+                        } else {
+                          setSelectedLabels([...selectedLabels, label.id]);
+                        }
+                      }}
+                      className={cn(
+                        "p-3 text-left border border-border rounded-lg transition-colors",
+                        isSelected
+                          ? "bg-primary/10 border-primary text-primary"
+                          : "bg-background hover:bg-muted/50",
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full border border-border/50"
+                            style={{ backgroundColor: label.color }}
+                          />
+                          <span>{label.name}</span>
+                        </div>
+                        {isSelected && (
+                          <Check className="w-4 h-4 text-primary" />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

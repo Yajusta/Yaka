@@ -23,12 +23,10 @@
 [ ] Gestion d'un cache en cas de hors connexion.
 [ ] Faire un APK.
 
-
 ## Backend
 
 [ ] Rate limiting sur l'authentification.
 [ ] Tokens d'invitation/réinitialisation sans expiration
-
 
 ### Tech
 

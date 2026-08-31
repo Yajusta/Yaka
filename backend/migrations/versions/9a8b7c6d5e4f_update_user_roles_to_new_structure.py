@@ -6,9 +6,8 @@ Create Date: 2025-09-30 10:00:00.000000
 
 """
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9a8b7c6d5e4f"
@@ -55,8 +54,7 @@ def upgrade() -> None:
 
     # Step 3: Update roles with case-insensitive matching
     # Using LOWER() to handle any case variations (e.g., "ADmiN" -> "admin")
-    op.execute(
-        """
+    op.execute("""
         UPDATE users SET role = CASE
             WHEN LOWER(role) = 'admin' THEN 'admin'
             WHEN LOWER(role) = 'user' THEN 'editor'
@@ -65,15 +63,12 @@ def upgrade() -> None:
             WHEN LOWER(role) = 'assigned_only' THEN 'contributor'
             ELSE 'visitor'
         END
-    """
-    )
+    """)
 
     # Step 4: Convert status values to lowercase for consistency
-    op.execute(
-        """
+    op.execute("""
         UPDATE users SET status = LOWER(status)
-    """
-    )
+    """)
 
     # Step 5: Recreate the unique constraint with lowercase 'deleted'
     condition = sa.text("status != 'deleted'")
@@ -114,11 +109,9 @@ def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS ux_users_email_not_deleted")
 
     # Step 2: Revert status values to uppercase
-    op.execute(
-        """
+    op.execute("""
         UPDATE users SET status = UPPER(status)
-    """
-    )
+    """)
 
     # Step 3: Recreate the unique constraint with uppercase 'DELETED'
     condition = sa.text("status != 'DELETED'")
@@ -132,8 +125,7 @@ def downgrade() -> None:
     )
 
     # Step 4: Revert role values
-    op.execute(
-        """
+    op.execute("""
         UPDATE users SET role = CASE
             WHEN LOWER(role) = 'admin' THEN 'admin'
             WHEN LOWER(role) = 'supervisor' THEN 'admin'
@@ -143,8 +135,7 @@ def downgrade() -> None:
             WHEN LOWER(role) = 'visitor' THEN 'read_only'
             ELSE 'read_only'
         END
-    """
-    )
+    """)
 
     # Step 5: Revert role column length to original size
     with op.batch_alter_table("users", schema=None) as batch_op:

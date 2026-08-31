@@ -1,48 +1,51 @@
 """Tests complets pour le service Card."""
 
-import pytest
-import sys
 import os
+import sys
 from datetime import date, timedelta
+
+import pytest
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from app.database import Base
 from app.models.card import Card, CardPriority
+from app.models.card_comment import CardComment
 from app.models.kanban_list import KanbanList
 from app.models.label import Label
 from app.models.user import User, UserRole, UserStatus
-from app.models.card_comment import CardComment
 from app.schemas.card import (
-    CardCreate,
-    CardUpdate,
-    CardFilter,
-    CardMoveRequest,
-    CardListUpdate,
     BulkCardMoveRequest,
+    CardCreate,
+    CardFilter,
+    CardListUpdate,
+    CardMoveRequest,
+    CardUpdate,
 )
 from app.services.card import (
+    archive_card,
+    bulk_move_cards,
+    create_card,
+    delete_card,
+    get_archived_cards,
     get_card,
     get_cards,
-    get_archived_cards,
-    create_card,
+    move_card,
+    unarchive_card,
     update_card,
     update_card_list,
-    archive_card,
-    unarchive_card,
-    delete_card,
-    move_card,
-    bulk_move_cards,
 )
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # Configuration de la base de données de test
 TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_card.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -76,7 +79,9 @@ def sample_user(db_session):
 def create_sample_user_2(db_session):
     """Helper function pour créer ou récupérer un deuxième utilisateur de test."""
     # Vérifier si l'utilisateur existe déjà
-    existing_user = db_session.query(User).filter(User.email == "test2@example.com").first()
+    existing_user = (
+        db_session.query(User).filter(User.email == "test2@example.com").first()
+    )
     if existing_user:
         return existing_user
 
@@ -358,7 +363,9 @@ class TestGetArchivedCards:
         assert archived_cards[0].is_archived is True
         assert archived_cards[0].id == sample_cards[2].id
 
-    def test_get_archived_cards_pagination(self, db_session, sample_kanban_lists, sample_user):
+    def test_get_archived_cards_pagination(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de pagination des cartes archivées."""
         # Créer plusieurs cartes archivées
         for i in range(5):
@@ -385,7 +392,9 @@ class TestGetArchivedCards:
 class TestCreateCard:
     """Tests pour la fonction create_card."""
 
-    def test_create_card_success(self, db_session, sample_kanban_lists, sample_user, sample_labels):
+    def test_create_card_success(
+        self, db_session, sample_kanban_lists, sample_user, sample_labels
+    ):
         """Test de création réussie d'une carte."""
         card_data = CardCreate(
             title="New Card",
@@ -410,7 +419,9 @@ class TestCreateCard:
         # La position peut varier selon les cartes existantes, vérifions juste que c'est une position valide
         assert result.position >= 0
 
-    def test_create_card_with_position(self, db_session, sample_kanban_lists, sample_user):
+    def test_create_card_with_position(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de création d'une carte avec position spécifique."""
         card_data = CardCreate(
             title="Positioned Card",
@@ -429,7 +440,9 @@ class TestCreateCard:
         assert len(positions) == len(set(positions))
         assert positions == sorted(positions)
 
-    def test_create_card_auto_list_id_minus_1(self, db_session, sample_kanban_lists, sample_user):
+    def test_create_card_auto_list_id_minus_1(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de création avec list_id=-1 (auto-affectation à la première liste)."""
         card_data = CardCreate(
             title="Auto-list Card",
@@ -464,7 +477,9 @@ class TestCreateCard:
         # Si la carte est créée, elle devrait avoir un problème avec la relation
         assert result.list_id == 99999
 
-    def test_create_card_nonexistent_labels(self, db_session, sample_kanban_lists, sample_user):
+    def test_create_card_nonexistent_labels(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de création avec des étiquettes inexistantes."""
         card_data = CardCreate(
             title="Invalid Labels Card",
@@ -476,7 +491,9 @@ class TestCreateCard:
         result = create_card(db_session, card_data, sample_user.id)
         assert len(result.labels) == 0
 
-    def test_create_card_unicode_content(self, db_session, sample_kanban_lists, sample_user):
+    def test_create_card_unicode_content(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de création avec contenu Unicode."""
         card_data = CardCreate(
             title="Carte avec caractères spéciaux: éèàçù 🚀 中文",
@@ -489,7 +506,9 @@ class TestCreateCard:
         assert result.title == "Carte avec caractères spéciaux: éèàçù 🚀 中文"
         assert result.description == "Description spéciale"
 
-    def test_create_card_max_title_length(self, db_session, sample_kanban_lists, sample_user):
+    def test_create_card_max_title_length(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de création avec title de longueur maximale."""
         max_title = "x" * 200
         card_data = CardCreate(
@@ -500,7 +519,9 @@ class TestCreateCard:
         result = create_card(db_session, card_data, sample_user.id)
         assert result.title == max_title
 
-    def test_create_card_with_due_date(self, db_session, sample_kanban_lists, sample_user):
+    def test_create_card_with_due_date(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de création avec date d'échéance."""
         due_date = date.today() + timedelta(days=7)
         card_data = CardCreate(
@@ -516,7 +537,9 @@ class TestCreateCard:
 class TestUpdateCard:
     """Tests pour la fonction update_card."""
 
-    def test_update_card_success(self, db_session, sample_cards, sample_user, sample_labels):
+    def test_update_card_success(
+        self, db_session, sample_cards, sample_user, sample_labels
+    ):
         """Test de mise à jour réussie d'une carte."""
         card = sample_cards[0]
         update_data = CardUpdate(
@@ -609,7 +632,9 @@ class TestUpdateCard:
 class TestUpdateCardList:
     """Tests pour la fonction update_card_list."""
 
-    def test_update_card_list_success(self, db_session, sample_cards, sample_kanban_lists):
+    def test_update_card_list_success(
+        self, db_session, sample_cards, sample_kanban_lists
+    ):
         """Test de mise à jour réussie de la liste d'une carte."""
         card = sample_cards[0]
         new_list_id = sample_kanban_lists[1].id
@@ -628,7 +653,9 @@ class TestUpdateCardList:
 
         assert result is None
 
-    def test_update_card_list_minus_1(self, db_session, sample_cards, sample_kanban_lists):
+    def test_update_card_list_minus_1(
+        self, db_session, sample_cards, sample_kanban_lists
+    ):
         """Test de mise à jour avec list_id=-1."""
         card = sample_cards[0]
         list_update = CardListUpdate(list_id=-1)
@@ -720,7 +747,9 @@ class TestDeleteCard:
 class TestMoveCard:
     """Tests pour la fonction move_card."""
 
-    def test_move_card_different_list(self, db_session, sample_cards, sample_kanban_lists, sample_user):
+    def test_move_card_different_list(
+        self, db_session, sample_cards, sample_kanban_lists, sample_user
+    ):
         """Test de déplacement réussi d'une carte vers une autre liste."""
         card = sample_cards[0]
         source_list_id = card.list_id
@@ -735,7 +764,9 @@ class TestMoveCard:
 
         assert result is not None
         assert result.list_id == target_list_id
-        assert result.position == 0  # Position à la fin de la nouvelle liste (commence à 0)
+        assert (
+            result.position == 0
+        )  # Position à la fin de la nouvelle liste (commence à 0)
 
     def test_move_card_same_list(self, db_session, sample_cards, sample_user):
         """Test de déplacement d'une carte dans la même liste."""
@@ -769,7 +800,9 @@ class TestMoveCard:
 
         assert result is None
 
-    def test_move_card_wrong_source_list(self, db_session, sample_cards, sample_kanban_lists, sample_user):
+    def test_move_card_wrong_source_list(
+        self, db_session, sample_cards, sample_kanban_lists, sample_user
+    ):
         """Test de déplacement avec une liste source incorrecte."""
         card = sample_cards[0]
         wrong_source_id = sample_kanban_lists[1].id
@@ -783,7 +816,9 @@ class TestMoveCard:
 
         assert result is None
 
-    def test_move_card_position_compaction(self, db_session, sample_cards, sample_kanban_lists, sample_user):
+    def test_move_card_position_compaction(
+        self, db_session, sample_cards, sample_kanban_lists, sample_user
+    ):
         """Test de compaction des positions après déplacement."""
         card = sample_cards[0]
         source_list_id = card.list_id
@@ -798,10 +833,16 @@ class TestMoveCard:
 
         # Vérifier que les positions dans l'ancienne liste ont été compactées
         remaining_cards = get_cards(db_session, CardFilter(list_id=source_list_id))
-        positions = [c.position for c in sorted(remaining_cards, key=lambda x: x.position)]
-        assert positions == [0]  # La carte restante devrait être en position 0 (0-indexed)
+        positions = [
+            c.position for c in sorted(remaining_cards, key=lambda x: x.position)
+        ]
+        assert positions == [
+            0
+        ]  # La carte restante devrait être en position 0 (0-indexed)
 
-    def test_move_card_with_specific_position(self, db_session, sample_cards, sample_kanban_lists, sample_user):
+    def test_move_card_with_specific_position(
+        self, db_session, sample_cards, sample_kanban_lists, sample_user
+    ):
         """Test de déplacement avec position spécifique."""
         card = sample_cards[0]
         source_list_id = card.list_id
@@ -832,13 +873,17 @@ class TestMoveCard:
 class TestBulkMoveCards:
     """Tests pour la fonction bulk_move_cards."""
 
-    def test_bulk_move_cards_success(self, db_session, sample_cards, sample_kanban_lists):
+    def test_bulk_move_cards_success(
+        self, db_session, sample_cards, sample_kanban_lists
+    ):
         """Test de déplacement en masse réussi."""
         source_list_id = sample_kanban_lists[0].id
         target_list_id = sample_kanban_lists[2].id
 
         # Récupérer les IDs des cartes à déplacer
-        card_ids = [card.id for card in sample_cards[:2] if card.list_id == source_list_id]
+        card_ids = [
+            card.id for card in sample_cards[:2] if card.list_id == source_list_id
+        ]
 
         bulk_request = BulkCardMoveRequest(
             card_ids=card_ids,
@@ -880,7 +925,9 @@ class TestBulkMoveCards:
 
         assert len(result) == 0
 
-    def test_bulk_move_cards_partial_success(self, db_session, sample_cards, sample_kanban_lists):
+    def test_bulk_move_cards_partial_success(
+        self, db_session, sample_cards, sample_kanban_lists
+    ):
         """Test de déplacement en masse avec succès partiel."""
         # Mélanger des IDs existants et inexistants
         existing_ids = [sample_cards[0].id, sample_cards[1].id]
@@ -898,7 +945,9 @@ class TestBulkMoveCards:
 class TestCardIntegration:
     """Tests d'intégration pour le service Card."""
 
-    def test_create_update_delete_flow(self, db_session, sample_kanban_lists, sample_user, sample_labels):
+    def test_create_update_delete_flow(
+        self, db_session, sample_kanban_lists, sample_user, sample_labels
+    ):
         """Test du flux complet CRUD."""
         # Créer
         card_data = CardCreate(
@@ -913,7 +962,9 @@ class TestCardIntegration:
             title="Updated Test Card",
             priority=CardPriority.HIGH,
         )
-        updated_card = update_card(db_session, created_card.id, update_data, sample_user.id)
+        updated_card = update_card(
+            db_session, created_card.id, update_data, sample_user.id
+        )
 
         assert updated_card is not None
         assert updated_card.title == "Updated Test Card"
@@ -931,7 +982,9 @@ class TestCardIntegration:
         delete_result = delete_card(db_session, created_card.id)
         assert delete_result is True
 
-    def test_card_movement_between_lists(self, db_session, sample_kanban_lists, sample_user):
+    def test_card_movement_between_lists(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de mouvement de cartes entre différentes listes."""
         # Créer des cartes dans différentes listes
         card1_data = CardCreate(title="Card 1", list_id=sample_kanban_lists[0].id)
@@ -952,8 +1005,12 @@ class TestCardIntegration:
         assert moved_card.list_id == sample_kanban_lists[2].id
 
         # Vérifier que les positions ont été ajustées
-        list0_cards = get_cards(db_session, CardFilter(list_id=sample_kanban_lists[0].id))
-        list2_cards = get_cards(db_session, CardFilter(list_id=sample_kanban_lists[2].id))
+        list0_cards = get_cards(
+            db_session, CardFilter(list_id=sample_kanban_lists[0].id)
+        )
+        list2_cards = get_cards(
+            db_session, CardFilter(list_id=sample_kanban_lists[2].id)
+        )
 
         assert len(list0_cards) == 1
         assert len(list2_cards) == 1
@@ -982,14 +1039,18 @@ class TestCardIntegration:
         with pytest.raises(ValueError):
             CardCreate(title="", list_id=sample_kanban_lists[0].id)
 
-    def test_edge_case_very_long_title(self, db_session, sample_kanban_lists, sample_user):
+    def test_edge_case_very_long_title(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test avec title très long (devrait échouer à cause de la validation Pydantic)."""
         long_title = "x" * 201  # Dépasse la limite de 200
 
         with pytest.raises(ValueError):
             CardCreate(title=long_title, list_id=sample_kanban_lists[0].id)
 
-    def test_card_labels_management(self, db_session, sample_kanban_lists, sample_user, sample_labels):
+    def test_card_labels_management(
+        self, db_session, sample_kanban_lists, sample_user, sample_labels
+    ):
         """Test de gestion des étiquettes sur les cartes."""
         # Créer une carte avec des étiquettes
         card_data = CardCreate(
@@ -1018,7 +1079,9 @@ class TestCardIntegration:
 class TestCardSecurity:
     """Tests de sécurité pour le service Card."""
 
-    def test_sql_injection_prevention(self, db_session, sample_kanban_lists, sample_user):
+    def test_sql_injection_prevention(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de prévention d'injection SQL."""
         malicious_title = "'; DROP TABLE cards; --"
 
@@ -1074,7 +1137,9 @@ class TestCardSecurity:
         updated_card = update_card(db_session, card.id, update_data)
         assert updated_card is not None
 
-    def test_card_content_sanitization_storage(self, db_session, sample_kanban_lists, sample_user):
+    def test_card_content_sanitization_storage(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test que le contenu est stocké tel quel (sanitization au niveau affichage)."""
         dangerous_content = "<script>alert('danger')</script> & <div>HTML content</div>"
 
@@ -1088,7 +1153,9 @@ class TestCardSecurity:
         assert result.title == dangerous_content
         assert result.description == dangerous_content
 
-    def test_special_characters_storage(self, db_session, sample_kanban_lists, sample_user):
+    def test_special_characters_storage(
+        self, db_session, sample_kanban_lists, sample_user
+    ):
         """Test de stockage de caractères spéciaux."""
         special_chars = "éèàçù€£¥©®™•§¶†‡°…‰™œŒšžŠŸŒ"
 

@@ -18,15 +18,21 @@ class CardComment(Base):
     __tablename__ = "card_comments"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    card_id: Mapped[int] = mapped_column(Integer, ForeignKey("cards.id", ondelete="CASCADE"), nullable=False)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    card_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("cards.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     comment: Mapped[str] = mapped_column(Text, nullable=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), default=get_system_timezone_datetime
     )
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(
-        DateTime(timezone=True), default=get_system_timezone_datetime, onupdate=get_system_timezone_datetime
+        DateTime(timezone=True),
+        default=get_system_timezone_datetime,
+        onupdate=get_system_timezone_datetime,
     )
 
     # Relations

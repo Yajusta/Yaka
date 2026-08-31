@@ -16,7 +16,9 @@ router = APIRouter(prefix="/auth", tags=["authentification"])
 
 
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+):
     """Connexion utilisateur."""
     user = user_service.authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -26,7 +28,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+    access_token = create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -43,7 +47,9 @@ async def logout():
 
 
 @router.post("/request-password-reset")
-async def request_password_reset(request: PasswordResetRequest, db: Session = Depends(get_db)):
+async def request_password_reset(
+    request: PasswordResetRequest, db: Session = Depends(get_db)
+):
     """Demander une réinitialisation de mot de passe."""
     from ..services import user as user_service
 

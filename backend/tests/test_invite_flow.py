@@ -6,7 +6,9 @@ from app.routers.users import router as users_router
 
 
 @pytest.mark.asyncio
-async def test_invite_and_set_password(async_client_factory, seed_admin_user, login_user, monkeypatch):
+async def test_invite_and_set_password(
+    async_client_factory, seed_admin_user, login_user, monkeypatch
+):
     """Test du flux complet d'invitation et de définition du mot de passe."""
     seed_admin_user()
 
@@ -20,7 +22,9 @@ async def test_invite_and_set_password(async_client_factory, seed_admin_user, lo
 
     # Patcher l'envoi d'email aux deux endroits (module source et référence dans user.py)
     monkeypatch.setattr("app.services.email.send_invitation", fake_send_invitation)
-    monkeypatch.setattr("app.services.user.email_service.send_invitation", fake_send_invitation)
+    monkeypatch.setattr(
+        "app.services.user.email_service.send_invitation", fake_send_invitation
+    )
 
     async with async_client_factory(auth_router, users_router) as client:
         # 1. L'admin se connecte
@@ -30,7 +34,11 @@ async def test_invite_and_set_password(async_client_factory, seed_admin_user, lo
         # 2. L'admin invite un nouvel utilisateur
         invite_response = await client.post(
             "/users/invite",
-            json={"email": "invitee@example.com", "display_name": "Invité", "role": "editor"},
+            json={
+                "email": "invitee@example.com",
+                "display_name": "Invité",
+                "role": "editor",
+            },
             headers=admin_headers,
         )
         assert invite_response.status_code == 200
@@ -50,7 +58,9 @@ async def test_invite_and_set_password(async_client_factory, seed_admin_user, lo
             json={"token": invite_token, "password": "SecurePass123!"},
         )
         assert set_password_response.status_code == 200
-        assert set_password_response.json()["message"] == "Mot de passe défini avec succès"
+        assert (
+            set_password_response.json()["message"] == "Mot de passe défini avec succès"
+        )
 
         # 5. L'invité peut maintenant se connecter avec son mot de passe
         login_response = await client.post(

@@ -29,7 +29,8 @@ def get_user(db: Session, user_id: int) -> Optional[User]:
         db.query(User)
         .filter(
             and_(
-                User.__table__.c.id == user_id, func.lower(User.__table__.c.status) != UserStatus.DELETED.value.lower()
+                User.__table__.c.id == user_id,
+                func.lower(User.__table__.c.status) != UserStatus.DELETED.value.lower(),
             )
         )
         .first()
@@ -82,7 +83,11 @@ def create_user(db: Session, user: UserCreate) -> User:
 
 
 def invite_user(
-    db: Session, email: str, display_name: str | None, role: UserRole, board_uid: Optional[str] = None
+    db: Session,
+    email: str,
+    display_name: str | None,
+    role: UserRole,
+    board_uid: Optional[str] = None,
 ) -> User:
     """Creer un utilisateur en tant qu'invite et envoyer un email d'invitation."""
     invite_token = secrets.token_urlsafe(32)
@@ -108,10 +113,15 @@ def invite_user(
 
     try:
         email_service.send_invitation(
-            email=normalized_email, display_name=display_name, token=invite_token, board_uid=board_uid
+            email=normalized_email,
+            display_name=display_name,
+            token=invite_token,
+            board_uid=board_uid,
         )
     except Exception as exc:
-        print(f"ERROR: Erreur lors de l'envoi de l'email d'invitation a {normalized_email}: {exc}")
+        print(
+            f"ERROR: Erreur lors de l'envoi de l'email d'invitation a {normalized_email}: {exc}"
+        )
     return db_user
 
 
@@ -180,7 +190,9 @@ def set_password_from_invite(db: Session, user: User, password: str) -> bool:
     return True
 
 
-def request_password_reset(db: Session, email: str, board_uid: Optional[str] = None) -> bool:
+def request_password_reset(
+    db: Session, email: str, board_uid: Optional[str] = None
+) -> bool:
     """Demander une réinitialisation de mot de passe.
 
     Si l'utilisateur est INVITED (n'a pas encore validé son invitation),
@@ -204,20 +216,28 @@ def request_password_reset(db: Session, email: str, board_uid: Optional[str] = N
 
         with contextlib.suppress(Exception):
             email_service.send_invitation(
-                email=email, display_name=user.display_name, token=invite_token, board_uid=board_uid
+                email=email,
+                display_name=user.display_name,
+                token=invite_token,
+                board_uid=board_uid,
             )
         return True
 
     # Cas 3: Utilisateur actif - Envoyer l'email de réinitialisation de mot de passe
     if user.status == UserStatus.ACTIVE:
         reset_token = secrets.token_urlsafe(32)
-        user.invite_token = reset_token  # Réutiliser le champ invite_token pour la réinitialisation
+        user.invite_token = (
+            reset_token  # Réutiliser le champ invite_token pour la réinitialisation
+        )
         user.invited_at = get_system_timezone_datetime()
         db.commit()
 
         with contextlib.suppress(Exception):
             email_service.send_password_reset(
-                email=email, display_name=user.display_name, token=reset_token, board_uid=board_uid
+                email=email,
+                display_name=user.display_name,
+                token=reset_token,
+                board_uid=board_uid,
             )
         return True
 
@@ -261,7 +281,8 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     if user := get_user_by_email(db, normalized_email):
         return (
             user
-            if user.status == UserStatus.ACTIVE and verify_password(password, getattr(user, "password_hash"))
+            if user.status == UserStatus.ACTIVE
+            and verify_password(password, getattr(user, "password_hash"))
             else None
         )
     else:

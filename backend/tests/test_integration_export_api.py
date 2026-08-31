@@ -24,7 +24,12 @@ async def test_export_csv_success(
     """Test d'export CSV réussi."""
     seed_admin_user()
     list_id = create_list_record("À faire", 1)
-    create_regular_user("user@example.com", "UserPass123!", display_name="Test User", role=UserRole.EDITOR)
+    create_regular_user(
+        "user@example.com",
+        "UserPass123!",
+        display_name="Test User",
+        role=UserRole.EDITOR,
+    )
 
     # Créer des cartes de test
     db = integration_session_factory()
@@ -70,7 +75,12 @@ async def test_export_csv_content(
     """Test le contenu du CSV exporté."""
     seed_admin_user()
     list_id = create_list_record("À faire", 1)
-    create_regular_user("user@example.com", "UserPass123!", display_name="Test User", role=UserRole.EDITOR)
+    create_regular_user(
+        "user@example.com",
+        "UserPass123!",
+        display_name="Test User",
+        role=UserRole.EDITOR,
+    )
 
     # Créer des cartes de test
     db = integration_session_factory()
@@ -140,7 +150,12 @@ async def test_export_csv_excludes_archived(
     """Test que les cartes archivées ne sont pas exportées en CSV."""
     seed_admin_user()
     list_id = create_list_record("À faire", 1)
-    create_regular_user("user@example.com", "UserPass123!", display_name="Test User", role=UserRole.EDITOR)
+    create_regular_user(
+        "user@example.com",
+        "UserPass123!",
+        display_name="Test User",
+        role=UserRole.EDITOR,
+    )
 
     # Créer une carte active et une carte archivée
     db = integration_session_factory()
@@ -198,7 +213,12 @@ async def test_export_excel_success(
     """Test d'export Excel réussi."""
     seed_admin_user()
     list_id = create_list_record("À faire", 1)
-    create_regular_user("user@example.com", "UserPass123!", display_name="Test User", role=UserRole.EDITOR)
+    create_regular_user(
+        "user@example.com",
+        "UserPass123!",
+        display_name="Test User",
+        role=UserRole.EDITOR,
+    )
 
     # Créer une carte de test
     db = integration_session_factory()
@@ -226,7 +246,10 @@ async def test_export_excel_success(
         )
 
         assert response.status_code == 200
-        assert response.headers["content-type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        assert (
+            response.headers["content-type"]
+            == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
         assert "attachment" in response.headers["content-disposition"]
         assert "yaka_export_" in response.headers["content-disposition"]
         assert ".xlsx" in response.headers["content-disposition"]
@@ -244,7 +267,12 @@ async def test_export_excel_content(
     """Test le contenu du fichier Excel exporté."""
     seed_admin_user()
     list_id = create_list_record("À faire", 1)
-    create_regular_user("user@example.com", "UserPass123!", display_name="Test User", role=UserRole.EDITOR)
+    create_regular_user(
+        "user@example.com",
+        "UserPass123!",
+        display_name="Test User",
+        role=UserRole.EDITOR,
+    )
 
     # Créer des cartes de test avec checklist
     db = integration_session_factory()
@@ -323,7 +351,12 @@ async def test_export_invalid_format(
 ):
     """Test avec un format invalide."""
     seed_admin_user()
-    create_regular_user("user@example.com", "UserPass123!", display_name="Test User", role=UserRole.EDITOR)
+    create_regular_user(
+        "user@example.com",
+        "UserPass123!",
+        display_name="Test User",
+        role=UserRole.EDITOR,
+    )
 
     async with async_client_factory(auth_router, export_router) as client:
         token = await login_user(client, "user@example.com", "UserPass123!")
@@ -346,7 +379,12 @@ async def test_export_missing_format(
 ):
     """Test sans paramètre format."""
     seed_admin_user()
-    create_regular_user("user@example.com", "UserPass123!", display_name="Test User", role=UserRole.EDITOR)
+    create_regular_user(
+        "user@example.com",
+        "UserPass123!",
+        display_name="Test User",
+        role=UserRole.EDITOR,
+    )
 
     async with async_client_factory(auth_router, export_router) as client:
         token = await login_user(client, "user@example.com", "UserPass123!")
@@ -371,7 +409,12 @@ async def test_visitor_can_export(
     """Test qu'un visiteur peut exporter."""
     seed_admin_user()
     list_id = create_list_record("À faire", 1)
-    create_regular_user("visitor@example.com", "VisitorPass123!", display_name="Visitor", role=UserRole.VISITOR)
+    create_regular_user(
+        "visitor@example.com",
+        "VisitorPass123!",
+        display_name="Visitor",
+        role=UserRole.VISITOR,
+    )
 
     # Créer une carte
     db = integration_session_factory()
@@ -411,7 +454,12 @@ async def test_export_empty_database(
 ):
     """Test d'export CSV avec une base vide."""
     seed_admin_user()
-    create_regular_user("user@example.com", "UserPass123!", display_name="Test User", role=UserRole.EDITOR)
+    create_regular_user(
+        "user@example.com",
+        "UserPass123!",
+        display_name="Test User",
+        role=UserRole.EDITOR,
+    )
 
     async with async_client_factory(auth_router, export_router) as client:
         token = await login_user(client, "user@example.com", "UserPass123!")

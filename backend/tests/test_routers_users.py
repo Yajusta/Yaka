@@ -20,7 +20,14 @@ from app.routers.users import invite_user as invite_user_route
 from app.routers.users import read_users, set_password
 from app.routers.users import update_user as update_user_route
 from app.routers.users import update_user_language
-from app.schemas import LanguageUpdate, SetPasswordPayload, UserCreate, UserListItem, UserResponse, UserUpdate
+from app.schemas import (
+    LanguageUpdate,
+    SetPasswordPayload,
+    UserCreate,
+    UserListItem,
+    UserResponse,
+    UserUpdate,
+)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -30,7 +37,9 @@ from sqlalchemy.orm import sessionmaker
 def db_session():
     """Fixture pour créer une session de base de données de test."""
     SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
@@ -126,7 +135,9 @@ class TestUsersRouter:
             ]
             mock_get_users.return_value = mock_users
 
-            with patch("app.routers.users.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.users.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
@@ -134,7 +145,12 @@ class TestUsersRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        read_users(0, 100, mock_db.return_value.__enter__.return_value, admin_user)  # skip, limit
+                        read_users(
+                            0,
+                            100,
+                            mock_db.return_value.__enter__.return_value,
+                            admin_user,
+                        )  # skip, limit
                     )
 
                     assert len(result) == 2
@@ -157,7 +173,9 @@ class TestUsersRouter:
             ]
             mock_get_users.return_value = mock_users
 
-            with patch("app.routers.users.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.users.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = regular_user
 
                 # Mock database session
@@ -165,7 +183,12 @@ class TestUsersRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        read_users(0, 100, mock_db.return_value.__enter__.return_value, regular_user)  # skip, limit
+                        read_users(
+                            0,
+                            100,
+                            mock_db.return_value.__enter__.return_value,
+                            regular_user,
+                        )  # skip, limit
                     )
 
                     # Regular user should see the list but emails should be masked (None)
@@ -193,7 +216,9 @@ class TestUsersRouter:
             updated_at=datetime.now(timezone.utc),
         )
 
-        with patch("app.routers.users.user_service.get_user_by_email") as mock_get_by_email:
+        with patch(
+            "app.routers.users.user_service.get_user_by_email"
+        ) as mock_get_by_email:
             mock_get_by_email.return_value = None  # No existing user
 
             with patch("app.routers.users.user_service.create_user") as mock_create:
@@ -207,7 +232,11 @@ class TestUsersRouter:
                         mock_db.return_value.__enter__.return_value = MagicMock()
 
                         result = asyncio.run(
-                            create_user_route(user_data, mock_db.return_value.__enter__.return_value, admin_user)
+                            create_user_route(
+                                user_data,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
+                            )
                         )
 
                     assert result.email == "newuser@example.com"
@@ -224,7 +253,9 @@ class TestUsersRouter:
         )
 
         with patch("app.routers.users.require_admin") as mock_require_admin:
-            mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+            mock_require_admin.side_effect = HTTPException(
+                status_code=403, detail="Accès réservé aux administrateurs"
+            )
 
             # Mock database session
             with patch("app.routers.users.get_db") as mock_db:
@@ -232,7 +263,11 @@ class TestUsersRouter:
 
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
-                        create_user_route(user_data, mock_db.return_value.__enter__.return_value, mock_require_admin())
+                        create_user_route(
+                            user_data,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin(),
+                        )
                     )
 
                 assert exc_info.value.status_code == 403
@@ -259,7 +294,9 @@ class TestUsersRouter:
 
                 # Verify it's a validation error
                 assert len(exc_info.value.errors()) > 0
-                assert any("email" in str(error).lower() for error in exc_info.value.errors())
+                assert any(
+                    "email" in str(error).lower() for error in exc_info.value.errors()
+                )
 
     def test_create_user_duplicate_email(self, admin_user):
         """Test de création d'un utilisateur avec un email dupliqué."""
@@ -279,15 +316,24 @@ class TestUsersRouter:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
                 with patch("app.routers.users.user_service.create_user") as mock_create:
-                    mock_create.side_effect = ValueError("Un utilisateur avec cet email existe déjà")
+                    mock_create.side_effect = ValueError(
+                        "Un utilisateur avec cet email existe déjà"
+                    )
 
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
-                            create_user_route(user_data, mock_db.return_value.__enter__.return_value, admin_user)
+                            create_user_route(
+                                user_data,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
+                            )
                         )
 
                     assert exc_info.value.status_code == 400
-                    assert exc_info.value.detail == "Un utilisateur avec cet email existe déjà"
+                    assert (
+                        exc_info.value.detail
+                        == "Un utilisateur avec cet email existe déjà"
+                    )
 
     def test_update_user_success_admin(self, admin_user):
         """Test de mise à jour d'un utilisateur par un admin avec succès."""
@@ -314,7 +360,12 @@ class TestUsersRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        update_user_route(2, update_data, mock_db.return_value.__enter__.return_value, admin_user)
+                        update_user_route(
+                            2,
+                            update_data,
+                            mock_db.return_value.__enter__.return_value,
+                            admin_user,
+                        )
                     )
 
                     assert result.display_name == "Updated User"
@@ -325,7 +376,9 @@ class TestUsersRouter:
         update_data = UserUpdate(display_name="Updated User")
 
         with patch("app.routers.users.require_admin") as mock_require_admin:
-            mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+            mock_require_admin.side_effect = HTTPException(
+                status_code=403, detail="Accès réservé aux administrateurs"
+            )
 
             # Mock database session
             with patch("app.routers.users.get_db") as mock_db:
@@ -334,7 +387,10 @@ class TestUsersRouter:
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
                         update_user_route(
-                            2, update_data, mock_db.return_value.__enter__.return_value, mock_require_admin()
+                            2,
+                            update_data,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin(),
                         )
                     )
 
@@ -358,7 +414,10 @@ class TestUsersRouter:
                     with pytest.raises(HTTPException) as exc_info:
                         asyncio.run(
                             update_user_route(
-                                999, update_data, mock_db.return_value.__enter__.return_value, admin_user
+                                999,
+                                update_data,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
                             )
                         )
 
@@ -377,14 +436,20 @@ class TestUsersRouter:
                 with patch("app.routers.users.get_db") as mock_db:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
-                    result = asyncio.run(delete_user_route(2, mock_db.return_value.__enter__.return_value, admin_user))
+                    result = asyncio.run(
+                        delete_user_route(
+                            2, mock_db.return_value.__enter__.return_value, admin_user
+                        )
+                    )
 
                     assert result["message"] == "Utilisateur supprimé avec succès"
 
     def test_delete_user_permission_denied(self, regular_user):
         """Test de suppression d'un utilisateur par un utilisateur régulier (devrait échouer)."""
         with patch("app.routers.users.require_admin") as mock_require_admin:
-            mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+            mock_require_admin.side_effect = HTTPException(
+                status_code=403, detail="Accès réservé aux administrateurs"
+            )
 
             # Mock database session
             with patch("app.routers.users.get_db") as mock_db:
@@ -392,7 +457,11 @@ class TestUsersRouter:
 
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
-                        delete_user_route(2, mock_db.return_value.__enter__.return_value, mock_require_admin())
+                        delete_user_route(
+                            2,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin(),
+                        )
                     )
 
                 assert exc_info.value.status_code == 403
@@ -411,14 +480,22 @@ class TestUsersRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     with pytest.raises(HTTPException) as exc_info:
-                        asyncio.run(delete_user_route(999, mock_db.return_value.__enter__.return_value, admin_user))
+                        asyncio.run(
+                            delete_user_route(
+                                999,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
+                            )
+                        )
 
                     assert exc_info.value.status_code == 404
                     assert exc_info.value.detail == "Utilisateur non trouvé"
 
     def test_invite_user_success_admin(self, admin_user):
         """Test d'invitation d'un utilisateur par un admin avec succès."""
-        invite_payload = InvitePayload(email="invitee@example.com", role=UserRole.EDITOR)
+        invite_payload = InvitePayload(
+            email="invitee@example.com", role=UserRole.EDITOR
+        )
 
         mock_user = UserResponse(
             id=3,
@@ -430,7 +507,9 @@ class TestUsersRouter:
             updated_at=datetime.now(timezone.utc),
         )
 
-        with patch("app.routers.users.user_service.get_user_by_email") as mock_get_by_email:
+        with patch(
+            "app.routers.users.user_service.get_user_by_email"
+        ) as mock_get_by_email:
             mock_get_by_email.return_value = None  # No existing user
 
             with patch("app.routers.users.user_service.invite_user") as mock_invite:
@@ -444,17 +523,25 @@ class TestUsersRouter:
                         mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        invite_user_route(invite_payload, mock_db.return_value.__enter__.return_value, admin_user)
+                        invite_user_route(
+                            invite_payload,
+                            mock_db.return_value.__enter__.return_value,
+                            admin_user,
+                        )
                     )
 
                     assert result.email == "invitee@example.com"
 
     def test_invite_user_permission_denied(self, regular_user):
         """Test d'invitation d'un utilisateur par un utilisateur régulier (devrait échouer)."""
-        invite_payload = InvitePayload(email="invitee@example.com", role=UserRole.EDITOR)
+        invite_payload = InvitePayload(
+            email="invitee@example.com", role=UserRole.EDITOR
+        )
 
         with patch("app.routers.users.require_admin") as mock_require_admin:
-            mock_require_admin.side_effect = HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+            mock_require_admin.side_effect = HTTPException(
+                status_code=403, detail="Accès réservé aux administrateurs"
+            )
 
             # Mock database session
             with patch("app.routers.users.get_db") as mock_db:
@@ -463,7 +550,9 @@ class TestUsersRouter:
                 with pytest.raises(HTTPException) as exc_info:
                     asyncio.run(
                         invite_user_route(
-                            invite_payload, mock_db.return_value.__enter__.return_value, mock_require_admin()
+                            invite_payload,
+                            mock_db.return_value.__enter__.return_value,
+                            mock_require_admin(),
                         )
                     )
 
@@ -487,7 +576,9 @@ class TestUsersRouter:
         with patch("app.routers.users.user_service.update_user") as mock_update:
             mock_update.return_value = mock_user
 
-            with patch("app.routers.users.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.users.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = regular_user
 
                 # Mock database session
@@ -495,7 +586,11 @@ class TestUsersRouter:
                     mock_db.return_value.__enter__.return_value = MagicMock()
 
                     result = asyncio.run(
-                        update_user_language(language_data, mock_db.return_value.__enter__.return_value, regular_user)
+                        update_user_language(
+                            language_data,
+                            mock_db.return_value.__enter__.return_value,
+                            regular_user,
+                        )
                     )
 
                     assert result.language == "en"
@@ -515,14 +610,20 @@ class TestUsersRouter:
             updated_at=datetime.now(timezone.utc),
         )
 
-        with patch("app.routers.users.user_service.set_password_from_invite") as mock_set_password:
+        with patch(
+            "app.routers.users.user_service.set_password_from_invite"
+        ) as mock_set_password:
             mock_set_password.return_value = mock_user
 
             # Mock database session
             with patch("app.routers.users.get_db") as mock_db:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
-                result = asyncio.run(set_password(password_payload, mock_db.return_value.__enter__.return_value))
+                result = asyncio.run(
+                    set_password(
+                        password_payload, mock_db.return_value.__enter__.return_value
+                    )
+                )
 
                 assert result["message"] == "Mot de passe défini avec succès"
 
@@ -531,7 +632,9 @@ class TestUsersRouter:
         # Token doit avoir au moins 32 caractères
         password_payload = SetPasswordPayload(token="b" * 32, password="NewPassword123")
 
-        with patch("app.routers.users.user_service.set_password_from_invite") as mock_set_password:
+        with patch(
+            "app.routers.users.user_service.set_password_from_invite"
+        ) as mock_set_password:
             mock_set_password.side_effect = ValueError("Token invalide ou expiré")
 
             # Mock database session
@@ -539,7 +642,12 @@ class TestUsersRouter:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
                 with pytest.raises(ValueError) as exc_info:
-                    asyncio.run(set_password(password_payload, mock_db.return_value.__enter__.return_value))
+                    asyncio.run(
+                        set_password(
+                            password_payload,
+                            mock_db.return_value.__enter__.return_value,
+                        )
+                    )
 
                 assert "Token invalide ou expiré" in str(exc_info.value)
 
@@ -556,7 +664,12 @@ class TestUsersRouter:
 
                 # This should work fine - negative IDs are valid integers
                 result = asyncio.run(
-                    update_user_route(-1, update_data, mock_db.return_value.__enter__.return_value, admin_user)
+                    update_user_route(
+                        -1,
+                        update_data,
+                        mock_db.return_value.__enter__.return_value,
+                        admin_user,
+                    )
                 )
 
                 # Test should pass if no exception is raised
@@ -567,7 +680,9 @@ class TestUsersRouter:
         with patch("app.routers.users.user_service.get_users") as mock_get_users:
             mock_get_users.side_effect = Exception("Database error")
 
-            with patch("app.routers.users.get_current_active_user") as mock_current_user:
+            with patch(
+                "app.routers.users.get_current_active_user"
+            ) as mock_current_user:
                 mock_current_user.return_value = admin_user
 
                 # Mock database session
@@ -576,7 +691,12 @@ class TestUsersRouter:
 
                     with pytest.raises(Exception) as exc_info:
                         asyncio.run(
-                            read_users(0, 100, mock_db.return_value.__enter__.return_value, admin_user)  # skip, limit
+                            read_users(
+                                0,
+                                100,
+                                mock_db.return_value.__enter__.return_value,
+                                admin_user,
+                            )  # skip, limit
                         )
 
                     # The exception should propagate since read_users doesn't have error handling
@@ -614,7 +734,9 @@ class TestUsersRouter:
 class TestViewScopeUpdate:
     """Tests for view scope update endpoint."""
 
-    def test_update_user_view_scope_admin_success(self, db_session, admin_user, regular_user):
+    def test_update_user_view_scope_admin_success(
+        self, db_session, admin_user, regular_user
+    ):
         """Test that admin can update another user's view scope."""
         from app.routers.users import update_user_view_scope
         from app.schemas import ViewScopeUpdate
@@ -622,7 +744,11 @@ class TestViewScopeUpdate:
         # Update regular user's view scope
         view_scope_update = ViewScopeUpdate(view_scope=ViewScope.MINE_ONLY)
 
-        result = asyncio.run(update_user_view_scope(regular_user.id, view_scope_update, db_session, admin_user))
+        result = asyncio.run(
+            update_user_view_scope(
+                regular_user.id, view_scope_update, db_session, admin_user
+            )
+        )
 
         assert result.id == regular_user.id
         assert result.view_scope == ViewScope.MINE_ONLY
@@ -639,7 +765,11 @@ class TestViewScopeUpdate:
         # Update user's own view scope
         view_scope_update = ViewScopeUpdate(view_scope=ViewScope.UNASSIGNED_PLUS_MINE)
 
-        result = asyncio.run(update_user_view_scope(regular_user.id, view_scope_update, db_session, regular_user))
+        result = asyncio.run(
+            update_user_view_scope(
+                regular_user.id, view_scope_update, db_session, regular_user
+            )
+        )
 
         assert result.id == regular_user.id
         assert result.view_scope == ViewScope.UNASSIGNED_PLUS_MINE
@@ -648,7 +778,9 @@ class TestViewScopeUpdate:
         db_session.refresh(regular_user)
         assert regular_user.view_scope == ViewScope.UNASSIGNED_PLUS_MINE
 
-    def test_update_user_view_scope_forbidden(self, db_session, admin_user, regular_user):
+    def test_update_user_view_scope_forbidden(
+        self, db_session, admin_user, regular_user
+    ):
         """Test that regular user cannot update another user's view scope."""
         from app.routers.users import update_user_view_scope
         from app.schemas import ViewScopeUpdate
@@ -658,7 +790,11 @@ class TestViewScopeUpdate:
         view_scope_update = ViewScopeUpdate(view_scope=ViewScope.MINE_ONLY)
 
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(update_user_view_scope(admin_user.id, view_scope_update, db_session, regular_user))
+            asyncio.run(
+                update_user_view_scope(
+                    admin_user.id, view_scope_update, db_session, regular_user
+                )
+            )
 
         assert exc_info.value.status_code == 403
         assert "Seuls les administrateurs" in str(exc_info.value.detail)
@@ -674,23 +810,35 @@ class TestViewScopeUpdate:
 
         with pytest.raises(HTTPException) as exc_info:
             asyncio.run(
-                update_user_view_scope(99999, view_scope_update, db_session, admin_user)  # Non-existent user ID
+                update_user_view_scope(
+                    99999, view_scope_update, db_session, admin_user
+                )  # Non-existent user ID
             )
 
         assert exc_info.value.status_code == 404
         assert "Utilisateur non trouvé" in str(exc_info.value.detail)
 
-    def test_update_user_view_scope_all_scopes(self, db_session, admin_user, regular_user):
+    def test_update_user_view_scope_all_scopes(
+        self, db_session, admin_user, regular_user
+    ):
         """Test updating view scope to all possible values."""
         from app.routers.users import update_user_view_scope
         from app.schemas import ViewScopeUpdate
 
-        scopes_to_test = [ViewScope.ALL, ViewScope.UNASSIGNED_PLUS_MINE, ViewScope.MINE_ONLY]
+        scopes_to_test = [
+            ViewScope.ALL,
+            ViewScope.UNASSIGNED_PLUS_MINE,
+            ViewScope.MINE_ONLY,
+        ]
 
         for scope in scopes_to_test:
             view_scope_update = ViewScopeUpdate(view_scope=scope)
 
-            result = asyncio.run(update_user_view_scope(regular_user.id, view_scope_update, db_session, admin_user))
+            result = asyncio.run(
+                update_user_view_scope(
+                    regular_user.id, view_scope_update, db_session, admin_user
+                )
+            )
 
             assert result.view_scope == scope
 
@@ -698,7 +846,9 @@ class TestViewScopeUpdate:
             db_session.refresh(regular_user)
             assert regular_user.view_scope == scope
 
-    def test_update_user_view_scope_same_value(self, db_session, admin_user, regular_user):
+    def test_update_user_view_scope_same_value(
+        self, db_session, admin_user, regular_user
+    ):
         """Test updating view scope to the same value."""
         from app.routers.users import update_user_view_scope
         from app.schemas import ViewScopeUpdate
@@ -710,11 +860,17 @@ class TestViewScopeUpdate:
         # Update to the same value
         view_scope_update = ViewScopeUpdate(view_scope=ViewScope.ALL)
 
-        result = asyncio.run(update_user_view_scope(regular_user.id, view_scope_update, db_session, admin_user))
+        result = asyncio.run(
+            update_user_view_scope(
+                regular_user.id, view_scope_update, db_session, admin_user
+            )
+        )
 
         assert result.view_scope == ViewScope.ALL
 
-    def test_update_user_view_scope_invalid_enum(self, db_session, admin_user, regular_user):
+    def test_update_user_view_scope_invalid_enum(
+        self, db_session, admin_user, regular_user
+    ):
         """Test updating view scope with invalid enum value (should be caught by Pydantic)."""
         from app.schemas import ViewScopeUpdate
         from pydantic import ValidationError

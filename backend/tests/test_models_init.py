@@ -55,7 +55,14 @@ class TestModelImports:
         assert UserRole.COMMENTER.value == "commenter"
         assert UserRole.VISITOR.value == "visitor"
 
-        expected_values = {"admin", "supervisor", "editor", "contributor", "commenter", "visitor"}
+        expected_values = {
+            "admin",
+            "supervisor",
+            "editor",
+            "contributor",
+            "commenter",
+            "visitor",
+        }
         assert {role.value for role in UserRole} == expected_values
 
     def test_user_status_enum_values(self):
@@ -274,7 +281,10 @@ class TestModelImports:
         # Importer dans un ordre différent
         from app.models import Card, CardComment, CardHistory, CardItem, Label, User
 
-        assert all(model is not None for model in [CardHistory, CardItem, CardComment, User, Card, Label])
+        assert all(
+            model is not None
+            for model in [CardHistory, CardItem, CardComment, User, Card, Label]
+        )
 
     def test_module_reloading(self):
         """Test le rechargement du module."""

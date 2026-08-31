@@ -1,4 +1,3 @@
-
 # YAKA - Yet Another Kanban App
 
 **FRANÇAIS** - [ENGLISH](README.md)
@@ -172,7 +171,7 @@ Ce projet est sous licence **Non-Commercial License** : vous pouvez utiliser et 
 Pour toute question ou problème :
 
 1. Consulter la [documentation](docs/)
-2. Vérifier les [issues existantes]([../../issues](https://github.com/Yajusta/Yaka/issues))
+2. Vérifier les [issues existantes](<[../../issues](https://github.com/Yajusta/Yaka/issues)>)
 3. Créer une nouvelle issue si nécessaire
 
 ## 🔄 Roadmap hypothétique

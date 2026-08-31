@@ -20,7 +20,9 @@ TEST_DB_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(TEST_DB_DIR, exist_ok=True)
 TEST_DB_PATH = os.path.join(TEST_DB_DIR, "test_kanban_list_model.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -202,7 +204,9 @@ class TestKanbanListModel:
 
     def test_kanban_list_query_by_name(self, db_session, sample_lists):
         """Test de recherche par nom."""
-        kanban_list = db_session.query(KanbanList).filter(KanbanList.name == "To Do").first()
+        kanban_list = (
+            db_session.query(KanbanList).filter(KanbanList.name == "To Do").first()
+        )
 
         assert kanban_list is not None
         assert kanban_list.name == "To Do"
@@ -245,7 +249,9 @@ class TestKanbanListModel:
         db_session.commit()
 
         # Rechercher les listes contenant "Tasks"
-        task_lists = db_session.query(KanbanList).filter(KanbanList.name.like("%Tasks%")).all()
+        task_lists = (
+            db_session.query(KanbanList).filter(KanbanList.name.like("%Tasks%")).all()
+        )
 
         assert len(task_lists) == 1
         assert "Tasks" in task_lists[0].name
@@ -259,7 +265,9 @@ class TestKanbanListModel:
         db_session.commit()
 
         # Vérifier que la liste a été supprimée
-        deleted_list = db_session.query(KanbanList).filter(KanbanList.id == list_id).first()
+        deleted_list = (
+            db_session.query(KanbanList).filter(KanbanList.id == list_id).first()
+        )
         assert deleted_list is None
 
     def test_kanban_list_string_fields_validation(self, db_session):
@@ -412,7 +420,11 @@ class TestKanbanListModel:
         db_session.commit()
 
         # Vérifier que toutes ont été créées
-        count = db_session.query(KanbanList).filter(KanbanList.name.like("Batch List %")).count()
+        count = (
+            db_session.query(KanbanList)
+            .filter(KanbanList.name.like("Batch List %"))
+            .count()
+        )
         assert count == 10
 
     def test_kanban_list_bulk_update(self, db_session, sample_lists):
@@ -499,7 +511,9 @@ class TestKanbanListModel:
     def test_kanban_list_error_handling(self, db_session):
         """Test de gestion des erreurs."""
         # Simuler une erreur de base de données
-        with patch.object(db_session, "commit", side_effect=SQLAlchemyError("Database error")):
+        with patch.object(
+            db_session, "commit", side_effect=SQLAlchemyError("Database error")
+        ):
             kanban_list = KanbanList(
                 name="Error Test",
                 order=1,
@@ -587,7 +601,10 @@ class TestKanbanListModel:
         # Vérifier que la séquence est correcte
         workflow_lists = db_session.query(KanbanList).order_by(KanbanList.order).all()
 
-        actual_names = [kanban_list.name for kanban_list in workflow_lists[-len(workflow_sequences) :]]
+        actual_names = [
+            kanban_list.name
+            for kanban_list in workflow_lists[-len(workflow_sequences) :]
+        ]
         expected_names = [name for name, _ in workflow_sequences]
 
         assert actual_names == expected_names
