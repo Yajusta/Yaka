@@ -4,7 +4,8 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 
 export default [
-  { ignores: ["dist"] },
+  // "dist" seul ne couvre pas mobile/dist : eslint lintait le bundle minifié.
+  { ignores: ["**/dist/**"] },
   {
     files: ["**/*.{js,jsx}"],
     languageOptions: {

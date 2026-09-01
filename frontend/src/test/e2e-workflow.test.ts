@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { listsApi } from "@shared/services/listsApi";
 
 // Mock the API services
-vi.mock("../services/listsApi");
+vi.mock("@shared/services/listsApi");
 
 const mockListsApi = vi.mocked(listsApi);
 
@@ -22,6 +22,10 @@ class ApplicationState {
   private lists: any[] = [];
   private cards: any[] = [];
   private currentUser = { id: 1, role: "admin" };
+  // Compteurs dédiés : `Date.now()` donne le même id à deux entités créées
+  // dans la même milliseconde, ce qui fausse tous les comptages par liste.
+  private nextListId = 4; // 1..3 sont pris par les listes par défaut
+  private nextCardId = 1000;
 
   async initializeWithDefaultLists() {
     const defaultLists = [
@@ -37,7 +41,7 @@ class ApplicationState {
 
   async createCard(cardData: any) {
     const newCard = {
-      id: Date.now(),
+      id: this.nextCardId++,
       ...cardData,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -79,13 +83,21 @@ class ApplicationState {
     }
 
     const newList = {
-      id: Date.now(),
+      id: this.nextListId++,
       ...listData,
       created_at: new Date().toISOString(),
     };
 
     mockListsApi.createList.mockResolvedValue(newList);
     const createdList = await listsApi.createList(listData);
+
+    // Insérer à `order` décale les listes suivantes (comportement du backend).
+    for (const list of this.lists) {
+      if (list.order >= createdList.order) {
+        list.order += 1;
+      }
+    }
+
     this.lists.push(createdList);
     this.lists.sort((a, b) => a.order - b.order);
     return createdList;
@@ -274,14 +286,14 @@ describe("End-to-End Workflow Tests", () => {
 
     // Step 3: Remove old lists by migrating cards
     // First create some cards in old lists
-    const oldCard1 = await appState.createCard({
+    await appState.createCard({
       title: "Old task 1",
       description: "Task in old system",
       list_id: 1, // A faire
       priority: "medium",
     });
 
-    const oldCard2 = await appState.createCard({
+    await appState.createCard({
       title: "Old task 2",
       description: "Another old task",
       list_id: 2, // En cours
@@ -324,8 +336,11 @@ describe("End-to-End Workflow Tests", () => {
     await appState.moveCard(newTask.id, qaList.id);
     await appState.moveCard(newTask.id, doneList.id);
 
-    // Verify final state
-    expect(appState.getCardsByListId(doneList.id)).toHaveLength(2); // Old migrated card + new task
+    // Verify final state : « Terminé » était vide, Done ne contient donc que
+    // la nouvelle tâche arrivée au bout du workflow.
+    expect(appState.getCardsByListId(doneList.id)).toHaveLength(1);
+    expect(appState.getCardsByListId(backlogList.id)).toHaveLength(1);
+    expect(appState.getCardsByListId(devList.id)).toHaveLength(1);
     appState.validateDataIntegrity();
   });
 
@@ -349,7 +364,7 @@ describe("End-to-End Workflow Tests", () => {
       await appState.moveCard(testCard.id, 2);
       expect.fail("Should have thrown an error");
     } catch (error) {
-      expect(error.message).toBe("Network error");
+      expect((error as Error).message).toBe("Network error");
     }
 
     // Verify card is still in original position
@@ -375,7 +390,7 @@ describe("End-to-End Workflow Tests", () => {
       await appState.createList({ name: "", order: 1 }); // Invalid name
       expect.fail("Should have thrown an error");
     } catch (error) {
-      expect(error.message).toBe("Validation error");
+      expect((error as Error).message).toBe("Validation error");
     }
 
     // Verify lists unchanged

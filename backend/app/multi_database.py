@@ -81,9 +81,8 @@ class MultiDatabaseManager:
                     )
                 )
                 conn.execute(
-                    text(
-                        f"INSERT INTO alembic_version (version_num) VALUES ('{latest_version}')"
-                    )
+                    text("INSERT INTO alembic_version (version_num) VALUES (:version)"),
+                    {"version": latest_version},
                 )
                 conn.commit()
 

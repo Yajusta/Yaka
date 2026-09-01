@@ -48,7 +48,8 @@ class UserBase(BaseModel):
     @classmethod
     def _ensure_valid_email(cls, value: str) -> str:
         validated = _validate_email(value)
-        assert validated is not None
+        if validated is None:
+            raise ValueError("Adresse email invalide")
         return validated
 
     display_name: Optional[str] = Field(
@@ -133,7 +134,8 @@ class PasswordResetRequest(BaseModel):
     @classmethod
     def _ensure_valid_email(cls, value: str) -> str:
         validated = _validate_email(value)
-        assert validated is not None
+        if validated is None:
+            raise ValueError("Adresse email invalide")
         return validated
 
 
@@ -173,7 +175,8 @@ class UserLogin(BaseModel):
     @classmethod
     def _ensure_valid_email(cls, value: str) -> str:
         validated = _validate_email(value)
-        assert validated is not None
+        if validated is None:
+            raise ValueError("Adresse email invalide")
         return validated
 
     password: str = Field(..., min_length=1, max_length=32)

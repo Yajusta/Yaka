@@ -27,7 +27,7 @@ def get_cards_for_export(db: Session) -> List[Card]:
 
     cards = (
         db.query(Card)
-        .filter(Card.is_archived == False)
+        .filter(Card.is_archived.is_(False))
         .options(
             joinedload(Card.kanban_list),
             joinedload(Card.items),

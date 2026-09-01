@@ -1,0 +1,11 @@
+# Normalise les fins de ligne : LF dans l'index ET dans le répertoire de travail,
+# quelle que soit la valeur locale de core.autocrlf. Évite les diffs fantômes et
+# les faux positifs « trailing whitespace » de git-diff-check sur Windows.
+* text=auto eol=lf
+
+# Fichiers binaires : aucune conversion.
+*.png binary
+*.ico binary
+*.woff2 binary
+*.db binary
+*.xlsx binary

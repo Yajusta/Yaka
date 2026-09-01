@@ -54,7 +54,7 @@ services:
         - VITE_BASE_PATH=${VITE_BASE_PATH:-/}
     container_name: yaka-frontend-desktop
     ports:
-      - "3000:80"
+      - "${FRONTEND_DESKTOP_PORT:-3000}:8080"
     environment:
       - DEMO_MODE=${DEMO_MODE:-false}
       - BASE_URL=${BASE_URL:-http://localhost:3000}
@@ -73,7 +73,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:80/",
+          "http://localhost:8080/",
         ]
       interval: 300s
       timeout: 10s
@@ -96,7 +96,7 @@ services:
         - VITE_VOICE_TRANSCRIPT_LIMIT=${VITE_VOICE_TRANSCRIPT_LIMIT:-500}
     container_name: yaka-frontend-mobile
     ports:
-      - "3001:80"
+      - "${FRONTEND_MOBILE_PORT:-3001}:8080"
     # volumes:
     #   - ./frontend/mobile/public:/usr/share/nginx/html/mobile:ro
     environment:
@@ -118,7 +118,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:80/",
+          "http://localhost:8080/",
         ]
       interval: 300s
       timeout: 10s

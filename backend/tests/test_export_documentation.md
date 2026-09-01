@@ -105,19 +105,19 @@ Les tests couvrent :
 
 ## Exécution des Tests
 
-### Tous les tests d'export :
+### Tous les tests d'export
 
 ```bash
 python -m pytest tests/test_export_service.py tests/test_integration_export_api.py -v
 ```
 
-### Tests unitaires uniquement :
+### Tests unitaires uniquement
 
 ```bash
 python -m pytest tests/test_export_service.py -v
 ```
 
-### Tests d'intégration uniquement :
+### Tests d'intégration uniquement
 
 ```bash
 python -m pytest tests/test_integration_export_api.py -v

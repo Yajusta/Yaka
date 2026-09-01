@@ -30,7 +30,7 @@ def get_comments_for_card(
     return (
         db.query(CardComment)
         .options(joinedload(CardComment.user))
-        .filter(and_(CardComment.card_id == card_id, CardComment.is_deleted == False))
+        .filter(and_(CardComment.card_id == card_id, CardComment.is_deleted.is_(False)))
         .order_by(CardComment.created_at.desc())
         .limit(limit)
         .offset(offset)
@@ -148,6 +148,6 @@ def get_comment_by_id(db: Session, comment_id: int) -> Optional[CardComment]:
     return (
         db.query(CardComment)
         .options(joinedload(CardComment.user))
-        .filter(and_(CardComment.id == comment_id, CardComment.is_deleted == False))
+        .filter(and_(CardComment.id == comment_id, CardComment.is_deleted.is_(False)))
         .first()
     )

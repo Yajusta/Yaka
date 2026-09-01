@@ -1,5 +1,6 @@
 """Tests pour le routeur users."""
 
+import asyncio
 import os
 import sys
 from datetime import datetime, timezone
@@ -878,7 +879,3 @@ class TestViewScopeUpdate:
         # Try to create ViewScopeUpdate with invalid value
         with pytest.raises(ValidationError):
             ViewScopeUpdate(view_scope="invalid_scope")
-
-
-# Import needed for tests
-import asyncio

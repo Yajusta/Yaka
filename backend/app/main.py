@@ -1,5 +1,6 @@
 """Application FastAPI principale pour l'application Kanban."""
 
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -9,6 +10,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .database import Base, engine
 from .multi_database import get_board_db
@@ -102,9 +104,8 @@ def ensure_database_exists():
                     )
                 )
                 conn.execute(
-                    text(
-                        f"INSERT INTO alembic_version (version_num) VALUES ('{latest_version}')"
-                    )
+                    text("INSERT INTO alembic_version (version_num) VALUES (:version)"),
+                    {"version": latest_version},
                 )
                 conn.commit()
 
@@ -252,8 +253,6 @@ app = FastAPI(
 )
 
 # Configuration CORS pour permettre les requêtes depuis le frontend
-import os
-
 # En développement, autoriser localhost; en production, utiliser les variables d'environnement
 frontend_url = os.getenv("BASE_URL", "http://localhost:5173")
 frontend_url_mobile = os.getenv("BASE_URL_MOBILE", "http://localhost:5174")
@@ -293,7 +292,6 @@ app.add_middleware(
 )
 
 # Ajouter les headers de sécurité via middleware personnalisé
-from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

@@ -1,295 +1,152 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { KanbanColumn } from "../KanbanColumn";
 import { mockLists, mockCards } from "@/test/mocks";
+import i18n from "@shared/i18n";
+import type { Card, KanbanList } from "@shared/types";
 
-// Mock DnD Kit
-vi.mock("@dnd-kit/sortable", () => ({
-  useSortable: () => ({
-    attributes: {},
-    listeners: {},
-    setNodeRef: vi.fn(),
-    transform: null,
-    transition: null,
-    isDragging: false,
-  }),
-  SortableContext: ({ children }: any) => (
-    <div data-testid="sortable-context">{children}</div>
-  ),
-  verticalListSortingStrategy: vi.fn(),
-}));
-
+// La colonne s'enregistre comme zone de drop : on neutralise dnd-kit, hors sujet ici.
 vi.mock("@dnd-kit/core", () => ({
-  useDroppable: () => ({
-    setNodeRef: vi.fn(),
-    isOver: false,
-  }),
+  useDroppable: () => ({ setNodeRef: vi.fn(), isOver: false }),
 }));
 
-// Mock card component
-vi.mock("../KanbanCard", () => ({
-  KanbanCard: ({ card }: any) => (
-    <div data-testid={`card-${card.id}`} data-card-id={card.id}>
-      {card.title}
+// Hook d'animation : dépend de mesures DOM indisponibles sous jsdom.
+vi.mock("@shared/hooks/useElasticTransition", () => ({
+  useElasticTransition: () => ({ current: null }),
+}));
+
+// On teste la colonne, pas le rendu d'une carte.
+vi.mock("../CardItem", () => ({
+  CardItem: ({
+    card,
+    onUpdate,
+    onDelete,
+  }: {
+    card: Card;
+    onUpdate: (card: Card) => void;
+    onDelete: (id: number) => void;
+  }) => (
+    <div data-testid={`card-${card.id}`}>
+      <span>{card.title}</span>
+      <button type="button" onClick={() => onUpdate(card)}>
+        update-{card.id}
+      </button>
+      <button type="button" onClick={() => onDelete(card.id)}>
+        delete-{card.id}
+      </button>
     </div>
   ),
 }));
 
+const baseProps = {
+  id: "list-1",
+  list: mockLists[0], // "A faire"
+  cards: [mockCards[0]],
+  onCardUpdate: vi.fn(),
+  onCardDelete: vi.fn(),
+  isDragging: false,
+  dropTarget: null,
+};
+
+const renderColumn = (
+  props: Partial<typeof baseProps> & Record<string, unknown> = {},
+) => render(<KanbanColumn {...baseProps} {...props} />);
+
 describe("KanbanColumn", () => {
-  const user = userEvent.setup();
-
-  const defaultProps = {
-    list: mockLists[0], // "A faire"
-    cards: [mockCards[0]], // Card in "A faire" list
-    onAddCard: vi.fn(),
-    onEditCard: vi.fn(),
-    onDeleteCard: vi.fn(),
-  };
-
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    await i18n.changeLanguage("fr");
   });
 
-  it("renders column with list name and cards", () => {
-    render(<KanbanColumn {...defaultProps} />);
+  it("affiche le nom de la liste et le nombre de cartes", () => {
+    renderColumn();
 
-    // Check list name is displayed
-    expect(screen.getByText("A faire")).toBeInTheDocument();
-
-    // Check card is displayed
-    expect(screen.getByTestId("card-1")).toBeInTheDocument();
-    expect(screen.getByText("Test Card 1")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "A faire" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 carte")).toBeInTheDocument();
   });
 
-  it("displays correct card count", () => {
-    render(<KanbanColumn {...defaultProps} />);
-
-    // Should show card count
-    expect(screen.getByText("1")).toBeInTheDocument(); // Card count badge
-  });
-
-  it("shows empty state when no cards", () => {
-    const propsWithNoCards = {
-      ...defaultProps,
-      cards: [],
-    };
-
-    render(<KanbanColumn {...propsWithNoCards} />);
-
-    // Should show empty state
-    expect(screen.getByText("Aucune carte")).toBeInTheDocument();
-    expect(screen.getByText("0")).toBeInTheDocument(); // Card count should be 0
-  });
-
-  it("renders multiple cards in correct order", () => {
-    const multipleCards = [
+  it("rend une carte par élément de `cards`", () => {
+    const cards: Card[] = [
       { ...mockCards[0], id: 1, title: "First Card" },
       { ...mockCards[0], id: 2, title: "Second Card" },
       { ...mockCards[0], id: 3, title: "Third Card" },
     ];
 
-    const propsWithMultipleCards = {
-      ...defaultProps,
-      cards: multipleCards,
-    };
+    renderColumn({ cards });
 
-    render(<KanbanColumn {...propsWithMultipleCards} />);
-
-    // All cards should be rendered
     expect(screen.getByTestId("card-1")).toBeInTheDocument();
     expect(screen.getByTestId("card-2")).toBeInTheDocument();
     expect(screen.getByTestId("card-3")).toBeInTheDocument();
-
-    // Card count should be correct
-    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("3 cartes")).toBeInTheDocument();
   });
 
-  it("shows add card button and handles click", async () => {
-    render(<KanbanColumn {...defaultProps} />);
+  it("affiche « 0 carte » pour une liste vide", () => {
+    renderColumn({ cards: [] });
 
-    const addButton = screen.getByText("Ajouter une carte");
-    expect(addButton).toBeInTheDocument();
-
-    await user.click(addButton);
-
-    // Should call onAddCard with list ID
-    expect(defaultProps.onAddCard).toHaveBeenCalledWith(mockLists[0].id);
+    expect(screen.getByText("0 carte")).toBeInTheDocument();
+    expect(screen.queryByTestId("card-1")).not.toBeInTheDocument();
   });
 
-  it("applies correct styling classes", () => {
-    render(<KanbanColumn {...defaultProps} />);
+  it("n'affiche le bouton d'ajout que si onCreateCard est fourni", () => {
+    renderColumn();
+    expect(
+      screen.queryByRole("button", {
+        name: "Créer une nouvelle carte dans cette liste",
+      }),
+    ).not.toBeInTheDocument();
 
-    const column = screen.getByTestId("kanban-column-1");
+    const onCreateCard = vi.fn();
+    renderColumn({ onCreateCard });
 
-    // Should have proper styling classes
-    expect(column).toHaveClass("min-w-80"); // Minimum width
-    expect(column).toHaveClass("bg-gray-50"); // Background color
-    expect(column).toHaveClass("rounded-lg"); // Rounded corners
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Créer une nouvelle carte dans cette liste",
+      }),
+    );
+    expect(onCreateCard).toHaveBeenCalledWith(mockLists[0].id);
   });
 
-  it("handles drag and drop setup correctly", () => {
-    render(<KanbanColumn {...defaultProps} />);
+  it("remonte les interactions des cartes", () => {
+    const onCardUpdate = vi.fn();
+    const onCardDelete = vi.fn();
 
-    // Should render sortable context for cards
-    expect(screen.getByTestId("sortable-context")).toBeInTheDocument();
+    renderColumn({ onCardUpdate, onCardDelete });
+
+    fireEvent.click(screen.getByText("update-1"));
+    expect(onCardUpdate).toHaveBeenCalledWith(mockCards[0]);
+
+    fireEvent.click(screen.getByText("delete-1"));
+    expect(onCardDelete).toHaveBeenCalledWith(mockCards[0].id);
   });
 
-  it("displays list header with proper formatting", () => {
-    render(<KanbanColumn {...defaultProps} />);
+  it("affiche un nom de liste arbitraire", () => {
+    const list: KanbanList = { ...mockLists[0], name: "Liste Personnalisée" };
 
-    // List name should be in header
-    const header = screen.getByRole("heading", { level: 3 });
-    expect(header).toHaveTextContent("A faire");
-
-    // Should have proper header styling
-    expect(header).toHaveClass("font-semibold");
-  });
-
-  it("shows card count badge with correct styling", () => {
-    render(<KanbanColumn {...defaultProps} />);
-
-    const countBadge = screen.getByText("1");
-
-    // Should have badge styling
-    expect(countBadge.parentElement).toHaveClass("bg-blue-100");
-    expect(countBadge.parentElement).toHaveClass("text-blue-800");
-    expect(countBadge.parentElement).toHaveClass("rounded-full");
-  });
-
-  it("handles different list names correctly", () => {
-    const customList = {
-      ...mockLists[0],
-      name: "Liste Personnalisée",
-    };
-
-    const propsWithCustomList = {
-      ...defaultProps,
-      list: customList,
-    };
-
-    render(<KanbanColumn {...propsWithCustomList} />);
+    renderColumn({ list });
 
     expect(screen.getByText("Liste Personnalisée")).toBeInTheDocument();
   });
 
-  it("filters cards correctly for the list", () => {
-    // Cards from different lists
-    const mixedCards = [
-      { ...mockCards[0], id: 1, list_id: 1, title: "Card for List 1" },
-      { ...mockCards[0], id: 2, list_id: 2, title: "Card for List 2" },
-      { ...mockCards[0], id: 3, list_id: 1, title: "Another Card for List 1" },
-    ];
+  it("passe en rendu compact quand la liste est repliée", () => {
+    const list: KanbanList = { ...mockLists[0], is_collapsed: true };
 
-    const propsWithMixedCards = {
-      ...defaultProps,
-      cards: mixedCards.filter((card) => card.list_id === 1), // Only cards for list 1
-    };
+    const { container } = renderColumn({ list });
 
-    render(<KanbanColumn {...propsWithMixedCards} />);
-
-    // Should only show cards for this list
-    expect(screen.getByText("Card for List 1")).toBeInTheDocument();
-    expect(screen.getByText("Another Card for List 1")).toBeInTheDocument();
-    expect(screen.queryByText("Card for List 2")).not.toBeInTheDocument();
-
-    // Card count should be correct
-    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(container.querySelector(".kanban-column-collapsed")).not.toBeNull();
+    // Le nom reste affiché, mais à la verticale, et sans bouton d'ajout.
+    expect(screen.getByText("A faire")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: "Créer une nouvelle carte dans cette liste",
+      }),
+    ).not.toBeInTheDocument();
   });
 
-  it("handles card interactions correctly", async () => {
-    render(<KanbanColumn {...defaultProps} />);
+  it("expose la colonne comme zone de drop via son id de liste", () => {
+    const { container } = renderColumn();
 
-    const card = screen.getByTestId("card-1");
-
-    // Card should be clickable (for editing)
-    await user.click(card);
-
-    // In a real implementation, this might trigger edit mode
-    // For now, we just verify the card is rendered and clickable
-    expect(card).toBeInTheDocument();
-  });
-
-  it("maintains proper spacing between cards", () => {
-    const multipleCards = [
-      { ...mockCards[0], id: 1, title: "Card 1" },
-      { ...mockCards[0], id: 2, title: "Card 2" },
-    ];
-
-    const propsWithMultipleCards = {
-      ...defaultProps,
-      cards: multipleCards,
-    };
-
-    render(<KanbanColumn {...propsWithMultipleCards} />);
-
-    const cardsContainer = screen.getByTestId("cards-container");
-
-    // Should have proper spacing classes
-    expect(cardsContainer).toHaveClass("space-y-2"); // or similar spacing class
-  });
-
-  it("shows loading state when cards are being loaded", () => {
-    const propsWithLoading = {
-      ...defaultProps,
-      cards: [],
-      isLoading: true,
-    };
-
-    render(<KanbanColumn {...propsWithLoading} />);
-
-    // Should show loading indicator
-    expect(screen.getByText("Chargement...")).toBeInTheDocument();
-  });
-
-  it("handles very long list names gracefully", () => {
-    const longNameList = {
-      ...mockLists[0],
-      name: "Ceci est un nom de liste très très très long qui pourrait causer des problèmes de mise en page",
-    };
-
-    const propsWithLongName = {
-      ...defaultProps,
-      list: longNameList,
-    };
-
-    render(<KanbanColumn {...propsWithLongName} />);
-
-    const header = screen.getByRole("heading", { level: 3 });
-
-    // Should handle long names with proper text wrapping or truncation
-    expect(header).toHaveClass("truncate"); // or 'break-words' depending on implementation
-  });
-
-  it("supports keyboard navigation for accessibility", () => {
-    render(<KanbanColumn {...defaultProps} />);
-
-    const addButton = screen.getByText("Ajouter une carte");
-
-    // Button should be focusable
-    addButton.focus();
-    expect(addButton).toHaveFocus();
-
-    // Should support keyboard activation
-    fireEvent.keyDown(addButton, { key: "Enter" });
-    expect(defaultProps.onAddCard).toHaveBeenCalled();
-  });
-
-  it("displays proper ARIA labels for accessibility", () => {
-    render(<KanbanColumn {...defaultProps} />);
-
-    const column = screen.getByTestId("kanban-column-1");
-
-    // Should have proper ARIA labels
-    expect(column).toHaveAttribute(
-      "aria-label",
-      expect.stringContaining("A faire"),
-    );
-
-    const addButton = screen.getByText("Ajouter une carte");
-    expect(addButton).toHaveAttribute(
-      "aria-label",
-      expect.stringContaining("Ajouter une carte à A faire"),
-    );
+    expect(container.querySelector('[data-list-id="list-1"]')).not.toBeNull();
   });
 });

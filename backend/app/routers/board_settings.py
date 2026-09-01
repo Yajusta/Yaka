@@ -79,7 +79,7 @@ async def update_board_setting(
 ):
     """Mettre à jour un paramètre spécifique (admin seulement)."""
     allowed_keys = {"setting_value", "description"}
-    if invalid_keys := set(setting_update.keys()) - allowed_keys:
+    if set(setting_update.keys()) - allowed_keys:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Donnees invalides"
         )
@@ -104,7 +104,7 @@ async def delete_board_setting(
     current_user: User = Depends(require_admin),
 ):
     """Supprimer un paramètre (admin seulement)."""
-    if success := board_settings_service.delete_setting(db, setting_key):
+    if board_settings_service.delete_setting(db, setting_key):
         return {"message": "Paramètre supprimé avec succès"}
     else:
         raise HTTPException(

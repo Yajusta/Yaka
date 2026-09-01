@@ -314,9 +314,7 @@ async def set_password(payload: SetPasswordPayload, db: Session = Depends(get_db
             status_code=status.HTTP_400_BAD_REQUEST, detail="Token invalide ou expiré"
         )
 
-    if updated := user_service.set_password_from_invite(
-        db, user=user, password=payload.password
-    ):
+    if user_service.set_password_from_invite(db, user=user, password=payload.password):
         return {"message": "Mot de passe défini avec succès"}
     else:
         raise HTTPException(

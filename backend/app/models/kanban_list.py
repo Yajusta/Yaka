@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -31,8 +31,6 @@ class KanbanList(Base):
     # Relations
     cards: Mapped[List["Card"]] = relationship("Card", back_populates="kanban_list")
 
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .card import Card

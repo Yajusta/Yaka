@@ -457,7 +457,7 @@
   }
 
   /* Trash overlay priority */
-  .drag-overlay.z-[3000] {
+  .drag-overlay.z-\[3000\] {
     z-index: 3000;
   }
 

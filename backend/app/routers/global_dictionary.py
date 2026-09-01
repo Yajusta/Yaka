@@ -117,7 +117,7 @@ async def delete_entry(
     current_user: User = Depends(require_admin),
 ):
     """Delete a global dictionary entry (Admin only)."""
-    if success := global_dictionary_service.delete_entry(db, entry_id=entry_id):
+    if global_dictionary_service.delete_entry(db, entry_id=entry_id):
         return {"message": "Dictionary entry deleted successfully"}
     else:
         raise HTTPException(

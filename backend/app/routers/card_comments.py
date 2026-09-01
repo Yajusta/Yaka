@@ -92,9 +92,12 @@ async def update_comment(
             db, comment_id, comment, current_user.id
         )
 
-        # La fonction update_comment peut retourner None, mais elle lève une exception si échec
-        # On sait donc que si on arrive ici, db_comment n'est pas None
-        assert db_comment is not None, "Commentaire devrait exister après mise à jour"
+        # update_comment lève une exception en cas d'échec ; ce garde-fou n'est là
+        # que pour restreindre le type et couvrir un retour None inattendu.
+        if db_comment is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Commentaire non trouvé"
+            )
 
         # Historise l'événement
         history_entry = CardHistoryCreate(

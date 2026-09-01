@@ -6,7 +6,7 @@ import sys
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -534,7 +534,7 @@ Avec des caractères spéciaux: éèàç"""
         )
 
         db_session.add(history)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
         db_session.rollback()
@@ -548,7 +548,7 @@ Avec des caractères spéciaux: éèàç"""
         )
 
         db_session.add(history)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
         db_session.rollback()
@@ -562,7 +562,7 @@ Avec des caractères spéciaux: éèàç"""
         )
 
         db_session.add(history)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
         db_session.rollback()
@@ -576,7 +576,7 @@ Avec des caractères spéciaux: éèàç"""
         )
 
         db_session.add(history)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
     def test_card_history_foreign_key_constraints(self, db_session, sample_user):

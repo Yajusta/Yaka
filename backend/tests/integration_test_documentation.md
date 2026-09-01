@@ -10,7 +10,7 @@ This document describes the comprehensive integration tests for the custom list 
 
 #### Test Classes and Methods
 
-**TestListManagementIntegration**
+##### TestListManagementIntegration
 
 1. **`test_complete_list_lifecycle`**
    - Tests the full lifecycle of a list: creation, modification, and deletion
@@ -52,7 +52,7 @@ This document describes the comprehensive integration tests for the custom list 
 
 #### Test Suites
 
-**List Management Integration Workflow**
+##### List Management Integration Workflow
 
 1. **Complete List Lifecycle Test**
    - Tests API integration for list CRUD operations
@@ -99,7 +99,7 @@ This document describes the comprehensive integration tests for the custom list 
    - Validates response times for operations
    - Ensures UI remains responsive with many lists/cards
 
-**Frontend Component Integration**
+##### Frontend Component Integration
 
 1. **Component Data Flow Validation**
    - Tests data structures used by components

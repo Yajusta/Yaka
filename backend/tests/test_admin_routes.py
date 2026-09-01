@@ -66,7 +66,7 @@ class TestAdminRoutes:
 
         response = client.get("/admin/boards")
 
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     def test_get_board_info_existing(self, client, temp_data_dir):
         """Test getting info for an existing board."""
@@ -197,8 +197,8 @@ class TestAdminRoutes:
         response = client.post("/admin/boards", json={"board_uid": board_uid})
 
         assert (
-            response.status_code == 403
-        )  # FastAPI HTTPBearer returns 403 for missing Bearer token
+            response.status_code == 401
+        )  # FastAPI HTTPBearer renvoie 401 quand l'en-tête Bearer est absent
 
     def test_delete_board_success(
         self, client, temp_data_dir, set_api_key_env, mock_api_key
@@ -306,8 +306,8 @@ class TestAdminRoutesSecurity:
             else:
                 response = client.request(method, endpoint)
 
-            # Should return 403 for missing authorization (HTTPBearer behavior)
-            assert response.status_code == 403
+            # 401 attendu quand l'autorisation manque (comportement HTTPBearer)
+            assert response.status_code == 401
 
     def test_sql_injection_prevention(self, client, set_api_key_env):
         """Test that SQL injection attempts are prevented through validation."""

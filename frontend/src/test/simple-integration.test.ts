@@ -7,7 +7,7 @@ import { listsApi } from "@shared/services/listsApi";
 import type { KanbanList } from "@shared/types";
 
 // Mock the API services
-vi.mock("../services/listsApi");
+vi.mock("@shared/services/listsApi");
 
 const mockListsApi = vi.mocked(listsApi);
 

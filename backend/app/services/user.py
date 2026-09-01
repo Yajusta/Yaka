@@ -282,7 +282,7 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
         return (
             user
             if user.status == UserStatus.ACTIVE
-            and verify_password(password, getattr(user, "password_hash"))
+            and verify_password(password, user.password_hash)
             else None
         )
     else:

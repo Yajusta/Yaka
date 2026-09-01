@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
   // Déterminer le base à partir d'une variable d'environnement
   const base = process.env.VITE_BASE_PATH || "/";
 

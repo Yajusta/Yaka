@@ -56,7 +56,7 @@ pnpm preview
 
 ### Structure des répertoires
 
-```
+```text
 mobile/
 ├── public/           # Fichiers statiques (manifest, icons)
 ├── src/

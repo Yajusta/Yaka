@@ -1,5 +1,21 @@
 # Generic, formatter-friendly config.
+[lint]
 select = ["B", "D3", "E", "F"]
 
 # Never enforce `E501` (line length violations). This should be handled by formatters.
 ignore = ["E501"]
+
+[lint.flake8-bugbear]
+# Les injections de dépendances FastAPI sont *conçues* pour être appelées dans
+# les valeurs par défaut des arguments : B008 y est un faux positif.
+extend-immutable-calls = [
+  "fastapi.Body",
+  "fastapi.Cookie",
+  "fastapi.Depends",
+  "fastapi.File",
+  "fastapi.Form",
+  "fastapi.Header",
+  "fastapi.Path",
+  "fastapi.Query",
+  "fastapi.Security",
+]

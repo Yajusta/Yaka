@@ -6,7 +6,7 @@ import sys
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -391,7 +391,9 @@ class TestCardCommentModel:
     def test_card_comment_query_active_only(self, db_session, sample_comments):
         """Test de recherche des commentaires actifs uniquement."""
         active_comments = (
-            db_session.query(CardComment).filter(CardComment.is_deleted == False).all()
+            db_session.query(CardComment)
+            .filter(CardComment.is_deleted.is_(False))
+            .all()
         )
 
         assert len(active_comments) == 2  # Seulement les commentaires non supprimés
@@ -819,7 +821,7 @@ With some special characters: éèàç"""
             db_session.query(CardComment)
             .filter(
                 and_(
-                    CardComment.is_deleted == False,
+                    CardComment.is_deleted.is_(False),
                     CardComment.comment.like("%comment%"),
                 )
             )
@@ -879,7 +881,7 @@ With some special characters: éèàç"""
         # Compter les commentaires par statut
         active_count = (
             db_session.query(CardComment)
-            .filter(CardComment.is_deleted == False)
+            .filter(CardComment.is_deleted.is_(False))
             .count()
         )
 
@@ -980,7 +982,7 @@ With some special characters: éèàç"""
         )
 
         db_session.add(comment)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
         db_session.rollback()
@@ -993,7 +995,7 @@ With some special characters: éèàç"""
         )
 
         db_session.add(comment)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
         db_session.rollback()
@@ -1006,7 +1008,7 @@ With some special characters: éèàç"""
         )
 
         db_session.add(comment)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
     def test_card_comment_transactions(self, db_session, sample_card, sample_user):
@@ -1169,7 +1171,7 @@ With some special characters: éèàç"""
             db_session.query(CardComment)
             .filter(
                 and_(
-                    CardComment.is_deleted == False,
+                    CardComment.is_deleted.is_(False),
                     CardComment.comment.like("%Important%"),
                 )
             )
@@ -1191,7 +1193,7 @@ With some special characters: éèàç"""
             ("special_chars", "!@#$%^&*()_+-=[]{}|;':\",./<>?"),
         ]
 
-        for suffix, content in test_comments:
+        for _suffix, content in test_comments:
             comment = CardComment(
                 card_id=sample_card.id,
                 user_id=sample_user.id,

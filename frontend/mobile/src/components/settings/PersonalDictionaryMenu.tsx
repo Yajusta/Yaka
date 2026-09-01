@@ -4,11 +4,7 @@ import { Plus, Edit, Trash2, Loader2, Save, X } from "lucide-react";
 import { personalDictionaryService } from "@shared/services/api";
 import { PersonalDictionaryEntry } from "@shared/types";
 
-interface PersonalDictionaryMenuProps {
-  onBack: () => void;
-}
-
-const PersonalDictionaryMenu = ({ onBack }: PersonalDictionaryMenuProps) => {
+const PersonalDictionaryMenu = () => {
   const { t } = useTranslation();
   const [entries, setEntries] = useState<PersonalDictionaryEntry[]>([]);
   const [loading, setLoading] = useState(true);

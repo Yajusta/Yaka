@@ -7,14 +7,16 @@ RUN apk update && apk upgrade
 # Définir le répertoire de travail
 WORKDIR /app
 
+# pnpm est non interactif dans Docker : sans CI il tente de demander
+# confirmation (ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY)
+ENV CI=true
+
 # Copier les fichiers de configuration des dépendances
 COPY package*.json pnpm-lock.yaml ./
 
-# Installer pnpm globalement
-RUN npm install -g pnpm
-
-# Installer les dépendances
-RUN pnpm install --frozen-lockfile
+# Installer pnpm (version alignée sur `packageManager`) puis les dépendances
+RUN npm install -g pnpm@10.19.0 \
+    && pnpm install --frozen-lockfile
 
 # Copier le code source
 COPY . .
@@ -31,14 +33,16 @@ RUN apk update && apk upgrade
 # Définir le répertoire de travail
 WORKDIR /app
 
+# pnpm est non interactif dans Docker : sans CI il tente de demander
+# confirmation (ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY)
+ENV CI=true
+
 # Copier les fichiers de configuration des dépendances
 COPY package*.json pnpm-lock.yaml ./
 
-# Installer pnpm globalement
-RUN npm install -g pnpm
-
-# Installer les dépendances
-RUN pnpm install --frozen-lockfile
+# Installer pnpm (version alignée sur `packageManager`) puis les dépendances
+RUN npm install -g pnpm@10.19.0 \
+    && pnpm install --frozen-lockfile
 
 # Copier le code source
 COPY . .
@@ -64,29 +68,25 @@ ARG BASE_URL_MOBILE=http://localhost:3001
 # Copier les fichiers statiques générés depuis l'étape de build desktop
 COPY --from=desktop-builder /app/dist /usr/share/nginx/html
 
-# Script d'initialisation qui génère les fichiers de config au démarrage
-RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
-    echo 'set -e' >> /docker-entrypoint.sh && \
-    echo '' >> /docker-entrypoint.sh && \
-    echo '# Generate configuration files from environment variables' >> /docker-entrypoint.sh && \
-    echo 'echo "window.DEMO_MODE = \"${DEMO_MODE:-false}\";" > /usr/share/nginx/html/demo-config.js' >> /docker-entrypoint.sh && \
-    echo '' >> /docker-entrypoint.sh && \
-    echo 'echo "window.API_BASE_URL = \"${API_BASE_URL:-http://localhost:8000}\";" > /usr/share/nginx/html/api-config.js' >> /docker-entrypoint.sh && \
-    echo 'echo "window.BASE_URL = \"${BASE_URL:-http://localhost:3000}\";" >> /usr/share/nginx/html/api-config.js' >> /docker-entrypoint.sh && \
-    echo 'echo "window.BASE_URL_MOBILE = \"${BASE_URL_MOBILE:-http://localhost:3001}\";" >> /usr/share/nginx/html/api-config.js' >> /docker-entrypoint.sh && \
-    echo '' >> /docker-entrypoint.sh && \
-    echo 'exec "$@"' >> /docker-entrypoint.sh && \
-    chmod +x /docker-entrypoint.sh
-
 # Copier une configuration Nginx personnalisée (optionnel, pour SPA)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Exposer le port 80 (standard pour Nginx)
-EXPOSE 80
+# Script d'initialisation qui génère les fichiers de config au démarrage
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+
+# Nginx tourne sous l'utilisateur `nginx` (non root) : le PID va dans /tmp et
+# l'entrypoint doit pouvoir écrire les fichiers de config dans le dossier servi.
+RUN chmod +x /docker-entrypoint.sh \
+    && sed -i 's|^pid .*|pid /tmp/nginx.pid;|' /etc/nginx/nginx.conf \
+    && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx
+USER 101
+
+# Exposer le port 8080 (port non privilégié, requis en non root)
+EXPOSE 8080
 
 # Healthcheck pour vérifier que le serveur Nginx répond
 HEALTHCHECK --interval=300s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+    CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
 
 # Lancer Nginx via le script d'entrée
 ENTRYPOINT ["/docker-entrypoint.sh"]
@@ -104,29 +104,25 @@ ARG BASE_URL_MOBILE=http://localhost:3001
 # Copier les fichiers statiques générés depuis l'étape de build mobile
 COPY --from=mobile-builder /app/mobile/dist /usr/share/nginx/html
 
-# Script d'initialisation qui génère les fichiers de config au démarrage
-RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
-    echo 'set -e' >> /docker-entrypoint.sh && \
-    echo '' >> /docker-entrypoint.sh && \
-    echo '# Generate configuration files from environment variables' >> /docker-entrypoint.sh && \
-    echo 'echo "window.DEMO_MODE = \"${DEMO_MODE:-false}\";" > /usr/share/nginx/html/demo-config.js' >> /docker-entrypoint.sh && \
-    echo '' >> /docker-entrypoint.sh && \
-    echo 'echo "window.API_BASE_URL = \"${API_BASE_URL:-http://localhost:8000}\";" > /usr/share/nginx/html/api-config.js' >> /docker-entrypoint.sh && \
-    echo 'echo "window.BASE_URL = \"${BASE_URL:-http://localhost:3000}\";" >> /usr/share/nginx/html/api-config.js' >> /docker-entrypoint.sh && \
-    echo 'echo "window.BASE_URL_MOBILE = \"${BASE_URL_MOBILE:-http://localhost:3001}\";" >> /usr/share/nginx/html/api-config.js' >> /docker-entrypoint.sh && \
-    echo '' >> /docker-entrypoint.sh && \
-    echo 'exec "$@"' >> /docker-entrypoint.sh && \
-    chmod +x /docker-entrypoint.sh
-
 # Copier une configuration Nginx personnalisée (optionnel, pour SPA)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Exposer le port 80 (standard pour Nginx)
-EXPOSE 80
+# Script d'initialisation qui génère les fichiers de config au démarrage
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+
+# Nginx tourne sous l'utilisateur `nginx` (non root) : le PID va dans /tmp et
+# l'entrypoint doit pouvoir écrire les fichiers de config dans le dossier servi.
+RUN chmod +x /docker-entrypoint.sh \
+    && sed -i 's|^pid .*|pid /tmp/nginx.pid;|' /etc/nginx/nginx.conf \
+    && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx
+USER 101
+
+# Exposer le port 8080 (port non privilégié, requis en non root)
+EXPOSE 8080
 
 # Healthcheck pour vérifier que le serveur Nginx répond
 HEALTHCHECK --interval=300s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+    CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
 
 # Lancer Nginx via le script d'entrée
 ENTRYPOINT ["/docker-entrypoint.sh"]

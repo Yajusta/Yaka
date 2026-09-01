@@ -23,7 +23,7 @@ Yaka implements a hierarchical role system that provides fine-grained control ov
 
 ### Role Hierarchy
 
-```
+```text
 VISITOR
   └── COMMENTER
        └── CONTRIBUTOR
@@ -298,13 +298,13 @@ When assigning roles to team members, consider these guidelines:
 
 ## Managing Tasks
 
-_(This section will cover task creation, editing, moving, etc.)_
+> This section will cover task creation, editing, moving, etc.
 
 ---
 
 ## Collaboration Features
 
-_(This section will cover comments, mentions, notifications, etc.)_
+> This section will cover comments, mentions, notifications, etc.
 
 ---
 

@@ -1,5 +1,6 @@
 """Tests pour le routeur lists."""
 
+import asyncio
 import os
 import sys
 from datetime import datetime, timezone
@@ -586,7 +587,3 @@ class TestListsRouter:
 
                     # The exception should propagate since read_lists doesn't have error handling
                     assert "Database error" in str(exc_info.value)
-
-
-# Import needed for tests
-import asyncio

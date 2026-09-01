@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -37,8 +38,6 @@ class CardItem(Base):
 
     PROTECTED_FIELDS: set[str] = {"id", "created_by", "created_at"}
 
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .card import Card

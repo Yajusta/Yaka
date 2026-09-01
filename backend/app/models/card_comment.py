@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -41,8 +41,6 @@ class CardComment(Base):
 
     PROTECTED_FIELDS: set[str] = {"id", "card_id", "user_id", "created_at"}
 
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .card import Card

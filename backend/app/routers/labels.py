@@ -115,7 +115,7 @@ async def delete_label(
     current_user: User = Depends(require_admin),
 ):
     """Supprimer un libellé (Admin uniquement)."""
-    if success := label_service.delete_label(db, label_id=label_id):
+    if label_service.delete_label(db, label_id=label_id):
         return {"message": "Libellé supprimé avec succès"}
     else:
         raise HTTPException(

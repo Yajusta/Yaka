@@ -5,6 +5,7 @@ import sys
 from unittest.mock import Mock, patch
 
 import pytest
+from pydantic import ValidationError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -260,13 +261,13 @@ class TestCreateList:
     def test_create_list_invalid_order_too_low(self, mock_db):
         """Test de création avec ordre invalide (trop bas)."""
         # La validation Pydantic empêche déjà la création avec order < 1
-        with pytest.raises(Exception):  # PydanticValidationError
+        with pytest.raises(ValidationError):
             KanbanListCreate(name="Test", order=0)
 
     def test_create_list_invalid_order_too_high(self, mock_db):
         """Test de création avec ordre invalide (trop haut)."""
         # La validation Pydantic empêche déjà la création avec order > 9999
-        with pytest.raises(Exception):  # PydanticValidationError
+        with pytest.raises(ValidationError):
             KanbanListCreate(name="Test", order=10000)
 
     def test_create_list_max_lists_reached(self, mock_db, sample_list_create_data):
@@ -391,13 +392,13 @@ class TestUpdateList:
     def test_update_list_order_invalid_too_low(self, mock_db):
         """Test de mise à jour avec ordre invalide (trop bas)."""
         # La validation Pydantic empêche déjà la création avec order < 1
-        with pytest.raises(Exception):  # PydanticValidationError
+        with pytest.raises(ValidationError):
             KanbanListUpdate(order=0)
 
     def test_update_list_order_invalid_too_high(self, mock_db):
         """Test de mise à jour avec ordre invalide (trop haut)."""
         # La validation Pydantic n'a pas de limite supérieure, donc on teste directement la création
-        with pytest.raises(Exception):  # PydanticValidationError
+        with pytest.raises(ValidationError):
             KanbanListUpdate(order=10000)
 
     def test_update_list_order_exists_reorders(self, mock_db, sample_kanban_lists):

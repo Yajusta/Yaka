@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X, Filter, ChevronLeft, Check } from "lucide-react";
+import { Search, X, ChevronLeft, Check } from "lucide-react";
 import { cn } from "@shared/lib/utils";
-import { useAuth } from "@shared/hooks/useAuth";
 
 interface User {
   id: number;
@@ -46,7 +45,6 @@ export const FilterScreen = ({
   onVoiceFilterClear,
 }: FilterScreenProps) => {
   const { t } = useTranslation();
-  const { aiAvailable } = useAuth();
   const [searchValue, setSearchValue] = useState(filters.search || "");
   const [selectedAssignees, setSelectedAssignees] = useState<number[]>(
     filters.assignee_ids || [],
@@ -77,22 +75,6 @@ export const FilterScreen = ({
       label_ids: selectedLabels.length > 0 ? selectedLabels : null,
     };
     onFiltersChange(newFilters);
-    onBack();
-  };
-
-  const handleClearFilters = () => {
-    const clearedFilters = {
-      search: "",
-      assignee_ids: null,
-      priorities: null,
-      label_ids: null,
-    };
-    onFiltersChange(clearedFilters);
-    setSearchValue("");
-    setSelectedAssignees([]);
-    setSelectedPriorities([]);
-    setSelectedLabels([]);
-    // Go back after clearing filters
     onBack();
   };
 

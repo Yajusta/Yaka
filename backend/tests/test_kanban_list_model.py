@@ -6,7 +6,7 @@ import sys
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -559,7 +559,7 @@ class TestKanbanListModel:
         )
 
         db_session.add(kanban_list)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
     def test_kanban_list_name_length_constraint(self, db_session):
@@ -649,7 +649,7 @@ class TestKanbanListModel:
             ("numbers_and_text", "List 123: Something"),
         ]
 
-        for suffix, name in test_lists:
+        for _suffix, name in test_lists:
             kanban_list = KanbanList(
                 name=name,
                 order=len(test_lists),

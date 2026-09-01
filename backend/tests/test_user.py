@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -292,7 +292,7 @@ class TestCreateUser:
             display_name="Duplicate User",
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             create_user(db_session, user_data)
 
     def test_create_user_long_display_name(self, db_session):
@@ -309,7 +309,7 @@ class TestCreateUser:
         assert user.display_name == long_name
 
         # Vérifier que le dépassement de la limite est bloqué par Pydantic
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             UserCreate(
                 email="longname2@example.com",
                 password="Password123",
@@ -1073,5 +1073,5 @@ class TestSecurityAndEdgeCases:
         create_user(db_session, user_data)
 
         # Essayer de créer un autre utilisateur avec le même email
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             create_user(db_session, user_data)

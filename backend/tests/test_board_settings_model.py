@@ -6,7 +6,7 @@ import sys
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -164,7 +164,7 @@ class TestBoardSettingsModel:
         db_session.add(setting2)
 
         # Devrait lever une erreur d'intégrité
-        with pytest.raises(Exception):  # SQLAlchemy lève généralement IntegrityError
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
     def test_board_settings_update(self, db_session, sample_board_settings):
@@ -509,7 +509,7 @@ class TestBoardSettingsModel:
         )  # Devrait échouer
 
         db_session.add(setting)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
         db_session.rollback()
@@ -520,7 +520,7 @@ class TestBoardSettingsModel:
         )  # Devrait échouer
 
         db_session.add(setting)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
     def test_board_settings_transactions(self, db_session):

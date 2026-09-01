@@ -1,5 +1,6 @@
 """Tests pour le routeur card_comments."""
 
+import asyncio
 import contextlib
 import os
 import sys
@@ -635,7 +636,3 @@ class TestCardCommentsRouter:
                         assert exc_info.value.status_code == 500
                     else:
                         assert "Database error" in str(exc_info.value)
-
-
-# Import needed for tests
-import asyncio

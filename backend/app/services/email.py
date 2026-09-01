@@ -28,7 +28,8 @@ else:
     # essayer de charger un .env si trouvé ailleurs (silencieux sinon)
     load_dotenv()
 
-SMTP_HOST = os.getenv("SMTP_HOST", "0.0.0.0")
+# Adresse du serveur SMTP *à joindre* : ce n'est pas une adresse d'écoute.
+SMTP_HOST = os.getenv("SMTP_HOST", "0.0.0.0")  # nosec B104
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")

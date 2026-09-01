@@ -30,7 +30,7 @@ const ArchivesScreen = () => {
     try {
       setLoading(true);
       const [cardsData, listsData] = await Promise.all([
-        cardService.getCards({ is_archived: true }),
+        cardService.getArchivedCards(),
         listsApi.getLists(),
       ]);
       setArchivedCards(cardsData as ArchivedCard[]);

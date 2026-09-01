@@ -1,2 +1,7 @@
 # Prettier friendly markdownlint config (all formatting rules disabled)
 extends: markdownlint/style/prettier
+
+# Un même intitulé peut réapparaître dans deux sections différentes
+# (ex. « Clone the project » sous Deployment et sous Installation).
+MD024:
+  siblings_only: true

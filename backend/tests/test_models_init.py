@@ -146,7 +146,7 @@ class TestModelImports:
             # Simuler une erreur dans un sous-module
             with patch.dict("sys.modules", {"app.models.user": None}):
                 with pytest.raises(ImportError):
-                    from app.models import User
+                    from app.models import User  # noqa: F401
         finally:
             # Restaurer les modules originaux
             sys.modules.clear()
@@ -255,7 +255,9 @@ class TestModelImports:
         """Test la gestion des imports manquants."""
         with pytest.raises(ImportError):
             # Essayer d'importer un modèle qui n'existe pas
-            from app.models import NonExistentModel  # type: ignore[attr-defined]
+            from app.models import (  # type: ignore[attr-defined] # noqa: F401
+                NonExistentModel,
+            )
 
     def test_submodule_imports(self):
         """Test que les sous-modules peuvent être importés individuellement."""

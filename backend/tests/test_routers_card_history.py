@@ -317,8 +317,9 @@ class TestCardHistoryRouter:
             with patch("app.routers.card_history.get_db") as mock_db:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
-                # When calling directly, type validation doesn't occur
-                with pytest.raises(Exception):
+                # Appelée directement, la route reçoit un dict brut au lieu d'un
+                # CardHistoryCreate : l'accès à `history_entry.card_id` échoue.
+                with pytest.raises(AttributeError):
                     asyncio.run(
                         create_card_history_entry(
                             "invalid",
@@ -345,9 +346,9 @@ class TestCardHistoryRouter:
             with patch("app.routers.card_history.get_db") as mock_db:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
-                # When calling directly, validation doesn't occur the same way as with FastAPI
-                # The CardHistoryCreate pydantic model will validate the data
-                with pytest.raises(Exception):
+                # Appelée directement, la route reçoit un dict brut au lieu d'un
+                # CardHistoryCreate : l'accès à `history_entry.card_id` échoue.
+                with pytest.raises(AttributeError):
                     asyncio.run(
                         create_card_history_entry(
                             1,
@@ -493,9 +494,9 @@ class TestCardHistoryRouter:
             with patch("app.routers.card_history.get_db") as mock_db:
                 mock_db.return_value.__enter__.return_value = MagicMock()
 
-                # When calling directly, validation doesn't occur the same way as with FastAPI
-                # Just check that some exception is raised for invalid data
-                with pytest.raises(Exception):
+                # Appelée directement, la route reçoit un dict brut au lieu d'un
+                # CardHistoryCreate : l'accès à `history_entry.card_id` échoue.
+                with pytest.raises(AttributeError):
                     asyncio.run(
                         create_card_history_entry(
                             1,

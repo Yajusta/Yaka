@@ -49,7 +49,7 @@ class KanbanListService:
             # Ne compter que les cartes actives (non archivées)
             cards_count = (
                 db.query(Card)
-                .filter(Card.list_id == list_id, Card.is_archived == False)
+                .filter(Card.list_id == list_id, Card.is_archived.is_(False))
                 .count()
             )
             return kanban_list, cards_count
@@ -72,7 +72,7 @@ class KanbanListService:
             ValueError: Si la validation échoue
         """
         if (
-            existing_list := db.query(KanbanList)
+            db.query(KanbanList)
             .filter(func.lower(KanbanList.name) == func.lower(list_data.name))
             .first()
         ):
@@ -94,11 +94,7 @@ class KanbanListService:
                 "Nombre maximum de listes atteint (50). Supprimez des listes existantes avant d'en créer de nouvelles."
             )
 
-        if (
-            existing_order := db.query(KanbanList)
-            .filter(KanbanList.order == list_data.order)
-            .first()
-        ):
+        if db.query(KanbanList).filter(KanbanList.order == list_data.order).first():
             # Décaler tous les ordres supérieurs ou égaux
             KanbanListService._shift_orders_up(db, list_data.order)
 
@@ -147,7 +143,7 @@ class KanbanListService:
 
         # Vérifier l'unicité du nom si fourni (case-insensitive)
         if "name" in update_data:
-            if existing_list := (
+            if (
                 db.query(KanbanList)
                 .filter(
                     func.lower(KanbanList.name) == func.lower(update_data["name"]),
@@ -172,7 +168,7 @@ class KanbanListService:
                 raise ValueError("L'ordre ne peut pas dépasser 9999")
 
             if new_order != old_order:
-                if existing_order := (
+                if (
                     db.query(KanbanList)
                     .filter(KanbanList.order == new_order, KanbanList.id != list_id)
                     .first()

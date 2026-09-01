@@ -99,7 +99,7 @@ def get_cards(
 
     # Filtrer les cartes archivées si nécessaire
     if not filters.include_archived:
-        query = query.filter(Card.is_archived == False)
+        query = query.filter(Card.is_archived.is_(False))
 
     # Filtrer par liste
     if filters.list_id:
@@ -145,7 +145,7 @@ def get_archived_cards(
     db: Session, skip: int = 0, limit: int = 100, user: Optional[User] = None
 ) -> List[Card]:
     """Récupérer les cartes archivées."""
-    query = db.query(Card).filter(Card.is_archived == True)
+    query = db.query(Card).filter(Card.is_archived.is_(True))
 
     # Apply view scope filter if user is provided
     if user:
@@ -179,7 +179,7 @@ def create_card(db: Session, card: CardCreate, created_by: int) -> Card:
         # Pas de position spécifiée - ajouter à la fin (uniquement les cartes non archivées)
         max_position = (
             db.query(func.max(Card.position))
-            .filter(Card.list_id == target_list_id, Card.is_archived == False)
+            .filter(Card.list_id == target_list_id, Card.is_archived.is_(False))
             .scalar()
         )
         position = (max_position + 1) if max_position is not None else 0
@@ -302,9 +302,7 @@ def update_card(
             ):
                 _assignee_changed(old_values, db, db_card, updated_by)
 
-            if other_changes := [
-                key for key in old_values if key not in ["priority", "assignee_id"]
-            ]:
+            if any(key not in ("priority", "assignee_id") for key in old_values):
                 history_entry = CardHistoryCreate(
                     card_id=db_card.id,
                     user_id=updated_by,
@@ -475,7 +473,7 @@ def move_card(
             # Pas de position spécifiée, mettre à la fin (uniquement les cartes non archivées)
             max_position = (
                 db.query(func.max(Card.position))
-                .filter(Card.list_id == new_list_id, Card.is_archived == False)
+                .filter(Card.list_id == new_list_id, Card.is_archived.is_(False))
                 .scalar()
             )
             target_position = (max_position + 1) if max_position is not None else 0
@@ -497,7 +495,7 @@ def move_card(
             # Pas de position spécifiée, mettre à la fin (uniquement les cartes non archivées)
             max_position = (
                 db.query(func.max(Card.position))
-                .filter(Card.list_id == new_list_id, Card.is_archived == False)
+                .filter(Card.list_id == new_list_id, Card.is_archived.is_(False))
                 .scalar()
             )
             target_position = (max_position + 1) if max_position is not None else 0
@@ -549,7 +547,7 @@ def _reorder_cards_in_same_list(
             Card.position > old_position,
             Card.position <= new_position,
             Card.id != card_id,
-            Card.is_archived == False,
+            Card.is_archived.is_(False),
         ).update({Card.position: Card.position - 1})
         db.commit()  # Commit des décalages avant de mettre à jour la carte déplacée
 
@@ -562,7 +560,7 @@ def _reorder_cards_in_same_list(
             Card.position >= new_position,
             Card.position < old_position,
             Card.id != card_id,
-            Card.is_archived == False,
+            Card.is_archived.is_(False),
         ).update({Card.position: Card.position + 1})
         db.commit()  # Commit des décalages avant de mettre à jour la carte déplacée
 
@@ -577,7 +575,7 @@ def _compact_positions_after_removal(db: Session, list_id: int, removed_position
     db.query(Card).filter(
         Card.list_id == list_id,
         Card.position > removed_position,
-        Card.is_archived == False,
+        Card.is_archived.is_(False),
     ).update({Card.position: Card.position - 1})
     db.commit()
 
@@ -587,7 +585,7 @@ def _shift_positions_for_insertion(db: Session, list_id: int, insert_position: i
     db.query(Card).filter(
         Card.list_id == list_id,
         Card.position >= insert_position,
-        Card.is_archived == False,
+        Card.is_archived.is_(False),
     ).update({Card.position: Card.position + 1})
     db.commit()
 
@@ -597,7 +595,7 @@ def _normalize_positions_in_list(db: Session, list_id: int):
     # Récupérer uniquement les cartes non archivées de la liste triées par position actuelle
     cards = (
         db.query(Card)
-        .filter(Card.list_id == list_id, Card.is_archived == False)
+        .filter(Card.list_id == list_id, Card.is_archived.is_(False))
         .order_by(Card.position)
         .all()
     )
@@ -620,7 +618,8 @@ def bulk_move_cards(db: Session, bulk_move_request: BulkCardMoveRequest) -> List
     max_position = (
         db.query(func.max(Card.position))
         .filter(
-            Card.list_id == bulk_move_request.target_list_id, Card.is_archived == False
+            Card.list_id == bulk_move_request.target_list_id,
+            Card.is_archived.is_(False),
         )
         .scalar()
     )

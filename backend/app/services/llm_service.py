@@ -253,27 +253,27 @@ Le "libellé" peut aussi être appelé "étiquette", "flag" ou "tag".
 ```
 
 ### INSTRUCTION ###
-Ton rôle est d'analyser la "DEMANDE UTILISATEUR" ci-dessous. 
+Ton rôle est d'analyser la "DEMANDE UTILISATEUR" ci-dessous.
 En te basant UNIQUEMENT sur les informations fournies dans le CONTEXTE EXISTANT, tu dois déduire :
 - s'il faut mettre à jour une tâche existante
 OU
 - s'il faut créer une nouvelle tâche.
 
-Dans les deux cas : 
+Dans les deux cas :
 - Tu dois extraire les informations nécessaires pour remplir les champs du format de sortie attendu.
 - Essaye de voir s'il y a des libellés pertinents en fonction du contexte, mais sans en inventer. Ils sont factultatifs.
 - Ne mets jamais 2 fois le même libellé.
 - Ne mets jamais 2 fois le même élément dans la checklist.
 - Quand tu comprends qu'un élement de la demande correspond à un terme du dictionnaire, utilise le terme tel qu'il est écrit dans le dictionnaire.
 
-Dans le cas d'une mise à jour: 
+Dans le cas d'une mise à jour:
 - Utilise l'ID de la tâche existante et ne modfie que les parties nécessaires (il ne faut pas modifier le titre ou la description si c'est pour mettre un titre ou une description équivalente).
 - Ne modifie pas les champs qui ne sont pas mentionnés dans la demande utilisateur.
-- Essaye de trouver la liste la plus appropriée pour la tâche modifiée en te basant sur les noms et les descriptions des liste. 
+- Essaye de trouver la liste la plus appropriée pour la tâche modifiée en te basant sur les noms et les descriptions des liste.
     Exemple: si la modification coche un élément de la checklist et qu'il existe une liste "tâches en cours", il faut aussi modifier la liste à laquelle la tâche est affectée.
-Attention : n'invente jamais d'identifiants lorsque tu rajoutes un élément, mais laisse le vide. 
+Attention : n'invente jamais d'identifiants lorsque tu rajoutes un élément, mais laisse le vide.
 
-Dans le cas d'une création : 
+Dans le cas d'une création :
 - Si la description n'apporte pas d'information supplémentaire au titre de la tâche, garde la description vide.
 
 Génère UN SEUL objet JSON représentant la tâche en respectant le format demandé.
@@ -462,7 +462,7 @@ def get_tasks(user_context: Optional[Dict] = None) -> str:
                 selectinload(Card.labels),
                 selectinload(Card.assignee),
             )
-            .filter(Card.is_archived == False)
+            .filter(Card.is_archived.is_(False))
         )
 
         # Apply view scope filtering if user context is provided

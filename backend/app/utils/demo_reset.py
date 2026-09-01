@@ -28,6 +28,9 @@ from app.services.label import create_label
 from app.services.user import create_admin_user, create_user, get_user_by_email
 from app.utils.demo_mode import is_demo_mode
 
+# Mot de passe public des comptes de démonstration (documenté dans le README).
+DEMO_USER_PASSWORD = "Demo1234"  # nosec B105
+
 
 def initialize_default_data(db_session=None):
     """Initialize default data: admin user and settings (without demo data)."""
@@ -67,31 +70,31 @@ def create_demo_users(db_session):
     demo_users = [
         {
             "email": "supervisor@yaka.local",
-            "password": "Demo1234",
+            "password": DEMO_USER_PASSWORD,
             "display_name": "Sarah Supervisor",
             "role": UserRole.SUPERVISOR,
         },
         {
             "email": "editor@yaka.local",
-            "password": "Demo1234",
+            "password": DEMO_USER_PASSWORD,
             "display_name": "Eric Editor",
             "role": UserRole.EDITOR,
         },
         {
             "email": "contributor@yaka.local",
-            "password": "Demo1234",
+            "password": DEMO_USER_PASSWORD,
             "display_name": "Chris Contributor",
             "role": UserRole.CONTRIBUTOR,
         },
         {
             "email": "commenter@yaka.local",
-            "password": "Demo1234",
+            "password": DEMO_USER_PASSWORD,
             "display_name": "Carol Commenter",
             "role": UserRole.COMMENTER,
         },
         {
             "email": "visitor@yaka.local",
-            "password": "Demo1234",
+            "password": DEMO_USER_PASSWORD,
             "display_name": "Victor Visitor",
             "role": UserRole.VISITOR,
         },

@@ -207,7 +207,7 @@ class TestViewScopeFiltering:
     ):
         """Test that users with ALL scope can see all cards."""
         user = sample_users["all_scope"]
-        query = db_session.query(Card).filter(Card.is_archived == False)
+        query = db_session.query(Card).filter(Card.is_archived.is_(False))
 
         filtered_query = apply_view_scope_filter(query, user)
         result = filtered_query.all()
@@ -226,7 +226,7 @@ class TestViewScopeFiltering:
     ):
         """Test that users with UNASSIGNED_PLUS_MINE scope see unassigned cards + their cards."""
         user = sample_users["unassigned_plus_mine"]
-        query = db_session.query(Card).filter(Card.is_archived == False)
+        query = db_session.query(Card).filter(Card.is_archived.is_(False))
 
         filtered_query = apply_view_scope_filter(query, user)
         result = filtered_query.all()
@@ -245,7 +245,7 @@ class TestViewScopeFiltering:
     ):
         """Test that users with MINE_ONLY scope see only their assigned cards."""
         user = sample_users["mine_only"]
-        query = db_session.query(Card).filter(Card.is_archived == False)
+        query = db_session.query(Card).filter(Card.is_archived.is_(False))
 
         filtered_query = apply_view_scope_filter(query, user)
         result = filtered_query.all()
@@ -356,7 +356,7 @@ class TestViewScopeIntegration:
         query = db_session.query(Card)
 
         # Apply non-archived filter first
-        query = query.filter(Card.is_archived == False)
+        query = query.filter(Card.is_archived.is_(False))
 
         # Apply view scope filter
         filtered_query = apply_view_scope_filter(query, user)
@@ -381,7 +381,7 @@ class TestViewScopeIntegration:
         query = db_session.query(Card)
 
         # Apply non-archived filter first
-        query = query.filter(Card.is_archived == False)
+        query = query.filter(Card.is_archived.is_(False))
 
         # Apply view scope filter
         filtered_query = apply_view_scope_filter(query, user)

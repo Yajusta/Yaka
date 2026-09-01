@@ -4,7 +4,9 @@
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": false,
+    // true (comme le desktop) : les typings de @dnd-kit 6.x référencent le
+    // namespace global JSX supprimé par React 19 -> erreurs non corrigeables ici.
+    "skipLibCheck": true,
 
     /* Bundler mode */
     "moduleResolution": "bundler",

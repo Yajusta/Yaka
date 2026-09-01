@@ -150,7 +150,9 @@ async def create_board(
             engine.dispose()
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creating board: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error creating board: {str(e)}"
+        ) from e
 
 
 @router.get("/boards")
@@ -238,4 +240,6 @@ async def delete_board(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error archiving board: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error archiving board: {str(e)}"
+        ) from e

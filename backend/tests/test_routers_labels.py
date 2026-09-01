@@ -1,5 +1,6 @@
 """Tests pour le routeur labels."""
 
+import asyncio
 import os
 import sys
 from datetime import datetime, timezone
@@ -553,7 +554,3 @@ class TestLabelsRouter:
                         )
 
                     assert str(exc_info.value) == "Database error"
-
-
-# Import needed for tests
-import asyncio

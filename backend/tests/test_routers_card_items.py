@@ -1,5 +1,6 @@
 """Tests pour le routeur card_items."""
 
+import asyncio
 import os
 import sys
 from datetime import datetime, timezone
@@ -540,7 +541,3 @@ class TestCardItemsRouter:
                         )
 
                     assert str(exc_info.value) == "Database error"
-
-
-# Import needed for tests
-import asyncio

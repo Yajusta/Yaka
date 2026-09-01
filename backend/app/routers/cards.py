@@ -334,7 +334,7 @@ async def delete_card(
     """Supprimer définitivement une carte."""
     card = _get_card_or_404(db, card_id)
     ensure_can_delete_card(current_user, card)
-    if success := card_service.delete_card(db, card_id=card_id):
+    if card_service.delete_card(db, card_id=card_id):
         return {"message": "Carte supprimée avec succès"}
     else:
         raise HTTPException(

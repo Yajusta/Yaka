@@ -6,7 +6,7 @@ import sys
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -429,7 +429,7 @@ class TestLabelModel:
         db_session.add(label2)
 
         # Devrait lever une erreur d'intégrité
-        with pytest.raises(Exception):  # SQLAlchemy lève généralement IntegrityError
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
     def test_label_color_validation(self, db_session, sample_user):
@@ -674,7 +674,7 @@ class TestLabelModel:
         )
 
         db_session.add(label)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
         db_session.rollback()
@@ -687,7 +687,7 @@ class TestLabelModel:
         )
 
         db_session.add(label)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
         db_session.rollback()
@@ -700,7 +700,7 @@ class TestLabelModel:
         )
 
         db_session.add(label)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
     def test_label_name_length_constraint(self, db_session, sample_user):
@@ -807,7 +807,7 @@ class TestLabelModel:
             ("numbers_and_text", "Label 123", "#FFD700"),
         ]
 
-        for suffix, name, color in test_labels:
+        for _suffix, name, color in test_labels:
             label = Label(
                 name=name,
                 color=color,

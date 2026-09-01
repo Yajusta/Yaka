@@ -35,12 +35,14 @@ import { cardService } from "@shared/services/api";
 import { useToast } from "@shared/hooks/use-toast";
 import { useAuth } from "@shared/hooks/useAuth";
 import { usePermissions } from "@shared/hooks/usePermissions";
-import { pipeline, env } from "@xenova/transformers";
+import { pipeline, env } from "@huggingface/transformers";
 
 // Configuration Transformers.js
 env.allowLocalModels = false;
 env.useBrowserCache = true;
-env.backends.onnx.wasm.numThreads = 1;
+if (env.backends.onnx.wasm) {
+  env.backends.onnx.wasm.numThreads = 1;
+}
 
 type WhisperModel = "Xenova/whisper-tiny" | "Xenova/whisper-base";
 
@@ -130,7 +132,7 @@ export const VoiceControlWhisperDialog = ({
           "automatic-speech-recognition",
           selectedModel,
           {
-            quantized: true,
+            dtype: "q8",
             progress_callback: (progress: any) => {
               if (!isMounted) return;
 

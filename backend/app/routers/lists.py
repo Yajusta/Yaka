@@ -187,7 +187,7 @@ async def get_list_cards_count(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erreur interne lors de la récupération du nombre de cartes",
-        )
+        ) from e
 
 
 @router.post("/reorder")

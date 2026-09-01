@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -34,8 +34,6 @@ class CardHistory(Base):
     card: Mapped["Card"] = relationship("Card", back_populates="history")
     user: Mapped["User"] = relationship("User", back_populates="card_actions")
 
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .card import Card

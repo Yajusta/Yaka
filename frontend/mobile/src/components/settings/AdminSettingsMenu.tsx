@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { Users, Tag, List, BookOpen, Palette, AlertCircle } from "lucide-react";
 
 interface AdminSettingsMenuProps {
-  onBack: () => void;
   onClose: () => void;
 }
 

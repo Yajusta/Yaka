@@ -13,7 +13,7 @@ kanban-app/
 │   │   ├── routers/        # Endpoints API
 │   │   ├── services/       # Logique métier
 │   │   └── utils/          # Utilitaires
-│   └── requirements.txt    # Dépendances Python
+│   └── pyproject.toml      # Dépendances Python (uv)
 ├── frontend/               # Application React
 │   ├── src/
 │   │   ├── components/     # Composants React
@@ -73,7 +73,7 @@ Au démarrage du serveur backend, le système :
 
 ### Exemple de sortie au démarrage
 
-```
+```text
 Migration de 9 base(s) de données trouvée(s)...
 
 ============================================================

@@ -55,7 +55,7 @@ export const PullToRefreshIndicator: React.FC<PullToRefreshIndicatorProps> = ({
       }
     };
 
-    const handleTouchEnd = async (e: TouchEvent) => {
+    const handleTouchEnd = async () => {
       if (startY.current === null) return;
 
       if (pullDistance >= PULL_THRESHOLD && !isRefreshing) {

@@ -171,7 +171,7 @@ async def delete_entry(
             detail="You can only delete your own dictionary entries",
         )
 
-    if success := personal_dictionary_service.delete_entry(db, entry_id=entry_id):
+    if personal_dictionary_service.delete_entry(db, entry_id=entry_id):
         return {"message": "Dictionary entry deleted successfully"}
     else:
         raise HTTPException(

@@ -114,7 +114,7 @@ async def delete_item(
 
     ensure_can_delete_card_item(current_user, card)
 
-    if ok := card_item_service.delete_item(db, item_id):
+    if card_item_service.delete_item(db, item_id):
         return {"message": "Item deleted"}
     else:
         raise HTTPException(

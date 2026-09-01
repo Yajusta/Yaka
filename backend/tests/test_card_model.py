@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 from sqlalchemy import and_, or_
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -395,14 +395,14 @@ class TestCardModel:
 
     def test_card_query_archived(self, db_session, sample_cards):
         """Test de recherche des cartes archivées."""
-        archived_cards = db_session.query(Card).filter(Card.is_archived == True).all()
+        archived_cards = db_session.query(Card).filter(Card.is_archived.is_(True)).all()
 
         assert len(archived_cards) == 1
         assert archived_cards[0].is_archived is True
 
     def test_card_query_non_archived(self, db_session, sample_cards):
         """Test de recherche des cartes non archivées."""
-        active_cards = db_session.query(Card).filter(Card.is_archived == False).all()
+        active_cards = db_session.query(Card).filter(Card.is_archived.is_(False)).all()
 
         assert len(active_cards) == 2
         assert all(not card.is_archived for card in active_cards)
@@ -774,14 +774,16 @@ class TestCardModel:
     def test_card_bulk_update(self, db_session, sample_cards):
         """Test de mises à jour en masse."""
         # Mettre à jour toutes les cartes non archivées
-        db_session.query(Card).filter(Card.is_archived == False).update(
+        db_session.query(Card).filter(Card.is_archived.is_(False)).update(
             {"is_archived": True}
         )
 
         db_session.commit()
 
         # Vérifier que toutes les cartes sont maintenant archivées
-        active_cards = db_session.query(Card).filter(Card.is_archived == False).count()
+        active_cards = (
+            db_session.query(Card).filter(Card.is_archived.is_(False)).count()
+        )
         assert active_cards == 0
 
     def test_card_complex_queries(self, db_session, sample_cards):
@@ -791,7 +793,7 @@ class TestCardModel:
             db_session.query(Card)
             .filter(
                 and_(
-                    Card.is_archived == False,
+                    Card.is_archived.is_(False),
                     or_(
                         Card.priority == CardPriority.HIGH,
                         Card.priority == CardPriority.MEDIUM,
@@ -954,7 +956,7 @@ class TestCardModel:
         )
 
         db_session.add(card)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
         db_session.rollback()
@@ -967,7 +969,7 @@ class TestCardModel:
         )
 
         db_session.add(card)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
         db_session.rollback()
@@ -980,7 +982,7 @@ class TestCardModel:
         )
 
         db_session.add(card)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
     def test_card_transactions(self, db_session, sample_kanban_lists, sample_user):
@@ -1090,7 +1092,7 @@ class TestCardModel:
             .filter(
                 and_(
                     Card.created_by == creator_id,
-                    Card.is_archived == False,
+                    Card.is_archived.is_(False),
                     Card.priority.in_([CardPriority.HIGH, CardPriority.MEDIUM]),
                 )
             )

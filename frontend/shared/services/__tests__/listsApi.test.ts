@@ -1,29 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import axios from "axios";
 
-// Mock axios completely
-vi.mock("axios", () => ({
+// `listsApi` passe par l'instance axios partagée (`./api`), pas par le module
+// `axios` global : c'est cette instance qu'il faut mocker.
+vi.mock("../api", () => ({
   default: {
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
+    patch: vi.fn(),
     delete: vi.fn(),
-    create: vi.fn(() => ({
-      get: vi.fn(),
-      post: vi.fn(),
-      put: vi.fn(),
-      delete: vi.fn(),
-      interceptors: {
-        request: { use: vi.fn() },
-        response: { use: vi.fn() },
-      },
-    })),
-    interceptors: {
-      request: { use: vi.fn() },
-      response: { use: vi.fn() },
-    },
   },
 }));
+
+const { default: api } = await import("../api");
+const { listsApi, ListsApiError } = await import("../listsApi");
+
+const mockedApi = vi.mocked(api);
 
 const mockLists = [
   {
@@ -49,53 +41,85 @@ const mockLists = [
   },
 ];
 
-// Import after mocking
-const { listsApi } = await import("../listsApi");
-const mockedAxios = vi.mocked(axios);
+/** Erreur axios telle que la voit `handleApiError`. */
+const httpError = (status: number, detail?: string) => ({
+  response: { status, data: detail === undefined ? {} : { detail } },
+});
 
 describe("listsApi", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // `getLists` met ses résultats en cache : sans ça, un test pollue le suivant.
+    listsApi.invalidateCache();
   });
 
   describe("getLists", () => {
     it("fetches lists successfully", async () => {
-      // Arrange
-      mockedAxios.get.mockResolvedValue({ data: mockLists });
+      mockedApi.get.mockResolvedValue({ data: mockLists });
 
-      // Act
       const result = await listsApi.getLists();
 
-      // Assert
-      expect(mockedAxios.get).toHaveBeenCalledWith("/lists/");
+      expect(mockedApi.get).toHaveBeenCalledWith("/lists/");
       expect(result).toEqual(mockLists);
     });
 
-    it("handles API error", async () => {
-      // Arrange
-      const errorMessage = "Network Error";
-      mockedAxios.get.mockRejectedValue(new Error(errorMessage));
+    it("sorts lists by order", async () => {
+      mockedApi.get.mockResolvedValue({
+        data: [mockLists[2], mockLists[0], mockLists[1]],
+      });
 
-      // Act & Assert
-      await expect(listsApi.getLists()).rejects.toThrow(errorMessage);
-      expect(mockedAxios.get).toHaveBeenCalledWith("/lists/");
+      const result = await listsApi.getLists();
+
+      expect(result.map((l) => l.order)).toEqual([1, 2, 3]);
+    });
+
+    it("handles API error", async () => {
+      mockedApi.get.mockRejectedValue(new Error("Network Error"));
+
+      await expect(listsApi.getLists()).rejects.toBeInstanceOf(ListsApiError);
+      expect(mockedApi.get).toHaveBeenCalledWith("/lists/");
     });
 
     it("returns empty array when no lists exist", async () => {
-      // Arrange
-      mockedAxios.get.mockResolvedValue({ data: [] });
+      mockedApi.get.mockResolvedValue({ data: [] });
 
-      // Act
-      const result = await listsApi.getLists();
+      await expect(listsApi.getLists()).resolves.toEqual([]);
+    });
+  });
 
-      // Assert
-      expect(result).toEqual([]);
+  describe("cache", () => {
+    it("serves the second call from cache", async () => {
+      mockedApi.get.mockResolvedValue({ data: mockLists });
+
+      await listsApi.getLists();
+      const cached = await listsApi.getLists();
+
+      expect(mockedApi.get).toHaveBeenCalledTimes(1);
+      expect(cached).toEqual(mockLists);
+    });
+
+    it("refetches when the cache is invalidated", async () => {
+      mockedApi.get.mockResolvedValue({ data: mockLists });
+
+      await listsApi.getLists();
+      listsApi.invalidateCache();
+      await listsApi.getLists();
+
+      expect(mockedApi.get).toHaveBeenCalledTimes(2);
+    });
+
+    it("refetches when useCache is false", async () => {
+      mockedApi.get.mockResolvedValue({ data: mockLists });
+
+      await listsApi.getLists();
+      await listsApi.getLists(false);
+
+      expect(mockedApi.get).toHaveBeenCalledTimes(2);
     });
   });
 
   describe("createList", () => {
     it("creates a list successfully", async () => {
-      // Arrange
       const newListData = { name: "New List", order: 4 };
       const createdList = {
         id: 4,
@@ -103,411 +127,278 @@ describe("listsApi", () => {
         created_at: "2024-01-01T00:00:00Z",
         updated_at: "2024-01-01T00:00:00Z",
       };
-      mockedAxios.post.mockResolvedValue({ data: createdList });
+      mockedApi.post.mockResolvedValue({ data: createdList });
 
-      // Act
       const result = await listsApi.createList(newListData);
 
-      // Assert
-      expect(mockedAxios.post).toHaveBeenCalledWith("/lists/", newListData);
+      expect(mockedApi.post).toHaveBeenCalledWith("/lists/", newListData);
       expect(result).toEqual(createdList);
     });
 
     it("handles validation errors", async () => {
-      // Arrange
-      const invalidData = { name: "", order: 0 };
-      const validationError = {
-        response: {
-          status: 422,
-          data: { detail: "Validation error" },
-        },
-      };
-      mockedAxios.post.mockRejectedValue(validationError);
+      mockedApi.post.mockRejectedValue(httpError(422, "Validation error"));
 
-      // Act & Assert
-      await expect(listsApi.createList(invalidData)).rejects.toEqual(
-        validationError,
-      );
+      await expect(
+        listsApi.createList({ name: "", order: 0 }),
+      ).rejects.toMatchObject({
+        name: "ApiError",
+        status: 422,
+        code: "UNPROCESSABLE_ENTITY",
+        message: "Validation error",
+      });
     });
 
     it("handles duplicate name errors", async () => {
-      // Arrange
-      const duplicateData = { name: "A faire", order: 4 };
-      const duplicateError = {
-        response: {
-          status: 400,
-          data: { detail: 'Une liste avec le nom "A faire" existe déjà' },
-        },
-      };
-      mockedAxios.post.mockRejectedValue(duplicateError);
+      const detail = 'Une liste avec le nom "A faire" existe déjà';
+      mockedApi.post.mockRejectedValue(httpError(400, detail));
 
-      // Act & Assert
-      await expect(listsApi.createList(duplicateData)).rejects.toEqual(
-        duplicateError,
-      );
+      await expect(
+        listsApi.createList({ name: "A faire", order: 4 }),
+      ).rejects.toMatchObject({
+        status: 400,
+        code: "VALIDATION_ERROR",
+        message: detail,
+      });
     });
   });
 
   describe("updateList", () => {
     it("updates a list successfully", async () => {
-      // Arrange
-      const listId = 1;
       const updateData = { name: "Updated Name" };
       const updatedList = {
         ...mockLists[0],
         ...updateData,
         updated_at: "2024-01-02T00:00:00Z",
       };
-      mockedAxios.put.mockResolvedValue({ data: updatedList });
+      mockedApi.put.mockResolvedValue({ data: updatedList });
 
-      // Act
-      const result = await listsApi.updateList(listId, updateData);
+      const result = await listsApi.updateList(1, updateData);
 
-      // Assert
-      expect(mockedAxios.put).toHaveBeenCalledWith(
-        `/lists/${listId}`,
-        updateData,
-      );
+      expect(mockedApi.put).toHaveBeenCalledWith("/lists/1", updateData);
       expect(result).toEqual(updatedList);
     });
 
     it("handles list not found error", async () => {
-      // Arrange
-      const listId = 999;
-      const updateData = { name: "Updated Name" };
-      const notFoundError = {
-        response: {
-          status: 404,
-          data: { detail: "Liste non trouvée" },
-        },
-      };
-      mockedAxios.put.mockRejectedValue(notFoundError);
+      mockedApi.put.mockRejectedValue(httpError(404, "Liste non trouvée"));
 
-      // Act & Assert
-      await expect(listsApi.updateList(listId, updateData)).rejects.toEqual(
-        notFoundError,
-      );
+      await expect(
+        listsApi.updateList(999, { name: "Updated Name" }),
+      ).rejects.toMatchObject({
+        status: 404,
+        code: "NOT_FOUND",
+        message: "Liste non trouvée",
+      });
     });
 
     it("handles duplicate name on update", async () => {
-      // Arrange
-      const listId = 1;
-      const updateData = { name: "En cours" }; // Name already exists
-      const duplicateError = {
-        response: {
-          status: 400,
-          data: { detail: 'Une liste avec le nom "En cours" existe déjà' },
-        },
-      };
-      mockedAxios.put.mockRejectedValue(duplicateError);
+      const detail = 'Une liste avec le nom "En cours" existe déjà';
+      mockedApi.put.mockRejectedValue(httpError(400, detail));
 
-      // Act & Assert
-      await expect(listsApi.updateList(listId, updateData)).rejects.toEqual(
-        duplicateError,
-      );
+      await expect(
+        listsApi.updateList(1, { name: "En cours" }),
+      ).rejects.toMatchObject({ status: 400, message: detail });
     });
 
     it("updates only provided fields", async () => {
-      // Arrange
-      const listId = 1;
-      const updateData = { order: 5 }; // Only update order
       const updatedList = {
         ...mockLists[0],
         order: 5,
         updated_at: "2024-01-02T00:00:00Z",
       };
-      mockedAxios.put.mockResolvedValue({ data: updatedList });
+      mockedApi.put.mockResolvedValue({ data: updatedList });
 
-      // Act
-      const result = await listsApi.updateList(listId, updateData);
+      const result = await listsApi.updateList(1, { order: 5 });
 
-      // Assert
-      expect(mockedAxios.put).toHaveBeenCalledWith(
-        `/lists/${listId}`,
-        updateData,
-      );
+      expect(mockedApi.put).toHaveBeenCalledWith("/lists/1", { order: 5 });
       expect(result.order).toBe(5);
-      expect(result.name).toBe(mockLists[0].name); // Name unchanged
+      expect(result.name).toBe(mockLists[0].name);
     });
   });
 
   describe("deleteList", () => {
     it("deletes a list successfully", async () => {
-      // Arrange
-      const listId = 2;
-      const targetListId = 1;
-      const successResponse = {
+      mockedApi.delete.mockResolvedValue({
         data: { message: "Liste supprimée avec succès" },
-      };
-      mockedAxios.delete.mockResolvedValue(successResponse);
+      });
 
-      // Act
-      await listsApi.deleteList(listId, targetListId);
+      await listsApi.deleteList(2, 1);
 
-      // Assert
-      expect(mockedAxios.delete).toHaveBeenCalledWith(`/lists/${listId}`, {
-        data: { target_list_id: targetListId },
+      expect(mockedApi.delete).toHaveBeenCalledWith("/lists/2", {
+        data: { target_list_id: 1 },
       });
     });
 
     it("handles last list deletion error", async () => {
-      // Arrange
-      const listId = 1;
-      const targetListId = 1;
-      const lastListError = {
-        response: {
-          status: 400,
-          data: { detail: "Impossible de supprimer la dernière liste" },
-        },
-      };
-      mockedAxios.delete.mockRejectedValue(lastListError);
+      const detail = "Impossible de supprimer la dernière liste";
+      mockedApi.delete.mockRejectedValue(httpError(400, detail));
 
-      // Act & Assert
-      await expect(listsApi.deleteList(listId, targetListId)).rejects.toEqual(
-        lastListError,
-      );
+      await expect(listsApi.deleteList(1, 1)).rejects.toMatchObject({
+        status: 400,
+        message: detail,
+      });
     });
 
     it("handles list not found error", async () => {
-      // Arrange
-      const listId = 999;
-      const targetListId = 1;
-      const notFoundError = {
-        response: {
-          status: 404,
-          data: { detail: "Liste non trouvée" },
-        },
-      };
-      mockedAxios.delete.mockRejectedValue(notFoundError);
+      mockedApi.delete.mockRejectedValue(httpError(404, "Liste non trouvée"));
 
-      // Act & Assert
-      await expect(listsApi.deleteList(listId, targetListId)).rejects.toEqual(
-        notFoundError,
-      );
+      await expect(listsApi.deleteList(999, 1)).rejects.toMatchObject({
+        status: 404,
+        code: "NOT_FOUND",
+      });
     });
 
     it("handles invalid target list error", async () => {
-      // Arrange
-      const listId = 2;
-      const targetListId = 999;
-      const invalidTargetError = {
-        response: {
-          status: 400,
-          data: { detail: "La liste de destination n'existe pas" },
-        },
-      };
-      mockedAxios.delete.mockRejectedValue(invalidTargetError);
+      const detail = "La liste de destination n'existe pas";
+      mockedApi.delete.mockRejectedValue(httpError(400, detail));
 
-      // Act & Assert
-      await expect(listsApi.deleteList(listId, targetListId)).rejects.toEqual(
-        invalidTargetError,
-      );
+      await expect(listsApi.deleteList(2, 999)).rejects.toMatchObject({
+        status: 400,
+        message: detail,
+      });
     });
   });
 
   describe("reorderLists", () => {
     it("reorders lists successfully", async () => {
-      // Arrange
       const listOrders = { 1: 3, 2: 1, 3: 2 };
-      const successResponse = {
+      mockedApi.post.mockResolvedValue({
         data: { message: "Listes réorganisées avec succès" },
-      };
-      mockedAxios.post.mockResolvedValue(successResponse);
+      });
 
-      // Act
       await listsApi.reorderLists(listOrders);
 
-      // Assert
-      expect(mockedAxios.post).toHaveBeenCalledWith("/lists/reorder", {
+      expect(mockedApi.post).toHaveBeenCalledWith("/lists/reorder", {
         list_orders: listOrders,
       });
     });
 
-    it("handles invalid order data", async () => {
-      // Arrange
-      const invalidOrders = { 1: -1, 2: 0 }; // Invalid orders
-      const validationError = {
-        response: {
-          status: 422,
-          data: { detail: "Tous les ordres doivent être positifs" },
-        },
-      };
-      mockedAxios.post.mockRejectedValue(validationError);
+    it("invalidates the cache after reordering", async () => {
+      mockedApi.get.mockResolvedValue({ data: mockLists });
+      mockedApi.post.mockResolvedValue({ data: {} });
 
-      // Act & Assert
-      await expect(listsApi.reorderLists(invalidOrders)).rejects.toEqual(
-        validationError,
-      );
+      await listsApi.getLists();
+      await listsApi.reorderLists({ 1: 2, 2: 1 });
+      await listsApi.getLists();
+
+      expect(mockedApi.get).toHaveBeenCalledTimes(2);
+    });
+
+    it("handles invalid order data", async () => {
+      const detail = "Tous les ordres doivent être positifs";
+      mockedApi.post.mockRejectedValue(httpError(422, detail));
+
+      await expect(
+        listsApi.reorderLists({ 1: -1, 2: 0 }),
+      ).rejects.toMatchObject({ status: 422, message: detail });
     });
 
     it("handles duplicate orders", async () => {
-      // Arrange
-      const duplicateOrders = { 1: 1, 2: 1 }; // Duplicate orders
-      const duplicateError = {
-        response: {
-          status: 422,
-          data: { detail: "Les ordres doivent être uniques" },
-        },
-      };
-      mockedAxios.post.mockRejectedValue(duplicateError);
+      const detail = "Les ordres doivent être uniques";
+      mockedApi.post.mockRejectedValue(httpError(422, detail));
 
-      // Act & Assert
-      await expect(listsApi.reorderLists(duplicateOrders)).rejects.toEqual(
-        duplicateError,
+      await expect(listsApi.reorderLists({ 1: 1, 2: 1 })).rejects.toMatchObject(
+        { status: 422, message: detail },
       );
     });
 
     it("handles non-existing lists in reorder", async () => {
-      // Arrange
-      const ordersWithInvalidList = { 1: 1, 999: 2 }; // List 999 doesn't exist
-      const invalidListError = {
-        response: {
-          status: 400,
-          data: { detail: "Les listes suivantes n'existent pas: {999}" },
-        },
-      };
-      mockedAxios.post.mockRejectedValue(invalidListError);
+      const detail = "Les listes suivantes n'existent pas: {999}";
+      mockedApi.post.mockRejectedValue(httpError(400, detail));
 
-      // Act & Assert
       await expect(
-        listsApi.reorderLists(ordersWithInvalidList),
-      ).rejects.toEqual(invalidListError);
+        listsApi.reorderLists({ 1: 1, 999: 2 }),
+      ).rejects.toMatchObject({ status: 400, message: detail });
     });
   });
 
   describe("getListCardsCount", () => {
     it("gets card count for a list successfully", async () => {
-      // Arrange
-      const listId = 1;
-      const cardsCountResponse = {
-        list_id: 1,
-        list_name: "A faire",
-        cards_count: 5,
-      };
-      mockedAxios.get.mockResolvedValue({ data: cardsCountResponse });
+      mockedApi.get.mockResolvedValue({
+        data: { list_id: 1, list_name: "A faire", cards_count: 5 },
+      });
 
-      // Act
-      const result = await listsApi.getListCardsCount(listId);
+      const result = await listsApi.getListCardsCount(1);
 
-      // Assert
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        `/lists/${listId}/cards-count`,
-      );
-      expect(result).toEqual(cardsCountResponse);
+      expect(mockedApi.get).toHaveBeenCalledWith("/lists/1/cards-count");
+      expect(result.list.id).toBe(1);
+      expect(result.list.name).toBe("A faire");
+      expect(result.card_count).toBe(5);
     });
 
     it("handles list not found for card count", async () => {
-      // Arrange
-      const listId = 999;
-      const notFoundError = {
-        response: {
-          status: 404,
-          data: { detail: "Liste non trouvée" },
-        },
-      };
-      mockedAxios.get.mockRejectedValue(notFoundError);
+      mockedApi.get.mockRejectedValue(httpError(404, "Liste non trouvée"));
 
-      // Act & Assert
-      await expect(listsApi.getListCardsCount(listId)).rejects.toEqual(
-        notFoundError,
-      );
+      await expect(listsApi.getListCardsCount(999)).rejects.toMatchObject({
+        status: 404,
+        code: "NOT_FOUND",
+      });
     });
 
     it("returns zero count for empty list", async () => {
-      // Arrange
-      const listId = 3;
-      const emptyListResponse = {
-        list_id: 3,
-        list_name: "Terminé",
-        cards_count: 0,
-      };
-      mockedAxios.get.mockResolvedValue({ data: emptyListResponse });
+      mockedApi.get.mockResolvedValue({
+        data: { list_id: 3, list_name: "Terminé", cards_count: 0 },
+      });
 
-      // Act
-      const result = await listsApi.getListCardsCount(listId);
+      const result = await listsApi.getListCardsCount(3);
 
-      // Assert
-      expect(result.cards_count).toBe(0);
+      expect(result.card_count).toBe(0);
     });
   });
 
   describe("error handling", () => {
-    it("handles network errors", async () => {
-      // Arrange
-      const networkError = new Error("Network Error");
-      mockedAxios.get.mockRejectedValue(networkError);
+    it("maps network errors (no response) to NETWORK_ERROR", async () => {
+      mockedApi.get.mockRejectedValue(new Error("Network Error"));
 
-      // Act & Assert
-      await expect(listsApi.getLists()).rejects.toThrow("Network Error");
+      await expect(listsApi.getLists()).rejects.toMatchObject({
+        status: 0,
+        code: "NETWORK_ERROR",
+      });
     });
 
-    it("handles server errors", async () => {
-      // Arrange
-      const serverError = {
-        response: {
-          status: 500,
-          data: { detail: "Internal Server Error" },
-        },
-      };
-      mockedAxios.get.mockRejectedValue(serverError);
+    it("maps server errors to INTERNAL_SERVER_ERROR", async () => {
+      mockedApi.get.mockRejectedValue(httpError(500, "Internal Server Error"));
 
-      // Act & Assert
-      await expect(listsApi.getLists()).rejects.toEqual(serverError);
+      await expect(listsApi.getLists()).rejects.toMatchObject({
+        status: 500,
+        code: "INTERNAL_SERVER_ERROR",
+      });
     });
 
-    it("handles authentication errors", async () => {
-      // Arrange
-      const authError = {
-        response: {
-          status: 401,
-          data: { detail: "Not authenticated" },
-        },
-      };
-      mockedAxios.get.mockRejectedValue(authError);
+    it("maps authentication errors to UNAUTHORIZED", async () => {
+      mockedApi.get.mockRejectedValue(httpError(401, "Not authenticated"));
 
-      // Act & Assert
-      await expect(listsApi.getLists()).rejects.toEqual(authError);
+      await expect(listsApi.getLists()).rejects.toMatchObject({
+        status: 401,
+        code: "UNAUTHORIZED",
+      });
     });
 
-    it("handles authorization errors", async () => {
-      // Arrange
-      const authzError = {
-        response: {
-          status: 403,
-          data: { detail: "Not enough permissions" },
-        },
-      };
-      mockedAxios.post.mockRejectedValue(authzError);
+    it("maps authorization errors to FORBIDDEN", async () => {
+      mockedApi.post.mockRejectedValue(
+        httpError(403, "Not enough permissions"),
+      );
 
-      // Act & Assert
       await expect(
         listsApi.createList({ name: "Test", order: 1 }),
-      ).rejects.toEqual(authzError);
+      ).rejects.toMatchObject({ status: 403, code: "FORBIDDEN" });
     });
   });
 
   describe("request configuration", () => {
-    it("sends requests with correct headers", async () => {
-      // Arrange
-      mockedAxios.get.mockResolvedValue({ data: mockLists });
+    it("sends requests to the expected endpoint", async () => {
+      mockedApi.get.mockResolvedValue({ data: mockLists });
 
-      // Act
       await listsApi.getLists();
 
-      // Assert
-      expect(mockedAxios.get).toHaveBeenCalledWith("/lists/");
-      // In a real implementation, you might check for Authorization headers, Content-Type, etc.
+      expect(mockedApi.get).toHaveBeenCalledWith("/lists/");
     });
 
-    it("handles request timeouts", async () => {
-      // Arrange
-      const timeoutError = new Error("timeout of 5000ms exceeded");
-      mockedAxios.get.mockRejectedValue(timeoutError);
+    it("maps request timeouts to NETWORK_ERROR", async () => {
+      mockedApi.get.mockRejectedValue(new Error("timeout of 5000ms exceeded"));
 
-      // Act & Assert
-      await expect(listsApi.getLists()).rejects.toThrow(
-        "timeout of 5000ms exceeded",
-      );
+      await expect(listsApi.getLists()).rejects.toMatchObject({
+        code: "NETWORK_ERROR",
+      });
     });
   });
 });

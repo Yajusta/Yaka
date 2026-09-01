@@ -48,7 +48,9 @@ def upgrade() -> None:
             op.execute(
                 "ALTER TABLE users ADD CONSTRAINT chk_view_scope CHECK (view_scope IN ('all', 'unassigned_plus_mine', 'mine_only'))"
             )
-        except Exception:
+        except (
+            Exception
+        ):  # nosec B110 - contrainte déjà présente : migration idempotente
             # Constraint might already exist, ignore error
             pass
 

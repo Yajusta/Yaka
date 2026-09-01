@@ -1,8 +1,9 @@
 # Changelog
 
-## 1.4.4 (2026-08-31)
+## 1.5.0 (2026-09-01)
 
 - [CHORE] Trunk check.
+- [NEW] Paramétrage des ports.
 
 ## 1.4.3 (2025-12-02)
 

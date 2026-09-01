@@ -386,13 +386,11 @@ const SettingsMenu = ({
           )}
 
           {/* Personal Dictionary Menu */}
-          {currentMenu === "dictionary" && (
-            <PersonalDictionaryMenu onBack={goBack} />
-          )}
+          {currentMenu === "dictionary" && <PersonalDictionaryMenu />}
 
           {/* Admin Settings Menu */}
           {currentMenu === "admin" && (
-            <AdminSettingsMenu onBack={goBack} onClose={handleClose} />
+            <AdminSettingsMenu onClose={handleClose} />
           )}
         </div>
       </div>

@@ -6,7 +6,7 @@ import sys
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -347,7 +347,7 @@ class TestCardItemModel:
 
         # Rechercher les éléments non terminés
         pending_items = (
-            db_session.query(CardItem).filter(CardItem.is_done == False).all()
+            db_session.query(CardItem).filter(CardItem.is_done.is_(False)).all()
         )
 
         assert len(done_items) >= 1
@@ -759,7 +759,7 @@ Notes supplémentaires"""
 
         # Compter les éléments par statut
         active_count = (
-            db_session.query(CardItem).filter(CardItem.is_done == False).count()
+            db_session.query(CardItem).filter(CardItem.is_done.is_(False)).count()
         )
 
         completed_count = db_session.query(CardItem).filter(CardItem.is_done).count()
@@ -842,7 +842,7 @@ Notes supplémentaires"""
         )
 
         db_session.add(item)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
         db_session.rollback()
@@ -854,7 +854,7 @@ Notes supplémentaires"""
         )
 
         db_session.add(item)
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
     def test_card_item_text_length_constraint(self, db_session, sample_card):
@@ -988,7 +988,7 @@ Notes supplémentaires"""
             ("numbers_and_text", "Task 123: Do something"),
         ]
 
-        for suffix, text in test_items:
+        for _suffix, text in test_items:
             item = CardItem(
                 card_id=sample_card.id,
                 text=text,

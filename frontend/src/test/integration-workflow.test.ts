@@ -11,8 +11,8 @@ import { listsApi } from "@shared/services/listsApi";
 // import { cardsApi } from '@shared/services/api'
 
 // Mock the API services
-vi.mock("../services/listsApi");
-vi.mock("../services/api");
+vi.mock("@shared/services/listsApi");
+vi.mock("@shared/services/api");
 
 const mockListsApi = vi.mocked(listsApi);
 // const mockCardsApi = vi.mocked(cardsApi)
@@ -44,35 +44,6 @@ const mockLists = [
   { id: 3, name: "Terminé", order: 3, created_at: "2024-01-01T00:00:00Z" },
 ];
 
-const mockCards = [
-  {
-    id: 1,
-    title: "Test Card 1",
-    description: "Description 1",
-    list_id: 1,
-    priority: "high",
-    due_date: null,
-    assignee_id: 1,
-    created_by: 1,
-    is_archived: false,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
-  },
-  {
-    id: 2,
-    title: "Test Card 2",
-    description: "Description 2",
-    list_id: 2,
-    priority: "medium",
-    due_date: null,
-    assignee_id: 1,
-    created_by: 1,
-    is_archived: false,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
-  },
-];
-
 describe("List Management Integration Workflow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -85,20 +56,13 @@ describe("List Management Integration Workflow", () => {
       created_at: new Date().toISOString(),
     }));
     mockListsApi.updateList.mockImplementation(async (id, data) => ({
-      id,
       ...mockLists.find((l) => l.id === id)!,
       ...data,
+      id,
       updated_at: new Date().toISOString(),
     }));
     mockListsApi.deleteList.mockResolvedValue(undefined);
     mockListsApi.reorderLists.mockResolvedValue(undefined);
-
-    // mockCardsApi.getCards.mockResolvedValue(mockCards)
-    // mockCardsApi.moveCard.mockImplementation(async (id, data) => ({
-    //   ...mockCards.find(c => c.id === id)!,
-    //   list_id: data.list_id,
-    //   updated_at: new Date().toISOString()
-    // }))
   });
 
   afterEach(() => {
@@ -237,15 +201,13 @@ describe("List Management Integration Workflow", () => {
 
   it("should handle concurrent operations safely", async () => {
     // Test multiple simultaneous operations
-    const operations = [
+    const [lists, createdList] = await Promise.all([
       listsApi.getLists(),
       listsApi.createList({ name: "Concurrent List", order: 4 }),
-    ];
+    ]);
 
-    const results = await Promise.all(operations);
-
-    expect(results[0]).toHaveLength(3); // lists
-    expect(results[1].name).toBe("Concurrent List"); // created list
+    expect(lists).toHaveLength(3);
+    expect(createdList.name).toBe("Concurrent List");
   });
 
   it("should maintain performance with large datasets", async () => {

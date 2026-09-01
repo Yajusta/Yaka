@@ -237,6 +237,7 @@ const SortableListItem = ({
               disabled={isDragging}
               onPointerDown={(e) => e.stopPropagation()}
               className="cursor-pointer"
+              aria-label={`${t("common.edit")} ${list.name}`}
             >
               <Edit className="h-4 w-4" />
             </Button>
@@ -247,6 +248,7 @@ const SortableListItem = ({
               disabled={isDragging}
               onPointerDown={(e) => e.stopPropagation()}
               className="text-red-500 hover:text-red-700 cursor-pointer"
+              aria-label={`${t("common.delete")} ${list.name}`}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
