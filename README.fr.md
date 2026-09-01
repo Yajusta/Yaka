@@ -56,7 +56,7 @@ git clone https://github.com/Yajusta/Yaka.git
 cd Yaka
 ```
 
-### 1. Modifier les variables d'environnement
+### 2. Modifier les variables d'environnement
 
 ```bash
 cp .env.sample .env
@@ -64,14 +64,25 @@ cp .env.sample .env
 
 Puis modifier les variables d'environnement nécessaires.
 
-### 2. Déployer avec Docker
+### 3. Donner le répertoire de données à l'utilisateur du conteneur
+
+Le conteneur backend tourne sous l'uid non privilégié `10001` et `./data/` y est monté en bind. Ce répertoire (et son contenu) doit appartenir à cet uid, sinon SQLite ouvre les bases des tableaux en lecture seule et toute écriture échoue avec `sqlite3.OperationalError: attempt to write a readonly database`.
+
+```bash
+mkdir -p data
+sudo chown -R 10001:10001 data/
+```
+
+Le répertoire compte autant que les fichiers `.db` : SQLite y écrit les fichiers `-journal`/`-wal`, et la création d'un nouveau tableau crée un nouveau fichier.
+
+### 4. Déployer avec Docker
 
 ```bash
 docker compose build
 docker compose up -d
 ```
 
-### 3. Mettre à jour une instance existante
+### 5. Mettre à jour une instance existante
 
 ```bash
 docker compose down
