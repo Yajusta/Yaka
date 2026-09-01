@@ -295,7 +295,7 @@ export const CardItem = ({
             {canViewActions && (
               <div
                 className={cn(
-                  "flex opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                  "flex opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200",
                   isCompact ? "space-x-0.5" : "space-x-1",
                 )}
               >
@@ -526,7 +526,7 @@ export const CardItem = ({
                   className={`flex items-center gap-1 cursor-pointer transition-opacity duration-200 ${
                     totalComments > 0
                       ? "opacity-100"
-                      : "opacity-0 group-hover:opacity-100"
+                      : "opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
                   }`}
                   title={t("card.comments")}
                   onClick={() => setShowCommentsModal(true)}
@@ -541,7 +541,7 @@ export const CardItem = ({
               </div>
 
               <div
-                className={`flex items-center ml-auto ${card.assignee_id ? "opacity-100" : "opacity-0 group-hover:opacity-100 transition-opacity duration-200"} ${isCurrentUserAssigned ? "bg-primary text-primary-foreground rounded-md px-2 py-1 -mx-2 -my-1 shadow-sm" : ""}`}
+                className={`flex items-center ml-auto ${card.assignee_id ? "opacity-100" : "opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200"} ${isCurrentUserAssigned ? "bg-primary text-primary-foreground rounded-md px-2 py-1 -mx-2 -my-1 shadow-sm" : ""}`}
               >
                 <AssigneeChanger
                   card={card}

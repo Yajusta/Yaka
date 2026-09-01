@@ -101,7 +101,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary/10"
+                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200 hover:bg-primary/10"
                   title={t("list.columnOptions")}
                 >
                   <MoreVertical className="h-4 w-4" />
@@ -171,7 +171,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => onCreateCard(list.id)}
-                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary/10"
+                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200 hover:bg-primary/10"
                   title={t("list.createCardInList")}
                 >
                   <Plus className="h-4 w-4" />
@@ -182,7 +182,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary/10"
+                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200 hover:bg-primary/10"
                     title={t("list.columnOptions")}
                   >
                     <MoreVertical className="h-4 w-4" />

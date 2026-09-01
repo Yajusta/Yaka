@@ -4,6 +4,7 @@
 
 - [CHORE] Trunk check.
 - [NEW] Paramétrage des ports.
+- [FIX] Problème d'affichage des boutons sur les appareils tactiles.
 
 ## 1.4.3 (2025-12-02)
 
