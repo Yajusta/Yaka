@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import CardItem from "./CardItem";
 import { PullToRefreshIndicator } from "../common/PullToRefreshIndicator";
 import { Archive } from "lucide-react";
+import BoardStatusBadge from "./BoardStatusBadge";
 
 interface ListsViewProps {
   lists: KanbanList[];
@@ -123,6 +124,9 @@ const ListsView = ({
     >
       <div className="flex-1 overflow-y-auto p-4 pt-20 pb-20">
         <div className="space-y-6">
+          {/* Zone claire indiquant la board active (interne ou spécifique) */}
+          <BoardStatusBadge className="mb-2" />
+
           {lists.map((list) => {
             const listCards = cardsByList[list.id] || [];
 

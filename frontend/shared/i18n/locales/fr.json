@@ -78,7 +78,7 @@
   },
   "navigation": {
     "dashboard": "Tableau de bord",
-    "boards": "Tableaux",
+    "boards": "Boards",
     "cards": "Cartes",
     "lists": "Listes",
     "labels": "Étiquettes",
@@ -408,7 +408,7 @@
     "unassigned_plus_mine": "Cartes assignées + sans assignation",
     "mine_only": "Cartes assignées uniquement",
     "description": {
-      "all": "Voir toutes les cartes du tableau",
+      "all": "Voir toutes les cartes du Board",
       "unassigned_plus_mine": "Voir les cartes non assignées et celles qui lui sont assignées",
       "mine_only": "Voir uniquement les cartes qui lui sont assignées"
     },
@@ -472,14 +472,14 @@
     "settingsReset": "Paramètres réinitialisés",
     "settingsError": "Erreur de paramètres",
     "interface": "Interface",
-    "interfaceDescription": "Modifiez le titre affiché de votre tableau Kanban",
+    "interfaceDescription": "Modifiez le titre affiché de votre Board Kanban",
     "title": "Titre",
-    "enterBoardTitle": "Entrez le titre du tableau",
+    "enterBoardTitle": "Entrez le titre du Board",
     "titleUpdatedSuccess": "Titre mis à jour avec succès !",
     "comingSoon": "Paramètres à venir"
   },
   "boardSettings": {
-    "loadError": "Erreur lors du chargement du titre du tableau",
+    "loadError": "Erreur lors du chargement du titre du Board",
     "updateError": "Erreur lors de la mise à jour du titre"
   },
   "display": {
@@ -669,14 +669,30 @@
     "unknown": "Désolé, je n'ai pas compris votre requête"
   },
   "boardConfig": {
-    "title": "Configuration du tableau",
+    "title": "Configuration du Board",
     "subtitle": "Configuration de la connexion",
     "apiUrl": "URL de l'API",
     "urlHelp": "Exemple: http://localhost:8000 ou https://api.yaka.com",
     "urlRequired": "L'URL de l'API est requise",
     "invalidUrl": "L'URL fournie n'est pas valide",
     "currentUrl": "API",
-    "info": "Cette URL sera utilisée pour toutes les requêtes API"
+    "info": "Cette URL sera utilisée pour toutes les requêtes API",
+    "boardType": "Type de Board",
+    "internal": "Board interne",
+    "internalDesc": "Base principale (par défaut)",
+    "specific": "Board spécifique",
+    "specificDesc": "Board dédié : {{name}}",
+    "switchBoard": "Changer de Board",
+    "chooseType": "Choisir le type de Board",
+    "internalOption": "Board interne (par défaut)",
+    "specificOption": "Board spécifique",
+    "boardName": "Nom du Board",
+    "boardNamePlaceholder": "nom-du-board",
+    "boardNameHelp": "Nom du Board configuré sur le serveur",
+    "currentBoard": "Board en cours",
+    "currentlyOn": "Board actif",
+    "connectingTo": "Connexion sur",
+    "changeInSettings": "Modifiable dans les paramètres (icône ⚙️ en haut à droite)"
   },
   "pullToRefresh": {
     "refreshing": "Rafraîchissement...",

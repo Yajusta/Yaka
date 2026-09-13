@@ -18,21 +18,21 @@ runtimes:
 lint:
   enabled:
     - shellcheck@0.11.0
-    - shfmt@3.13.1
+    - shfmt@3.14.1
     - bandit@1.9.4
     - black@26.5.1
-    - checkov@3.3.16
+    - checkov@3.3.17
     - git-diff-check
     - hadolint@2.15.1
     - isort@9.0.1
     - markdownlint@0.49.1
     - osv-scanner@2.5.1
-    - oxipng@10.2.0
+    - oxipng@10.2.1
     - prettier@3.9.6
-    - ruff@0.16.5
+    - ruff@0.16.7
     - svgo@4.1.0
     - taplo@0.10.0
-    - trufflehog@3.97.1
+    - trufflehog@3.97.4
     - yamllint@1.38.0
   disabled:
     # Redondant avec osv-scanner (mêmes advisories) et sort en erreur ici.

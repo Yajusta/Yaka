@@ -25,7 +25,8 @@ import { cardService } from "@shared/services/api";
 import { useUsers } from "@shared/hooks/useUsers";
 import { useAuth } from "@shared/hooks/useAuth";
 import { useToast } from "@shared/hooks/use-toast";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { getCurrentBoardInfo } from "@shared/utils/boardUtils";
 
 interface CardItemProps {
   card: Card;
@@ -39,21 +40,14 @@ const CardItem = ({ card, onClick, onUpdate }: CardItemProps) => {
   const { users } = useUsers();
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const currentUserId = currentUser?.id ?? null;
   const isCurrentUserAssigned =
     currentUserId !== null && card.assignee_id === currentUserId;
 
   // Get board ID from localStorage or URL
   const getBoardId = (): string => {
-    // First try to get from URL
-    const boardMatch = location.pathname.match(/^\/board\/([^\/]+)/);
-    if (boardMatch) {
-      return boardMatch[1];
-    }
-
-    // Fall back to localStorage
-    return localStorage.getItem("board_name") || "";
+    const boardInfo = getCurrentBoardInfo();
+    return boardInfo.isInternal ? "" : boardInfo.boardName;
   };
 
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
@@ -252,7 +246,13 @@ const CardItem = ({ card, onClick, onUpdate }: CardItemProps) => {
   const handleCommentsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const boardId = getBoardId();
-    navigate(`/board/${boardId}/card/${card.id}/comments`);
+    if (boardId) {
+      navigate(
+        `/board/${encodeURIComponent(boardId)}/card/${card.id}/comments`,
+      );
+    } else {
+      navigate(`/card/${card.id}/comments`);
+    }
   };
 
   return (

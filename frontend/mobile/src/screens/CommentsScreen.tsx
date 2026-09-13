@@ -168,9 +168,9 @@ const CommentsScreen = ({
 
   const goBack = () => {
     if (boardId) {
-      navigate(`/board/${boardId}`);
+      navigate(`/board/${encodeURIComponent(boardId)}`);
     } else {
-      navigate(-1);
+      navigate("/");
     }
   };
 

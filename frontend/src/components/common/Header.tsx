@@ -224,14 +224,14 @@ export const Header = ({
   const getMobileUrl = (): string => {
     const currentPath = window.location.pathname;
     const boardMatch = currentPath.match(/^\/board\/([^\/]+)(.*)$/);
-    const baseUrl = (window as any).BASE_URL_MOBILE;
+    const baseUrl = (window as any).BASE_URL_MOBILE || "/m/";
     const separator = baseUrl.endsWith("/") ? "" : "/";
 
     if (boardMatch) {
       return `${baseUrl}${separator}board/${boardMatch[1]}${boardMatch[2]}`;
     }
 
-    return `${baseUrl}${separator}board/yaka/`;
+    return baseUrl;
   };
 
   return (

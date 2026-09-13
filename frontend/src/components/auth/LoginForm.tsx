@@ -1,9 +1,28 @@
-import { AlertTriangle, Copy, Eye, Loader2, Trash, Zap } from "lucide-react";
+import {
+  AlertTriangle,
+  Copy,
+  Database,
+  Eye,
+  FolderKanban,
+  Loader2,
+  Settings,
+  Trash,
+  Zap,
+} from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@shared/hooks/useAuth.tsx";
-import { authService, boardSettingsService } from "@shared/services/api.tsx";
+import {
+  authService,
+  boardSettingsService,
+  resetUsersCache,
+} from "@shared/services/api.tsx";
+import { listsApi } from "@shared/services/listsApi.ts";
+import {
+  getCurrentBoardInfo,
+  saveBoardConfig,
+} from "@shared/utils/boardUtils.ts";
 import { Footer } from "../common/Footer.tsx";
 import LanguageSelector from "../common/LanguageSelector.tsx";
 import { Alert, AlertDescription } from "../ui/alert.tsx";
@@ -19,6 +38,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -50,6 +70,15 @@ const LoginForm = () => {
   );
   const { login } = useAuth();
 
+  // État du Board actif et dialog de configuration
+  const [boardInfo, setBoardInfo] = useState(() => getCurrentBoardInfo());
+  const [isConfigOpen, setIsConfigOpen] = useState<boolean>(false);
+  const [configType, setConfigType] = useState<"internal" | "specific">(
+    "internal",
+  );
+  const [configBoardName, setConfigBoardName] = useState<string>("");
+  const [configError, setConfigError] = useState<string>("");
+
   useEffect(() => {
     // Charger le fichier de configuration demo de manière sécurisée
     fetch("/demo-config.js")
@@ -73,7 +102,62 @@ const LoginForm = () => {
       .catch((_error) => {
         setBoardTitle("Yaka (Yet Another Kanban App)");
       });
+
+    // Synchroniser avec l'URL si sur /board/:uid/login
+    const match = window.location.pathname.match(/^\/board\/([^\/]+)/);
+    if (match && match[1]) {
+      saveBoardConfig(match[1]);
+      listsApi.invalidateCache();
+      resetUsersCache();
+    }
+    setBoardInfo(getCurrentBoardInfo());
   }, []);
+
+  const openBoardConfig = () => {
+    const current = getCurrentBoardInfo();
+    setConfigType(current.isInternal ? "internal" : "specific");
+    setConfigBoardName(current.isInternal ? "" : current.boardName);
+    setConfigError("");
+    setIsConfigOpen(true);
+  };
+
+  const handleSaveBoardConfig = (e: FormEvent) => {
+    e.preventDefault();
+    setConfigError("");
+
+    if (configType === "specific" && !configBoardName.trim()) {
+      setConfigError(
+        t("boardConfig.nameRequired") || "Veuillez saisir un nom de Board",
+      );
+      return;
+    }
+
+    const selectedName =
+      configType === "internal" ? null : configBoardName.trim();
+    const resolved = saveBoardConfig(selectedName);
+
+    setBoardInfo(resolved);
+    setIsConfigOpen(false);
+
+    listsApi.invalidateCache();
+    resetUsersCache();
+    boardSettingsService
+      .getBoardTitle()
+      .then((data) => {
+        setBoardTitle(data.title);
+      })
+      .catch((_error) => {
+        setBoardTitle("Yaka (Yet Another Kanban App)");
+      });
+
+    if (resolved.isInternal) {
+      navigate("/login", { replace: true });
+    } else {
+      navigate(`/board/${encodeURIComponent(resolved.boardName)}/login`, {
+        replace: true,
+      });
+    }
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -81,11 +165,18 @@ const LoginForm = () => {
     setLoading(true);
 
     try {
+      const activeBoard = getCurrentBoardInfo();
+      saveBoardConfig(activeBoard.isInternal ? null : activeBoard.boardName);
+      listsApi.invalidateCache();
+      resetUsersCache();
+
       await login(email, password);
+
       // Rediriger vers la page d'accueil du board actuel après une connexion réussie
-      const boardUid = window.location.pathname.match(/^\/board\/([^\/]+)/);
-      if (boardUid && boardUid[1]) {
-        navigate(`/board/${boardUid[1]}`, { replace: true });
+      if (!activeBoard.isInternal && activeBoard.boardName) {
+        navigate(`/board/${encodeURIComponent(activeBoard.boardName)}`, {
+          replace: true,
+        });
       } else {
         navigate("/", { replace: true });
       }
@@ -135,8 +226,18 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      {/* Language selector en haut à droite */}
-      <div className="absolute top-4 right-4">
+      {/* Contrôles en haut à droite : Paramètres du Board + Language selector */}
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={openBoardConfig}
+          className="text-gray-500 hover:text-gray-900 transition-colors"
+          title={t("boardConfig.title")}
+          type="button"
+        >
+          <Settings className="h-5 w-5" />
+        </Button>
         <LanguageSelector />
       </div>
 
@@ -255,6 +356,35 @@ const LoginForm = () => {
                 />
               </div>
 
+              {/* Rappel de la Board en cours (pastille cliquable vers les paramètres) */}
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                  {boardInfo.isInternal ? (
+                    <Database className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <FolderKanban className="w-4 h-4 text-indigo-600" />
+                  )}
+                  <span>{t("boardConfig.currentBoard")}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={openBoardConfig}
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-full cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 ${
+                    boardInfo.isInternal
+                      ? "bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-200/70"
+                      : "bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200/70"
+                  }`}
+                  title={t("boardConfig.switchBoard") || "Changer de Board"}
+                >
+                  <span>
+                    {boardInfo.isInternal
+                      ? t("boardConfig.internalOption")
+                      : boardInfo.boardName}
+                  </span>
+                  <Settings className="w-3 h-3 opacity-60" />
+                </button>
+              </div>
+
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t("auth.login")}
@@ -324,6 +454,90 @@ const LoginForm = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialog de configuration du Board */}
+      <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-primary" />
+              {t("boardConfig.title")}
+            </DialogTitle>
+            <DialogDescription>{t("boardConfig.subtitle")}</DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveBoardConfig} className="space-y-4 pt-2">
+            {configError && (
+              <Alert variant="destructive">
+                <AlertDescription>{configError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setConfigType("internal")}
+                className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 text-center transition-all ${
+                  configType === "internal"
+                    ? "border-primary bg-primary/5 text-primary font-semibold"
+                    : "border-gray-200 text-gray-600 hover:border-gray-300"
+                }`}
+              >
+                <Database className="w-5 h-5 mb-1.5" />
+                <span className="text-xs font-medium">
+                  {t("boardConfig.internalOption")}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setConfigType("specific")}
+                className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 text-center transition-all ${
+                  configType === "specific"
+                    ? "border-primary bg-primary/5 text-primary font-semibold"
+                    : "border-gray-200 text-gray-600 hover:border-gray-300"
+                }`}
+              >
+                <FolderKanban className="w-5 h-5 mb-1.5" />
+                <span className="text-xs font-medium">
+                  {t("boardConfig.specificOption")}
+                </span>
+              </button>
+            </div>
+
+            {configType === "specific" && (
+              <div className="space-y-2 pt-1">
+                <Label htmlFor="desktopBoardName">
+                  {t("boardConfig.boardName")}
+                </Label>
+                <Input
+                  id="desktopBoardName"
+                  value={configBoardName}
+                  onChange={(e) => setConfigBoardName(e.target.value)}
+                  placeholder={
+                    t("boardConfig.boardNamePlaceholder") || "nom-du-board"
+                  }
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t("boardConfig.boardNameHelp")}
+                </p>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsConfigOpen(false)}
+              >
+                {t("common.cancel") || "Annuler"}
+              </Button>
+              <Button type="submit">{t("common.save") || "Enregistrer"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <Footer />

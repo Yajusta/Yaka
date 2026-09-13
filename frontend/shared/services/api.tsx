@@ -20,19 +20,35 @@ import {
 const API_BASE_URL = (window as any).API_BASE_URL || "http://localhost:8000";
 
 // Obtenir le board_uid depuis l'URL courante
-const getBoardUidFromUrl = (): string | null => {
+export const getBoardUidFromUrl = (): string | null => {
   const path = window.location.pathname;
-  const match = path.match(/^\/board\/([^\/]+)/);
+  const match = path.match(/^(?:\/m)?\/board\/([^\/]+)/);
   return match ? match[1] : null;
+};
+
+// Vérifier si l'application est exécutée en mode mobile
+export const isMobileApp = (): boolean => {
+  const path = window.location.pathname;
+  const envBasePath = (import.meta as any).env?.VITE_BASE_PATH;
+  return path.startsWith("/m") || Boolean(envBasePath && envBasePath !== "/");
 };
 
 // Créer l'instance API avec configuration dynamique
 const createApiInstance = (): AxiosInstance => {
-  // First, try to get the base URL from localStorage (set by mobile app config)
-  const storedBaseUrl = localStorage.getItem("api_base_url");
+  // 1. Détection prioritaire par l'URL (desktop ou mobile : /board/:uid ou /m/board/:uid)
+  const boardUid = getBoardUidFromUrl();
+  if (boardUid) {
+    return axios.create({
+      baseURL: `${API_BASE_URL}/board/${encodeURIComponent(boardUid)}`,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  }
 
-  if (storedBaseUrl) {
-    // Use the stored base URL from mobile app configuration
+  // 2. Si on est sur mobile, utiliser l'api_base_url stockée si elle existe
+  const storedBaseUrl = localStorage.getItem("api_base_url");
+  if (storedBaseUrl && isMobileApp()) {
     return axios.create({
       baseURL: storedBaseUrl,
       headers: {
@@ -41,12 +57,9 @@ const createApiInstance = (): AxiosInstance => {
     });
   }
 
-  // Fallback to URL-based detection for desktop/web app
-  const boardUid = getBoardUidFromUrl();
-  const baseUrl = boardUid ? `${API_BASE_URL}/board/${boardUid}` : API_BASE_URL;
-
+  // 3. Fallback sur l'API de base interne
   return axios.create({
-    baseURL: baseUrl,
+    baseURL: API_BASE_URL,
     headers: {
       "Content-Type": "application/json",
     },
@@ -79,7 +92,11 @@ const setupInterceptors = (apiInstance: AxiosInstance) => {
 
         const path = window.location.pathname || "";
         const onPublicAuthPage =
-          path.startsWith("/login") || path.startsWith("/invite");
+          path.startsWith("/login") ||
+          path.startsWith("/invite") ||
+          path.startsWith("/m/login") ||
+          path.startsWith("/m/invite") ||
+          Boolean(path.match(/^(?:\/m)?\/board\/[^\/]+\/(invite|login)/));
         const alreadyRedirecting =
           sessionStorage.getItem("auth_redirecting") === "1";
 
@@ -87,11 +104,13 @@ const setupInterceptors = (apiInstance: AxiosInstance) => {
           try {
             sessionStorage.setItem("auth_redirecting", "1");
           } catch {}
+          const isMobile = path.startsWith("/m");
+          const prefix = isMobile ? "/m" : "";
           const boardUid = getBoardUidFromUrl();
           if (boardUid) {
-            window.location.href = `/board/${boardUid}/login`;
+            window.location.href = `${prefix}/board/${encodeURIComponent(boardUid)}/login`;
           } else {
-            window.location.href = "/login";
+            window.location.href = `${prefix}/login`;
           }
         }
       }
@@ -112,8 +131,14 @@ export const getApiInstance = (): AxiosInstance => {
   return createApiInstanceWithInterceptors();
 };
 
-// Exporter une instance par défaut pour compatibilité
-const api: AxiosInstance = getApiInstance();
+// Exporter une instance par défaut dynamique pour compatibilité (listsApi, cardsApi, etc.)
+const api: AxiosInstance = new Proxy({} as AxiosInstance, {
+  get(_target, prop) {
+    const instance = getApiInstance();
+    const val = (instance as any)[prop];
+    return typeof val === "function" ? val.bind(instance) : val;
+  },
+});
 
 // Services d'authentification
 export const authService = {
@@ -333,7 +358,7 @@ let usersInFlight: Promise<User[]> | null = null;
 const USERS_TTL_MS = 60_000; // 1 minute TTL
 
 // Function to reset users cache
-function resetUsersCache(): void {
+export function resetUsersCache(): void {
   usersCache = null;
   usersCacheTime = 0;
   usersInFlight = null;

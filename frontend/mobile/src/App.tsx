@@ -11,6 +11,9 @@ import {
   useLocation,
   useParams,
 } from "react-router-dom";
+import { saveBoardConfig } from "@shared/utils/boardUtils";
+import { listsApi } from "@shared/services/listsApi";
+import { resetUsersCache } from "@shared/services/api";
 import { Toaster } from "./components/ui/sonner";
 import i18n from "./i18n";
 import "./index.css";
@@ -52,28 +55,16 @@ const BoardRouteHandler = () => {
 
   useEffect(() => {
     if (boardName) {
-      // Resolve endpoint using the same logic as BoardConfigScreen
-      const resolveEndpoint = (name: string): string => {
-        const apiBaseUrl =
-          (window as any).API_BASE_URL || "http://localhost:8000";
-
-        if (name.trim().toLowerCase() === "localhost") {
-          return apiBaseUrl;
-        } else {
-          return `${apiBaseUrl}/board/${encodeURIComponent(name.trim())}`;
-        }
-      };
-
-      // Update localStorage with the board name from URL
-      localStorage.setItem("board_name", boardName.trim());
-      localStorage.setItem("api_base_url", resolveEndpoint(boardName));
+      saveBoardConfig(boardName);
+      listsApi.invalidateCache();
+      resetUsersCache();
     }
   }, [boardName, location.pathname]);
 
   // Render MainScreen with protection, staying on the /board/:boardName URL
   return (
     <ProtectedRoute>
-      <MainScreen />
+      <MainScreen key={boardName || "board"} />
     </ProtectedRoute>
   );
 };
@@ -82,7 +73,13 @@ const BoardRouteHandler = () => {
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const apiUrl = localStorage.getItem("api_base_url");
+
+  // S'assurer qu'un apiUrl existe toujours (défaut interne si vide)
+  let apiUrl = localStorage.getItem("api_base_url");
+  if (!apiUrl) {
+    const defaultBoard = saveBoardConfig(null);
+    apiUrl = defaultBoard.apiUrl;
+  }
 
   if (loading) {
     return (
@@ -92,15 +89,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!apiUrl) {
-    return <Navigate to="/config" replace />;
-  }
-
   if (!user) {
     // If we're on a board route, redirect to the board's login page
     const boardMatch = location.pathname.match(/^\/board\/([^/]+)/);
     if (boardMatch) {
-      return <Navigate to={`/board/${boardMatch[1]}/login`} replace />;
+      return (
+        <Navigate
+          to={`/board/${encodeURIComponent(boardMatch[1])}/login`}
+          replace
+        />
+      );
     }
     return <Navigate to="/login" replace />;
   }
@@ -130,9 +128,6 @@ const AppContent = () => {
       }
     }
   }, [user]);
-
-  const basename = getBaseName();
-  const redirectPath = basename === "/m" ? "/m/" : "/";
 
   // Débogage : capturer les changements d'URL
   useEffect(() => {
@@ -170,7 +165,15 @@ const AppContent = () => {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to={redirectPath} replace />} />
+      <Route
+        path="/card/:cardId/comments"
+        element={
+          <ProtectedRoute>
+            <CommentsScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

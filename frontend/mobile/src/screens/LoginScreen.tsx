@@ -2,11 +2,19 @@ import { useState, FormEvent, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@shared/hooks/useAuth";
-import { boardSettingsService, authService } from "@shared/services/api";
+import {
+  boardSettingsService,
+  authService,
+  resetUsersCache,
+} from "@shared/services/api";
+import { listsApi } from "@shared/services/listsApi";
+import { saveBoardConfig, getCurrentBoardInfo } from "@shared/utils/boardUtils";
 import {
   AlertTriangle,
   Copy,
+  Database,
   Eye,
+  FolderKanban,
   Loader2,
   Settings,
   Trash,
@@ -33,6 +41,20 @@ const LoginScreen = () => {
   const [boardTitle, setBoardTitle] = useState<string>("Yaka"); // Default fallback
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
 
+  // Board actuellement actif
+  const [boardInfo, setBoardInfo] = useState(() => getCurrentBoardInfo());
+
+  // Fetch board title
+  const fetchBoardTitle = async () => {
+    try {
+      const titleData = await boardSettingsService.getBoardTitle();
+      setBoardTitle(titleData.title);
+    } catch (error) {
+      console.error("Failed to fetch board title:", error);
+      // Keep default 'Yaka' title on error
+    }
+  };
+
   // Load demo mode configuration and fetch board title on component mount
   useEffect(() => {
     // Load demo config securely
@@ -48,38 +70,18 @@ const LoginScreen = () => {
         setIsDemoMode(false);
       });
 
-    // Fetch board title
-    const fetchBoardTitle = async () => {
-      try {
-        const titleData = await boardSettingsService.getBoardTitle();
-        setBoardTitle(titleData.title);
-      } catch (error) {
-        console.error("Failed to fetch board title:", error);
-        // Keep default 'Yaka' title on error
-      }
-    };
-
     fetchBoardTitle();
   }, []);
 
-  // If boardName is in URL params, configure the board
+  // Synchroniser quand boardName change dans l'URL
   useEffect(() => {
     if (boardName) {
-      const resolveEndpoint = (name: string): string => {
-        const apiBaseUrl =
-          (window as any).API_BASE_URL || "http://localhost:8000";
-
-        if (name.trim().toLowerCase() === "localhost") {
-          return apiBaseUrl;
-        } else {
-          return `${apiBaseUrl}/board/${encodeURIComponent(name.trim())}`;
-        }
-      };
-
-      // Update localStorage with the board name from URL
-      localStorage.setItem("board_name", boardName.trim());
-      localStorage.setItem("api_base_url", resolveEndpoint(boardName));
+      saveBoardConfig(boardName);
+      listsApi.invalidateCache();
+      resetUsersCache();
+      fetchBoardTitle();
     }
+    setBoardInfo(getCurrentBoardInfo());
   }, [boardName]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -88,21 +90,23 @@ const LoginScreen = () => {
     setLoading(true);
 
     try {
+      const activeBoard = getCurrentBoardInfo();
+      saveBoardConfig(activeBoard.isInternal ? null : activeBoard.boardName);
+      listsApi.invalidateCache();
+      resetUsersCache();
+
       await login(email, password);
 
       // Apply user language setting immediately after login
       const currentUser = authService.getCurrentUserFromStorage();
       if (currentUser?.language) {
-        // Force update localStorage first (authService.login should have done this, but let's be sure)
         localStorage.setItem("i18nextLng", currentUser.language);
-
-        // Then change the language in i18n
         await i18n.changeLanguage(currentUser.language);
       }
 
-      // If we're on a board-specific login page, redirect back to that board
-      if (boardName) {
-        navigate(`/board/${boardName}`);
+      // Redirection
+      if (!activeBoard.isInternal && activeBoard.boardName) {
+        navigate(`/board/${encodeURIComponent(activeBoard.boardName)}`);
       } else {
         navigate("/");
       }
@@ -225,7 +229,7 @@ const LoginScreen = () => {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label
               htmlFor="email"
@@ -264,6 +268,35 @@ const LoginScreen = () => {
             />
           </div>
 
+          {/* Rappel de la Board en cours (pastille cliquable vers les paramètres) */}
+          <div className="p-3 bg-muted/30 border-2 border-border/70 rounded-xl flex items-center justify-between">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              {boardInfo.isInternal ? (
+                <Database className="w-4 h-4 text-emerald-500" />
+              ) : (
+                <FolderKanban className="w-4 h-4 text-indigo-500" />
+              )}
+              <span>{t("boardConfig.currentBoard")}</span>
+            </span>
+            <button
+              type="button"
+              onClick={handleConfigClick}
+              className={`text-xs font-semibold px-2.5 py-1 rounded-full cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 ${
+                boardInfo.isInternal
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20"
+                  : "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/20"
+              }`}
+              title={t("boardConfig.switchBoard") || "Changer de Board"}
+            >
+              <span>
+                {boardInfo.isInternal
+                  ? t("boardConfig.internalOption")
+                  : boardInfo.boardName}
+              </span>
+              <Settings className="w-3 h-3 opacity-60" />
+            </button>
+          </div>
+
           {error && (
             <div className="p-4 bg-destructive/10 border-2 border-destructive/40 rounded-lg animate-slide-up">
               <p className="text-sm text-destructive">{error}</p>
@@ -279,11 +312,6 @@ const LoginScreen = () => {
             {t("auth.login")}
           </button>
         </form>
-
-        {/* Board name info */}
-        <div className="text-center text-xs text-muted-foreground">
-          <p>Board: {localStorage.getItem("board_name") || "Not configured"}</p>
-        </div>
       </div>
     </div>
   );
