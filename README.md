@@ -158,6 +158,16 @@ pnpm run dev
 
 The frontend will be accessible at <http://localhost:5173>
 
+### 6. Trunk checks
+
+To check code quality with Trunk:
+
+```bash
+cd frontend
+npm run trunk -- upgrade
+npm run trunk -- check --all --no-fix
+```
+
 ## 👤 Default administrator account
 
 An administrator account is automatically created during initialization:
