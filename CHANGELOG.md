@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.1 (2026-09-13)
+
+- [FIX] Connexion à une base spécifique sur mobile.
+- [FIX] Mise à jour de sécurité.
+
 ## 1.5.0 (2026-09-01)
 
 - [CHORE] Trunk check.
