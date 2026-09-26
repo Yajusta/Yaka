@@ -9,6 +9,7 @@ import {
 import { toast as sonnerToast } from "sonner";
 import { ListManager } from "./components/admin";
 import { InterfaceDialog } from "./components/admin/InterfaceDialog";
+import ChangePasswordPage from "./components/auth/ChangePasswordPage.tsx";
 import InvitePage from "./components/auth/InvitePage.tsx";
 import LoginForm from "./components/auth/LoginForm.tsx";
 import CardForm from "./components/cards/CardForm.tsx";
@@ -594,6 +595,11 @@ const AppContent = () => {
   // afficher le formulaire de login (sans changer l'URL pour le moment)
   if (!loading && !user) {
     return <LoginForm />;
+  }
+
+  // Changement de mot de passe exigé : rien d'autre n'est accessible
+  if (user?.must_change_password) {
+    return <ChangePasswordPage />;
   }
 
   // Routes protégées (nécessitent une authentification)

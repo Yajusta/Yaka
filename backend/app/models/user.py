@@ -6,7 +6,7 @@ import datetime
 import enum
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import DateTime, Enum, Index, Integer, String, text
+from sqlalchemy import Boolean, DateTime, Enum, Index, Integer, String, false, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
@@ -99,6 +99,10 @@ class User(Base):
     )
     invited_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+    # Changement de mot de passe exigé avant tout autre accès (admin initial aléatoire)
+    must_change_password: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=false(), nullable=False
     )
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime(timezone=True), default=get_system_timezone_datetime

@@ -15,6 +15,7 @@ export interface User {
   role?: UserRoleValue;
   view_scope?: ViewScope;
   language?: string;
+  must_change_password?: boolean;
   created_at: string;
   updated_at?: string;
 }
@@ -86,6 +87,10 @@ export interface AuthContextType {
   aiAvailable: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<void>;
 }
 
 export interface ThemeContextType {

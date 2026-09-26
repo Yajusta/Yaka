@@ -38,6 +38,7 @@ from .personal_dictionary import (
 )
 from .user import (
     LanguageUpdate,
+    PasswordChange,
     PasswordResetRequest,
     SetPasswordPayload,
     UserBase,
@@ -54,6 +55,7 @@ __all__ = [
     "UserCreate",
     "UserUpdate",
     "SetPasswordPayload",
+    "PasswordChange",
     "PasswordResetRequest",
     "UserResponse",
     "UserListItem",

@@ -541,6 +541,7 @@
   "invite": {
     "missingToken": "Missing or invalid token",
     "passwordTooShort": "Password must contain at least 8 characters",
+    "passwordTooLong": "Password must not exceed 72 bytes (about 72 characters without accents)",
     "passwordMissingLowercase": "Password must contain at least one lowercase letter",
     "passwordMissingUppercase": "Password must contain at least one uppercase letter",
     "passwordMissingNumber": "Password must contain at least one number",
@@ -561,6 +562,17 @@
     "passwordNumber": "One number",
     "settingPassword": "Setting password...",
     "setPasswordButton": "Set password"
+  },
+  "changePassword": {
+    "title": "Password change required",
+    "description": "For security reasons, you must choose a new password before continuing.",
+    "currentPassword": "Current password",
+    "mustDiffer": "The new password must be different from the current one",
+    "wrongCurrentPassword": "Current password is incorrect",
+    "submit": "Change password",
+    "submitting": "Changing password...",
+    "error": "Error while changing the password",
+    "success": "Password changed"
   },
   "app": {
     "name": "Yaka",

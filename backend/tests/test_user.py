@@ -31,6 +31,7 @@ from app.services.user import (
     set_password_from_invite,
     update_user,
 )
+from app.utils.security import verify_password
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -866,7 +867,9 @@ class TestCreateAdminUser:
         assert admin.language == "en"  # Valeur par défaut si non spécifiée
         assert admin.status == UserStatus.ACTIVE
         assert admin.password_hash is not None
-        assert admin.password_hash != "Admin123"
+        # Sans DEFAULT_ADMIN_PASSWORD : mot de passe aléatoire, changement exigé
+        assert not verify_password("Admin123", admin.password_hash)
+        assert admin.must_change_password is True
 
 
 class TestSecurityAndEdgeCases:

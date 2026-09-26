@@ -139,7 +139,7 @@ class TestAuthRouter:
     def test_read_users_me_authenticated(self, test_user):
         """Test de récupération des informations utilisateur connecté."""
         # Mock de l'utilisateur actuel
-        with patch("app.routers.auth.get_current_active_user") as mock_current_user:
+        with patch("app.routers.auth.get_current_user") as mock_current_user:
             mock_current_user.return_value = test_user
 
             # Test the function directly

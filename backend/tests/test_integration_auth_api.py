@@ -11,7 +11,7 @@ async def test_login_and_me(async_client_factory, seed_admin_user):
     async with async_client_factory(auth_router) as client:
         login_response = await client.post(
             "/auth/login",
-            data={"username": "admin@yaka.local", "password": "Admin123"},
+            data={"username": "admin@yaka.local", "password": "Admin-Test1"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert login_response.status_code == 200

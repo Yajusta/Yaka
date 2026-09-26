@@ -19,6 +19,7 @@ import i18n from "./i18n";
 import "./index.css";
 import ArchivesScreen from "./screens/ArchivesScreen";
 import BoardConfigScreen from "./screens/BoardConfigScreen";
+import ChangePasswordScreen from "./screens/ChangePasswordScreen";
 import { CommentsScreen } from "./screens/CommentsScreen";
 import LoginScreen from "./screens/LoginScreen";
 import MainScreen from "./screens/MainScreen";
@@ -101,6 +102,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       );
     }
     return <Navigate to="/login" replace />;
+  }
+
+  // Changement de mot de passe exigé : rien d'autre n'est accessible
+  if (user.must_change_password) {
+    return <ChangePasswordScreen />;
   }
 
   return <>{children}</>;

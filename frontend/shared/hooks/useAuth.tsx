@@ -6,7 +6,7 @@ import {
   ReactNode,
   JSX,
 } from "react";
-import { authService } from "../services/api";
+import { authService, PASSWORD_CHANGE_REQUIRED_EVENT } from "../services/api";
 import { User, AuthContextType } from "../types";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,15 +34,29 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
         if (authService.isAuthenticated()) {
           const userData = authService.getCurrentUserFromStorage();
           if (userData && typeof userData === "object" && "id" in userData) {
-            setUser(userData);
-            // Check AI features availability
-            try {
-              const aiFeatures = await authService.checkAIFeatures();
-              setAiAvailable(aiFeatures.ai_available);
-            } catch (error) {
+            // Rafraîchir depuis le serveur avant d'afficher l'application :
+            // l'état stocké peut être périmé (ex. changement de mot de passe
+            // exigé depuis la dernière connexion). Un seul setUser évite de
+            // déclencher deux fois les chargements dépendant de `user`.
+            // Les deux appels sont indépendants : lancés en parallèle.
+            const [meResult, aiResult] = await Promise.allSettled([
+              authService.getCurrentUser(),
+              authService.checkAIFeatures(),
+            ]);
+            // 401 géré par l'intercepteur axios (session effacée)
+            if (!authService.isAuthenticated()) {
+              return;
+            }
+            // En cas d'échec réseau, on garde l'état en cache
+            setUser(
+              meResult.status === "fulfilled" ? meResult.value : userData,
+            );
+            if (aiResult.status === "fulfilled") {
+              setAiAvailable(aiResult.value.ai_available);
+            } else {
               console.error(
                 "Erreur lors de la vérification des fonctionnalités IA:",
-                error,
+                aiResult.reason,
               );
               setAiAvailable(false);
             }
@@ -67,6 +81,28 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
       }
     };
     initAuth();
+  }, []);
+
+  // Session déjà ouverte quand le backend exige un changement de mot de passe
+  // (403 dédié détecté par l'intercepteur axios) : basculer sur l'écran bloquant.
+  useEffect(() => {
+    const onPasswordChangeRequired = () => {
+      setUser((current) => {
+        if (!current || current.must_change_password) return current;
+        const flagged = { ...current, must_change_password: true };
+        localStorage.setItem("user", JSON.stringify(flagged));
+        return flagged;
+      });
+    };
+    window.addEventListener(
+      PASSWORD_CHANGE_REQUIRED_EVENT,
+      onPasswordChangeRequired,
+    );
+    return () =>
+      window.removeEventListener(
+        PASSWORD_CHANGE_REQUIRED_EVENT,
+        onPasswordChangeRequired,
+      );
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
@@ -105,12 +141,24 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
     }
   };
 
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> => {
+    const userData = await authService.changePassword(
+      currentPassword,
+      newPassword,
+    );
+    setUser(userData);
+  };
+
   const value: AuthContextType = {
     user,
     login,
     logout,
     loading,
     aiAvailable,
+    changePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

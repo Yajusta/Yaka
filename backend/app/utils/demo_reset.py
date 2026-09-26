@@ -1,6 +1,8 @@
 """Database reset script for demo mode."""
 
+import logging
 import os
+from pathlib import Path
 
 from app.models import (
     BoardSettings,
@@ -12,9 +14,10 @@ from app.models import (
     Label,
     User,
     UserRole,
+    UserStatus,
 )
 from app.models.card import CardPriority
-from app.multi_database import get_board_db
+from app.multi_database import db_manager, get_board_db
 from app.schemas.card import CardCreate
 from app.schemas.card_item import CardItemCreate
 from app.schemas.kanban_list import KanbanListCreate
@@ -25,98 +28,138 @@ from app.services.card import create_card
 from app.services.card_item import create_item as create_card_item
 from app.services.kanban_list import create_list
 from app.services.label import create_label
-from app.services.user import create_admin_user, create_user, get_user_by_email
+from app.services.user import (
+    DEMO_ADMIN_PASSWORD,
+    LEGACY_ADMIN_EMAIL,
+    create_admin_user,
+    create_user,
+    default_admin_email,
+    generate_initial_password,
+    get_user_by_email,
+)
 from app.utils.demo_mode import is_demo_mode
+from app.utils.security import get_password_hash, verify_password
+from sqlalchemy import create_engine, func
+from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 # Mot de passe public des comptes de démonstration (documenté dans le README).
 DEMO_USER_PASSWORD = "Demo1234"  # nosec B105
+DEMO_USERS = (
+    ("supervisor@yaka.local", "Sarah Supervisor", UserRole.SUPERVISOR),
+    ("editor@yaka.local", "Eric Editor", UserRole.EDITOR),
+    ("contributor@yaka.local", "Chris Contributor", UserRole.CONTRIBUTOR),
+    ("commenter@yaka.local", "Carol Commenter", UserRole.COMMENTER),
+    ("visitor@yaka.local", "Victor Visitor", UserRole.VISITOR),
+)
+DEMO_USER_EMAILS = tuple(email for email, _, _ in DEMO_USERS)
 
 
-def initialize_default_data(db_session=None):
-    """Initialize default data: admin user and settings (without demo data)."""
-    if db_session is None:
-        with get_board_db() as db_session:
-            return _initialize_default_data_impl(db_session)
-    else:
-        return _initialize_default_data_impl(db_session)
+def secure_default_accounts(db_session) -> list[str]:
+    """Neutralize seeded accounts that still use their public password.
+
+    Demo accounts are disabled (soft-deleted), except those promoted to ADMIN
+    (possibly the board's only administrator), which are treated like the
+    default admin: a new random password (included once in the returned
+    descriptions, to be logged) that must be changed at next login.
+    Returns a description of each change.
+    """
+    admin_emails = {LEGACY_ADMIN_EMAIL, default_admin_email()}
+    candidates = (
+        db_session.query(User)
+        .filter(
+            func.lower(User.email).in_([*DEMO_USER_EMAILS, *admin_emails]),
+            func.lower(User.status) != UserStatus.DELETED.value.lower(),
+            User.password_hash.isnot(None),
+            # Already reset to a random password: no need for a costly bcrypt check
+            User.must_change_password.is_(False),
+        )
+        .all()
+    )
+
+    changes = []
+    for user in candidates:
+        email = user.email.lower()
+        public_password = (
+            DEMO_USER_PASSWORD if email in DEMO_USER_EMAILS else DEMO_ADMIN_PASSWORD
+        )
+        if not verify_password(public_password, user.password_hash):
+            continue
+        if email in DEMO_USER_EMAILS and user.role != UserRole.ADMIN:
+            user.status = UserStatus.DELETED
+            changes.append(f"{email} disabled")
+        else:
+            # Flagging alone is not enough: anyone knowing the public password
+            # could supply it as the current one. Replace it with a random
+            # password, shown only once in the logs.
+            new_password = generate_initial_password()
+            user.password_hash = get_password_hash(new_password)
+            user.must_change_password = True
+            changes.append(
+                f"{email} password reset to {new_password} "
+                "(must be changed at next login)"
+            )
+
+    if changes:
+        db_session.commit()
+    return changes
 
 
-def _initialize_default_data_impl(db_session):
-    """Implementation of initialize_default_data."""
-    try:
-        # Check and create administrator user if needed
-        admin_user = get_user_by_email(db_session, "admin@yaka.local")
-        if not admin_user:
-            create_admin_user(db_session)
-            print("Administrator user created: admin@yaka.local / Admin123")
+def secure_default_accounts_on_all_boards():
+    """Run secure_default_accounts on every board database (outside demo mode).
 
-        # Initialize default settings
-        initialize_default_settings(db_session)
-        print("Default settings initialized")
+    Uses a short-lived engine per file so that dormant boards do not keep a
+    cached engine open for the lifetime of the process.
+    """
+    for db_path in db_manager.list_database_paths():
+        board_uid = Path(db_path).stem
+        engine = create_engine(f"sqlite:///{db_path}")
+        try:
+            with Session(engine) as db:
+                if changes := secure_default_accounts(db):
+                    logger.warning(
+                        "[%s] Public default passwords detected: %s",
+                        board_uid,
+                        ", ".join(changes),
+                    )
+        except Exception as e:
+            logger.error("[%s] Could not check default accounts: %s", board_uid, e)
+        finally:
+            engine.dispose()
 
-        return True
 
-    except Exception as e:
-        print(f"Error during initialization: {e}")
-        if db_session:
-            db_session.rollback()
-        return False
+def initialize_default_data(db_session):
+    """Initialize default data: admin user and settings (without demo data).
+
+    Errors propagate: an installation without an administrator is unusable.
+    """
+    if not get_user_by_email(db_session, default_admin_email()):
+        admin_user = create_admin_user(db_session)
+        print(f"Administrator user created: {admin_user.email}")
+
+    initialize_default_settings(db_session)
+    print("Default settings initialized")
 
 
 def create_demo_users(db_session):
     """Create demo users with different roles."""
     default_language = os.getenv("DEFAULT_LANGUAGE", "fr")
 
-    demo_users = [
-        {
-            "email": "supervisor@yaka.local",
-            "password": DEMO_USER_PASSWORD,
-            "display_name": "Sarah Supervisor",
-            "role": UserRole.SUPERVISOR,
-        },
-        {
-            "email": "editor@yaka.local",
-            "password": DEMO_USER_PASSWORD,
-            "display_name": "Eric Editor",
-            "role": UserRole.EDITOR,
-        },
-        {
-            "email": "contributor@yaka.local",
-            "password": DEMO_USER_PASSWORD,
-            "display_name": "Chris Contributor",
-            "role": UserRole.CONTRIBUTOR,
-        },
-        {
-            "email": "commenter@yaka.local",
-            "password": DEMO_USER_PASSWORD,
-            "display_name": "Carol Commenter",
-            "role": UserRole.COMMENTER,
-        },
-        {
-            "email": "visitor@yaka.local",
-            "password": DEMO_USER_PASSWORD,
-            "display_name": "Victor Visitor",
-            "role": UserRole.VISITOR,
-        },
-    ]
-
     created_users = []
-    for user_data in demo_users:
-        if existing_user := get_user_by_email(db_session, user_data["email"]):
+    for email, display_name, role in DEMO_USERS:
+        if existing_user := get_user_by_email(db_session, email):
             created_users.append(existing_user)
         else:
             user_create = UserCreate(
-                email=user_data["email"],
-                password=user_data["password"],
-                display_name=user_data["display_name"],
-                role=user_data["role"],
+                email=email,
+                password=DEMO_USER_PASSWORD,
+                display_name=display_name,
+                role=role,
                 language=default_language,
             )
-            user = create_user(db_session, user_create)
-            created_users.append(user)
-            print(
-                f"Demo user created: {user_data['email']} ({user_data['role'].value}) / {user_data['password']}"
-            )
+            created_users.append(create_user(db_session, user_create))
+            print(f"Demo user created: {email} ({role.value}) / {DEMO_USER_PASSWORD}")
     return created_users
 
 
@@ -235,7 +278,7 @@ def create_demo_board_content(db_session, admin_user=None):
 
     # Get admin user
     if admin_user is None:
-        admin_user = get_user_by_email(db_session, "admin@yaka.local")
+        admin_user = get_user_by_email(db_session, default_admin_email())
     if not admin_user:
         print("Error: Admin user not found")
         return
@@ -308,7 +351,11 @@ def delete_all_data(db):
     db.query(BoardSettings).delete()
     db.query(User).delete()
 
-    db.commit()
+    # No commit here: the deletion is committed together with the admin
+    # re-creation, so that a failure while re-creating the admin (e.g. invalid
+    # configuration) is undone by reset_database's rollback instead of leaving
+    # zero users. Later failures (demo content) leave an admin-only board.
+    db.flush()
     print("Database cleaned successfully")
 
     # Recreate base data (admin user, settings)
@@ -328,15 +375,17 @@ def setup_fresh_database():
         try:
             # Check if database is already configured
 
-            if get_user_by_email(db, "admin@yaka.local"):
+            if get_user_by_email(db, default_admin_email()):
                 print("Database already configured, no action needed")
                 return
 
             # Empty database, initialize base data
             initialize_default_data(db)
 
-            # Add demo data
-            create_demo_data(db)
+            # Demo accounts (public password) only in demo mode
+            if is_demo_mode():
+                create_demo_users(db)
+            create_demo_board_content(db)
             print("Database configured successfully!")
 
         except Exception as e:

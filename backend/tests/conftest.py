@@ -18,6 +18,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 # Always overridden: an empty or weak value inherited from the shell or a .env
 # would otherwise make the whole suite fail at collection.
 os.environ["JWT_SECRET"] = "test-jwt-secret-0123456789abcdef0123456789abcdef"
+# Known admin password for seeded test databases (otherwise a random one is
+# generated and a password change is required before any other call).
+os.environ["DEFAULT_ADMIN_PASSWORD"] = "Admin-Test1"
 
 from app.database import Base
 from app.models.user import UserRole

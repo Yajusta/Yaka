@@ -13,7 +13,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .database import Base, engine
-from .multi_database import get_board_db
+from .multi_database import db_manager, get_board_db
 from .routers import (
     admin_router,
     auth_router,
@@ -32,7 +32,11 @@ from .routers.voice_control import router as voice_control_router
 from .services.email import FROM_ADDRESS, SMTP_HOST, SMTP_USER
 from .utils.board_context import BoardContextMiddleware
 from .utils.demo_mode import is_demo_mode
-from .utils.demo_reset import reset_database, setup_fresh_database
+from .utils.demo_reset import (
+    reset_database,
+    secure_default_accounts_on_all_boards,
+    setup_fresh_database,
+)
 
 load_dotenv()
 
@@ -57,6 +61,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             # Base de données vide ou nouvellement créée, configurer avec les données de base
             print("Base de donnees vide detectee, configuration initiale...")
             setup_fresh_database()
+
+    # Hors mode démo, neutraliser les comptes créés avec un mot de passe public
+    if not is_demo_mode():
+        secure_default_accounts_on_all_boards()
 
     # Afficher la configuration d'envoi d'emails utilisée au démarrage
     print(
@@ -217,11 +225,10 @@ def upgrade_if_needed(conn, text, db_url: str, db_name: str):
 
 def run_migrations():
     """Exécute les migrations Alembic pour toutes les bases de données .db du répertoire data."""
-    import glob
     import os
 
     # Trouver tous les fichiers .db dans le répertoire data
-    db_files = glob.glob("./data/*.db")
+    db_files = db_manager.list_database_paths()
 
     if not db_files:
         print("Aucune base de données trouvée dans le répertoire data")

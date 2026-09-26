@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import api from "@shared/services/api.tsx";
+import {
+  getPasswordErrorKey,
+  PASSWORD_REQUIREMENT_KEYS,
+} from "@shared/utils/password";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import {
@@ -37,22 +41,6 @@ const InvitePage = () => {
     }
   }, [token]);
 
-  const validatePassword = (pwd: string): string | null => {
-    if (pwd.length < 8) {
-      return t("invite.passwordTooShort");
-    }
-    if (!/(?=.*[a-z])/.test(pwd)) {
-      return t("invite.passwordMissingLowercase");
-    }
-    if (!/(?=.*[A-Z])/.test(pwd)) {
-      return t("invite.passwordMissingUppercase");
-    }
-    if (!/(?=.*\d)/.test(pwd)) {
-      return t("invite.passwordMissingNumber");
-    }
-    return null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -66,9 +54,9 @@ const InvitePage = () => {
       return;
     }
 
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      setError(passwordError);
+    const passwordErrorKey = getPasswordErrorKey(password);
+    if (passwordErrorKey) {
+      setError(t(passwordErrorKey));
       return;
     }
 
@@ -217,10 +205,9 @@ const InvitePage = () => {
             <div className="text-xs text-muted-foreground space-y-1">
               <p>{t("invite.passwordRequirements")}</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>{t("invite.passwordMinLength")}</li>
-                <li>{t("invite.passwordLowercase")}</li>
-                <li>{t("invite.passwordUppercase")}</li>
-                <li>{t("invite.passwordNumber")}</li>
+                {PASSWORD_REQUIREMENT_KEYS.map((key) => (
+                  <li key={key}>{t(key)}</li>
+                ))}
               </ul>
             </div>
 

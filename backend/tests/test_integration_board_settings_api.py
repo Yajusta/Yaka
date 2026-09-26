@@ -22,7 +22,7 @@ async def test_admin_can_update_board_title(
     seed_admin_user()
 
     async with async_client_factory(auth_router, board_settings_router) as client:
-        token = await login_user(client, "admin@yaka.local", "Admin123")
+        token = await login_user(client, "admin@yaka.local", "Admin-Test1")
         new_title = "Kanban equipe"
 
         update_response = await client.put(
@@ -70,7 +70,7 @@ async def test_admin_can_list_settings(
     seed_admin_user()
 
     async with async_client_factory(auth_router, board_settings_router) as client:
-        token = await login_user(client, "admin@yaka.local", "Admin123")
+        token = await login_user(client, "admin@yaka.local", "Admin-Test1")
 
         response = await client.get(
             "/board-settings/",

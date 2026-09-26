@@ -1,5 +1,6 @@
 """Gestionnaire multi-bases de données pour les boards Yaka."""
 
+import glob
 import os
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -89,6 +90,10 @@ class MultiDatabaseManager:
             print(f"Base de données initialisée avec alembic version {latest_version}")
         except Exception as e:
             print(f"Avertissement: Impossible d'initialiser alembic_version: {e}")
+
+    def list_database_paths(self) -> list[str]:
+        """Liste les fichiers .db du répertoire de données (tous les boards)."""
+        return sorted(glob.glob(f"{self.base_path}/*.db"))
 
     def ensure_database_exists(self, board_uid: str) -> bool:
         """Vérifie que la base de données existe pour un board."""

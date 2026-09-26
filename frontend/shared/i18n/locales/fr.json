@@ -541,6 +541,7 @@
   "invite": {
     "missingToken": "Token manquant ou invalide",
     "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
+    "passwordTooLong": "Le mot de passe ne doit pas dépasser 72 octets (environ 72 caractères sans accents)",
     "passwordMissingLowercase": "Le mot de passe doit contenir au moins une lettre minuscule",
     "passwordMissingUppercase": "Le mot de passe doit contenir au moins une lettre majuscule",
     "passwordMissingNumber": "Le mot de passe doit contenir au moins un chiffre",
@@ -561,6 +562,17 @@
     "passwordNumber": "Un chiffre",
     "settingPassword": "Définition en cours...",
     "setPasswordButton": "Définir le mot de passe"
+  },
+  "changePassword": {
+    "title": "Changement de mot de passe obligatoire",
+    "description": "Pour des raisons de sécurité, vous devez choisir un nouveau mot de passe avant de continuer.",
+    "currentPassword": "Mot de passe actuel",
+    "mustDiffer": "Le nouveau mot de passe doit être différent de l'actuel",
+    "wrongCurrentPassword": "Mot de passe actuel incorrect",
+    "submit": "Changer le mot de passe",
+    "submitting": "Changement en cours...",
+    "error": "Erreur lors du changement de mot de passe",
+    "success": "Mot de passe modifié"
   },
   "app": {
     "name": "Yaka",

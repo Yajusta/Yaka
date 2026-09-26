@@ -172,10 +172,12 @@ npm run trunk -- check --all --no-fix
 
 Un compte administrateur est créé automatiquement lors de l'initialisation :
 
-- **Email :** `admin@kyaka.local`
-- **Mot de passe :** `Admin123`
+- **Email :** `admin@yaka.local` (ou `DEFAULT_ADMIN_EMAIL`)
+- **Mot de passe :** la valeur de `DEFAULT_ADMIN_PASSWORD` si elle est définie (ignorée hors mode démo s'il s'agit du mot de passe public `Admin123` ; au moins 8 caractères dont une majuscule, une minuscule et un chiffre, sinon le démarrage échoue). Sinon, un mot de passe aléatoire est généré et affiché **une seule fois** dans les logs du backend (`WARNING ... Administrateur initial créé`), et doit être changé à la première connexion : d'ici là, le compte peut seulement changer son mot de passe ou se déconnecter.
 
 Une fois connecté, **créez un nouvel administrateur** avec votre email puis **supprimez ce compte par défaut**.
+
+Les comptes de démonstration (`supervisor@`, `editor@`, `contributor@`, `commenter@`, `visitor@yaka.local`, mot de passe `Demo1234`) ne sont créés que si `DEMO_MODE=true`. Hors mode démo, à chaque démarrage et pour chaque board, le backend désactive ceux qui utilisent encore `Demo1234` (ou, s'ils ont été promus administrateur, réinitialise leur mot de passe comme ci-dessous) et, si `admin@yaka.local` (ou `DEFAULT_ADMIN_EMAIL`) utilise encore `Admin123`, remplace ce mot de passe par un mot de passe aléatoire affiché **une seule fois** dans la ligne de log `WARNING`, à changer à la prochaine connexion.
 
 ## 📖 Documentation
 

@@ -66,6 +66,11 @@ const createApiInstance = (): AxiosInstance => {
   });
 };
 
+// Detail du 403 renvoyé tant qu'un changement de mot de passe est exigé
+// (PASSWORD_CHANGE_REQUIRED dans backend/app/utils/dependencies.py)
+const PASSWORD_CHANGE_REQUIRED = "password_change_required";
+export const PASSWORD_CHANGE_REQUIRED_EVENT = "yaka:password-change-required";
+
 // Intercepteur pour ajouter le token d'authentification
 const setupInterceptors = (apiInstance: AxiosInstance) => {
   apiInstance.interceptors.request.use(
@@ -85,6 +90,13 @@ const setupInterceptors = (apiInstance: AxiosInstance) => {
   apiInstance.interceptors.response.use(
     (response: AxiosResponse) => response,
     (error) => {
+      if (
+        error.response?.status === 403 &&
+        error.response?.data?.detail === PASSWORD_CHANGE_REQUIRED
+      ) {
+        // Changement de mot de passe exigé par le backend : prévenir AuthProvider
+        window.dispatchEvent(new Event(PASSWORD_CHANGE_REQUIRED_EVENT));
+      }
       if (error.response?.status === 401) {
         // Clear auth artifacts
         localStorage.removeItem("token");
@@ -161,16 +173,8 @@ export const authService = {
     const { access_token } = response.data;
     localStorage.setItem("token", access_token);
 
-    // Récupérer les informations utilisateur
-    const userResponse = await apiInstance.get<User>("/auth/me");
-    const userData = userResponse.data;
-    localStorage.setItem("user", JSON.stringify(userData));
-
-    // Set the language from user preferences
-    if (userData.language) {
-      // Store language in localStorage for i18next detector
-      localStorage.setItem("i18nextLng", userData.language);
-    }
+    // Récupérer (et mémoriser) les informations utilisateur
+    const userData = await authService.getCurrentUser();
 
     // Clear any redirect guard now that we're authenticated
     try {
@@ -186,9 +190,22 @@ export const authService = {
     await getApiInstance().post("/auth/logout");
   },
 
+  async changePassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<User> {
+    const response = await getApiInstance().post<User>(
+      "/auth/change-password",
+      { current_password: currentPassword, new_password: newPassword },
+    );
+    localStorage.setItem("user", JSON.stringify(response.data));
+    return response.data;
+  },
+
   async getCurrentUser(): Promise<User> {
     const response = await getApiInstance().get<User>("/auth/me");
     const userData = response.data;
+    localStorage.setItem("user", JSON.stringify(userData));
 
     // Set the language from user preferences
     if (userData.language) {

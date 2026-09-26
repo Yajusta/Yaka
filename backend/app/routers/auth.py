@@ -7,10 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+from ..models import User
 from ..multi_database import get_dynamic_db as get_db
-from ..schemas import PasswordResetRequest, UserResponse
+from ..schemas import PasswordChange, PasswordResetRequest, UserResponse
 from ..services import user as user_service
-from ..utils.dependencies import get_current_active_user
+from ..utils.dependencies import get_current_user
 from ..utils.security import ACCESS_TOKEN_EXPIRE_MINUTES, Token, create_access_token
 
 router = APIRouter(prefix="/auth", tags=["authentification"])
@@ -37,8 +38,29 @@ async def login(
 
 
 @router.get("/me", response_model=UserResponse)
-async def read_users_me(current_user: UserResponse = Depends(get_current_active_user)):
-    """Obtenir les informations de l'utilisateur connecté."""
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    """Obtenir les informations de l'utilisateur connecté.
+
+    Accessible même si un changement de mot de passe est exigé.
+    """
+    return current_user
+
+
+@router.post("/change-password", response_model=UserResponse)
+async def change_password(
+    payload: PasswordChange,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Changer son propre mot de passe (lève le changement obligatoire)."""
+    try:
+        user_service.change_password(
+            db, current_user, payload.current_password, payload.new_password
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
     return current_user
 
 

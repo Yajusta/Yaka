@@ -10,6 +10,10 @@ from .security import verify_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
+# Code d'erreur (detail du 403) reconnu par l'intercepteur axios du frontend
+# (shared/services/api.tsx) pour afficher l'écran de changement de mot de passe.
+PASSWORD_CHANGE_REQUIRED = "password_change_required"
+
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Could not validate credentials",
@@ -35,7 +39,17 @@ def get_current_user(
 
 
 def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
-    """Obtenir l'utilisateur actuel actif."""
+    """Obtenir l'utilisateur actuel actif.
+
+    Tant qu'un changement de mot de passe est exigé, seules les routes qui
+    dépendent directement de get_current_user (profil, changement de mot de
+    passe, langue) restent accessibles.
+    """
+    if current_user.must_change_password:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=PASSWORD_CHANGE_REQUIRED,
+        )
     return current_user
 
 

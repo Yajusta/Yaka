@@ -122,24 +122,25 @@ Branche : `worktree-security-audit-fixes`.
 
 ## Avancement
 
-| Tâche | Dev | /simplify                     | /code-review | Commit |
-| ----- | --- | ----------------------------- | ------------ | ------ |
-| T1    | ✅  | ✅ (12 findings, 7 appliqués) | ✅ (10 → 7)  | ✅     |
-| T2    | ☐   | ☐                             | ☐            | ☐      |
-| T3    | ☐   | ☐                             | ☐            | ☐      |
-| T4    | ☐   | ☐                             | ☐            | ☐      |
-| T5    | ☐   | ☐                             | ☐            | ☐      |
-| T6    | ☐   | ☐                             | ☐            | ☐      |
-| T7    | ☐   | ☐                             | ☐            | ☐      |
-| T8    | ☐   | ☐                             | ☐            | ☐      |
-| T9    | ☐   | ☐                             | ☐            | ☐      |
-| T10   | ☐   | ☐                             | ☐            | ☐      |
-| T11   | ☐   | ☐                             | ☐            | ☐      |
-| T12   | ☐   | ☐                             | ☐            | ☐      |
-| T13   | ☐   | —                             | —            | ☐      |
+| Tâche | Dev | /simplify                      | /code-review    | Commit |
+| ----- | --- | ------------------------------ | --------------- | ------ |
+| T1    | ✅  | ✅ (12 findings, 7 appliqués)  | ✅ (10 → 7)     | ✅     |
+| T2    | ✅  | ✅ (16 findings, 12 appliqués) | ✅ (10 → 9 → 7) | ✅     |
+| T3    | ☐   | ☐                              | ☐               | ☐      |
+| T4    | ☐   | ☐                              | ☐               | ☐      |
+| T5    | ☐   | ☐                              | ☐               | ☐      |
+| T6    | ☐   | ☐                              | ☐               | ☐      |
+| T7    | ☐   | ☐                              | ☐               | ☐      |
+| T8    | ☐   | ☐                              | ☐               | ☐      |
+| T9    | ☐   | ☐                              | ☐               | ☐      |
+| T10   | ☐   | ☐                              | ☐               | ☐      |
+| T11   | ☐   | ☐                              | ☐               | ☐      |
+| T12   | ☐   | ☐                              | ☐               | ☐      |
+| T13   | ☐   | —                              | —               | ☐      |
 
 ## Journal
 
 - Baseline `a953a58` : 1124 passés, 7 erreurs `PermissionError [WinError 32]` au teardown (verrou de fichier Windows, hors périmètre), 25 min.
 
 - T1 terminé : JWT_SECRET obligatoire (≥32 car. non blancs, ≥8 car. distincts), clé admin ≥32 car. + compare_digest (warning si trop courte), plus de `override=True`, `.env.*` ignoré par git et Docker, README. Tests : 1141 passés, 7 erreurs préexistantes. Renvoyé à T2 : init admin (`Admin123`, log de démarrage, `DEFAULT_ADMIN_PASSWORD` invalide avalé).
+- T2 terminé : démo seulement si `DEMO_MODE` ; admin initial aléatoire (logué une fois) + `must_change_password` (migration `3c2b399d24d8`), 403 `password_change_required`, `POST /auth/change-password`, écrans bloquants desktop/mobile ; au démarrage hors démo : comptes démo encore en `Demo1234` soft-deleted (`DELETED`, pas de statut « désactivé » dans le modèle), tout admin encore en `Admin123`/`Demo1234` reçoit un mot de passe aléatoire ; `DEFAULT_ADMIN_PASSWORD=Admin123` ignoré hors démo ; plafond bcrypt 72 octets dans le validateur partagé ; `fileConfig(disable_existing_loggers=False)`. Tests : 1157 passés. Pour T3 : les JWT émis avant le changement de mot de passe restent valides ; `/auth/me`, `/auth/change-password`, `/auth/logout`, `PUT /users/me/language` utilisent `get_current_user` (pas le gate du flag). À faire en T13 : `CLAUDE.md` mentionne encore `Admin123`.

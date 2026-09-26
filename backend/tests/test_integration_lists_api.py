@@ -13,7 +13,7 @@ async def test_admin_creates_lists_and_users_can_read(
     create_regular_user("reader@example.com", "Reader123", display_name="Reader")
 
     async with async_client_factory(auth_router, lists_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
 
         backlog_response = await client.post(
             "/lists/",
@@ -54,7 +54,7 @@ async def test_admin_can_update_and_delete_lists(
     seed_admin_user()
 
     async with async_client_factory(auth_router, lists_router) as client:
-        token = await login_user(client, "admin@yaka.local", "Admin123")
+        token = await login_user(client, "admin@yaka.local", "Admin-Test1")
 
         backlog_response = await client.post(
             "/lists/",

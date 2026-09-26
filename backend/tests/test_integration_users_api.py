@@ -13,7 +13,7 @@ async def test_users_listing_hides_emails_for_non_admins(
     create_regular_user("member@example.com", "Userpass123", display_name="Member")
 
     async with async_client_factory(auth_router, users_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
         admin_response = await client.get(
             "/users/",
             headers={"Authorization": f"Bearer {admin_token}"},
@@ -46,7 +46,7 @@ async def test_user_management_requires_admin(
     create_regular_user("observer@example.com", "Observer123", display_name="Observer")
 
     async with async_client_factory(auth_router, users_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
         payload = {
             "email": "new.user@example.com",
             "password": "Password123!",

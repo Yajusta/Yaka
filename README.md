@@ -182,10 +182,12 @@ npm run trunk -- check --all --no-fix
 
 An administrator account is automatically created during initialization:
 
-- **Email:** `admin@kyaka.local`
-- **Password:** `Admin123`
+- **Email:** `admin@yaka.local` (or `DEFAULT_ADMIN_EMAIL`)
+- **Password:** the value of `DEFAULT_ADMIN_PASSWORD` if set (ignored outside demo mode if it is the public `Admin123`; at least 8 characters with an uppercase letter, a lowercase letter and a digit, otherwise startup fails). If it is not set, a random password is generated and printed **once** in the backend logs (`WARNING ... Administrateur initial créé`), and must be changed at first login: until then, the account can only change its password or log out.
 
 Once connected, **create a new administrator** with your email then **delete this default account**.
+
+Demo accounts (`supervisor@`, `editor@`, `contributor@`, `commenter@`, `visitor@yaka.local`, password `Demo1234`) are only created when `DEMO_MODE=true`. Outside demo mode, at each startup and for every board, the backend disables any of these accounts still using `Demo1234` (or, if it was promoted to administrator, resets its password as below), and, if `admin@yaka.local` (or `DEFAULT_ADMIN_EMAIL`) still uses `Admin123`, replaces that password with a random one printed **once** in the `WARNING` log line and to be changed at next login.
 
 ## 📖 Documentation
 

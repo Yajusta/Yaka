@@ -19,7 +19,7 @@ async def test_card_history_endpoints(
     async with async_client_factory(
         auth_router, cards_router, card_history_router
     ) as client:
-        token = await login_user(client, "admin@yaka.local", "Admin123")
+        token = await login_user(client, "admin@yaka.local", "Admin-Test1")
 
         me_response = await client.get(
             "/auth/me",

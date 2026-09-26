@@ -21,10 +21,19 @@ def _validate_email(value: str | None) -> str | None:
     return value.lower()
 
 
+BCRYPT_MAX_PASSWORD_BYTES = 72
+
+
 def _validate_password_strength(value: str) -> str:
     """Valide la complexité du mot de passe."""
     if len(value) < 8:
         raise ValueError("Le mot de passe doit contenir au moins 8 caractères")
+    # bcrypt (>= 5) refuse au-delà de 72 octets : rejeter en 422 plutôt
+    # qu'échouer au hachage
+    if len(value.encode("utf-8")) > BCRYPT_MAX_PASSWORD_BYTES:
+        raise ValueError(
+            f"Le mot de passe ne doit pas dépasser {BCRYPT_MAX_PASSWORD_BYTES} octets"
+        )
 
     # Vérifier la présence de différents types de caractères
     has_upper = any(c.isupper() for c in value)
@@ -124,6 +133,19 @@ class SetPasswordPayload(BaseModel):
         return _validate_password_strength(value)
 
 
+class PasswordChange(BaseModel):
+    """Schéma pour changer son propre mot de passe (utilisateur connecté)."""
+
+    current_password: str = Field(..., min_length=1, max_length=128)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        """Valide la complexité du mot de passe."""
+        return _validate_password_strength(value)
+
+
 class PasswordResetRequest(BaseModel):
     """Schéma pour demander une réinitialisation de mot de passe."""
 
@@ -143,6 +165,7 @@ class UserResponse(UserBase):
     """Schéma de réponse pour les utilisateurs."""
 
     id: int
+    must_change_password: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None
 

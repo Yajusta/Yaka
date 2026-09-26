@@ -57,8 +57,8 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     if (authLoading) {
       return;
     }
-    if (!user) {
-      // Not authenticated: ensure clean state and stop loading
+    if (!user || user.must_change_password) {
+      // Not authenticated (or password change pending): ensure clean state and stop loading
       setUsers([]);
       setLoading(false);
       setError(null);

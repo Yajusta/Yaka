@@ -68,7 +68,7 @@ class TestMultiBoardIntegration:
         # 2. Login as admin to create users
         admin_login_response = await client.post(
             "/auth/login",
-            data={"username": "admin@yaka.local", "password": "Admin123"},
+            data={"username": "admin@yaka.local", "password": "Admin-Test1"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert admin_login_response.status_code == 200

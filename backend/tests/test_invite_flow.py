@@ -28,7 +28,7 @@ async def test_invite_and_set_password(
 
     async with async_client_factory(auth_router, users_router) as client:
         # 1. L'admin se connecte
-        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
         # 2. L'admin invite un nouvel utilisateur

@@ -136,7 +136,7 @@ async def test_card_filters_bulk_move_and_archive(
     create_regular_user("assignee@example.com", "Assign123!", display_name="Assignee")
 
     async with async_client_factory(auth_router, labels_router, cards_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
         label_response = await client.post(
@@ -365,7 +365,7 @@ async def test_card_update_assigns_and_labels(
     create_regular_user("teammate@example.com", "Mate123!", display_name="Teammate")
 
     async with async_client_factory(auth_router, labels_router, cards_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         label_response = await client.post(
             "/labels/",
@@ -459,7 +459,7 @@ async def test_read_only_user_cannot_modify_cards(
     )
 
     async with async_client_factory(auth_router, cards_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         card_response = await client.post(
             "/cards/",
@@ -524,7 +524,7 @@ async def test_comments_only_user_can_comment_but_not_edit(
     async with async_client_factory(
         auth_router, cards_router, card_comments_router
     ) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
         card_response = await client.post(
             "/cards/",
@@ -591,7 +591,7 @@ async def test_assigned_only_user_restrictions(
     create_regular_user("other@example.com", "UserPass123!", display_name="Other")
 
     async with async_client_factory(auth_router, cards_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
         assigned_token = await login_user(client, "doer@example.com", "Assigned123!")

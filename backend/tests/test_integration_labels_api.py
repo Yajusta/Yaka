@@ -14,7 +14,7 @@ async def test_label_crud_permissions(
     create_regular_user("labeluser@example.com", "Label123", display_name="Label User")
 
     async with async_client_factory(auth_router, labels_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
         create_response = await client.post(
             "/labels/",
             json={"name": "Urgent", "color": "#ff0000"},
@@ -82,7 +82,7 @@ async def test_label_deletion_detaches_from_cards(
     )
 
     async with async_client_factory(auth_router, labels_router, cards_router) as client:
-        admin_token = await login_user(client, "admin@yaka.local", "Admin123")
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
         label_response = await client.post(
