@@ -11,6 +11,8 @@ wheels/
 .history
 
 .env
+.env.*
+!.env.sample
 *.bak
 
 frontend/node_modules/

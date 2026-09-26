@@ -40,7 +40,7 @@ class TestAdminRoutes:
     @pytest.fixture
     def mock_api_key(self):
         """Mock admin API key for testing."""
-        return "test-admin-api-key-12345"
+        return "test-admin-api-key-0123456789abcdef"
 
     @pytest.fixture
     def set_api_key_env(self, mock_api_key):
@@ -285,7 +285,7 @@ class TestAdminRoutesSecurity:
     @pytest.fixture
     def mock_api_key(self):
         """Mock admin API key for testing."""
-        return "test-admin-api-key-12345"
+        return "test-admin-api-key-0123456789abcdef"
 
     @pytest.fixture
     def set_api_key_env(self, mock_api_key):
@@ -385,7 +385,7 @@ class TestAdminRoutesEdgeCases:
     @pytest.fixture
     def mock_api_key(self):
         """Mock admin API key for testing."""
-        return "test-admin-api-key-12345"
+        return "test-admin-api-key-0123456789abcdef"
 
     @pytest.fixture
     def set_api_key_env(self, mock_api_key):

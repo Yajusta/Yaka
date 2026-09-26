@@ -1,5 +1,6 @@
 """Routeur pour l'authentification."""
 
+import os
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -61,12 +62,7 @@ async def request_password_reset(
 @router.get("/ai-features")
 async def check_ai_features():
     """Vérifie si les fonctionnalités IA sont disponibles."""
-    import os
-
-    from dotenv import load_dotenv
-
-    load_dotenv(override=True)
-
+    # Configuration lue depuis l'environnement du processus (chargé au démarrage)
     openai_api_key = os.getenv("OPENAI_API_KEY", "")
     llm_model = os.getenv("LLM_MODEL", "")
 

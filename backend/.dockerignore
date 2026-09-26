@@ -56,3 +56,6 @@ htmlcov/
 # Git
 .git
 .gitignore
+
+# Environment files (never bake secrets into the image)
+.env.*

@@ -293,7 +293,8 @@ def create_admin_user(db: Session) -> User:
     """Créer un utilisateur administrateur par défaut."""
     default_lang = getenv("DEFAULT_LANGUAGE", "en")
     default_email = getenv("DEFAULT_ADMIN_EMAIL", "admin@yaka.local").lower()
-    default_password = getenv("DEFAULT_ADMIN_PASSWORD", "Admin123")
+    # Une valeur vide (transmise par docker-compose) équivaut à une variable absente
+    default_password = getenv("DEFAULT_ADMIN_PASSWORD") or "Admin123"
     default_display_name = getenv("DEFAULT_ADMIN_DISPLAY_NAME", "Admin")
     admin_data = UserCreate(
         email=default_email,

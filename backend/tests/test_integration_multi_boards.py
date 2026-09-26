@@ -26,7 +26,7 @@ class TestMultiBoardIntegration:
     @pytest.fixture
     def mock_api_key(self):
         """Mock admin API key for testing."""
-        return "test-admin-api-key-12345"
+        return "test-admin-api-key-0123456789abcdef"
 
     @pytest.fixture
     def set_api_key_env(self, mock_api_key):
@@ -384,8 +384,8 @@ class TestMultiBoardSecurity:
     @pytest.mark.asyncio
     async def test_api_key_rotation_simulation(self, client, temp_data_dir):
         """Test API key rotation scenario."""
-        old_key = "old-api-key-123"
-        new_key = "new-api-key-456"
+        old_key = "old-api-key-0123456789abcdef0123456"
+        new_key = "new-api-key-0123456789abcdef0123456"
 
         # Set old API key
         with patch.dict(os.environ, {"YAKA_ADMIN_API_KEY": old_key}):

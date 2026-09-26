@@ -64,6 +64,14 @@ cp .env.sample .env
 
 And fill in the necessary environment variables.
 
+`JWT_SECRET` is **required**: the backend refuses to start (and `docker compose` aborts) if it is missing or shorter than 32 characters. Generate one with:
+
+```bash
+openssl rand -hex 32
+```
+
+`YAKA_ADMIN_API_KEY` is optional; leave it empty to disable the `/admin` endpoints, or set a random value of at least 32 characters (same command).
+
 ### 3. Give the data directory to the container user
 
 The backend container runs as the unprivileged uid `10001`, and `./data/` is bind-mounted into it. That directory (and everything in it) must belong to that uid, otherwise SQLite opens the board databases read-only and any write fails with `sqlite3.OperationalError: attempt to write a readonly database`.
@@ -124,6 +132,8 @@ SMTP_PASS = "re_xxxxxxxxxxxx"
 SMTP_SECURE = "starttls"  # values: 'ssl'|'starttls'|'none'
 SMTP_FROM = "no-reply@domain.com"
 ```
+
+Also set `JWT_SECRET` (required, at least 32 characters, e.g. `openssl rand -hex 32`); the backend will not start without it.
 
 ### 3. (optional) AI endpoint
 

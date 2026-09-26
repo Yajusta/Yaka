@@ -14,6 +14,11 @@ from sqlalchemy.orm import Session, sessionmaker
 # Allow tests to import the application package
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+# Strong JWT secret for tests (required when app.utils.security is imported).
+# Always overridden: an empty or weak value inherited from the shell or a .env
+# would otherwise make the whole suite fail at collection.
+os.environ["JWT_SECRET"] = "test-jwt-secret-0123456789abcdef0123456789abcdef"
+
 from app.database import Base
 from app.models.user import UserRole
 from app.multi_database import get_dynamic_db

@@ -22,8 +22,8 @@ from ..models.response_model import (
 from ..models.user import User, UserStatus
 from ..multi_database import get_board_db
 
-# Charger les variables d'environnement depuis .env
-load_dotenv(override=True)
+# Charger les variables d'environnement depuis .env, sans écraser celles du processus
+load_dotenv()
 DEFAULT_MODEL = "gpt-5-nano"
 
 

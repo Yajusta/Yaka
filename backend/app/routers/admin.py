@@ -1,5 +1,7 @@
 """Administrative routes for board management."""
 
+import hmac
+import logging
 import os
 
 from fastapi import APIRouter, Depends, HTTPException, Security
@@ -11,8 +13,12 @@ from ..database import Base
 from ..multi_database import db_manager
 from ..utils.validators import validate_email_format
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/admin", tags=["admin"])
 security = HTTPBearer()
+
+ADMIN_API_KEY_MIN_LENGTH = 32
 
 
 class CreateBoardRequest(BaseModel):
@@ -33,12 +39,24 @@ def verify_admin_api_key(
     # Read API key at runtime instead of module load time to support testing
     admin_api_key = os.getenv("YAKA_ADMIN_API_KEY")
 
-    if not admin_api_key:
+    # A missing or weak key (including the old .env.sample placeholder, which is
+    # shorter than the minimum) is treated as "not configured"
+    if not admin_api_key or len(admin_api_key) < ADMIN_API_KEY_MIN_LENGTH:
+        if admin_api_key:
+            # Explain the 503 to the operator: the key is set but rejected
+            logger.warning(
+                "YAKA_ADMIN_API_KEY is set but shorter than %d characters: "
+                "/admin endpoints are disabled (generate one with: openssl rand -hex 32)",
+                ADMIN_API_KEY_MIN_LENGTH,
+            )
         raise HTTPException(
             status_code=503, detail="Board creation service is not configured"
         )
 
-    if credentials.credentials != admin_api_key:
+    # Constant-time comparison
+    if not hmac.compare_digest(
+        credentials.credentials.encode("utf-8"), admin_api_key.encode("utf-8")
+    ):
         raise HTTPException(status_code=401, detail="Invalid or missing admin API key")
 
     return True

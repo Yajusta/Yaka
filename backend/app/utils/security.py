@@ -12,9 +12,31 @@ from pydantic import BaseModel
 load_dotenv()
 
 # JWT configuration
-SECRET_KEY = os.getenv(
-    "JWT_SECRET", "your_jwt_secret_key_here"
-)  # to change in production
+# Known sample values (the historical placeholder "your_jwt_secret_key_here",
+# 24 chars) are all rejected by the minimum length.
+JWT_SECRET_MIN_LENGTH = 32
+# Below this many distinct characters the secret is trivially guessable
+# ("a" * 32, 32 spaces...); `openssl rand -hex 32` yields ~16.
+JWT_SECRET_MIN_DISTINCT_CHARS = 8
+
+
+def load_jwt_secret() -> str:
+    """Read JWT_SECRET and reject a missing, too short or trivial value."""
+    secret = os.getenv("JWT_SECRET", "")
+    if (
+        len(secret.strip()) < JWT_SECRET_MIN_LENGTH
+        or len(set(secret)) < JWT_SECRET_MIN_DISTINCT_CHARS
+    ):
+        raise RuntimeError(
+            f"JWT_SECRET must be set to a random value of at least "
+            f"{JWT_SECRET_MIN_LENGTH} non-blank characters "
+            f"(generate one with: openssl rand -hex 32)"
+        )
+    return secret
+
+
+# Checked at import time: the application refuses to start without a strong secret
+SECRET_KEY = load_jwt_secret()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
