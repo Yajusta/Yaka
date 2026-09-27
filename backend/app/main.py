@@ -1,5 +1,6 @@
 """Application FastAPI principale pour l'application Kanban."""
 
+import logging
 import os
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
@@ -7,7 +8,7 @@ from typing import AsyncIterator
 from alembic import command
 from alembic.config import Config
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -39,6 +40,8 @@ from .utils.demo_reset import (
 )
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -392,21 +395,20 @@ async def health_check():
     return {"status": "healthy"}
 
 
+# `def` : la réinitialisation (E/S SQLite bloquantes) s'exécute dans le threadpool
 @app.post("/demo/reset")
-async def demo_reset():
+def demo_reset():
     """Reset the database in demo mode (only if DEMO_MODE=true)."""
     if not is_demo_mode():
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=403, detail="Demo mode not enabled")
 
     try:
         reset_database()
         return {"message": "Database reset successfully"}
     except Exception as e:
-        from fastapi import HTTPException
-
+        # Détail journalisé côté serveur seulement
+        logger.exception("Error resetting database")
         raise HTTPException(
             status_code=500,
-            detail=f"Error resetting database: {str(e)}",
+            detail="Error resetting database",
         ) from e

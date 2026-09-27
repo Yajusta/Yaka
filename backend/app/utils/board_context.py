@@ -7,7 +7,10 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-from ..multi_database import set_current_board_uid
+from ..multi_database import is_valid_board_uid, set_current_board_uid
+
+# Paths of the form /board/{board_uid}/...
+_BOARD_PATH_PATTERN = re.compile(r"^/board/([^/]+)/")
 
 
 class BoardContextMiddleware(BaseHTTPMiddleware):
@@ -23,27 +26,25 @@ class BoardContextMiddleware(BaseHTTPMiddleware):
         # Extract board_uid from the request path
         path = request.url.path
 
-        # Pattern to match /board/{board_uid}/...
-        board_match = re.match(r"^/board/([^/]+)/", path)
+        board_match = _BOARD_PATH_PATTERN.match(path)
 
         if board_match:
             board_uid = board_match.group(1)
-            # Validate board_uid (alphanumeric characters and hyphens only)
-            if self._is_valid_board_uid(board_uid):
-                # Check that the database exists before continuing
-                if not self._board_database_exists(board_uid):
-                    return JSONResponse(
-                        status_code=401,
-                        content={
-                            "detail": f"Board '{board_uid}' not found or access denied"
-                        },
-                    )
+            # An invalid uid is rejected like a missing board: ignoring it
+            # would serve the route against the default database
+            if not self._is_valid_board_uid(
+                board_uid
+            ) or not self._board_database_exists(board_uid):
+                return JSONResponse(
+                    status_code=401,
+                    content={
+                        "detail": f"Board '{board_uid}' not found or access denied"
+                    },
+                )
 
-                set_current_board_uid(board_uid)
-                # Also store in request.state for direct access if needed
-                request.state.board_uid = board_uid
-            else:
-                print(f"WARNING: Invalid board_uid ignored: {board_uid}")
+            set_current_board_uid(board_uid)
+            # Also store in request.state for direct access if needed
+            request.state.board_uid = board_uid
 
         try:
             # Continue processing the request
@@ -79,20 +80,8 @@ class BoardContextMiddleware(BaseHTTPMiddleware):
 
         return db_manager.ensure_database_exists(board_uid)
 
-    def _is_valid_board_uid(self, board_uid: str) -> bool:
-        """
-        Validate that board_uid contains only safe characters.
-
-        Args:
-            board_uid: The board identifier to validate
-
-        Returns:
-            True if board_uid is valid, False otherwise
-        """
-        # Allow alphanumeric characters and hyphens only
-        # Minimum length of 1, maximum of 50 characters
-        pattern = r"^[a-zA-Z0-9-]{1,50}$"
-        return bool(re.match(pattern, board_uid))
+    # Single rule shared with the admin routes (multi_database)
+    _is_valid_board_uid = staticmethod(is_valid_board_uid)
 
 
 def get_board_uid_from_request(request: Request) -> str | None:
@@ -111,11 +100,11 @@ def get_board_uid_from_request(request: Request) -> str | None:
 
     # Otherwise, try to extract from the path
     path = request.url.path
-    board_match = re.match(r"^/board/([^/]+)/", path)
+    board_match = _BOARD_PATH_PATTERN.match(path)
 
     if board_match:
         board_uid = board_match.group(1)
-        if re.match(r"^[a-zA-Z0-9-]{1,50}$", board_uid):
+        if is_valid_board_uid(board_uid):
             return board_uid
 
     return None

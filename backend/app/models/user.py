@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import enum
+import secrets
 from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import Boolean, DateTime, Enum, Index, Integer, String, false, text
@@ -105,9 +106,14 @@ class User(Base):
         Boolean, default=False, server_default=false(), nullable=False
     )
     # Version des jetons de session : tout JWT portant une autre version est
-    # refusé (incrémentée au changement de mot de passe, rôle, statut, déconnexion)
+    # refusé (incrémentée au changement de mot de passe, rôle, statut, déconnexion).
+    # Valeur initiale aléatoire : un board supprimé puis recréé réattribue les
+    # mêmes ids et emails, ses anciens jetons ne doivent pas redevenir valides.
     token_version: Mapped[int] = mapped_column(
-        Integer, default=0, server_default="0", nullable=False
+        Integer,
+        default=lambda: secrets.randbelow(2**31),
+        server_default="0",
+        nullable=False,
     )
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime(timezone=True), default=get_system_timezone_datetime

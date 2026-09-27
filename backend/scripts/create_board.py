@@ -11,55 +11,41 @@ Example:
 """
 
 import sys
-from typing import Optional
+from typing import Callable, List, Optional, Tuple
 
 from app.database import Base
-from app.multi_database import db_manager
+from app.multi_database import (
+    DEFAULT_BOARD_UID,
+    db_manager,
+    is_valid_board_uid,
+    publish_board_database,
+)
 from app.utils.validators import validate_email_format
 
 
-def create_board_database(board_uid: str, admin_email: Optional[str] = None):
-    """Create a complete database for a board."""
-    print(f"Creating database for board: {board_uid}")
+def _build_board(
+    build_path: str, board_uid: str, admin_email: Optional[str]
+) -> List[Tuple[Callable[..., None], tuple, dict]]:
+    """Create the complete board database at `build_path`.
 
-    # Validate board UID
-    if not board_uid.replace("-", "").isalnum():
-        print("ERROR: Board UID must contain only alphanumeric characters and hyphens")
-        return False
+    Returns the invitation emails to send once the board is published: sent
+    earlier, they would carry a token for a board whose publication may fail.
+    """
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
 
-    # Validate admin email if provided
-    email_error = validate_email_format(admin_email)
-    if email_error:
-        print(f"ERROR: {email_error}")
-        return False
-
-    # Check if database already exists
-    if db_manager.ensure_database_exists(board_uid):
-        print(f"WARNING: Database '{board_uid}.db' already exists")
-        return False
-
-    # Create engine and tables
+    pending_emails: List[Tuple[Callable[..., None], tuple, dict]] = []
+    engine = create_engine(
+        f"sqlite:///{build_path}", connect_args={"check_same_thread": False}
+    )
     try:
-        # Create engine directly (bypass existence check)
-        from sqlalchemy import create_engine
-        from sqlalchemy.orm import sessionmaker
-
-        db_path = db_manager.get_database_path(board_uid)
-        engine = create_engine(
-            f"sqlite:///{db_path}", connect_args={"check_same_thread": False}
-        )
-
         # Create all tables
         Base.metadata.create_all(bind=engine)
-        print(f"Tables created successfully in {board_uid}.db")
+        print(f"Tables created successfully for board {board_uid}")
 
         # Initialize alembic_version table
         db_manager._initialize_alembic_version(engine)
         print("Alembic version initialized")
-
-        print(f"Database '{board_uid}.db' created successfully!")
-        print(f"   Path: ./data/{board_uid}.db")
-        print(f"   Access: /board/{board_uid}/")
 
         # Handle admin email logic if provided
         if admin_email:
@@ -82,9 +68,16 @@ def create_board_database(board_uid: str, admin_email: Optional[str] = None):
 
                 # Send automatic invitation (this creates the admin user)
                 invited_user = user_service.invite_user(
-                    db, admin_email, None, UserRole.ADMIN, board_uid
+                    db,
+                    admin_email,
+                    None,
+                    UserRole.ADMIN,
+                    board_uid,
+                    defer=lambda func, *args, **kwargs: pending_emails.append(
+                        (func, args, kwargs)
+                    ),
                 )
-                print(f"Invitation sent to {admin_email}")
+                print(f"Invitation created for {admin_email}")
                 print(f"  Token: {invited_user.invite_token}")
 
                 # Create demo board content with the invited admin user
@@ -97,12 +90,62 @@ def create_board_database(board_uid: str, admin_email: Optional[str] = None):
                 print(f"⚠ Warning: Database created but invitation failed: {e}")
             finally:
                 db.close()
+    finally:
+        # Release the file before it is published
+        engine.dispose()
+    return pending_emails
 
-        return True
 
+def create_board_database(board_uid: str, admin_email: Optional[str] = None):
+    """Create a complete database for a board."""
+    print(f"Creating database for board: {board_uid}")
+
+    # Same rule as the middleware and the admin routes
+    if not is_valid_board_uid(board_uid):
+        print(
+            "ERROR: Board UID must contain only alphanumeric characters and hyphens, "
+            "with length between 1 and 50"
+        )
+        return False
+
+    # Any case of the default board's name is reserved (see admin create_board)
+    if board_uid.lower() == DEFAULT_BOARD_UID:
+        print(f"WARNING: Board '{board_uid}' is reserved for the default database")
+        return False
+
+    # Validate admin email if provided
+    email_error = validate_email_format(admin_email)
+    if email_error:
+        print(f"ERROR: {email_error}")
+        return False
+
+    # Check if database already exists
+    if db_manager.ensure_database_exists(board_uid):
+        print(f"WARNING: Database '{board_uid}.db' already exists")
+        return False
+
+    try:
+        # Built in a temporary file, published only once complete
+        pending_emails = publish_board_database(
+            board_uid,
+            lambda build_path: _build_board(build_path, board_uid, admin_email),
+        )
+    except FileExistsError:
+        print(f"WARNING: Database '{board_uid}.db' already exists")
+        return False
     except Exception as e:
         print(f"Error creating database: {e}")
         return False
+
+    for func, args, kwargs in pending_emails:
+        func(*args, **kwargs)
+    if pending_emails:
+        print(f"Invitation sent to {admin_email}")
+
+    print(f"Database '{board_uid}.db' created successfully!")
+    print(f"   Path: ./data/{board_uid}.db")
+    print(f"   Access: /board/{board_uid}/")
+    return True
 
 
 if __name__ == "__main__":

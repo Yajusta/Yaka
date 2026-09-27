@@ -122,21 +122,21 @@ Branche : `worktree-security-audit-fixes`.
 
 ## Avancement
 
-| Tâche | Dev | /simplify                      | /code-review    | Commit |
-| ----- | --- | ------------------------------ | --------------- | ------ |
-| T1    | ✅  | ✅ (12 findings, 7 appliqués)  | ✅ (10 → 7)     | ✅     |
-| T2    | ✅  | ✅ (16 findings, 12 appliqués) | ✅ (10 → 9 → 7) | ✅     |
-| T3    | ✅  | ✅ (11 findings, 4 appliqués)  | ✅ (10 → 7)     | ✅     |
-| T4    | ✅  | ✅ (13 findings, 5 appliqués)  | ✅ (9 → 4)      | ✅     |
-| T5    | ✅  | ✅ (6 findings, 1 appliqué)    | ✅ (10 → 6)     | ✅     |
-| T6    | ✅  | ✅ (6 findings, 2 appliqués)   | ✅ (9 → 2)      | ✅     |
-| T7    | ✅  | ✅ (18 findings, 11 appliqués) | ✅ (10 → 5)     | ✅     |
-| T8    | ✅  | ✅ (7 findings, 3 appliqués)   | ✅ (8 → 3)      | ✅     |
-| T9    | ✅  | ✅ (6 findings, 1 appliqué)    | ✅ (7)          | ✅     |
-| T10   | ☐   | ☐                              | ☐               | ☐      |
-| T11   | ☐   | ☐                              | ☐               | ☐      |
-| T12   | ☐   | ☐                              | ☐               | ☐      |
-| T13   | ☐   | —                              | —               | ☐      |
+| Tâche | Dev | /simplify                      | /code-review               | Commit |
+| ----- | --- | ------------------------------ | -------------------------- | ------ |
+| T1    | ✅  | ✅ (12 findings, 7 appliqués)  | ✅ (10 → 7)                | ✅     |
+| T2    | ✅  | ✅ (16 findings, 12 appliqués) | ✅ (10 → 9 → 7)            | ✅     |
+| T3    | ✅  | ✅ (11 findings, 4 appliqués)  | ✅ (10 → 7)                | ✅     |
+| T4    | ✅  | ✅ (13 findings, 5 appliqués)  | ✅ (9 → 4)                 | ✅     |
+| T5    | ✅  | ✅ (6 findings, 1 appliqué)    | ✅ (10 → 6)                | ✅     |
+| T6    | ✅  | ✅ (6 findings, 2 appliqués)   | ✅ (9 → 2)                 | ✅     |
+| T7    | ✅  | ✅ (18 findings, 11 appliqués) | ✅ (10 → 5)                | ✅     |
+| T8    | ✅  | ✅ (7 findings, 3 appliqués)   | ✅ (8 → 3)                 | ✅     |
+| T9    | ✅  | ✅ (6 findings, 1 appliqué)    | ✅ (7)                     | ✅     |
+| T10   | ✅  | ✅ (14 findings, 7 appliqués)  | ✅ (9 → 8 → 8 → 4 retenus) | ✅     |
+| T11   | ☐   | ☐                              | ☐                          | ☐      |
+| T12   | ☐   | ☐                              | ☐                          | ☐      |
+| T13   | ☐   | —                              | —                          | ☐      |
 
 ## Journal
 
@@ -151,3 +151,4 @@ Branche : `worktree-security-audit-fixes`.
 - T7 terminé : client OpenAI unique (cache) `timeout=30`, `max_retries=1` ; handler voice-control en `def`, session DB fermée avant l'appel ; sémaphore global `LLM_MAX_CONCURRENT_CALLS` (4, `LLMBusyError` → 503) ; quota `VOICE_CONTROL_RATE_LIMIT` (20/min par board+utilisateur, 429) ; non configuré → 503, erreur fournisseur → 502, sortie invalide/tronquée → `{}` ; F16 : `user_label()` (`display_name` ou « Utilisateur #id »), aucun email ; `get_tasks` vide sans utilisateur + `apply_card_access_filter` ; NV2 : description ≤ 20 000 car. à la création et en modification (sauf description inchangée), contexte LLM plafonné (200 cartes, 1 000 car./description, 60 000 car.). Tests : 1241 passés. À documenter en T13 : `VOICE_CONTROL_RATE_LIMIT`, `LLM_MAX_CONCURRENT_CALLS`, codes 429/502/503, limites fixes.
 - T8 terminé : `neutralize_formula` (apostrophe devant `= + - @` après blancs, et devant `\t`/`\r` en tête) sur toutes les cellules CSV (par segment `;`, `QUOTE_ALL`) et XLSX (`write_text_cell` : type chaîne forcé, `None` → "", caractères de contrôle illégaux retirés). Tests : 1259 passés + 92 export/view-scope. Pour T12 : `docker-compose.yaml` ne transmet pas `VOICE_CONTROL_RATE_LIMIT`, `LLM_MAX_CONCURRENT_CALLS`, `LOGIN_*_RATE_LIMIT`, `PASSWORD_RESET_RATE_LIMIT`.
 - T9 terminé : F15 — `UserPublic` (`id`, `display_name`) pour les utilisateurs imbriqués (commentaires, historique, commentaires des cartes), types frontend et `CardHistoryModal` sans repli email ; F17 — `POST /cards/{id}/history` n'accepte que `action` (1–100) et `description` (1–2000), carte du chemin, auteur courant, `ensure_can_modify_card` ; §6 — routeur orphelin `routers/card_history.py` supprimé ; mock `ListManager.test.tsx` réparé (régression de typage T2/T3). Tests : 1253 passés.
+- T10 terminé : F18 — `evict_board` (toutes casses) avant/après archivage ; `get_engine` en SQLite `mode=rw` (plus de recréation silencieuse d'un fichier archivé) ; création atomique via `publish_board_database` (fichier temporaire + `os.link`, repli `O_EXCL` + `os.replace`) pour `POST /admin/boards` et `scripts/create_board.py` ; archive par `os.rename` horodatée à la µs ; `token_version` initial aléatoire (un board recréé n'accepte pas d'anciens JWT) ; §5 — `GET /admin/boards/{uid}` protégé par la clé, sans `database_path` ; §6 — 500 génériques + `logger.exception` (admin, `/demo/reset`, `kanban_list`) ; uid validé par `is_valid_board_uid` (fullmatch) partout, uid invalide → 401 ; board par défaut protégé toutes casses ; handlers admin et `/demo/reset` en `def`. Les 7 erreurs `WinError 32` de la baseline ont disparu. Revue arrêtée à la passe 4 (8 bruts dont 4 préexistants/arbitrés → 4 retenus corrigés). Tests : 1280 passés, 0 erreur. À documenter en T13 : `GET /admin/boards/{uid}` exige la clé.

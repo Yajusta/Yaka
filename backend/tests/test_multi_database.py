@@ -2,17 +2,28 @@
 
 import os
 import tempfile
+from pathlib import Path
 
 import pytest
 from app.database import Base
 from app.multi_database import (
+    MultiDatabaseManager,
     db_manager,
+    evict_board,
     get_board_db,
     get_current_board_uid,
+    publish_board_database,
     set_current_board_uid,
 )
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+
+def _create_board_db(db_path: str) -> None:
+    """Create a board database file and release its file lock (Windows)."""
+    engine = create_engine(f"sqlite:///{db_path}")
+    Base.metadata.create_all(bind=engine)
+    engine.dispose()
 
 
 class TestMultiDatabaseManager:
@@ -56,9 +67,7 @@ class TestMultiDatabaseManager:
         board_uid = "existing-board"
         db_path = os.path.join(temp_data_dir, f"{board_uid}.db")
 
-        # Create the database file
-        engine = create_engine(f"sqlite:///{db_path}")
-        Base.metadata.create_all(bind=engine)
+        _create_board_db(db_path)
 
         assert db_manager.ensure_database_exists(board_uid) is True
 
@@ -79,9 +88,7 @@ class TestMultiDatabaseManager:
         board_uid = "cached-board"
         db_path = os.path.join(temp_data_dir, f"{board_uid}.db")
 
-        # Create database file first
-        engine = create_engine(f"sqlite:///{db_path}")
-        Base.metadata.create_all(bind=engine)
+        _create_board_db(db_path)
 
         # Get engine from manager
         engine1 = db_manager.get_engine(board_uid)
@@ -95,9 +102,7 @@ class TestMultiDatabaseManager:
         board_uid = "session-board"
         db_path = os.path.join(temp_data_dir, f"{board_uid}.db")
 
-        # Create database file first
-        engine = create_engine(f"sqlite:///{db_path}")
-        Base.metadata.create_all(bind=engine)
+        _create_board_db(db_path)
 
         session_local = db_manager.get_session_local(board_uid)
         assert isinstance(session_local, sessionmaker)
@@ -112,15 +117,32 @@ class TestMultiDatabaseManager:
         board_uid = "cached-session-board"
         db_path = os.path.join(temp_data_dir, f"{board_uid}.db")
 
-        # Create database file first
-        engine = create_engine(f"sqlite:///{db_path}")
-        Base.metadata.create_all(bind=engine)
+        _create_board_db(db_path)
 
         session_local1 = db_manager.get_session_local(board_uid)
         session_local2 = db_manager.get_session_local(board_uid)
 
         # Should return the same session maker instance
         assert session_local1 is session_local2
+
+    @pytest.mark.parametrize("link_supported", [True, False])
+    def test_publish_board_database(self, temp_data_dir, monkeypatch, link_supported):
+        """Publication works with and without hard links, and never overwrites."""
+        if not link_supported:
+
+            def no_link(src, dst):
+                raise PermissionError("hard links not supported")
+
+            monkeypatch.setattr(os, "link", no_link)
+
+        assert publish_board_database("pub-board", _create_board_db) is None
+        db_path = db_manager.get_database_path("pub-board")
+        assert os.path.getsize(db_path) > 0
+
+        with pytest.raises(FileExistsError):
+            publish_board_database("pub-board", _create_board_db)
+        # Only the published database remains: no temporary file left behind
+        assert os.listdir(temp_data_dir) == ["pub-board.db"]
 
 
 class TestBoardContext:
@@ -191,6 +213,7 @@ class TestBoardValidation:
             "a" * 51,  # Too long (51 characters)
             "../../../etc/passwd",  # Path traversal
             "board|pipe",  # Pipe character
+            "board\n",  # Trailing newline (accepted by a `$` anchor)
         ]
 
         for uid in invalid_uids:
@@ -235,11 +258,8 @@ class TestDatabaseIsolation:
         db_path1 = os.path.join(temp_data_dir, f"{board1_uid}.db")
         db_path2 = os.path.join(temp_data_dir, f"{board2_uid}.db")
 
-        engine1 = create_engine(f"sqlite:///{db_path1}")
-        engine2 = create_engine(f"sqlite:///{db_path2}")
-
-        Base.metadata.create_all(bind=engine1)
-        Base.metadata.create_all(bind=engine2)
+        _create_board_db(db_path1)
+        _create_board_db(db_path2)
 
         # Verify they are different files
         assert db_path1 != db_path2
@@ -251,12 +271,39 @@ class TestDatabaseIsolation:
         manager_engine2 = db_manager.get_engine(board2_uid)
 
         assert manager_engine1 is not manager_engine2
-        assert os.path.normpath(manager_engine1.url.database) == os.path.normpath(
-            db_path1
-        )
-        assert os.path.normpath(manager_engine2.url.database) == os.path.normpath(
-            db_path2
-        )
+        # URL SQLite en mode URI (file:///<chemin absolu encodé>?mode=rw)
+        for engine, db_path in (
+            (manager_engine1, db_path1),
+            (manager_engine2, db_path2),
+        ):
+            assert engine.url.database == Path(db_path).resolve().as_uri()
+            assert engine.url.query["mode"] == "rw"
+
+    def test_evict_board_drops_every_letter_case(self, temp_data_dir):
+        """/board/Case-Board/ and /board/case-board/ may share one file."""
+        from app.multi_database import _engines, _sessions
+
+        _create_board_db(os.path.join(temp_data_dir, "Case-Board.db"))
+        db_manager.get_session_local("Case-Board")
+
+        evict_board("case-board")
+
+        assert "Case-Board" not in _engines
+        assert "Case-Board" not in _sessions
+
+    def test_get_engine_path_with_uri_reserved_characters(self, tmp_path):
+        """Un '#' ou un '%' dans le chemin des données ne casse pas l'URI SQLite."""
+        base = tmp_path / "C#%20data"
+        base.mkdir()
+        _create_board_db(str(base / "hash-board.db"))
+
+        manager = MultiDatabaseManager(str(base))
+        engine = manager.get_engine("hash-board")
+        try:
+            with engine.connect() as conn:
+                assert conn.exec_driver_sql("SELECT 1").scalar() == 1
+        finally:
+            evict_board("hash-board")
 
     def test_board_context_isolation(self, temp_data_dir):
         """Test that board context is properly isolated."""
@@ -267,11 +314,8 @@ class TestDatabaseIsolation:
         db_path1 = os.path.join(temp_data_dir, f"{board1_uid}.db")
         db_path2 = os.path.join(temp_data_dir, f"{board2_uid}.db")
 
-        engine1 = create_engine(f"sqlite:///{db_path1}")
-        engine2 = create_engine(f"sqlite:///{db_path2}")
-
-        Base.metadata.create_all(bind=engine1)
-        Base.metadata.create_all(bind=engine2)
+        _create_board_db(db_path1)
+        _create_board_db(db_path2)
 
         # Test context isolation
         set_current_board_uid(board1_uid)

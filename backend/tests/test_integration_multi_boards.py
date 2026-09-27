@@ -117,7 +117,9 @@ class TestMultiBoardIntegration:
         assert f"Board '{board_uid}' archived successfully" in delete_data["message"]
 
         # 9. Verify board no longer exists
-        info_response = await client.get(f"/admin/boards/{board_uid}")
+        info_response = await client.get(
+            f"/admin/boards/{board_uid}", headers=auth_headers
+        )
         assert info_response.status_code == 200
         info_data = info_response.json()
         assert info_data["exists"] is False
@@ -291,7 +293,9 @@ class TestMultiBoardIntegration:
             ]
             assert board_uid in board_uids
 
-            info_response = await client.get(f"/admin/boards/{board_uid}")
+            info_response = await client.get(
+                f"/admin/boards/{board_uid}", headers=auth_headers
+            )
             assert info_response.status_code == 200
             assert info_response.json()["exists"] is True
 
@@ -303,7 +307,9 @@ class TestMultiBoardIntegration:
 
         # Verify board is gone in subsequent requests
         for _ in range(3):
-            info_response = await client.get(f"/admin/boards/{board_uid}")
+            info_response = await client.get(
+                f"/admin/boards/{board_uid}", headers=auth_headers
+            )
             assert info_response.status_code == 200
             assert info_response.json()["exists"] is False
 
@@ -334,7 +340,9 @@ class TestMultiBoardIntegration:
         assert valid_create_response.status_code == 201
 
         # Verify valid board was created
-        info_response = await client.get(f"/admin/boards/{valid_uid}")
+        info_response = await client.get(
+            f"/admin/boards/{valid_uid}", headers=auth_headers
+        )
         assert info_response.status_code == 200
         assert info_response.json()["exists"] is True
 

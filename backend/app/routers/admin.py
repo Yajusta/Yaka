@@ -10,7 +10,13 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine
 
 from ..database import Base
-from ..multi_database import DEFAULT_BOARD_UID, db_manager
+from ..multi_database import (
+    DEFAULT_BOARD_UID,
+    db_manager,
+    evict_board,
+    is_valid_board_uid,
+    publish_board_database,
+)
 from ..utils.validators import validate_email_format
 
 logger = logging.getLogger(__name__)
@@ -62,8 +68,18 @@ def verify_admin_api_key(
     return True
 
 
+def _validate_board_uid(board_uid: str) -> None:
+    """Reject board UIDs that could not be served (same rule as the middleware)."""
+    if not is_valid_board_uid(board_uid):
+        raise HTTPException(
+            status_code=400,
+            detail="Board UID must contain only alphanumeric characters and hyphens, with length between 1 and 50",
+        )
+
+
+# Blocking file and database work: plain `def` runs in the threadpool
 @router.post("/boards", status_code=201)
-async def create_board(
+def create_board(
     request: CreateBoardRequest,
     background_tasks: BackgroundTasks,
     authorized: bool = Depends(verify_admin_api_key),
@@ -77,14 +93,7 @@ async def create_board(
     board_uid = request.board_uid
     admin_email = request.admin_email
 
-    # Validate board UID (alphanumeric and hyphens only, 1-50 characters)
-    import re
-
-    if not re.match(r"^[a-zA-Z0-9-]{1,50}$", board_uid):
-        raise HTTPException(
-            status_code=400,
-            detail="Board UID must contain only alphanumeric characters and hyphens, with length between 1 and 50",
-        )
+    _validate_board_uid(board_uid)
 
     # Validate admin email if provided
     email_error = validate_email_format(admin_email)
@@ -94,105 +103,126 @@ async def create_board(
             detail=email_error,
         )
 
-    # Check if board already exists
-    if db_manager.ensure_database_exists(board_uid):
+    # Any case of the default board's name is reserved: it could never be
+    # deleted (see delete_board) and is the default database on Windows/macOS.
+    # The existence check only saves the build work; the atomic publish in
+    # publish_board_database settles concurrent creations.
+    if board_uid.lower() == DEFAULT_BOARD_UID or db_manager.ensure_database_exists(
+        board_uid
+    ):
         raise HTTPException(
             status_code=409, detail=f"Board '{board_uid}' already exists"
         )
 
+    db_path = db_manager.get_database_path(board_uid)
     try:
-        # Create engine directly
-        db_path = db_manager.get_database_path(board_uid)
-        engine = create_engine(
-            f"sqlite:///{db_path}", connect_args={"check_same_thread": False}
+        # Built in a temporary file, published only once complete
+        return publish_board_database(
+            board_uid,
+            lambda build_path: _build_board(
+                build_path, board_uid, db_path, admin_email, background_tasks
+            ),
         )
-
-        try:
-            # Create all tables
-            Base.metadata.create_all(bind=engine)
-
-            # Initialize alembic_version
-            db_manager._initialize_alembic_version(engine)
-
-            result = {
-                "message": f"Board '{board_uid}' created successfully",
-                "board_uid": board_uid,
-                "database_path": db_path,
-                "access_url": f"/board/{board_uid}/",
-            }
-
-            # Handle admin email logic if provided
-            if admin_email:
-                # Create a session to handle database operations
-                from sqlalchemy.orm import sessionmaker
-
-                from ..models import UserRole
-                from ..services import user as user_service
-
-                SessionLocal = sessionmaker(
-                    autocommit=False, autoflush=False, bind=engine
-                )
-                db = SessionLocal()
-
-                try:
-                    # Initialize default board data (lists, labels, and initial task)
-                    from ..services.board_settings import initialize_default_settings
-                    from ..utils.demo_reset import create_demo_board_content
-
-                    # Initialize board settings
-                    initialize_default_settings(db)
-
-                    # Send automatic invitation (this creates the admin user);
-                    # the email goes out after the response (no SMTP on the event loop)
-                    invited_user = user_service.invite_user(
-                        db,
-                        admin_email,
-                        None,
-                        UserRole.ADMIN,
-                        board_uid,
-                        defer=background_tasks.add_task,
-                    )
-                    result["invitation_sent"] = str(True)
-                    result["invited_email"] = admin_email
-                    result["invitation_token"] = str(invited_user.invite_token)
-
-                    # Create demo board content (lists, labels, and initial configuration task) with the invited admin user.
-                    # The admin user is already committed and its email queued: a failure here
-                    # is reported separately, not as an invitation failure.
-                    try:
-                        create_demo_board_content(db, admin_user=invited_user)
-                        result["default_data_initialized"] = str(True)
-                    except Exception as e:
-                        db.rollback()
-                        result["default_data_warning"] = (
-                            f"Board created but default data failed: {str(e)}"
-                        )
-
-                except Exception as e:
-                    db.rollback()
-                    # Log the error but don't fail the board creation
-                    result["invitation_warning"] = (
-                        f"Board created but invitation failed: {str(e)}"
-                    )
-                finally:
-                    db.close()
-
-            return result
-        finally:
-            # Always dispose the engine to release the database lock
-            engine.dispose()
-
-    except Exception as e:
+    except FileExistsError:
         raise HTTPException(
-            status_code=500, detail=f"Error creating board: {str(e)}"
-        ) from e
+            status_code=409, detail=f"Board '{board_uid}' already exists"
+        ) from None
+    except Exception as e:
+        logger.exception("Error creating board %s", board_uid)
+        raise HTTPException(status_code=500, detail="Error creating board") from e
+
+
+def _build_board(
+    build_path: str,
+    board_uid: str,
+    db_path: str,
+    admin_email: str | None,
+    background_tasks: BackgroundTasks,
+) -> dict:
+    """Create the complete board database at `build_path` (see create_board)."""
+    engine = create_engine(
+        f"sqlite:///{build_path}", connect_args={"check_same_thread": False}
+    )
+    try:
+        # Create all tables
+        Base.metadata.create_all(bind=engine)
+
+        # Initialize alembic_version
+        db_manager._initialize_alembic_version(engine)
+
+        result = {
+            "message": f"Board '{board_uid}' created successfully",
+            "board_uid": board_uid,
+            "database_path": db_path,
+            "access_url": f"/board/{board_uid}/",
+        }
+
+        # Handle admin email logic if provided
+        if admin_email:
+            # Create a session to handle database operations
+            from sqlalchemy.orm import sessionmaker
+
+            from ..models import UserRole
+            from ..services import user as user_service
+
+            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+            db = SessionLocal()
+
+            try:
+                # Initialize default board data (lists, labels, and initial task)
+                from ..services.board_settings import initialize_default_settings
+                from ..utils.demo_reset import create_demo_board_content
+
+                # Initialize board settings
+                initialize_default_settings(db)
+
+                # Send automatic invitation (this creates the admin user);
+                # the email goes out after the response (no SMTP on the event loop)
+                invited_user = user_service.invite_user(
+                    db,
+                    admin_email,
+                    None,
+                    UserRole.ADMIN,
+                    board_uid,
+                    defer=background_tasks.add_task,
+                )
+                result["invitation_sent"] = str(True)
+                result["invited_email"] = admin_email
+                result["invitation_token"] = str(invited_user.invite_token)
+
+                # Create demo board content (lists, labels, and initial configuration task) with the invited admin user.
+                # The admin user is already committed and its email queued: a failure here
+                # is reported separately, not as an invitation failure.
+                try:
+                    create_demo_board_content(db, admin_user=invited_user)
+                    result["default_data_initialized"] = str(True)
+                except Exception:
+                    db.rollback()
+                    logger.exception(
+                        "Default data initialization failed for board %s",
+                        board_uid,
+                    )
+                    result["default_data_warning"] = (
+                        "Board created but default data failed"
+                    )
+
+            except Exception:
+                db.rollback()
+                # Log the error but don't fail the board creation
+                logger.exception("Invitation failed for board %s", board_uid)
+                result["invitation_warning"] = "Board created but invitation failed"
+            finally:
+                db.close()
+
+        return result
+    finally:
+        # Always dispose the engine to release the database lock
+        engine.dispose()
 
 
 @router.get("/boards")
-async def list_boards(authorized: bool = Depends(verify_admin_api_key)):
+def list_boards(authorized: bool = Depends(verify_admin_api_key)):
     """List all existing boards."""
-    import os
-
     data_dir = db_manager.base_path
     if not os.path.exists(data_dir):
         return {"boards": []}
@@ -214,28 +244,29 @@ async def list_boards(authorized: bool = Depends(verify_admin_api_key)):
 
 
 @router.get("/boards/{board_uid}")
-async def get_board_info(board_uid: str):
-    """Get information about a specific board."""
+def get_board_info(board_uid: str, authorized: bool = Depends(verify_admin_api_key)):
+    """Get information about a specific board. Requires a valid admin API key."""
+    _validate_board_uid(board_uid)
     exists = db_manager.ensure_database_exists(board_uid)
 
     return {
         "board_uid": board_uid,
         "exists": exists,
-        "database_path": db_manager.get_database_path(board_uid) if exists else None,
         "access_url": f"/board/{board_uid}/" if exists else None,
     }
 
 
 @router.delete("/boards/{board_uid}")
-async def delete_board(
-    board_uid: str, authorized: bool = Depends(verify_admin_api_key)
-):
+def delete_board(board_uid: str, authorized: bool = Depends(verify_admin_api_key)):
     """
     Archive a board by moving its database to the deleted folder.
     The database file is renamed with a timestamp for safe keeping.
     Requires a valid admin API key.
     """
-    if board_uid == DEFAULT_BOARD_UID:
+    _validate_board_uid(board_uid)
+
+    # Case-insensitive: "Yaka" is the default database on Windows/macOS
+    if board_uid.lower() == DEFAULT_BOARD_UID:
         raise HTTPException(
             status_code=403,
             detail=f"Cannot delete default board '{DEFAULT_BOARD_UID}'",
@@ -247,8 +278,6 @@ async def delete_board(
         )
 
     try:
-        import os
-        import shutil
         from datetime import datetime
 
         # Get original database path
@@ -258,13 +287,24 @@ async def delete_board(
         deleted_dir = os.path.join(db_manager.base_path, "deleted")
         os.makedirs(deleted_dir, exist_ok=True)
 
-        # Generate timestamp for unique filename
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        # Generate timestamp for unique filename. Microseconds: os.rename
+        # silently replaces an existing archive on POSIX (and fails on
+        # Windows) when a board is recreated and deleted within one second
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S_%f")
         deleted_filename = f"{board_uid}.{timestamp}.db"
         deleted_path = os.path.join(deleted_dir, deleted_filename)
 
-        # Move the database file
-        shutil.move(original_path, deleted_path)
+        # Release the cached engine (open file handles) before moving the file
+        evict_board(board_uid)
+        try:
+            # Same filesystem (deleted/ is inside the data directory): a plain
+            # rename either succeeds or fails whole, whereas shutil.move falls
+            # back to copy + unlink and leaves a stray archive copy when the
+            # unlink fails (file still open on Windows)
+            os.rename(original_path, deleted_path)
+        finally:
+            # Drop any engine a concurrent request cached in the meantime
+            evict_board(board_uid)
 
         return {
             "message": f"Board '{board_uid}' archived successfully",
@@ -274,6 +314,5 @@ async def delete_board(
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error archiving board: {str(e)}"
-        ) from e
+        logger.exception("Error archiving board %s", board_uid)
+        raise HTTPException(status_code=500, detail="Error archiving board") from e

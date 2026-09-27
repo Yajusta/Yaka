@@ -111,14 +111,14 @@ async def test_body_board_uid_ignored_without_board_path(
             "/auth/request-password-reset",
             json={"email": USER_EMAIL, "board_uid": "evil.example/x?"},
         )
-        # Uid invalide dans le chemin : ignoré par le middleware, jamais repris
+        # Uid invalide dans le chemin : rejeté par le middleware, aucun email
         invalid = await client.post(
             "/board/evil.example/auth/request-password-reset",
             json={"email": ADMIN_EMAIL},
         )
     assert response.status_code == 200
-    assert invalid.status_code == 200
-    assert [kwargs["board_uid"] for _, kwargs in sent] == [None, None]
+    assert invalid.status_code == 401
+    assert [kwargs["board_uid"] for _, kwargs in sent] == [None]
 
 
 async def test_unknown_board_refused_without_revealing_account(

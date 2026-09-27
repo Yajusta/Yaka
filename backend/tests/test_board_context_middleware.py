@@ -32,6 +32,7 @@ class TestBoardContextMiddleware:
             db_path = os.path.join(temp_data_dir, f"{board_uid}.db")
             engine = create_engine(f"sqlite:///{db_path}")
             Base.metadata.create_all(bind=engine)
+            engine.dispose()  # Release the file lock (Windows)
             return db_path
 
         return _create
@@ -118,17 +119,19 @@ class TestBoardContextMiddleware:
         assert "not found or access denied" in response.body.decode()
 
     @pytest.mark.asyncio
-    async def test_ignore_invalid_board_uid(self, middleware):
-        """Test that invalid board UIDs are ignored."""
-        request = self.create_mock_request("/board/board with spaces/cards")
-        call_next = self.create_mock_call_next(check_context=False)
+    async def test_reject_invalid_board_uid(self, middleware):
+        """Invalid board UIDs are rejected, never served from the default board."""
+        for path in ("/board/board with spaces/cards", "/board/abc\n/cards"):
+            request = self.create_mock_request(path)
+            call_next = self.create_mock_call_next(check_context=False)
 
-        await middleware.dispatch(request, call_next)
+            response = await middleware.dispatch(request, call_next)
 
-        # Board UID should not be set for invalid UIDs
-        assert get_current_board_uid() is None
-        # Request state should not have board_uid attribute for invalid UIDs
-        assert not hasattr(request.state, "board_uid")
+            assert response.status_code == 401
+            assert "not found or access denied" in response.body.decode()
+            # Board UID should not be set for invalid UIDs
+            assert get_current_board_uid() is None
+            assert not hasattr(request.state, "board_uid")
 
     @pytest.mark.asyncio
     async def test_no_board_uid_in_path(self, middleware):

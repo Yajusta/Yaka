@@ -1,5 +1,6 @@
 """Service pour la gestion des listes Kanban."""
 
+import logging
 from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy import func
@@ -8,6 +9,8 @@ from sqlalchemy.orm import Session
 from ..models import Card, KanbanList, User
 from ..schemas import KanbanListCreate, KanbanListUpdate
 from .card import apply_card_access_filter
+
+logger = logging.getLogger(__name__)
 
 
 class KanbanListService:
@@ -59,7 +62,9 @@ class KanbanListService:
             cards_count = query.count()
             return kanban_list, cards_count
         except Exception as e:
-            raise ValueError(f"Erreur lors du comptage des cartes: {str(e)}") from e
+            # Détail journalisé côté serveur seulement : le message atteint le client
+            logger.exception("Erreur lors du comptage des cartes")
+            raise ValueError("Erreur lors du comptage des cartes") from e
 
     @staticmethod
     def create_list(db: Session, list_data: KanbanListCreate) -> KanbanList:
@@ -116,7 +121,8 @@ class KanbanListService:
             return db_list
         except Exception as e:
             db.rollback()
-            raise ValueError(f"Erreur lors de la création de la liste: {str(e)}") from e
+            logger.exception("Erreur lors de la création de la liste")
+            raise ValueError("Erreur lors de la création de la liste") from e
 
     @staticmethod
     def update_list(
@@ -193,9 +199,8 @@ class KanbanListService:
             return db_list
         except Exception as e:
             db.rollback()
-            raise ValueError(
-                f"Erreur lors de la mise à jour de la liste: {str(e)}"
-            ) from e
+            logger.exception("Erreur lors de la mise à jour de la liste")
+            raise ValueError("Erreur lors de la mise à jour de la liste") from e
 
     @staticmethod
     def delete_list(db: Session, list_id: int, target_list_id: int) -> bool:
@@ -272,14 +277,13 @@ class KanbanListService:
             db.commit()
             return True
 
+        except ValueError:
+            db.rollback()
+            raise
         except Exception as e:
             db.rollback()
-            if isinstance(e, ValueError):
-                raise e
-            else:
-                raise ValueError(
-                    f"Erreur lors de la suppression de la liste: {str(e)}"
-                ) from e
+            logger.exception("Erreur lors de la suppression de la liste")
+            raise ValueError("Erreur lors de la suppression de la liste") from e
 
     @staticmethod
     def reorder_lists(db: Session, list_orders: Dict[int, int]) -> bool:

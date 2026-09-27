@@ -1,16 +1,33 @@
 """Gestionnaire multi-bases de données pour les boards Yaka."""
 
 import glob
+import logging
 import os
+import re
+import secrets
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import Any, Dict, Generator, Optional
+from pathlib import Path
+from typing import Any, Callable, Dict, Generator, Optional, TypeVar
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
 # Board de la base par défaut (data/yaka.db), aussi accessible via /board/yaka/
 DEFAULT_BOARD_UID = "yaka"
+
+# Identifiant de board : alphanumérique et tirets, 1 à 50 caractères
+_BOARD_UID_PATTERN = re.compile(r"[a-zA-Z0-9-]{1,50}")
+
+
+def is_valid_board_uid(board_uid: str) -> bool:
+    """Règle unique (middleware et routes admin) ; fullmatch refuse un saut de ligne final."""
+    return _BOARD_UID_PATTERN.fullmatch(board_uid) is not None
+
 
 # Context variable pour stocker l'identifiant du board courant
 current_board_uid: ContextVar[Optional[str]] = ContextVar(
@@ -48,8 +65,11 @@ class MultiDatabaseManager:
             if not os.path.exists(db_path):
                 raise ValueError(f"Board '{board_uid}' not found")
 
+            # mode=rw : une connexion ouverte après l'archivage du fichier
+            # échoue au lieu de recréer une base vide à sa place.
+            # as_uri() encode les caractères réservés du chemin (#, ?, %)
             engine = create_engine(
-                f"sqlite:///{db_path}",
+                f"sqlite:///{Path(db_path).resolve().as_uri()}?mode=rw&uri=true",
                 connect_args={"check_same_thread": False, "timeout": 30},
                 pool_pre_ping=True,
                 pool_recycle=3600,
@@ -121,6 +141,68 @@ def get_current_board_uid() -> Optional[str]:
 def get_effective_board_uid() -> str:
     """Board de la requête courante, base par défaut comprise (claim `board` des JWT)."""
     return get_current_board_uid() or DEFAULT_BOARD_UID
+
+
+def evict_board(board_uid: str) -> None:
+    """Retire un board des caches et ferme les connexions de son moteur.
+
+    À appeler quand le fichier du board est supprimé ou recréé : sinon le
+    moteur en cache continue de viser l'ancienne base. Les connexions encore
+    empruntées par une session ouverte ne sont fermées qu'à leur restitution.
+    Toutes les casses sont retirées : sur un système de fichiers insensible à
+    la casse, /board/MonBoard/ et /board/monboard/ visent le même fichier.
+    """
+    target = board_uid.lower()
+    for key in [k for k in list(_sessions) if k.lower() == target]:
+        _sessions.pop(key, None)
+    for key in [k for k in list(_engines) if k.lower() == target]:
+        engine = _engines.pop(key, None)
+        if engine is not None:
+            engine.dispose()
+
+
+def publish_board_database(board_uid: str, build: Callable[[str], T]) -> T:
+    """Construit la base d'un nouveau board à l'écart, puis la publie d'un bloc.
+
+    `build` reçoit un chemin temporaire (hors motif *.db, donc ni servi ni
+    migré ni listé) et doit y créer la base complète puis fermer son moteur.
+    La publication par os.link est atomique et échoue si la cible existe
+    (repli par création exclusive + os.replace sans liens physiques) :
+    le middleware ne voit jamais une base sans schéma, deux créations
+    concurrentes ne s'écrasent pas, et un échec ne laisse aucun fichier qui
+    bloquerait une nouvelle tentative.
+
+    Lève FileExistsError si le board existe déjà (toutes casses sur un
+    système de fichiers insensible à la casse).
+    """
+    db_path = db_manager.get_database_path(board_uid)
+    tmp_path = f"{db_manager.base_path}/.{board_uid}.{secrets.token_hex(8)}.creating"
+    try:
+        result = build(tmp_path)
+        try:
+            os.link(tmp_path, db_path)
+        except FileExistsError:
+            raise
+        except OSError:
+            # Système de fichiers sans liens physiques (SMB, FAT, certains
+            # montages Docker Desktop) : réservation exclusive du nom, puis
+            # remplacement ; la base reste brièvement vide pendant l'échange.
+            os.close(os.open(db_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+            try:
+                os.replace(tmp_path, db_path)
+            except OSError:
+                os.remove(db_path)
+                raise
+    finally:
+        try:
+            os.remove(tmp_path)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            logger.exception("Fichier temporaire du board %s non supprimé", board_uid)
+    # Un moteur resté en cache d'un board archivé viserait l'ancienne base
+    evict_board(board_uid)
+    return result
 
 
 def get_database_for_board(board_uid: Optional[str] = None) -> str:
