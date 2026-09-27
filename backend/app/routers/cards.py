@@ -12,6 +12,7 @@ from ..schemas import (
     CardCreate,
     CardFilter,
     CardHistoryCreate,
+    CardHistoryEntryCreate,
     CardHistoryResponse,
     CardListUpdate,
     CardMoveRequest,
@@ -351,18 +352,25 @@ async def get_card_history(
 @router.post("/{card_id}/history", response_model=CardHistoryResponse)
 async def create_card_history_entry(
     card_id: int,
-    history_entry: CardHistoryCreate,
+    history_entry: CardHistoryEntryCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Ajouter une entrée à l'historique d'une carte."""
+    """Ajouter une entrée à l'historique d'une carte.
+
+    La carte vient de l'URL et l'auteur est l'utilisateur courant : un ``card_id``
+    ou ``user_id`` présent dans le corps est ignoré.
+    """
     # Vérifier que la carte existe et est visible par l'utilisateur
     card = get_accessible_card_or_404(db, card_id, current_user)
     ensure_can_modify_card(current_user, card)
-    if history_entry.card_id != card_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="L'identifiant de carte du corps ne correspond pas à l'URL",
-        )
 
-    return card_history_service.create_card_history_entry(db, history_entry)
+    return card_history_service.create_card_history_entry(
+        db,
+        CardHistoryCreate(
+            card_id=card_id,
+            user_id=current_user.id,
+            action=history_entry.action,
+            description=history_entry.description,
+        ),
+    )

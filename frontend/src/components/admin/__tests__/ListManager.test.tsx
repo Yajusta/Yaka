@@ -6,7 +6,7 @@ import ListManager from "../ListManager";
 import { useAuth } from "@shared/hooks/useAuth";
 import { useToast } from "@shared/hooks/use-toast";
 import { listsApi } from "@shared/services/listsApi";
-import { UserRole } from "@shared/types";
+import { UserRole, type AuthContextType, type User } from "@shared/types";
 import i18n from "@shared/i18n";
 
 // Mock dependencies
@@ -58,6 +58,16 @@ const mockUseToast = vi.mocked(useToast);
 const mockListsApi = vi.mocked(listsApi);
 
 const mockToast = vi.fn();
+
+/** Contexte d'authentification complet, conforme à AuthContextType. */
+const buildAuthContext = (user: User): AuthContextType => ({
+  user,
+  loading: false,
+  aiAvailable: false,
+  login: vi.fn().mockResolvedValue(undefined),
+  logout: vi.fn().mockResolvedValue(undefined),
+  changePassword: vi.fn().mockResolvedValue(undefined),
+});
 
 const mockAdminUser = {
   id: 1,
@@ -114,13 +124,7 @@ describe("ListManager", () => {
     cardCounts[1] = 0;
     cardCounts[2] = 0;
 
-    mockUseAuth.mockReturnValue({
-      user: mockAdminUser,
-      loading: false,
-      aiAvailable: false,
-      login: vi.fn(),
-      logout: vi.fn(),
-    });
+    mockUseAuth.mockReturnValue(buildAuthContext(mockAdminUser));
 
     mockUseToast.mockReturnValue({
       toast: mockToast,
@@ -213,13 +217,9 @@ describe("ListManager", () => {
   });
 
   it("should not render for non-admin users", () => {
-    mockUseAuth.mockReturnValue({
-      user: { ...mockAdminUser, role: UserRole.SUPERVISOR },
-      loading: false,
-      aiAvailable: false,
-      login: vi.fn(),
-      logout: vi.fn(),
-    });
+    mockUseAuth.mockReturnValue(
+      buildAuthContext({ ...mockAdminUser, role: UserRole.SUPERVISOR }),
+    );
 
     const { container } = renderListManager();
     expect(container.firstChild).toBeNull();

@@ -13,6 +13,7 @@ from .card import (
 from .card_history import (
     CardHistoryBase,
     CardHistoryCreate,
+    CardHistoryEntryCreate,
     CardHistoryResponse,
 )
 from .global_dictionary import (
@@ -46,6 +47,7 @@ from .user import (
     UserCreate,
     UserListItem,
     UserLogin,
+    UserPublic,
     UserResponse,
     UserUpdate,
     ViewScopeUpdate,
@@ -60,6 +62,7 @@ __all__ = [
     "PasswordChangeResponse",
     "PasswordResetRequest",
     "UserResponse",
+    "UserPublic",
     "UserListItem",
     "UserLogin",
     "LanguageUpdate",
@@ -78,6 +81,7 @@ __all__ = [
     "BulkCardMoveRequest",
     "CardHistoryBase",
     "CardHistoryCreate",
+    "CardHistoryEntryCreate",
     "CardHistoryResponse",
     "KanbanListBase",
     "KanbanListCreate",

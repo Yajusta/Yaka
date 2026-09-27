@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .user import UserResponse
+from .user import UserPublic
 
 
 class CardCommentBase(BaseModel):
@@ -53,6 +53,6 @@ class CardCommentResponse(CardCommentBase):
     is_deleted: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
-    user: Optional[UserResponse] = None
+    user: Optional[UserPublic] = None
 
     model_config = ConfigDict(from_attributes=True)

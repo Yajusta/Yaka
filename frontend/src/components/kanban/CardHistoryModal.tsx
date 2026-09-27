@@ -156,7 +156,7 @@ export const CardHistoryModal: React.FC<CardHistoryModalProps> = ({
                     {entry.user && (
                       <p className="text-xs text-muted-foreground mt-1">
                         {t("card.historyBy", {
-                          userName: entry.user.display_name || entry.user.email,
+                          userName: entry.user.display_name || t("user.noName"),
                         })}
                       </p>
                     )}

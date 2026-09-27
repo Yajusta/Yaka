@@ -87,6 +87,7 @@ def scoped_board(
             return {
                 "email": email,
                 "user_id": user.id,
+                "owner_id": owner.id,
                 "list_id": list_id,
                 "other_list_id": other_list_id,
                 "hidden_id": hidden.id,
@@ -360,9 +361,10 @@ async def test_admin_restricted_scope_counts_and_exports_all_cards(
 
 
 @pytest.mark.asyncio
-async def test_history_entry_body_card_id_must_match_url(
+async def test_history_entry_ignores_body_card_and_user(
     async_client_factory, scoped_board, login_user
 ):
+    """F17 : la carte vient de l'URL, l'auteur est l'utilisateur courant."""
     data = scoped_board(UserRole.SUPERVISOR, ViewScope.MINE_ONLY)
     async with async_client_factory(*ROUTERS) as client:
         token = await login_user(client, data["email"], PASSWORD)
@@ -370,13 +372,106 @@ async def test_history_entry_body_card_id_must_match_url(
             f"/cards/{data['visible_id']}/history",
             json={
                 "card_id": data["hidden_id"],
-                "user_id": data["user_id"],
-                "action": "x",
+                "user_id": data["owner_id"],
+                "action": "forged",
                 "description": "x",
             },
             headers=_auth(token),
         )
-        assert response.status_code == 400
+        assert response.status_code == 200
+        entry = response.json()
+        assert entry["card_id"] == data["visible_id"]
+        assert entry["user_id"] == data["user_id"]
+
+        # Rien n'a été écrit sur la carte masquée
+        admin_token = await login_user(client, "admin@yaka.local", "Admin-Test1")
+        response = await client.get(
+            f"/cards/{data['hidden_id']}/history", headers=_auth(admin_token)
+        )
+        assert response.status_code == 200
+        assert "forged" not in {e["action"] for e in response.json()}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("role", [UserRole.VISITOR, UserRole.COMMENTER])
+async def test_history_entry_requires_modify_permission(
+    async_client_factory, scoped_board, login_user, role
+):
+    data = scoped_board(role, ViewScope.ALL)
+    async with async_client_factory(*ROUTERS) as client:
+        token = await login_user(client, data["email"], PASSWORD)
+        response = await client.post(
+            f"/cards/{data['visible_id']}/history",
+            json={"action": "x", "description": "x"},
+            headers=_auth(token),
+        )
+        assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# F15 — utilisateurs imbriqués sans email
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_visitor_sees_no_email_in_nested_users(
+    async_client_factory, scoped_board, login_user
+):
+    data = scoped_board(UserRole.VISITOR, ViewScope.ALL)
+    async with async_client_factory(*ROUTERS) as client:
+        token = await login_user(client, data["email"], PASSWORD)
+        headers = _auth(token)
+        hidden = data["hidden_id"]
+
+        responses = {
+            url: await client.get(url, headers=headers)
+            for url in (
+                "/cards/",
+                f"/cards/{hidden}",
+                f"/cards/{hidden}/history",
+                f"/card-comments/card/{hidden}",
+            )
+        }
+        for url, response in responses.items():
+            assert response.status_code == 200, url
+            assert "@example.com" not in response.text, url
+            assert "@yaka.local" not in response.text, url
+
+        # Le nom affiché reste disponible pour l'interface
+        comment_user = responses[f"/card-comments/card/{hidden}"].json()[0]["user"]
+        assert comment_user == {"id": comment_user["id"], "display_name": "Owner"}
+        history = responses[f"/cards/{hidden}/history"].json()
+        assert history
+        for entry in history:
+            assert entry["user"] is not None, entry
+            assert set(entry["user"]) == {"id", "display_name"}, entry
+        card = responses[f"/cards/{hidden}"].json()
+        for comment in card["comments"]:
+            assert set(comment["user"] or {}) <= {"id", "display_name"}, comment
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"action": "", "description": "x"},
+        {"action": "x" * 101, "description": "x"},
+        {"action": "x", "description": ""},
+        {"action": "x", "description": "x" * 2001},
+    ],
+)
+async def test_history_entry_rejects_out_of_bounds_fields(
+    async_client_factory, scoped_board, login_user, payload
+):
+    data = scoped_board(UserRole.SUPERVISOR, ViewScope.ALL)
+    async with async_client_factory(*ROUTERS) as client:
+        token = await login_user(client, data["email"], PASSWORD)
+        response = await client.post(
+            f"/cards/{data['visible_id']}/history",
+            json=payload,
+            headers=_auth(token),
+        )
+        assert response.status_code == 422
 
 
 def test_get_card_does_not_purge_soft_deleted_comments(

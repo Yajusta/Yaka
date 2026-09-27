@@ -172,6 +172,15 @@ class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserPublic(BaseModel):
+    """Utilisateur imbriqué dans une ressource (commentaire, historique) : sans email."""
+
+    id: int
+    display_name: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PasswordChangeResponse(UserResponse):
     """Utilisateur après changement de mot de passe, avec un nouveau jeton de session.
 

@@ -20,6 +20,9 @@ export interface User {
   updated_at?: string;
 }
 
+// Utilisateur imbriqué dans un commentaire ou une entrée d'historique : jamais d'email
+export type UserPublic = Pick<User, "id" | "display_name">;
+
 export interface KanbanList {
   id: number;
   name: string;
@@ -156,7 +159,7 @@ export interface CardComment {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
-  user?: User;
+  user?: UserPublic;
 }
 
 export interface CardHistoryEntry {
@@ -166,7 +169,7 @@ export interface CardHistoryEntry {
   action: string;
   description: string;
   created_at: string;
-  user?: User;
+  user?: UserPublic;
 }
 
 // List management types
