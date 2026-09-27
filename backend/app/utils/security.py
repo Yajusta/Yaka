@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
+from ..multi_database import get_effective_board_uid
+
 load_dotenv()
 
 # JWT configuration
@@ -52,6 +54,11 @@ class TokenData(BaseModel):
     """Token payload data."""
 
     email: Optional[str] = None
+    # User id, board on which the token was issued and user's token_version
+    # at that time (a recreated account with the same email gets a new id)
+    uid: Optional[int] = None
+    board: Optional[str] = None
+    ver: Optional[int] = None
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -84,6 +91,18 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
+def create_user_access_token(user) -> str:
+    """Create a session token bound to the current board and user's token_version."""
+    return create_access_token(
+        data={
+            "sub": user.email,
+            "uid": user.id,
+            "board": get_effective_board_uid(),
+            "ver": user.token_version,
+        }
+    )
+
+
 def verify_token(token: str, credentials_exception) -> TokenData:
     """Verify and decode a JWT token."""
     try:
@@ -95,7 +114,12 @@ def verify_token(token: str, credentials_exception) -> TokenData:
         email: Optional[str] = payload.get("sub", None)
         if email is None:
             raise credentials_exception
-        token_data = TokenData(email=email)
+        token_data = TokenData(
+            email=email,
+            uid=payload.get("uid"),
+            board=payload.get("board"),
+            ver=payload.get("ver"),
+        )
     except (JWTError, ValueError, TypeError) as exc:
         raise credentials_exception from exc
     return token_data

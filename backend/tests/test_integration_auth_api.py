@@ -27,7 +27,9 @@ async def test_login_and_me(async_client_factory, seed_admin_user):
         me_payload = me_response.json()
         assert me_payload["email"] == "admin@yaka.local"
 
-        logout_response = await client.post("/auth/logout")
+        logout_response = await client.post(
+            "/auth/logout", headers={"Authorization": f"Bearer {token}"}
+        )
         assert logout_response.status_code == 200
 
 

@@ -104,6 +104,11 @@ class User(Base):
     must_change_password: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default=false(), nullable=False
     )
+    # Version des jetons de session : tout JWT portant une autre version est
+    # refusé (incrémentée au changement de mot de passe, rôle, statut, déconnexion)
+    token_version: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
+    )
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
         DateTime(timezone=True), default=get_system_timezone_datetime
     )

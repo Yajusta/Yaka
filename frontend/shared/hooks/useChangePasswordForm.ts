@@ -77,5 +77,11 @@ export const useChangePasswordForm = () => {
     },
   ];
 
-  return { fields, error, loading, handleSubmit, logout };
+  // Session locale effacée même si la révocation serveur échoue
+  const handleLogout = () =>
+    logout().catch((err) =>
+      console.warn("Révocation de la session impossible:", err),
+    );
+
+  return { fields, error, loading, handleSubmit, logout: handleLogout };
 };

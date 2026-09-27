@@ -176,6 +176,10 @@ async def test_password_change_required_blocks_api_until_changed(
         assert changed.status_code == 200
         assert changed.json()["must_change_password"] is False
 
+        # L'ancien jeton est révoqué ; celui renvoyé garde la session ouverte
+        revoked = await client.get("/auth/me", headers=headers)
+        assert revoked.status_code == 401
+        headers = {"Authorization": f"Bearer {changed.json()['access_token']}"}
         allowed = await client.get("/users/", headers=headers)
         assert allowed.status_code == 200
 
@@ -350,6 +354,73 @@ def test_demo_reset_keeps_users_when_admin_recreation_fails(board_db, monkeypatc
         assert session.query(User).count() == count_before
     finally:
         session.close()
+
+
+async def test_demo_reset_rejects_tokens_issued_before_reset(
+    board_db, monkeypatch, async_client_factory
+):
+    """Les comptes recréés (même email, même id) n'acceptent pas les anciens jetons."""
+    from app.utils.security import create_user_access_token
+
+    monkeypatch.setenv("DEMO_MODE", "true")
+    monkeypatch.delenv("DEFAULT_ADMIN_PASSWORD", raising=False)
+    demo_reset.setup_fresh_database()
+    session = board_db()
+    try:
+        old_tokens = {u.email: create_user_access_token(u) for u in session.query(User)}
+        old_ids = {u.email: u.id for u in session.query(User)}
+    finally:
+        session.close()
+
+    demo_reset.reset_database()
+
+    session = board_db()
+    try:
+        assert {u.email: u.id for u in session.query(User)} == old_ids
+    finally:
+        session.close()
+    async with async_client_factory(auth_router) as client:
+        for token in old_tokens.values():
+            response = await client.get(
+                "/auth/me", headers={"Authorization": f"Bearer {token}"}
+            )
+            assert response.status_code == 401
+
+
+async def test_demo_reset_failure_still_rejects_pre_reset_tokens(
+    board_db, monkeypatch, async_client_factory
+):
+    """Un échec en cours de recréation des comptes démo n'accepte pas les anciens jetons."""
+    from app.utils.security import create_user_access_token
+
+    monkeypatch.setenv("DEMO_MODE", "true")
+    monkeypatch.delenv("DEFAULT_ADMIN_PASSWORD", raising=False)
+    demo_reset.setup_fresh_database()
+    session = board_db()
+    try:
+        old_tokens = [create_user_access_token(u) for u in session.query(User)]
+    finally:
+        session.close()
+
+    real_create_user = demo_reset.create_user
+    calls = {"n": 0}
+
+    def failing_create_user(db, user_create):
+        calls["n"] += 1
+        if calls["n"] == 3:
+            raise RuntimeError("boom")
+        return real_create_user(db, user_create)
+
+    monkeypatch.setattr(demo_reset, "create_user", failing_create_user)
+    with pytest.raises(RuntimeError):
+        demo_reset.reset_database()
+
+    async with async_client_factory(auth_router) as client:
+        for token in old_tokens:
+            response = await client.get(
+                "/auth/me", headers={"Authorization": f"Bearer {token}"}
+            )
+            assert response.status_code == 401
 
 
 def test_public_default_admin_password_is_ignored_outside_demo(

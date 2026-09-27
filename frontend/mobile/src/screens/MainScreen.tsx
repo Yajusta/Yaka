@@ -139,10 +139,11 @@ const MainScreen = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate("/login");
     } catch (err) {
+      // Session locale effacée malgré l'échec de la révocation serveur
       console.error("Logout error:", err);
     }
+    navigate("/login");
   };
 
   const handleCardClick = (card: Card) => {

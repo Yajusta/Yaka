@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine
 
 from ..database import Base
-from ..multi_database import db_manager
+from ..multi_database import DEFAULT_BOARD_UID, db_manager
 from ..utils.validators import validate_email_format
 
 logger = logging.getLogger(__name__)
@@ -186,7 +186,7 @@ async def list_boards(authorized: bool = Depends(verify_admin_api_key)):
     for file in os.listdir(data_dir):
         if file.endswith(".db"):
             board_uid = file[:-3]  # Remove .db
-            if board_uid != "yaka":  # Exclude default database
+            if board_uid != DEFAULT_BOARD_UID:  # Exclude default database
                 boards.append(
                     {
                         "board_uid": board_uid,
@@ -220,9 +220,10 @@ async def delete_board(
     The database file is renamed with a timestamp for safe keeping.
     Requires a valid admin API key.
     """
-    if board_uid == "yaka":
+    if board_uid == DEFAULT_BOARD_UID:
         raise HTTPException(
-            status_code=403, detail="Cannot delete default board 'yaka'"
+            status_code=403,
+            detail=f"Cannot delete default board '{DEFAULT_BOARD_UID}'",
         )
 
     if not db_manager.ensure_database_exists(board_uid):

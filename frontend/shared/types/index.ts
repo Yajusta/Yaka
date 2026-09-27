@@ -86,7 +86,7 @@ export interface AuthContextType {
   loading: boolean;
   aiAvailable: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   changePassword: (
     currentPassword: string,
     newPassword: string,

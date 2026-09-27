@@ -35,6 +35,31 @@ def default_admin_email() -> str:
     return getenv("DEFAULT_ADMIN_EMAIL", LEGACY_ADMIN_EMAIL).lower()
 
 
+def revoke_sessions(user: User) -> None:
+    """Invalider les jetons de session émis pour l'utilisateur (commit par l'appelant).
+
+    Incrément côté SQL : deux révocations concurrentes ne se confondent pas.
+    La nouvelle valeur n'est lisible qu'après commit/refresh.
+    """
+    user.token_version = User.token_version + 1
+
+
+def logout_user(db: Session, user: User) -> None:
+    """Déconnexion : invalide tous les jetons de session de l'utilisateur.
+
+    Sauf en mode démo : les comptes y sont partagés (mots de passe publics),
+    la déconnexion d'un visiteur fermerait la session de tous les autres.
+    """
+    if is_demo_mode():
+        return
+    revoke_sessions(user)
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+
+
 def get_system_timezone_datetime():
     """Retourne la date et heure actuelle dans le fuseau horaire du système."""
     return datetime.datetime.now().astimezone()
@@ -166,6 +191,12 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[
         # Mot de passe défini par un administrateur : plus aléatoire ni public
         db_user.must_change_password = False
 
+    # Nouveau mot de passe ou rôle modifié : les jetons existants sont révoqués
+    if "password_hash" in update_data or (
+        "role" in update_data and update_data["role"] != db_user.role
+    ):
+        revoke_sessions(db_user)
+
     for field, value in update_data.items():
         if field not in User.PROTECTED_FIELDS:
             setattr(db_user, field, value)
@@ -208,6 +239,7 @@ def set_password_from_invite(db: Session, user: User, password: str) -> bool:
     db_user.status = UserStatus.ACTIVE
     db_user.invite_token = None
     db_user.invited_at = None
+    revoke_sessions(db_user)
     db.commit()
     db.refresh(db_user)
     return True
@@ -294,6 +326,7 @@ def delete_user(db: Session, user_id: int) -> bool:
         return False
 
     db_user.status = UserStatus.DELETED
+    revoke_sessions(db_user)
     db.commit()
     return True
 
@@ -397,6 +430,7 @@ def change_password(
         raise ValueError("Le nouveau mot de passe doit être différent de l'actuel")
     user.password_hash = get_password_hash(new_password)
     user.must_change_password = False
+    revoke_sessions(user)
     try:
         db.commit()
         db.refresh(user)

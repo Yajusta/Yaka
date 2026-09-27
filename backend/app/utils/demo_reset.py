@@ -36,6 +36,7 @@ from app.services.user import (
     default_admin_email,
     generate_initial_password,
     get_user_by_email,
+    revoke_sessions,
 )
 from app.utils.demo_mode import is_demo_mode
 from app.utils.security import get_password_hash, verify_password
@@ -88,6 +89,7 @@ def secure_default_accounts(db_session) -> list[str]:
             continue
         if email in DEMO_USER_EMAILS and user.role != UserRole.ADMIN:
             user.status = UserStatus.DELETED
+            revoke_sessions(user)
             changes.append(f"{email} disabled")
         else:
             # Flagging alone is not enough: anyone knowing the public password
@@ -96,6 +98,7 @@ def secure_default_accounts(db_session) -> list[str]:
             new_password = generate_initial_password()
             user.password_hash = get_password_hash(new_password)
             user.must_change_password = True
+            revoke_sessions(user)
             changes.append(
                 f"{email} password reset to {new_password} "
                 "(must be changed at next login)"
@@ -295,19 +298,6 @@ def create_demo_board_content(db_session, admin_user=None):
     print("Demo board content created successfully!")
 
 
-def create_demo_data(db_session):
-    """Create complete demo data: users, lists, labels and tasks."""
-    print("Creating demo data...")
-
-    # Create demo users with different roles
-    create_demo_users(db_session)
-
-    # Create board content (lists, labels, and sample task)
-    create_demo_board_content(db_session)
-
-    print("Demo data created successfully!")
-
-
 def reset_database():
     """Reset database with default values."""
     if not is_demo_mode():
@@ -344,6 +334,11 @@ def delete_all_data(db):
 
     db.execute(text("DELETE FROM card_labels"))
 
+    # Recreated users get the same emails and, SQLite reusing rowids, the same
+    # ids: start their token_version above every previous one so that session
+    # tokens issued before the reset are not accepted again.
+    next_token_version = (db.query(func.max(User.token_version)).scalar() or 0) + 1
+
     # Delete main entities
     db.query(Card).delete()
     db.query(KanbanList).delete()
@@ -358,13 +353,31 @@ def delete_all_data(db):
     db.flush()
     print("Database cleaned successfully")
 
-    # Recreate base data (admin user, settings)
-    initialize_default_data(db)
+    try:
+        # Recreate base data (admin user, settings)
+        initialize_default_data(db)
+        _invalidate_previous_tokens(db, next_token_version)
 
-    # Create specific demo data
-    create_demo_data(db)
+        # Create specific demo data
+        create_demo_users(db)
+    except Exception:
+        # Users committed before the failure (create_user commits each one)
+        # must not accept pre-reset tokens either
+        db.rollback()
+        _invalidate_previous_tokens(db, next_token_version)
+        raise
+    _invalidate_previous_tokens(db, next_token_version)
+    create_demo_board_content(db)
 
     print("Database reset successfully!")
+
+
+def _invalidate_previous_tokens(db, token_version: int):
+    """Raise recreated users' token_version to reject pre-reset session tokens."""
+    db.query(User).filter(User.token_version < token_version).update(
+        {User.token_version: token_version}, synchronize_session=False
+    )
+    db.commit()
 
 
 def setup_fresh_database():

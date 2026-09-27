@@ -148,10 +148,12 @@ class TestAuthRouter:
             assert result.email == test_user.email
             assert result.display_name == test_user.display_name
 
-    def test_logout(self):
-        """Test de déconnexion."""
-        result = asyncio.run(logout())
+    def test_logout(self, db_session, test_user):
+        """Test de déconnexion : les jetons de l'utilisateur sont révoqués."""
+        result = asyncio.run(logout(db_session, test_user))
         assert result["message"] == "Déconnexion réussie"
+        db_session.refresh(test_user)
+        assert test_user.token_version == 1
 
     def test_request_password_reset_existing_user(self, test_user):
         """Test de demande de réinitialisation de mot de passe pour un utilisateur existant."""

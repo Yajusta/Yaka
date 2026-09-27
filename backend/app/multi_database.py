@@ -9,6 +9,9 @@ from typing import Any, Dict, Generator, Optional
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+# Board de la base par défaut (data/yaka.db), aussi accessible via /board/yaka/
+DEFAULT_BOARD_UID = "yaka"
+
 # Context variable pour stocker l'identifiant du board courant
 current_board_uid: ContextVar[Optional[str]] = ContextVar(
     "current_board_uid", default=None
@@ -115,18 +118,18 @@ def get_current_board_uid() -> Optional[str]:
     return current_board_uid.get()
 
 
+def get_effective_board_uid() -> str:
+    """Board de la requête courante, base par défaut comprise (claim `board` des JWT)."""
+    return get_current_board_uid() or DEFAULT_BOARD_UID
+
+
 def get_database_for_board(board_uid: Optional[str] = None) -> str:
     """
     Retourne l'URL de la base de données pour le board spécifié ou courant.
     Utilise 'yaka.db' par défaut si aucun board n'est spécifié.
     """
     if board_uid is None:
-        board_uid = get_current_board_uid()
-
-    if board_uid is None:
-        # Board par défaut pour la rétrocompatibilité
-        return "sqlite:///./data/yaka.db"
-
+        board_uid = get_effective_board_uid()
     return f"sqlite:///./data/{board_uid}.db"
 
 

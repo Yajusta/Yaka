@@ -4,8 +4,9 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from ..models import User, UserRole
+from ..models import User, UserRole, UserStatus
 from ..multi_database import get_dynamic_db as get_db
+from ..multi_database import get_effective_board_uid
 from .security import verify_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -24,16 +25,27 @@ credentials_exception = HTTPException(
 def get_current_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> User:
-    """Obtenir l'utilisateur actuel à partir du token JWT."""
-    from ..services.user import (
-        get_user_by_email,  # Import local pour éviter la circularité
-    )
+    """Obtenir l'utilisateur actuel à partir du token JWT.
 
+    Le jeton doit désigner le compte existant (claims `sub` et `uid`), avoir
+    été émis sur le board de la requête (claim `board`),
+    porter la version de jetons courante de l'utilisateur (claim `ver`) et
+    l'utilisateur doit être actif.
+    """
     token_data = verify_token(token, credentials_exception)
-    if token_data is None or token_data.email is None:
+    if token_data is None or token_data.email is None or token_data.uid is None:
         raise credentials_exception
-    user = get_user_by_email(db, email=token_data.email)
-    if user is None:
+    if token_data.board != get_effective_board_uid():
+        raise credentials_exception
+    # Recherche par clé primaire ; l'email doit toujours correspondre (un
+    # changement d'email invalide les jetons émis auparavant)
+    user = db.get(User, token_data.uid)
+    if (
+        user is None
+        or user.email.lower() != token_data.email.lower()
+        or user.status != UserStatus.ACTIVE
+        or token_data.ver != user.token_version
+    ):
         raise credentials_exception
     return user
 

@@ -5,8 +5,10 @@ from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
+from .multi_database import DEFAULT_BOARD_UID
+
 # Default database URL
-SQLALCHEMY_DATABASE_URL = "sqlite:///./data/yaka.db"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///./data/{DEFAULT_BOARD_UID}.db"
 
 # Default engine
 engine = create_engine(

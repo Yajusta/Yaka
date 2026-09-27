@@ -71,6 +71,10 @@ const createApiInstance = (): AxiosInstance => {
 const PASSWORD_CHANGE_REQUIRED = "password_change_required";
 export const PASSWORD_CHANGE_REQUIRED_EVENT = "yaka:password-change-required";
 
+const CHANGE_PASSWORD_PATH = "/auth/change-password";
+// Changements de mot de passe en vol (ils renvoient un nouveau jeton)
+let tokenRenewalsInFlight = 0;
+
 // Intercepteur pour ajouter le token d'authentification
 const setupInterceptors = (apiInstance: AxiosInstance) => {
   apiInstance.interceptors.request.use(
@@ -97,10 +101,24 @@ const setupInterceptors = (apiInstance: AxiosInstance) => {
         // Changement de mot de passe exigé par le backend : prévenir AuthProvider
         window.dispatchEvent(new Event(PASSWORD_CHANGE_REQUIRED_EVENT));
       }
-      if (error.response?.status === 401) {
-        // Clear auth artifacts
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+      const storedToken = localStorage.getItem("token");
+      const sentAuthorization = error.config?.headers?.Authorization;
+      // Jeton remplacé pendant la requête (ex. changement de mot de passe) :
+      // ce 401 concerne l'ancien jeton, la nouvelle session est conservée
+      const tokenReplaced =
+        Boolean(storedToken && sentAuthorization) &&
+        sentAuthorization !== `Bearer ${storedToken}`;
+      // Changement de mot de passe en cours : le serveur a pu révoquer l'ancien
+      // jeton avant que la réponse (porteuse du nouveau) n'arrive
+      const tokenRenewalPending =
+        tokenRenewalsInFlight > 0 &&
+        !error.config?.url?.endsWith(CHANGE_PASSWORD_PATH);
+      if (
+        error.response?.status === 401 &&
+        !tokenReplaced &&
+        !tokenRenewalPending
+      ) {
+        authService.clearSession();
 
         const path = window.location.pathname || "";
         const onPublicAuthPage =
@@ -185,21 +203,53 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
+    // La session locale est effacée dans tous les cas ; un échec de la
+    // révocation côté serveur (réseau coupé, 5xx...) est propagé à l'appelant
+    // car le jeton reste alors valide. Un 401 signifie qu'il ne l'est déjà plus.
+    try {
+      if (localStorage.getItem("token")) {
+        await getApiInstance().post("/auth/logout");
+      }
+    } catch (error) {
+      if (!axios.isAxiosError(error) || error.response?.status !== 401) {
+        throw error;
+      }
+    } finally {
+      authService.clearSession();
+    }
+  },
+
+  // Efface la session locale sans révocation serveur (qui fermerait aussi les
+  // sessions de l'utilisateur sur ses autres appareils)
+  clearSession(): void {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    await getApiInstance().post("/auth/logout");
   },
 
   async changePassword(
     currentPassword: string,
     newPassword: string,
   ): Promise<User> {
-    const response = await getApiInstance().post<User>(
-      "/auth/change-password",
-      { current_password: currentPassword, new_password: newPassword },
-    );
-    localStorage.setItem("user", JSON.stringify(response.data));
-    return response.data;
+    // Le changement révoque les jetons existants : le serveur en renvoie un nouveau
+    tokenRenewalsInFlight += 1;
+    try {
+      const response = await getApiInstance().post<
+        User & { access_token: string; token_type: string }
+      >(CHANGE_PASSWORD_PATH, {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      const {
+        access_token,
+        token_type: _tokenType,
+        ...userData
+      } = response.data;
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("user", JSON.stringify(userData));
+      return userData;
+    } finally {
+      tokenRenewalsInFlight -= 1;
+    }
   },
 
   async getCurrentUser(): Promise<User> {

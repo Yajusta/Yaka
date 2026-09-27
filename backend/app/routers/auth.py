@@ -1,7 +1,6 @@
 """Routeur pour l'authentification."""
 
 import os
-from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -9,10 +8,15 @@ from sqlalchemy.orm import Session
 
 from ..models import User
 from ..multi_database import get_dynamic_db as get_db
-from ..schemas import PasswordChange, PasswordResetRequest, UserResponse
+from ..schemas import (
+    PasswordChange,
+    PasswordChangeResponse,
+    PasswordResetRequest,
+    UserResponse,
+)
 from ..services import user as user_service
 from ..utils.dependencies import get_current_user
-from ..utils.security import ACCESS_TOKEN_EXPIRE_MINUTES, Token, create_access_token
+from ..utils.security import Token, create_user_access_token
 
 router = APIRouter(prefix="/auth", tags=["authentification"])
 
@@ -29,10 +33,7 @@ async def login(
             detail="Email ou mot de passe incorrect",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
+    access_token = create_user_access_token(user)
     # "bearer" est le type de jeton OAuth2, pas un secret
     return {"access_token": access_token, "token_type": "bearer"}  # nosec B105
 
@@ -46,13 +47,17 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.post("/change-password", response_model=UserResponse)
+@router.post("/change-password", response_model=PasswordChangeResponse)
 async def change_password(
     payload: PasswordChange,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Changer son propre mot de passe (lève le changement obligatoire)."""
+    """Changer son propre mot de passe (lève le changement obligatoire).
+
+    Les jetons existants sont révoqués : un nouveau jeton est renvoyé pour que
+    la session courante reste ouverte.
+    """
     try:
         user_service.change_password(
             db, current_user, payload.current_password, payload.new_password
@@ -61,12 +66,18 @@ async def change_password(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         ) from exc
-    return current_user
+    return PasswordChangeResponse(
+        **UserResponse.model_validate(current_user).model_dump(),
+        access_token=create_user_access_token(current_user),
+    )
 
 
 @router.post("/logout")
-async def logout():
-    """Déconnexion utilisateur (côté client)."""
+async def logout(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    """Déconnexion : révoque tous les jetons de session de l'utilisateur."""
+    user_service.logout_user(db, current_user)
     return {"message": "Déconnexion réussie"}
 
 

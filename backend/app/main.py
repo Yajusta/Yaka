@@ -13,7 +13,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .database import Base, engine
-from .multi_database import db_manager, get_board_db
+from .multi_database import DEFAULT_BOARD_UID, db_manager, get_board_db
 from .routers import (
     admin_router,
     auth_router,
@@ -90,7 +90,7 @@ def ensure_database_exists():
             os.makedirs(db_path)
 
         # Vérifier si le fichier de base de données existe
-        db_file = f"{db_path}/yaka.db"
+        db_file = f"{db_path}/{DEFAULT_BOARD_UID}.db"
         if not os.path.exists(db_file):
             print(f"Création de la base de données {db_file}...")
             # Créer les tables de base

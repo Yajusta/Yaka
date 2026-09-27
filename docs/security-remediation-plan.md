@@ -36,7 +36,7 @@ Branche : `worktree-security-audit-fixes`.
 
 ### T2 — Installation neuve et comptes par défaut (F02, coquille README)
 
-- `demo_reset.setup_fresh_database()` : `create_demo_data` seulement si `is_demo_mode()`, sinon `create_demo_board_content` seul.
+- `demo_reset.setup_fresh_database()` : `create_demo_users` seulement si `is_demo_mode()`, sinon `create_demo_board_content` seul.
 - Admin initial : `DEFAULT_ADMIN_PASSWORD` si défini, sinon mot de passe aléatoire (`secrets`) logué une seule fois (WARNING) ; `must_change_password=True` dans ce cas.
 - Modèle `User` : colonne `must_change_password` (migration). Exposée dans la réponse de login / `/users/me`.
 - Enforcement backend : tant que le flag est vrai, seules les routes de changement de mot de passe, `/users/me` et déconnexion sont autorisées (403 sinon) ; changement de mot de passe → flag remis à faux.
@@ -126,7 +126,7 @@ Branche : `worktree-security-audit-fixes`.
 | ----- | --- | ------------------------------ | --------------- | ------ |
 | T1    | ✅  | ✅ (12 findings, 7 appliqués)  | ✅ (10 → 7)     | ✅     |
 | T2    | ✅  | ✅ (16 findings, 12 appliqués) | ✅ (10 → 9 → 7) | ✅     |
-| T3    | ☐   | ☐                              | ☐               | ☐      |
+| T3    | ✅  | ✅ (11 findings, 4 appliqués)  | ✅ (10 → 7)     | ✅     |
 | T4    | ☐   | ☐                              | ☐               | ☐      |
 | T5    | ☐   | ☐                              | ☐               | ☐      |
 | T6    | ☐   | ☐                              | ☐               | ☐      |
@@ -144,3 +144,4 @@ Branche : `worktree-security-audit-fixes`.
 
 - T1 terminé : JWT_SECRET obligatoire (≥32 car. non blancs, ≥8 car. distincts), clé admin ≥32 car. + compare_digest (warning si trop courte), plus de `override=True`, `.env.*` ignoré par git et Docker, README. Tests : 1141 passés, 7 erreurs préexistantes. Renvoyé à T2 : init admin (`Admin123`, log de démarrage, `DEFAULT_ADMIN_PASSWORD` invalide avalé).
 - T2 terminé : démo seulement si `DEMO_MODE` ; admin initial aléatoire (logué une fois) + `must_change_password` (migration `3c2b399d24d8`), 403 `password_change_required`, `POST /auth/change-password`, écrans bloquants desktop/mobile ; au démarrage hors démo : comptes démo encore en `Demo1234` soft-deleted (`DELETED`, pas de statut « désactivé » dans le modèle), tout admin encore en `Admin123`/`Demo1234` reçoit un mot de passe aléatoire ; `DEFAULT_ADMIN_PASSWORD=Admin123` ignoré hors démo ; plafond bcrypt 72 octets dans le validateur partagé ; `fileConfig(disable_existing_loggers=False)`. Tests : 1157 passés. Pour T3 : les JWT émis avant le changement de mot de passe restent valides ; `/auth/me`, `/auth/change-password`, `/auth/logout`, `PUT /users/me/language` utilisent `get_current_user` (pas le gate du flag). À faire en T13 : `CLAUDE.md` mentionne encore `Admin123`.
+- T3 terminé : JWT avec claims `board`/`uid`/`ver` ; `get_current_user` refuse board différent, version périmée, statut ≠ ACTIVE ; `token_version` (migration `8f4e1a2b7c90`) incrémenté en SQL à chaque changement de mot de passe/rôle, suppression, logout, `/demo/reset` ; `POST /auth/logout` authentifié (sans révocation en DEMO_MODE) ; `change-password` renvoie un nouveau jeton ; frontend : logout serveur + `clearSession()`, intercepteur 401 tolérant au renouvellement. Tests : 1170 passés. À documenter en T13 : tous les utilisateurs doivent se reconnecter ; un navigateur n'est connecté qu'à un board à la fois ; le logout déconnecte tous les appareils ; CLAUDE.md décrit encore une déconnexion côté client.

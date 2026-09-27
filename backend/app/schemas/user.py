@@ -172,6 +172,16 @@ class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PasswordChangeResponse(UserResponse):
+    """Utilisateur après changement de mot de passe, avec un nouveau jeton de session.
+
+    Le changement révoque les jetons existants, dont celui de la requête.
+    """
+
+    access_token: str
+    token_type: str = "bearer"
+
+
 class UserListItem(BaseModel):
     """Schéma minimal pour la liste d'utilisateurs (utilisé par les non-admins)."""
 

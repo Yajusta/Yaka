@@ -62,8 +62,10 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
             }
           } else {
             // Données invalides, forcer la déconnexion
+            // Session locale seulement : un état local corrompu ne doit pas
+            // révoquer les sessions des autres appareils
             console.warn("Données utilisateur invalides, déconnexion forcée");
-            await authService.logout();
+            authService.clearSession();
           }
         }
       } catch (error) {
@@ -71,11 +73,7 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
           "Erreur lors de l'initialisation de l'authentification:",
           error,
         );
-        try {
-          await authService.logout();
-        } catch (logoutError) {
-          console.error("Erreur lors de la déconnexion forcée:", logoutError);
-        }
+        authService.clearSession();
       } finally {
         setLoading(false);
       }
@@ -132,12 +130,13 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
   };
 
   const logout = async (): Promise<void> => {
+    // La session locale est toujours effacée ; une erreur signale que la
+    // révocation côté serveur a échoué (propagée à l'appelant)
     try {
       await authService.logout();
+    } finally {
       setUser(null);
       setAiAvailable(false);
-    } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error);
     }
   };
 
