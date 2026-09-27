@@ -18,6 +18,7 @@ from ..schemas import (
     CardResponse,
     CardUpdate,
 )
+from ..schemas.card import CARD_DESCRIPTION_MAX_LENGTH
 from ..services import card as card_service
 from ..services import card_history as card_history_service
 from ..utils.card_access import ensure_can_access_card, get_accessible_card_or_404
@@ -156,6 +157,19 @@ async def update_card(
         field in update_data for field in content_fields | metadata_fields | {"list_id"}
     ):
         ensure_can_modify_card(current_user, card)
+
+    # Plafond de la description (après les droits : 403 avant 422), sauf si
+    # elle est renvoyée inchangée (les clients envoient toute la carte)
+    description = update_data.get("description")
+    if (
+        description is not None
+        and len(description) > CARD_DESCRIPTION_MAX_LENGTH
+        and description != card.description
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Description trop longue (maximum {CARD_DESCRIPTION_MAX_LENGTH} caractères)",
+        )
 
     db_card = card_service.update_card(
         db, card_id=card_id, card_update=card_update, updated_by=current_user.id

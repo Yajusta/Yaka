@@ -31,6 +31,7 @@ import {
   type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { CARD_DESCRIPTION_MAX_LENGTH } from "@shared/config/card";
 import { useToast } from "@shared/hooks/use-toast.tsx";
 import { useAuth } from "@shared/hooks/useAuth";
 import { usePermissions } from "@shared/hooks/usePermissions";
@@ -919,6 +920,7 @@ const CardForm = ({
                   }))
                 }
                 rows={3}
+                maxLength={CARD_DESCRIPTION_MAX_LENGTH}
                 readOnly={isViewOnly}
                 disabled={isViewOnly}
               />

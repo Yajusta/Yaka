@@ -2,15 +2,27 @@
 
 import json
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..models import User
 from ..multi_database import get_dynamic_db as get_db
-from ..services.llm_service import LLMService, ResponseType
+from ..services.llm_service import (
+    LLMBusyError,
+    LLMNotConfiguredError,
+    LLMProviderError,
+    LLMService,
+    ResponseType,
+    user_label,
+)
 from ..utils.dependencies import get_current_active_user
+from ..utils.rate_limit import (
+    VOICE_CONTROL_RATE_LIMITS,
+    VOICE_CONTROL_SCOPE,
+    consume_account_attempt,
+)
 
 router = APIRouter(prefix="/voice-control", tags=["voice-control"])
 
@@ -77,34 +89,64 @@ class VoiceControlRequest(BaseModel):
 
 
 @router.post("/")
-async def process_voice_transcript(
-    request: VoiceControlRequest,
+def process_voice_transcript(
+    payload: VoiceControlRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """
     Traiter une instruction vocale et retourner l'action à effectuer en JSON.
     Limite l'instruction aux 500 premiers caractères.
+
+    Handler synchrone : les appels au LLM (bloquants) tournent dans le pool de
+    threads, pas sur la boucle d'événements. Le nombre d'appels simultanés est
+    borné ; au-delà, 503 immédiat plutôt qu'une file d'attente. Quota par
+    utilisateur (board + id) : 429 au-delà.
     """
+    # Fonction désactivée : 503 sans consommer le quota
+    try:
+        llm_service = LLMService()
+    except LLMNotConfiguredError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Pilotage vocal non configuré",
+        )
 
-    # Limiter l'instruction aux 1000 premiers caractères
-    transcript = request.transcript[:500]
+    consume_account_attempt(
+        VOICE_CONTROL_SCOPE, str(current_user.id), VOICE_CONTROL_RATE_LIMITS
+    )
 
-    # Préparer le contexte utilisateur au format JSON
+    transcript = payload.transcript[:500]
+
+    # Préparer le contexte utilisateur au format JSON (jamais l'email)
     user_context = json.dumps(
         {
             "user_id": current_user.id,
-            "user_name": current_user.display_name or current_user.email,
+            "user_name": user_label(current_user),
         },
         ensure_ascii=False,
     )
 
-    llm_service = LLMService()
-    response_json = llm_service.analyze_transcript(
-        transcript=transcript,
-        user_context=user_context,
-        response_type=request.response_type,
-    )
+    # Libérer la connexion de la requête pendant l'appel au LLM (jusqu'à
+    # plusieurs dizaines de secondes) ; le service ouvre ses propres sessions
+    db.close()
+
+    try:
+        response_json = llm_service.analyze_transcript(
+            transcript=transcript,
+            user_context=user_context,
+            response_type=payload.response_type,
+        )
+    except LLMBusyError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service vocal saturé, réessayez dans quelques instants",
+        )
+    except LLMProviderError:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Le service d'analyse vocale est indisponible",
+        )
 
     # Nettoyer l'objet de réponse
     response_data = json.loads(response_json)

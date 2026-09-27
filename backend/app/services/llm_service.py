@@ -1,10 +1,21 @@
+import functools
 import json
+import logging
 import os
+import threading
 from datetime import datetime
 from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
-from openai import BadRequestError, OpenAI
+from openai import (
+    BadRequestError,
+    ContentFilterFinishReasonError,
+    LengthFinishReasonError,
+    OpenAI,
+    OpenAIError,
+)
+from pydantic import ValidationError
+from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
 from ..models.card import Card, CardPriority
@@ -21,10 +32,67 @@ from ..models.response_model import (
 )
 from ..models.user import User, UserStatus
 from ..multi_database import get_board_db
+from . import card as card_service
 
 # Charger les variables d'environnement depuis .env, sans écraser celles du processus
 load_dotenv()
 DEFAULT_MODEL = "gpt-5-nano"
+
+logger = logging.getLogger(__name__)
+
+# Appels au fournisseur : délai borné, un seul nouvel essai
+LLM_TIMEOUT_SECONDS = 30
+LLM_MAX_RETRIES = 1
+
+# Plafonds du contexte envoyé au modèle (coût, taille de requête)
+LLM_DESCRIPTION_MAX_CHARS = 1000
+LLM_CONTEXT_MAX_CARDS = 200
+LLM_CONTEXT_MAX_CHARS = 60_000
+
+
+def _positive_int_from_env(name: str, default: int) -> int:
+    """Lire un entier strictement positif ; une valeur invalide fait échouer le démarrage."""
+    value = os.getenv(name) or str(default)
+    try:
+        number = int(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} invalide : {value!r}") from exc
+    if number < 1:
+        raise ValueError(f"{name} invalide : {value!r}")
+    return number
+
+
+# Appels LLM simultanés (tous boards confondus) ; au-delà, refus immédiat
+LLM_MAX_CONCURRENT_CALLS = _positive_int_from_env("LLM_MAX_CONCURRENT_CALLS", 4)
+_llm_call_slots = threading.BoundedSemaphore(LLM_MAX_CONCURRENT_CALLS)
+
+
+class LLMNotConfiguredError(ValueError):
+    """Pilotage vocal non configuré (``OPENAI_API_KEY`` absente)."""
+
+
+class LLMBusyError(Exception):
+    """Trop d'appels LLM simultanés : refus immédiat plutôt qu'une file d'attente."""
+
+
+class LLMProviderError(Exception):
+    """Échec de l'appel au fournisseur LLM (réseau, délai, erreur HTTP)."""
+
+
+@functools.lru_cache(maxsize=4)
+def _get_openai_client(api_key: str, base_url: str) -> OpenAI:
+    """Client OpenAI unique par configuration, plutôt qu'un par requête."""
+    return OpenAI(
+        api_key=api_key,
+        base_url=base_url,
+        timeout=LLM_TIMEOUT_SECONDS,
+        max_retries=LLM_MAX_RETRIES,
+    )
+
+
+def user_label(user: User) -> str:
+    """Nom d'un utilisateur dans le prompt : jamais son email."""
+    return user.display_name or f"Utilisateur #{user.id}"
 
 
 class LLMService:
@@ -46,17 +114,15 @@ class LLMService:
         # Vérifier la clé API OpenAI
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError(
+            raise LLMNotConfiguredError(
                 "Clé API OpenAI manquante. Veuillez définir OPENAI_API_KEY dans .env"
             )
 
         # Utiliser le modèle fourni ou celui de l'environnement, ou la valeur par défaut
         self.model_name = model or os.getenv("LLM_MODEL", DEFAULT_MODEL)
 
-        # Initialiser le client OpenAI
-        self.client = OpenAI(
-            api_key=api_key, base_url=os.getenv("OPENAI_API_BASE_URL", "")
-        )
+        # Client OpenAI partagé entre les requêtes (pool de connexions réutilisé)
+        self.client = _get_openai_client(api_key, os.getenv("OPENAI_API_BASE_URL", ""))
 
     def analyze_transcript(
         self,
@@ -76,7 +142,27 @@ class LLMService:
 
         Returns:
             Un dictionnaire contenant les informations extraites au format JSON
+
+        Raises:
+            LLMBusyError: si tous les créneaux d'appel simultané sont pris
+            LLMProviderError: si le fournisseur est injoignable ou en erreur
         """
+        if not _llm_call_slots.acquire(blocking=False):
+            raise LLMBusyError()
+        try:
+            return self._analyze_transcript(
+                transcript, user_context, instructions, response_type
+            )
+        finally:
+            _llm_call_slots.release()
+
+    def _analyze_transcript(
+        self,
+        transcript: str,
+        user_context: str,
+        instructions: str,
+        response_type: ResponseType,
+    ) -> str:
         try:
             if response_type == ResponseType.AUTO_INTENT:
                 intent_instructions = self._build_intent_analysis_instructions(
@@ -106,9 +192,18 @@ class LLMService:
 
             return self._analyze_with_openai(transcript, instructions, response_type)
 
-        except Exception as e:
-            print(f"Erreur lors de l'analyse du transcript: {str(e)}")
+        except (
+            LengthFinishReasonError,
+            ContentFilterFinishReasonError,
+            ValidationError,
+        ) as e:
+            # Le fournisseur a répondu, mais sans résultat exploitable
+            logger.warning("Réponse du modèle inexploitable : %s", type(e).__name__)
             return "{}"
+        except OpenAIError as e:
+            # Détail journalisé côté serveur seulement
+            logger.warning("Erreur du fournisseur LLM : %r", e)
+            raise LLMProviderError() from e
 
     def _analyze_with_openai(
         self,
@@ -133,10 +228,11 @@ class LLMService:
         if message.parsed:
             return message.parsed.model_dump_json(indent=2)
         elif message.refusal:
-            print(f"Refus du modèle: {message.refusal}")
+            # Texte du refus non journalisé : il peut reprendre la demande
+            logger.warning("Refus du modèle")
             return "{}"
         else:
-            print("Aucune réponse parsée disponible")
+            logger.warning("Aucune réponse parsée disponible")
             return "{}"
 
     def _get_completion(
@@ -172,7 +268,7 @@ class LLMService:
             completion = self.client.chat.completions.parse(**args)
         except BadRequestError as e:
             if e.param == "temperature":
-                print(
+                logger.info(
                     "Le modèle ne supporte pas le paramètre 'temperature', réessai sans ce paramètre."
                 )
                 return self._get_completion(
@@ -443,16 +539,25 @@ def get_users() -> str:
     """Retourne les utilisateurs actifs depuis la base de données."""
     with get_board_db() as db:
         users = db.query(User).filter(User.status != UserStatus.DELETED).all()
-        result = [
-            {"user_id": user.id, "user_name": user.display_name or user.email}
-            for user in users
-        ]
+        result = [{"user_id": user.id, "user_name": user_label(user)} for user in users]
         return json.dumps(result, ensure_ascii=False, indent=2)
 
 
 def get_tasks(user_context: Optional[Dict] = None) -> str:
-    """Retourne les tâches existantes depuis la base de données."""
+    """Retourne les tâches accessibles à l'utilisateur du contexte.
+
+    Sans utilisateur identifiable, aucune tâche. Le résultat est plafonné
+    (nombre de cartes, longueur des descriptions, taille totale), les cartes
+    modifiées récemment en premier.
+    """
+    user_id = (user_context or {}).get("user_id")
+    if user_id is None:
+        return "[]"
     with get_board_db() as db:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            return "[]"
+
         # Build base query
         query = (
             db.query(Card)
@@ -465,18 +570,19 @@ def get_tasks(user_context: Optional[Dict] = None) -> str:
             .filter(Card.is_archived.is_(False))
         )
 
-        # Apply view scope filtering if user context is provided
-        if user_context and "user_id" in user_context:
-            user_id = user_context["user_id"]
-            user = db.query(User).filter(User.id == user_id).first()
-            if user:
-                # Import here to avoid circular imports
-                from . import card as card_service
-
-                query = card_service.apply_view_scope_filter(query, user)
-
-        cards = query.all()
-        result = []
+        query = card_service.apply_card_access_filter(query, user)
+        cards = (
+            # updated_at reste NULL tant que la carte n'a pas été modifiée
+            query.order_by(
+                func.coalesce(Card.updated_at, Card.created_at).desc(),
+                Card.id.desc(),
+            )
+            .limit(LLM_CONTEXT_MAX_CARDS)
+            .all()
+        )
+        # JSON compact, sérialisé une seule fois : le plafond porte sur le texte envoyé
+        parts: list[str] = []
+        total_chars = 0
         for card in cards:
             # Construire la checklist à partir des card_items
             checklist = [
@@ -493,12 +599,16 @@ def get_tasks(user_context: Optional[Dict] = None) -> str:
             # Obtenir le nom de l'assignee
             assignee_name = None
             if card.assignee:
-                assignee_name = card.assignee.display_name or card.assignee.email
+                assignee_name = user_label(card.assignee)
+
+            description = card.description
+            if description and len(description) > LLM_DESCRIPTION_MAX_CHARS:
+                description = description[:LLM_DESCRIPTION_MAX_CHARS] + "…"
 
             task = {
                 "task_id": card.id,
                 "title": card.title,
-                "description": card.description,
+                "description": description,
                 "list_id": card.list_id,
                 "list_name": card.kanban_list.name,
                 "priority": card.priority.value.lower(),
@@ -508,8 +618,13 @@ def get_tasks(user_context: Optional[Dict] = None) -> str:
                 "checklist": checklist,
                 "labels": labels,
             }
-            result.append(task)
-        return json.dumps(result, ensure_ascii=False, indent=2)
+            part = json.dumps(task, ensure_ascii=False)
+            # Une carte trop volumineuse est omise sans écarter les suivantes
+            if total_chars + len(part) > LLM_CONTEXT_MAX_CHARS:
+                continue
+            total_chars += len(part)
+            parts.append(part)
+        return "[" + ",".join(parts) + "]"
 
 
 def get_priorities() -> str:

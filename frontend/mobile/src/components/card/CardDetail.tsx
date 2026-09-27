@@ -49,6 +49,7 @@ import {
   cardItemsService,
 } from "@shared/services/api";
 import { listsApi } from "@shared/services/listsApi";
+import { CARD_DESCRIPTION_MAX_LENGTH } from "@shared/config/card";
 import {
   mapPriorityFromBackend,
   mapPriorityToBackend,
@@ -946,6 +947,7 @@ const CardDetail = ({
                   }))
                 }
                 rows={4}
+                maxLength={CARD_DESCRIPTION_MAX_LENGTH}
                 readOnly={isViewOnly}
                 disabled={isViewOnly}
                 className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground disabled:opacity-50 resize-none"

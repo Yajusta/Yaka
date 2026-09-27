@@ -10,6 +10,9 @@ from .card_comment import CardCommentResponse
 from .card_item import CardItemResponse
 from .label import LabelResponse
 
+# Longueur maximale d'une description saisie (création / modification)
+CARD_DESCRIPTION_MAX_LENGTH = 20_000
+
 
 class CardBase(BaseModel):
     """Schéma de base pour les cartes."""
@@ -28,6 +31,13 @@ class CardBase(BaseModel):
 class CardCreate(CardBase):
     """Schéma pour la création d'une carte."""
 
+    # Plafond en entrée seulement : les réponses restent valides pour
+    # d'éventuelles descriptions plus longues déjà en base
+    description: Optional[str] = Field(
+        None,
+        max_length=CARD_DESCRIPTION_MAX_LENGTH,
+        description="Description de la carte",
+    )
     list_id: int = Field(..., description="ID de la liste Kanban")
     position: Optional[int] = Field(
         None,
@@ -45,6 +55,8 @@ class CardUpdate(BaseModel):
     title: Optional[str] = Field(
         None, min_length=1, max_length=200, description="Titre de la carte"
     )
+    # Plafond CARD_DESCRIPTION_MAX_LENGTH vérifié par la route : une description
+    # déjà en base plus longue, renvoyée inchangée, reste acceptée
     description: Optional[str] = Field(None, description="Description de la carte")
     due_date: Optional[date] = Field(None, description="Date d'échéance de la carte")
     priority: Optional[CardPriority] = Field(None, description="Priorité de la carte")

@@ -168,8 +168,7 @@ def test_analyze_transcript_card_update_uses_card_instructions(monkeypatch):
     assert call_sequence == [("card instructions", ResponseType.CARD_UPDATE)]
 
 
-@pytest.mark.asyncio
-async def test_process_voice_transcript_forwards_response_type_and_cleans(monkeypatch):
+def test_process_voice_transcript_forwards_response_type_and_cleans(monkeypatch):
     """Le routeur doit transmettre le type de reponse et nettoyer les doublons retournes par le LLM."""
     captured: dict[str, Any] = {}
 
@@ -210,8 +209,8 @@ async def test_process_voice_transcript_forwards_response_type_and_cleans(monkey
         status=UserStatus.ACTIVE,
     )
 
-    response = await process_voice_transcript(
-        request, db=MagicMock(), current_user=current_user
+    response = process_voice_transcript(
+        payload=request, db=MagicMock(), current_user=current_user
     )
     payload_bytes = bytes(response.body)  # JSONResponse.body peut etre un buffer
     payload = json.loads(payload_bytes.decode("utf-8"))
