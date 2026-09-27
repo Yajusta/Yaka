@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm.attributes import set_committed_value
 
 from ..models import (
     Card,
@@ -53,6 +54,19 @@ def apply_view_scope_filter(query, user: User):
         return query
 
 
+def apply_card_access_filter(query, user: User):
+    """Restreindre une requête de cartes à celles accessibles à l'utilisateur.
+
+    Équivalent SQL de ``can_access_card`` : les admins accèdent à toutes les
+    cartes, les autres selon leur périmètre de vue. À utiliser pour les
+    agrégats et exports ; ``apply_view_scope_filter`` reste la préférence
+    d'affichage du tableau (appliquée aussi aux admins).
+    """
+    if user.role == UserRole.ADMIN:
+        return query
+    return apply_view_scope_filter(query, user)
+
+
 def can_access_card(user: User, card: Card) -> bool:
     """
     Check if user can access a specific card based on their view scope.
@@ -74,12 +88,25 @@ def can_access_card(user: User, card: Card) -> bool:
         return True
 
 
+def _hide_deleted_comments(card: Card) -> None:
+    """Masquer les commentaires supprimés sans marquer la relation comme modifiée.
+
+    Réaffecter ``card.comments`` serait vu comme une mutation : avec
+    ``cascade="all, delete-orphan"``, le prochain ``commit()`` de la session
+    supprimerait définitivement les commentaires soft-deleted.
+    """
+    set_committed_value(
+        card,
+        "comments",
+        [comment for comment in card.comments if not comment.is_deleted],
+    )
+
+
 def get_card(db: Session, card_id: int) -> Optional[Card]:
     """Récupérer une carte par son ID avec ses relations."""
     card = db.query(Card).filter(Card.id == card_id).first()
     if card:
-        # Filtrer les commentaires pour ne garder que les non supprimés
-        card.comments = [comment for comment in card.comments if not comment.is_deleted]
+        _hide_deleted_comments(card)
     return card
 
 
@@ -136,7 +163,7 @@ def get_cards(
 
     # Filtrer les commentaires pour ne garder que les non supprimés
     for card in cards:
-        card.comments = [comment for comment in card.comments if not comment.is_deleted]
+        _hide_deleted_comments(card)
 
     return cards
 
@@ -433,6 +460,9 @@ def delete_card(db: Session, card_id: int) -> bool:
 
     list_id = db_card.list_id
 
+    # get_card masque les commentaires soft-deleted : recharger la relation
+    # complète pour que la cascade les supprime aussi (pas de FK SQLite).
+    db.expire(db_card, ["comments"])
     db.delete(db_card)
     db.commit()
 

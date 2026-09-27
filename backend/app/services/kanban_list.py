@@ -5,8 +5,9 @@ from typing import Dict, List, Optional, Tuple
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..models import Card, KanbanList
+from ..models import Card, KanbanList, User
 from ..schemas import KanbanListCreate, KanbanListUpdate
+from .card import apply_card_access_filter
 
 
 class KanbanListService:
@@ -24,15 +25,18 @@ class KanbanListService:
 
     @staticmethod
     def get_list_with_cards_count(
-        db: Session, list_id: int
+        db: Session, list_id: int, user: Optional[User] = None
     ) -> Tuple[Optional[KanbanList], int]:
         """
         Récupérer une liste avec le nombre de cartes actives qu'elle contient.
-        Ne compte que les cartes non archivées (is_archived = False).
+        Ne compte que les cartes non archivées (is_archived = False) et, si
+        ``user`` est fourni, accessibles selon son périmètre de vue (tout pour
+        un admin, pour que la confirmation de suppression reste fiable).
 
         Args:
             db: Session de base de données
             list_id: ID de la liste
+            user: Utilisateur dont le périmètre de vue filtre le décompte
 
         Returns:
             Tuple[Optional[KanbanList], int]: La liste et le nombre de cartes actives
@@ -47,11 +51,12 @@ class KanbanListService:
 
         try:
             # Ne compter que les cartes actives (non archivées)
-            cards_count = (
-                db.query(Card)
-                .filter(Card.list_id == list_id, Card.is_archived.is_(False))
-                .count()
+            query = db.query(Card).filter(
+                Card.list_id == list_id, Card.is_archived.is_(False)
             )
+            if user is not None:
+                query = apply_card_access_filter(query, user)
+            cards_count = query.count()
             return kanban_list, cards_count
         except Exception as e:
             raise ValueError(f"Erreur lors du comptage des cartes: {str(e)}") from e
@@ -364,10 +369,10 @@ def get_list(db: Session, list_id: int) -> Optional[KanbanList]:
 
 
 def get_list_with_cards_count(
-    db: Session, list_id: int
+    db: Session, list_id: int, user: Optional[User] = None
 ) -> Tuple[Optional[KanbanList], int]:
     """Récupérer une liste avec le nombre de cartes qu'elle contient."""
-    return KanbanListService.get_list_with_cards_count(db, list_id)
+    return KanbanListService.get_list_with_cards_count(db, list_id, user)
 
 
 def create_list(db: Session, list_data: KanbanListCreate) -> KanbanList:

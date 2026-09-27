@@ -20,6 +20,7 @@ from ..schemas import (
 )
 from ..services import card as card_service
 from ..services import card_history as card_history_service
+from ..utils.card_access import ensure_can_access_card, get_accessible_card_or_404
 from ..utils.dependencies import get_current_active_user
 from ..utils.permissions import (
     ensure_can_archive_card,
@@ -32,16 +33,6 @@ from ..utils.permissions import (
 )
 
 router = APIRouter(prefix="/cards", tags=["cartes"])
-
-
-def _get_card_or_404(db: Session, card_id: int) -> Card:
-    """Récupérer une carte ou lever une 404."""
-    card = card_service.get_card(db, card_id=card_id)
-    if card is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée"
-        )
-    return card
 
 
 @router.get("/", response_model=List[CardResponse])
@@ -119,20 +110,7 @@ async def read_card(
     current_user: User = Depends(get_current_active_user),
 ):
     """Récupérer une carte par son ID."""
-    db_card = card_service.get_card(db, card_id=card_id)
-    if db_card is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée"
-        )
-
-    # Check view scope permissions
-    if not card_service.can_access_card(current_user, db_card):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accès non autorisé à cette carte",
-        )
-
-    return db_card
+    return get_accessible_card_or_404(db, card_id, current_user)
 
 
 @router.put("/{card_id}", response_model=CardResponse)
@@ -143,7 +121,7 @@ async def update_card(
     current_user: User = Depends(get_current_active_user),
 ):
     """Mettre à jour une carte."""
-    card = _get_card_or_404(db, card_id)
+    card = get_accessible_card_or_404(db, card_id, current_user)
 
     # Check permissions based on what's being modified
     update_data = card_update.model_dump(exclude_unset=True)
@@ -197,7 +175,7 @@ async def update_card_list(
     current_user: User = Depends(get_current_active_user),
 ):
     """Mettre à jour la liste d'une carte (pour le drag & drop)."""
-    card = _get_card_or_404(db, card_id)
+    card = get_accessible_card_or_404(db, card_id, current_user)
     ensure_can_move_card(current_user, card)
     db_card = card_service.update_card_list(
         db, card_id=card_id, list_update=list_update
@@ -216,7 +194,7 @@ async def archive_card(
     current_user: User = Depends(get_current_active_user),
 ):
     """Archiver une carte."""
-    card = _get_card_or_404(db, card_id)
+    card = get_accessible_card_or_404(db, card_id, current_user)
     ensure_can_archive_card(current_user, card)
     db_card = card_service.archive_card(
         db, card_id=card_id, archived_by=current_user.id
@@ -235,7 +213,7 @@ async def unarchive_card(
     current_user: User = Depends(get_current_active_user),
 ):
     """Désarchiver une carte."""
-    card = _get_card_or_404(db, card_id)
+    card = get_accessible_card_or_404(db, card_id, current_user)
     ensure_can_archive_card(current_user, card)
     db_card = card_service.unarchive_card(
         db, card_id=card_id, unarchived_by=current_user.id
@@ -255,7 +233,7 @@ async def move_card(
     current_user: User = Depends(get_current_active_user),
 ):
     """Déplacer une carte entre listes avec gestion de position."""
-    card = _get_card_or_404(db, card_id)
+    card = get_accessible_card_or_404(db, card_id, current_user)
     ensure_can_move_card(current_user, card)
     db_card = card_service.move_card(
         db, card_id=card_id, move_request=move_request, moved_by=current_user.id
@@ -281,6 +259,7 @@ async def bulk_move_cards(
             card = cards_by_id.get(card_id)
             if card is None:
                 continue
+            ensure_can_access_card(current_user, card)
             ensure_can_move_card(current_user, card)
 
     if moved_cards := card_service.bulk_move_cards(
@@ -312,7 +291,7 @@ async def update_card_statut_legacy(
             detail=f"Statut invalide: {statut}. Valeurs acceptées: a_faire, en_cours, termine",
         )
 
-    card = _get_card_or_404(db, card_id)
+    card = get_accessible_card_or_404(db, card_id, current_user)
     ensure_can_move_card(current_user, card)
     list_update = CardListUpdate(list_id=statut_to_list_id[statut])
     db_card = card_service.update_card_list(
@@ -332,7 +311,7 @@ async def delete_card(
     current_user: User = Depends(get_current_active_user),
 ):
     """Supprimer définitivement une carte."""
-    card = _get_card_or_404(db, card_id)
+    card = get_accessible_card_or_404(db, card_id, current_user)
     ensure_can_delete_card(current_user, card)
     if card_service.delete_card(db, card_id=card_id):
         return {"message": "Carte supprimée avec succès"}
@@ -349,12 +328,8 @@ async def get_card_history(
     current_user: User = Depends(get_current_active_user),
 ):
     """Récupérer l'historique complet d'une carte."""
-    # Vérifier que la carte existe
-    db_card = card_service.get_card(db, card_id=card_id)
-    if db_card is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée"
-        )
+    # Vérifier que la carte existe et est visible par l'utilisateur
+    get_accessible_card_or_404(db, card_id, current_user)
 
     return card_history_service.get_card_history(db, card_id=card_id)
 
@@ -367,8 +342,13 @@ async def create_card_history_entry(
     current_user: User = Depends(get_current_active_user),
 ):
     """Ajouter une entrée à l'historique d'une carte."""
-    # Vérifier que la carte existe
-    card = _get_card_or_404(db, card_id)
+    # Vérifier que la carte existe et est visible par l'utilisateur
+    card = get_accessible_card_or_404(db, card_id, current_user)
     ensure_can_modify_card(current_user, card)
+    if history_entry.card_id != card_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="L'identifiant de carte du corps ne correspond pas à l'URL",
+        )
 
     return card_history_service.create_card_history_entry(db, history_entry)

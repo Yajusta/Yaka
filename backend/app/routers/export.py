@@ -19,7 +19,8 @@ async def export_cards(
     current_user: User = Depends(get_current_active_user),
 ):
     """
-    Exporte toutes les cartes non archivées au format CSV ou Excel.
+    Exporte les cartes non archivées visibles par l'utilisateur (périmètre de vue)
+    au format CSV ou Excel.
 
     Accessible à tous les utilisateurs authentifiés (visiteur et plus).
 
@@ -42,10 +43,10 @@ async def export_cards(
 
     # Générer le contenu selon le format
     if format == "csv":
-        content = export_service.generate_csv_export(db)
+        content = export_service.generate_csv_export(db, current_user)
         media_type = "text/csv"
     else:  # xlsx
-        content = export_service.generate_excel_export(db)
+        content = export_service.generate_excel_export(db, current_user)
         media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
     # Générer le nom de fichier

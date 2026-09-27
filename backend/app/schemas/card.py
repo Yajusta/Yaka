@@ -81,6 +81,27 @@ class CardResponse(CardBase):
     items: List[CardItemResponse] = Field(default_factory=list)
     comments: List[CardCommentResponse] = Field(default_factory=list)
 
+    @field_validator("comments", mode="before")
+    @classmethod
+    def exclude_deleted_comments(cls, value):
+        """Exclut les commentaires soft-deleted.
+
+        Après un ``commit()`` + ``refresh()`` dans les services de mutation, la
+        relation ``Card.comments`` est rechargée en entier : sans ce filtre, les
+        commentaires supprimés réapparaîtraient dans la réponse.
+        """
+        if value is None:
+            return []
+        return [
+            comment
+            for comment in value
+            if not (
+                comment.get("is_deleted")
+                if isinstance(comment, dict)
+                else getattr(comment, "is_deleted", False)
+            )
+        ]
+
     @model_validator(mode="before")
     @classmethod
     def extract_assignee_name(cls, data):

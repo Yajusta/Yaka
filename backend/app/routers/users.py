@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..models import User, UserRole, UserStatus
+from ..models import User, UserRole, UserStatus, ViewScope
 from ..multi_database import get_current_board_uid
 from ..multi_database import get_dynamic_db as get_db
 from ..schemas import (
@@ -34,6 +34,13 @@ class InvitePayload(BaseModel):
 
 
 router = APIRouter(prefix="/users", tags=["utilisateurs"])
+
+# Étendue de chaque périmètre de vue (plus grand = voit plus de cartes)
+_VIEW_SCOPE_BREADTH = {
+    ViewScope.MINE_ONLY: 0,
+    ViewScope.UNASSIGNED_PLUS_MINE: 1,
+    ViewScope.ALL: 2,
+}
 
 
 @router.get("/", response_model=List[UserListItem])
@@ -304,13 +311,25 @@ async def update_user_view_scope(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Update user's view scope (Admin only or self-update)."""
+    """Update user's view scope (Admin only or self-reduction)."""
     # Check permissions: admin can update anyone, users can only update themselves
-    if current_user.role != UserRole.ADMIN and current_user.id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Seuls les administrateurs peuvent modifier le périmètre de vue des autres utilisateurs",
-        )
+    if current_user.role != UserRole.ADMIN:
+        if current_user.id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Seuls les administrateurs peuvent modifier le périmètre de vue des autres utilisateurs",
+            )
+
+        # Un non-admin ne peut que réduire son propre périmètre, jamais l'élargir
+        current_scope = current_user.view_scope or ViewScope.ALL
+        if (
+            _VIEW_SCOPE_BREADTH[view_scope_update.view_scope]
+            > _VIEW_SCOPE_BREADTH[current_scope]
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Seuls les administrateurs peuvent élargir le périmètre de vue",
+            )
 
     # Get target user
     target_user = user_service.get_user(db, user_id)

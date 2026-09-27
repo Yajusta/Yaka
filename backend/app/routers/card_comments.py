@@ -13,9 +13,9 @@ from ..schemas.card_comment import (
     CardCommentUpdate,
 )
 from ..schemas.card_history import CardHistoryCreate
-from ..services import card as card_service
 from ..services import card_comment as card_comment_service
 from ..services.card_history import create_card_history_entry
+from ..utils.card_access import get_accessible_card_or_404
 from ..utils.dependencies import get_current_active_user
 from ..utils.permissions import (
     ensure_can_comment_on_card,
@@ -33,6 +33,7 @@ async def list_comments(
     current_user: User = Depends(get_current_active_user),
 ):
     """Récupérer tous les commentaires non supprimés d'une carte."""
+    get_accessible_card_or_404(db, card_id, current_user)
     return card_comment_service.get_comments_for_card(db, card_id)
 
 
@@ -43,12 +44,7 @@ async def create_comment(
     current_user: User = Depends(get_current_active_user),
 ):
     """Créer un nouveau commentaire pour une carte."""
-    card = card_service.get_card(db, card_id=comment.card_id)
-    if card is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée"
-        )
-
+    card = get_accessible_card_or_404(db, comment.card_id, current_user)
     ensure_can_comment_on_card(current_user, card)
     try:
         db_comment = card_comment_service.create_comment(db, comment, current_user.id)
@@ -83,6 +79,9 @@ async def update_comment(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Commentaire non trouvé"
         )
+
+    # Vérifier que la carte du commentaire est visible par l'utilisateur
+    get_accessible_card_or_404(db, existing_comment.card_id, current_user)
 
     # Vérifier que l'utilisateur peut modifier ce commentaire spécifique
     ensure_can_edit_comment(current_user, existing_comment)
@@ -132,6 +131,9 @@ async def delete_comment(
 
         # À ce point, db_comment n'est pas None, pas besoin de type: ignore
         card_id: int = db_comment.card_id
+
+        # Vérifier que la carte du commentaire est visible par l'utilisateur
+        get_accessible_card_or_404(db, card_id, current_user)
 
         # Vérifier que l'utilisateur peut supprimer ce commentaire spécifique
         ensure_can_delete_comment(current_user, db_comment)

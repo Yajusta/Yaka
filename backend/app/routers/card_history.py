@@ -2,13 +2,14 @@
 
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from ..models import User
 from ..multi_database import get_dynamic_db as get_db
 from ..schemas import CardHistoryCreate, CardHistoryResponse
 from ..services import card_history as card_history_service
+from ..utils.card_access import get_accessible_card_or_404
 from ..utils.dependencies import get_current_active_user
 
 router = APIRouter(prefix="/cards/{card_id}/history", tags=["historique cartes"])
@@ -21,14 +22,8 @@ async def get_card_history(
     current_user: User = Depends(get_current_active_user),
 ):
     """Récupérer l'historique complet d'une carte."""
-    # Vérifier que la carte existe (par le biais du service)
-    from ..services import card as card_service
-
-    db_card = card_service.get_card(db, card_id=card_id)
-    if db_card is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée"
-        )
+    # Vérifier que la carte existe et est visible par l'utilisateur
+    get_accessible_card_or_404(db, card_id, current_user)
 
     return card_history_service.get_card_history(db, card_id=card_id)
 
@@ -41,13 +36,7 @@ async def create_card_history_entry(
     current_user: User = Depends(get_current_active_user),
 ):
     """Ajouter une entrée à l'historique d'une carte."""
-    # Vérifier que la carte existe
-    from ..services import card as card_service
-
-    db_card = card_service.get_card(db, card_id=card_id)
-    if db_card is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Carte non trouvée"
-        )
+    # Vérifier que la carte existe et est visible par l'utilisateur
+    get_accessible_card_or_404(db, card_id, current_user)
 
     return card_history_service.create_card_history_entry(db, history_entry)

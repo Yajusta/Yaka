@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 from ..models import CardItem, User
 from ..multi_database import get_dynamic_db as get_db
 from ..schemas.card_item import CardItemCreate, CardItemResponse, CardItemUpdate
-from ..services import card as card_service
 from ..services import card_item as card_item_service
+from ..utils.card_access import get_accessible_card_or_404
 from ..utils.dependencies import get_current_active_user
 from ..utils.permissions import (
     ensure_can_create_card_item,
@@ -27,6 +27,7 @@ async def list_items(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    get_accessible_card_or_404(db, card_id, current_user)
     return card_item_service.get_items_for_card(db, card_id)
 
 
@@ -37,11 +38,7 @@ async def create_item(
     current_user: User = Depends(get_current_active_user),
 ):
     """Create a new checklist item."""
-    card = card_service.get_card(db, card_id=item.card_id)
-    if card is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Card not found"
-        )
+    card = get_accessible_card_or_404(db, item.card_id, current_user)
 
     ensure_can_create_card_item(current_user, card)
 
@@ -71,11 +68,7 @@ async def update_item(
             status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
         )
 
-    card = card_service.get_card(db, card_id=existing_item.card_id)
-    if card is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Card not found"
-        )
+    card = get_accessible_card_or_404(db, existing_item.card_id, current_user)
 
     # If only 'is_done' changes, it's a toggle (CONTRIBUTOR+)
     # Otherwise, it's a modification (EDITOR+)
@@ -106,11 +99,7 @@ async def delete_item(
             status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
         )
 
-    card = card_service.get_card(db, card_id=existing_item.card_id)
-    if card is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Card not found"
-        )
+    card = get_accessible_card_or_404(db, existing_item.card_id, current_user)
 
     ensure_can_delete_card_item(current_user, card)
 

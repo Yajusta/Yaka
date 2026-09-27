@@ -10,25 +10,30 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from sqlalchemy.orm import Session, joinedload
 
-from ..models import Card, CardItem
+from ..models import Card, CardItem, User
+from .card import apply_card_access_filter
 
 
-def get_cards_for_export(db: Session) -> List[Card]:
+def get_cards_for_export(db: Session, user: Optional[User] = None) -> List[Card]:
     """
     Récupère toutes les cartes non archivées triées par position de liste puis position de carte.
 
     Args:
         db: Session de base de données
+        user: Utilisateur dont le périmètre de vue filtre les cartes exportées
+            (les admins exportent toutes les cartes)
 
     Returns:
         Liste des cartes triées
     """
     from ..models import KanbanList
 
+    query = db.query(Card).filter(Card.is_archived.is_(False))
+    if user is not None:
+        query = apply_card_access_filter(query, user)
+
     cards = (
-        db.query(Card)
-        .filter(Card.is_archived.is_(False))
-        .options(
+        query.options(
             joinedload(Card.kanban_list),
             joinedload(Card.items),
             joinedload(Card.labels),
@@ -143,7 +148,7 @@ def sanitize_csv_text(text: Optional[str]) -> str:
     return text.strip()
 
 
-def generate_csv_export(db: Session) -> bytes:
+def generate_csv_export(db: Session, user: Optional[User] = None) -> bytes:
     """
     Génère un fichier CSV avec toutes les cartes non archivées.
 
@@ -152,11 +157,13 @@ def generate_csv_export(db: Session) -> bytes:
 
     Args:
         db: Session de base de données
+        user: Utilisateur dont le périmètre de vue filtre les cartes exportées
+            (les admins exportent toutes les cartes)
 
     Returns:
         Contenu du fichier CSV en bytes
     """
-    cards = get_cards_for_export(db)
+    cards = get_cards_for_export(db, user)
 
     # Créer un buffer en mémoire
     output = io.StringIO()
@@ -194,17 +201,19 @@ def generate_csv_export(db: Session) -> bytes:
     return csv_content.encode("utf-8-sig")  # BOM pour Excel
 
 
-def generate_excel_export(db: Session) -> bytes:
+def generate_excel_export(db: Session, user: Optional[User] = None) -> bytes:
     """
     Génère un fichier Excel avec toutes les cartes non archivées.
 
     Args:
         db: Session de base de données
+        user: Utilisateur dont le périmètre de vue filtre les cartes exportées
+            (les admins exportent toutes les cartes)
 
     Returns:
         Contenu du fichier Excel en bytes
     """
-    cards = get_cards_for_export(db)
+    cards = get_cards_for_export(db, user)
 
     # Créer un workbook
     wb = Workbook()

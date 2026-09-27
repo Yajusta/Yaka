@@ -169,7 +169,7 @@ async def get_list_cards_count(
 
     try:
         kanban_list, cards_count = list_service.get_list_with_cards_count(
-            db, list_id=list_id
+            db, list_id=list_id, user=current_user
         )
         if kanban_list is None:
             raise HTTPException(
