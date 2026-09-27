@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from openpyxl import Workbook
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from openpyxl.styles import Font
 from sqlalchemy.orm import Session, joinedload
 
@@ -126,6 +127,49 @@ def format_priority(priority) -> str:
     return str(priority)
 
 
+# Caractères qui font interpréter une cellule comme formule par un tableur,
+# y compris après des blancs de tête
+FORMULA_CHARS = ("=", "+", "-", "@")
+# Caractères de contrôle traités comme déclencheurs dès la première position
+LEADING_CONTROL_CHARS = ("\t", "\r")
+FORMULA_TRIGGER_CHARS = FORMULA_CHARS + LEADING_CONTROL_CHARS
+
+
+def neutralize_formula(text: str) -> str:
+    """
+    Neutralise l'injection de formules (CSV/Excel) en préfixant d'une apostrophe
+    toute valeur commençant par une tabulation ou un retour chariot, ou dont le
+    premier caractère non blanc est un caractère de formule.
+
+    Args:
+        text: Texte à neutraliser
+
+    Returns:
+        Texte préfixé d'une apostrophe si nécessaire, inchangé sinon
+    """
+    if text.startswith(LEADING_CONTROL_CHARS) or text.lstrip().startswith(
+        FORMULA_CHARS
+    ):
+        return "'" + text
+    return text
+
+
+def neutralize_csv_field(text: str) -> str:
+    """
+    Neutralise les formules d'un champ CSV, y compris après chaque ";" : un tableur
+    qui découpe sur ";" (séparateur par défaut des locales européennes, dont le
+    français) peut faire démarrer une cellule au milieu du champ ("x;=HYPERLINK(...)"),
+    quel que soit le guillemetage.
+
+    Args:
+        text: Texte du champ
+
+    Returns:
+        Texte dont chaque segment délimité par ";" est neutralisé
+    """
+    return ";".join(neutralize_formula(part) for part in text.split(";"))
+
+
 def sanitize_csv_text(text: Optional[str]) -> str:
     """
     Nettoie le texte pour le format CSV en remplaçant les retours à la ligne par des espaces.
@@ -148,6 +192,19 @@ def sanitize_csv_text(text: Optional[str]) -> str:
     return text.strip()
 
 
+def write_text_cell(ws, row: int, column: int, value: Optional[str]) -> None:
+    """
+    Écrit une valeur texte dans une cellule Excel en neutralisant les formules
+    et en forçant le type chaîne (jamais formule ni code d'erreur).
+    Une valeur None (ex. display_name non renseigné) est écrite comme chaîne vide.
+    Les caractères de contrôle interdits en XML sont retirés : openpyxl lèverait
+    IllegalCharacterError et une seule carte ferait échouer tout l'export.
+    """
+    text = ILLEGAL_CHARACTERS_RE.sub("", value or "")
+    cell = ws.cell(row=row, column=column, value=neutralize_formula(text))
+    cell.data_type = "s"
+
+
 def generate_csv_export(db: Session, user: Optional[User] = None) -> bytes:
     """
     Génère un fichier CSV avec toutes les cartes non archivées.
@@ -167,7 +224,9 @@ def generate_csv_export(db: Session, user: Optional[User] = None) -> bytes:
 
     # Créer un buffer en mémoire
     output = io.StringIO()
-    writer = csv.writer(output, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    # QUOTE_ALL : chaque champ est délimité sans ambiguïté pour les lecteurs CSV
+    # conformes ; le découpage sur ";" est couvert par neutralize_csv_field
+    writer = csv.writer(output, delimiter=",", quotechar='"', quoting=csv.QUOTE_ALL)
 
     # En-têtes (sans la colonne Checklist)
     headers = [
@@ -192,7 +251,8 @@ def generate_csv_export(db: Session, user: Optional[User] = None) -> bytes:
             format_due_date(card.due_date),
             sanitize_csv_text(card.assignee.display_name if card.assignee else ""),
         ]
-        writer.writerow(row)
+        # Neutralisation des formules sur chaque cellule, y compris les colonnes futures
+        writer.writerow([neutralize_csv_field(value) for value in row])
 
     # Récupérer le contenu et l'encoder en bytes
     csv_content = output.getvalue()
@@ -243,18 +303,18 @@ def generate_excel_export(db: Session, user: Optional[User] = None) -> bytes:
 
     # Données
     for row_num, card in enumerate(cards, start=2):
-        ws.cell(row=row_num, column=1, value=card.kanban_list.name)
-        ws.cell(row=row_num, column=2, value=card.title)
-        ws.cell(row=row_num, column=3, value=card.description or "")
-        ws.cell(row=row_num, column=4, value=format_checklist(card.items))
-        ws.cell(row=row_num, column=5, value=format_labels(card))
-        ws.cell(row=row_num, column=6, value=format_priority(card.priority))
-        ws.cell(row=row_num, column=7, value=format_due_date(card.due_date))
-        ws.cell(
-            row=row_num,
-            column=8,
-            value=card.assignee.display_name if card.assignee else "",
+        values = (
+            card.kanban_list.name,
+            card.title,
+            card.description or "",
+            format_checklist(card.items),
+            format_labels(card),
+            format_priority(card.priority),
+            format_due_date(card.due_date),
+            card.assignee.display_name if card.assignee else "",
         )
+        for col_num, value in enumerate(values, start=1):
+            write_text_cell(ws, row_num, col_num, value)
 
     # Ajuster la largeur des colonnes
     ws.column_dimensions["A"].width = 20  # Liste

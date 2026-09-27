@@ -404,6 +404,210 @@ class TestGenerateExcelExport:
         assert ws.column_dimensions["H"].width == 20
 
 
+FORMULA_PAYLOADS = [
+    '=HYPERLINK("http://evil.example","clic")',
+    "+1",
+    "-1+1",
+    "@SUM(A1:A2)",
+    "\t=1+1",
+    "\r=1+1",
+    "  =1+1",
+]
+
+
+class TestFormulaInjection:
+    """Tests de neutralisation de l'injection de formules (F10)."""
+
+    @pytest.mark.parametrize("payload", FORMULA_PAYLOADS)
+    def test_neutralize_formula_prefixes_apostrophe(self, payload):
+        """Les valeurs dangereuses sont préfixées d'une apostrophe."""
+        assert export_service.neutralize_formula(payload) == "'" + payload
+
+    @pytest.mark.parametrize(
+        "value", ["", "Tâche normale", "2025-12-31", "high", "a=b", "[x] Item", "'déjà"]
+    )
+    def test_neutralize_formula_keeps_normal_values(self, value):
+        """Les valeurs normales sont inchangées."""
+        assert export_service.neutralize_formula(value) == value
+
+    @pytest.fixture
+    def malicious_cards(self, db_session, sample_user):
+        """Crée des cartes dont les champs texte contiennent des formules."""
+        sample_user.display_name = "=cmd|' /C calc'!A0"
+        kanban_list = KanbanList(name="+liste", order=0)
+        label = Label(name="@label", color="#ff0000", created_by=sample_user.id)
+        db_session.add_all([kanban_list, label])
+        db_session.commit()
+
+        cards = []
+        for position, payload in enumerate(FORMULA_PAYLOADS):
+            card = Card(
+                title=payload,
+                description=payload,
+                list_id=kanban_list.id,
+                position=position,
+                priority=CardPriority.HIGH,
+                created_by=sample_user.id,
+                assignee_id=sample_user.id,
+                due_date=date(2025, 12, 31),
+            )
+            card.labels.append(label)
+            cards.append(card)
+        # Valeur normale et code d'erreur Excel
+        cards.append(
+            Card(
+                title="Tâche normale",
+                description="#DIV/0!",
+                list_id=kanban_list.id,
+                position=len(FORMULA_PAYLOADS),
+                priority=CardPriority.LOW,
+                created_by=sample_user.id,
+            )
+        )
+        db_session.add_all(cards)
+        db_session.commit()
+        return cards
+
+    def test_excel_cells_are_strings_not_formulas(self, db_session, malicious_cards):
+        """Aucune cellule XLSX n'est enregistrée comme formule."""
+        excel_bytes = export_service.generate_excel_export(db_session)
+        ws = load_workbook(io.BytesIO(excel_bytes)).active
+
+        rows = list(ws.iter_rows(min_row=2))
+        assert len(rows) == len(FORMULA_PAYLOADS) + 1
+        for row in rows:
+            for cell in row:
+                if cell.value is not None:
+                    assert cell.data_type == "s"
+
+        for row, payload in zip(rows, FORMULA_PAYLOADS):
+            # Le XML normalise "\r" en "\n" à la relecture
+            expected = ("'" + payload).replace("\r", "\n")
+            assert row[0].value == "'+liste"
+            assert row[1].value == expected
+            assert row[2].value == expected
+            assert row[4].value == "'@label"
+            assert row[5].value == "high"
+            assert row[6].value == "2025-12-31"
+            assert row[7].value == "'=cmd|' /C calc'!A0"
+
+        normal_row = rows[-1]
+        assert normal_row[1].value == "Tâche normale"
+        assert normal_row[2].value == "#DIV/0!"
+        assert normal_row[5].value == "low"
+
+    def test_csv_values_prefixed_with_apostrophe(self, db_session, malicious_cards):
+        """Les valeurs CSV dangereuses sont préfixées d'une apostrophe."""
+        csv_bytes = export_service.generate_csv_export(db_session)
+        assert csv_bytes.startswith(b"\xef\xbb\xbf")
+        rows = list(csv.reader(io.StringIO(csv_bytes.decode("utf-8-sig"))))
+
+        for row in rows[1:]:
+            for value in row:
+                assert not value.startswith(export_service.FORMULA_TRIGGER_CHARS)
+
+        data = rows[1:]
+        assert data[0][1] == '\'=HYPERLINK("http://evil.example","clic")'
+        assert data[1][1] == "'+1"
+        assert data[2][1] == "'-1+1"
+        assert data[3][1] == "'@SUM(A1:A2)"
+        # Les blancs de tête sont normalisés par sanitize_csv_text
+        assert data[4][1] == "'=1+1"
+        assert data[0][0] == "'+liste"
+        assert data[0][3] == "'@label"
+        assert data[0][4] == "high"
+        assert data[0][5] == "2025-12-31"
+        assert data[0][6] == "'=cmd|' /C calc'!A0"
+        assert data[-1][1] == "Tâche normale"
+        assert data[-1][2] == "#DIV/0!"
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("x;=1+1", "x;'=1+1"),
+            ("=a; @b;c", "'=a;' @b;c"),
+            ("a;b", "a;b"),
+            ("a;", "a;"),
+        ],
+    )
+    def test_neutralize_csv_field_after_semicolon(self, value, expected):
+        """Chaque segment délimité par ";" est neutralisé."""
+        assert export_service.neutralize_csv_field(value) == expected
+
+    def test_csv_neutralizes_formula_after_semicolon(self, db_session, sample_user):
+        """Un découpage sur ";" (Excel fr) ne peut pas faire démarrer une cellule
+        par une formule ; chaque champ reste entre guillemets."""
+        kanban_list = KanbanList(name="Liste", order=0)
+        db_session.add(kanban_list)
+        db_session.commit()
+        db_session.add(
+            Card(
+                title='x;=HYPERLINK("http://evil.example","clic")',
+                list_id=kanban_list.id,
+                position=0,
+                priority=CardPriority.LOW,
+                created_by=sample_user.id,
+            )
+        )
+        db_session.commit()
+
+        csv_text = export_service.generate_csv_export(db_session).decode("utf-8-sig")
+        data_line = csv_text.splitlines()[1]
+        assert data_line.startswith('"Liste","x;\'=HYPERLINK(""http://evil.example""')
+        for segment in data_line.split(";"):
+            assert not segment.lstrip().startswith(export_service.FORMULA_CHARS)
+        assert data_line.endswith('"')
+        assert all(
+            field.startswith('"') and field.endswith('"')
+            for field in csv_text.splitlines()[0].split(",")
+        )
+
+    def test_excel_assignee_without_display_name(self, db_session, sample_user):
+        """Un assigné sans display_name n'empêche pas l'export XLSX."""
+        sample_user.display_name = None
+        kanban_list = KanbanList(name="Liste", order=0)
+        db_session.add(kanban_list)
+        db_session.commit()
+        db_session.add(
+            Card(
+                title="Tâche",
+                list_id=kanban_list.id,
+                position=0,
+                priority=CardPriority.LOW,
+                created_by=sample_user.id,
+                assignee_id=sample_user.id,
+            )
+        )
+        db_session.commit()
+
+        excel_bytes = export_service.generate_excel_export(db_session)
+        ws = load_workbook(io.BytesIO(excel_bytes)).active
+        assert ws.cell(row=2, column=2).value == "Tâche"
+        assert ws.cell(row=2, column=8).value in (None, "")
+
+    def test_excel_strips_illegal_control_characters(self, db_session, sample_user):
+        """Un caractère de contrôle interdit en XML ne fait pas échouer l'export."""
+        kanban_list = KanbanList(name="Liste", order=0)
+        db_session.add(kanban_list)
+        db_session.commit()
+        db_session.add(
+            Card(
+                title="\x08=1+1\x1b",
+                description="ligne 1\nligne 2\tfin",
+                list_id=kanban_list.id,
+                position=0,
+                priority=CardPriority.LOW,
+                created_by=sample_user.id,
+            )
+        )
+        db_session.commit()
+
+        excel_bytes = export_service.generate_excel_export(db_session)
+        ws = load_workbook(io.BytesIO(excel_bytes)).active
+        assert ws.cell(row=2, column=2).value == "'=1+1"
+        assert ws.cell(row=2, column=3).value == "ligne 1\nligne 2\tfin"
+
+
 class TestGetExportFilename:
     """Tests pour get_export_filename."""
 
