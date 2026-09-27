@@ -763,9 +763,13 @@ interface ListWithCardCount {
 
 ### Authentification
 
-- Token JWT stocké dans localStorage
+- Token JWT stocké dans localStorage, lié au board : un navigateur n'est connecté qu'à un board à la fois
 - Intercepteur Axios pour l'ajout automatique du token
-- Redirection automatique en cas d'expiration
+- Redirection automatique vers la page de connexion du board en cas de 401 (sauf si le jeton vient d'être remplacé par un changement de mot de passe)
+- 403 `password_change_required` : écran bloquant de changement de mot de passe (desktop et mobile)
+- Déconnexion : `POST /auth/logout` révoque toutes les sessions de l'utilisateur côté serveur, puis `clearSession()` efface la session locale
+- 429 (limitation de débit) : message traduit à la connexion, à la demande de réinitialisation et au changement de mot de passe (`shared/utils/authError.ts`)
+- PWA : les réponses de l'API ne sont jamais mises en cache par le service worker
 
 ### Autorisation
 

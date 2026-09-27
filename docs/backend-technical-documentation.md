@@ -28,8 +28,22 @@ kanban-app/
 
 ### Authentification
 
-- `POST /auth/login` - Connexion utilisateur
+- `POST /auth/login` - Connexion utilisateur (limitée par IP et par compte, 429 au-delà)
 - `GET /auth/me` - Informations utilisateur connecté
+- `POST /auth/change-password` - Changement de son mot de passe ; renvoie un nouveau jeton et révoque les autres sessions
+- `POST /auth/logout` - Déconnexion : révoque toutes les sessions de l'utilisateur, sur tous ses appareils (sans effet en `DEMO_MODE`)
+- `POST /auth/request-password-reset` - Demande de réinitialisation ; le lien envoyé pointe vers le board du chemin de la requête (limitée par IP)
+
+Le jeton JWT (HS256, 24 h, signé avec `JWT_SECRET`, obligatoire) porte l'email (`sub`), l'id utilisateur (`uid`), le board d'émission (`board`) et la version de jetons de l'utilisateur (`ver`). Il est refusé sur un autre board, pour un compte non actif ou si `users.token_version` a changé (déconnexion, changement de mot de passe ou de rôle, suppression). Tant que `must_change_password` est vrai, les autres routes répondent 403 `password_change_required`.
+
+### Administration (`/admin`, hors board)
+
+Protégés par `Authorization: Bearer <YAKA_ADMIN_API_KEY>` (au moins 32 caractères, sinon 503) :
+
+- `POST /admin/boards` - Créer la base d'un board
+- `GET /admin/boards` - Lister les boards
+- `GET /admin/boards/{board_uid}` - Informations sur un board
+- `DELETE /admin/boards/{board_uid}` - Archiver la base d'un board
 
 ### Utilisateurs
 

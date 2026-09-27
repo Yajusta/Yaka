@@ -14,7 +14,7 @@ Code comments, docstrings and commit history are largely in French; user-facing 
 
 ```bash
 uv run uvicorn app.main:app --reload      # dev server → http://localhost:8000 (docs at /docs only with ENVIRONMENT=development)
-uv run pytest                             # full suite (~1124 tests)
+uv run pytest                             # full suite (~1300 tests)
 uv run pytest tests/test_card.py          # one file
 uv run pytest tests/test_card.py::TestCardService::test_x   # one test
 uv run pytest -k "position"               # by name
@@ -24,6 +24,8 @@ uv run python generate_response_model.py schema_reponse.json      # regenerate a
 ```
 
 `pytest.ini_options` in `pyproject.toml` sets `asyncio_mode = "auto"` — async tests need no marker.
+
+`JWT_SECRET` (≥32 chars) is **required to import the app or run the scripts** (`app/utils/security.py` raises at import); `backend/.env` is loaded, without overriding real env vars. `tests/conftest.py` sets a test secret and `RATELIMIT_ENABLED=false`; tests exercising limits use the `rate_limit_enabled` fixture.
 
 ### Frontend (`frontend/`, pnpm)
 
@@ -42,9 +44,12 @@ cd mobile && pnpm install && pnpm run dev   # mobile PWA → http://localhost:30
 ### Docker (full stack)
 
 ```bash
-cp .env.sample .env   # then fill SMTP + optional OPENAI_* + YAKA_ADMIN_API_KEY
+cp .env.sample .env   # then set JWT_SECRET (openssl rand -hex 32), SMTP + optional OPENAI_* + YAKA_ADMIN_API_KEY
 docker compose build && docker compose up -d
+docker compose exec backend python scripts/create_board.py <board_uid>   # scripts: python, not uv run (read-only venv)
 ```
+
+The backend image runs as uid 10001 (host `./data` must be `chown 10001:10001`), one uvicorn worker, deps installed at build from `uv.lock` (BuildKit required); base images are pinned by digest. The frontend nginx adds CSP and security headers from `frontend/nginx-security-headers.conf`, with the `API_BASE_URL` origin injected by `docker-entrypoint.sh`.
 
 Services: `backend` (8000), `frontend-desktop` (3000), `frontend-mobile` (3001), `demo-cron` (hourly `POST /demo/reset` when `DEMO_MODE=true`).
 
@@ -60,14 +65,14 @@ Consequences:
 
 - **Every router is registered twice** in `app/main.py` — bare (`/cards`) for backwards compatibility and under `/board/{board_uid}` — so a new router must be added to both `include_router` blocks.
 - Any code path that opens a session outside a request (background work, scripts) must set the board context itself or use `get_board_db(board_uid)`.
-- Engines and sessionmakers are cached per board in module-level dicts in `multi_database.py`.
-- `/admin/*` (`app/routers/admin.py`) is global, has **no** board prefix, and is guarded by a bearer token equal to `YAKA_ADMIN_API_KEY` — not by JWT.
+- Engines and sessionmakers are cached per board in module-level dicts in `multi_database.py`; `evict_board()` drops them when a board is archived. Engines open SQLite in `mode=rw`, so a missing file is never silently recreated; new board files are published atomically (`publish_board_database`). Validate uids with `is_valid_board_uid` (invalid → 401).
+- `/admin/*` (`app/routers/admin.py`) is global, has **no** board prefix, and every endpoint (including `GET /admin/boards/{uid}`) is guarded by a bearer token compared in constant time to `YAKA_ADMIN_API_KEY` — not by JWT. A key shorter than 32 chars counts as unset (503).
 
 ### Migrations run at import time, across all boards
 
 `app/main.py` calls `ensure_database_exists()` and `run_migrations()` at **module import**, before the FastAPI app is created. `run_migrations()` globs `./data/*.db` and upgrades each one to head, stamping `alembic_version` for pre-Alembic databases. So importing `app.main` (including in tests) touches the filesystem and can migrate real data; the working directory must be `backend/` for `alembic.ini` to resolve.
 
-Seeding happens in the `lifespan` hook: an empty DB triggers `setup_fresh_database()` (`app/utils/demo_reset.py`), creating the default admin `admin@yaka.local` / `Admin123`.
+Seeding happens in the `lifespan` hook: an empty DB triggers `setup_fresh_database()` (`app/utils/demo_reset.py`), creating the admin `admin@yaka.local` (`DEFAULT_ADMIN_EMAIL`) with `DEFAULT_ADMIN_PASSWORD`, or a random password logged once with `must_change_password=True`; demo users (`Demo1234`) and the `Admin123` admin exist only with `DEMO_MODE=true`. Outside demo mode, every start runs `secure_default_accounts_on_all_boards()`: demo accounts still on `Demo1234` are soft-deleted, admins still on `Admin123` get a random password.
 
 ### Backend layering
 
@@ -79,12 +84,16 @@ Cross-cutting concerns:
   - 6-level role hierarchy: `VISITOR < COMMENTER < CONTRIBUTOR < EDITOR < SUPERVISOR < ADMIN` (`models/user.py:UserRole`).
   - `ViewScope` (`ALL`, `UNASSIGNED_PLUS_MINE`, `MINE_ONLY`) filtering which cards a user can see at all.
   - **This file is mirrored in `frontend/shared/utils/permissions.ts` with the same function names.** Change both together or the UI and API disagree.
+- **Auth** — JWTs carry `sub` (email), `uid`, `board` and `ver`; `get_current_user` (`utils/dependencies.py`) rejects a token from another board, a non-ACTIVE user or a stale `ver` (`users.token_version`). Revoke sessions by bumping `token_version` (`revoke_sessions`, done on logout, password/role change, deletion); `POST /auth/logout` is server-side (no-op in `DEMO_MODE`). Routes depend on `get_current_active_user`, which returns 403 `password_change_required` while `must_change_password` is set — only profile, language, change-password and logout use `get_current_user` directly.
+- **Card access** — any route that reads or mutates a card or its sub-resources (comments, checklist, history) must go through `utils/card_access.py` (`get_accessible_card_or_404`, `ensure_can_access_card`, `apply_card_access_filter` for queries), which enforces the view-scope.
+- **Rate limiting** — `utils/rate_limit.py` (slowapi, in-memory, single worker): `limiter.limit(...)` per IP, `consume_account_attempt()` per account/user; limits come from `*_RATE_LIMIT` env vars validated at import.
+- **HTTP config** — `utils/http_config.py`: CORS origins and `/docs` exposure; only `ENVIRONMENT=development` enables `/docs` and the localhost/`file://` origins.
 - **Card ordering** — `cards.position` is a manually maintained integer per list. `services/card.py` shifts neighbouring non-archived cards on move; don't reorder cards by writing `position` directly.
 - **History** — card mutations log an entry through `services/card_history.py`; new mutating operations should do the same.
 
 ### Voice control / LLM
 
-`POST /voice-control/` (`routers/voice_control.py`) truncates the transcript to 500 chars, then `services/llm_service.py` calls an OpenAI-compatible endpoint (`OPENAI_API_KEY`, `OPENAI_API_BASE_URL`, `LLM_MODEL`, `MODEL_TEMPERATURE`) and validates the reply against Pydantic models in `models/response_model.py` (`AutoIntentResponse`, `CardEditResponse`, `CardFilterResponse`, `UnknownResponse`). Two-step: intent detection first, then the typed response for that intent.
+`POST /voice-control/` (`routers/voice_control.py`) truncates the transcript to 500 chars, then `services/llm_service.py` calls an OpenAI-compatible endpoint (`OPENAI_API_KEY`, `OPENAI_API_BASE_URL`, `LLM_MODEL`, `MODEL_TEMPERATURE`) and validates the reply against Pydantic models in `models/response_model.py` (`AutoIntentResponse`, `CardEditResponse`, `CardFilterResponse`, `UnknownResponse`). Two-step: intent detection first, then the typed response for that intent. The handler is sync (`def`), closes its DB session before calling the LLM, and is bounded: per-user quota `VOICE_CONTROL_RATE_LIMIT` (429), global semaphore `LLM_MAX_CONCURRENT_CALLS` (503), client timeout 30 s / 1 retry (provider error → 502), context capped (200 cards, 1 000 chars per description, 60 000 total). Prompts identify users by `display_name` or `Utilisateur #id` (`user_label()`), never by email, and only include cards the user can see.
 
 `models/response_model.py` is **generated** from `schema_reponse.json` by `generate_response_model.py` — edit the JSON schema and regenerate rather than hand-editing the module. `LLMService.__init__` raises if `OPENAI_API_KEY` is unset, so the feature is off (not degraded) without a key. Global and personal dictionaries (`models/global_dictionary.py`, `personal_dictionary.py`) feed the prompt to improve recognition of project-specific vocabulary.
 
@@ -104,11 +113,11 @@ frontend/
 1. `localStorage['api_base_url']` — set by the mobile app's config screen, used verbatim.
 2. otherwise `window.API_BASE_URL` (injected by `/api-config.js`, written by the nginx container entrypoint from `API_BASE_URL`) or `http://localhost:8000`, with `/board/{board_uid}` appended when the browser URL is `/board/{uid}/...`.
 
-The JWT lives in `localStorage['token']`; a 401 response clears it and redirects, except on `/login` and `/invite`.
+The JWT lives in `localStorage['token']` and is bound to one board, so a browser is logged in to one board at a time. A 401 response clears the session (`authService.clearSession()`) and redirects to the board's login page, except on login/invite pages and when the token was just replaced (password change returns a new token); a 403 `password_change_required` raises the blocking change-password screen. `authService.logout()` calls `POST /auth/logout`, which revokes the user's sessions on every device. The PWA service worker must not cache API responses (NV1).
 
 ## Gotchas
 
-- **`frontend/vitest.config.ts` defines only the `@` alias, not `@shared`.** Vitest uses that file instead of `vite.config.ts`, so 7 of the 9 test files currently fail to collect with `Failed to resolve import "@shared/..."` (28 tests in the 2 collectible files pass). If you touch frontend tests, add the `@shared` alias there first rather than assuming your change broke them.
+- Vitest uses `frontend/vitest.config.ts`, not `vite.config.ts`: a new alias must be declared in both.
 - `docs/backend-technical-documentation.md` and `docs/frontend-technical-documentation.md` predate the mobile app and the `shared/` split — the directory trees they show are stale. Trust the code.
 - `redirect_slashes=False` on the FastAPI app: trailing slashes matter (`/voice-control/`, not `/voice-control`).
 - `TrustedHostMiddleware` allows only `localhost`, `127.0.0.1`, `testserver` and the host derived from `BASE_URL` — a wrong `BASE_URL` yields opaque 400s.
