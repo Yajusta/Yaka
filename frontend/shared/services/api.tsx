@@ -170,6 +170,16 @@ const api: AxiosInstance = new Proxy({} as AxiosInstance, {
   },
 });
 
+// Cache Workbox "api-cache" des réponses API des anciennes versions de la PWA
+// mobile : des données authentifiées y survivraient à la session. Supprimé au
+// chargement ; le service worker actuel ne le recrée plus. Le getter `caches`
+// lève une SecurityError dans un contexte opaque (iframe sandboxée, file://).
+try {
+  if (typeof caches !== "undefined") {
+    caches.delete("api-cache").catch(() => {});
+  }
+} catch {}
+
 // Services d'authentification
 export const authService = {
   async login(email: string, password: string): Promise<User> {

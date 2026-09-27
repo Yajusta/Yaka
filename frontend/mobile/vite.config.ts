@@ -51,23 +51,13 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+          // Générés au démarrage du conteneur (docker-entrypoint.sh) : toujours
+          // lus sur le réseau, jamais figés dans le précache
+          globIgnores: ["**/api-config.js", "**/demo-config.js"],
           navigateFallback: `${base}index.html`,
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/api\..*/i,
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "api-cache",
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60 * 24, // 24 hours
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-          ],
+          // Pas de cache des réponses de l'API : elles sont authentifiées et
+          // survivraient à la déconnexion (l'ancien cache "api-cache" est
+          // supprimé au chargement, cf. shared/services/api.tsx)
         },
       }),
     ],

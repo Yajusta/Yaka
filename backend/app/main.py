@@ -38,6 +38,12 @@ from .utils.demo_reset import (
     secure_default_accounts_on_all_boards,
     setup_fresh_database,
 )
+from .utils.http_config import (
+    build_allowed_origins,
+    docs_urls,
+    get_frontend_url,
+    is_development,
+)
 
 load_dotenv()
 
@@ -260,26 +266,14 @@ app = FastAPI(
     version="1.0.0",
     redirect_slashes=False,
     lifespan=lifespan,
+    **docs_urls(),
 )
 
 # Configuration CORS pour permettre les requêtes depuis le frontend
-# En développement, autoriser localhost; en production, utiliser les variables d'environnement
-frontend_url = os.getenv("BASE_URL", "http://localhost:5173")
-frontend_url_mobile = os.getenv("BASE_URL_MOBILE", "http://localhost:5174")
-allowed_origins = [frontend_url, frontend_url_mobile]
-allowed_from_config = os.getenv("ALLOWED_ORIGINS", "").split(",")
-if allowed_from_config:
-    allowed_origins.extend(allowed_from_config)
-
-# Ajouter les origines pour les applications mobiles (PWA → APK)
-mobile_origins = os.getenv(
-    "MOBILE_ORIGINS", "capacitor://localhost,ionic://localhost,http://localhost"
-).split(",")
-allowed_origins.extend(mobile_origins)
-
-# Ajouter file:// pour le développement mobile (uniquement si environnement de développement)
-if os.getenv("ENVIRONMENT", "production").lower() == "development":
-    allowed_origins.append("file://")
+frontend_url = get_frontend_url()
+allowed_origins = build_allowed_origins()
+# Figé à l'import, comme la documentation et les origines CORS
+development = is_development()
 
 # Log des origines autorisées pour le debug
 print(f"CORS: Origines autorisées: {allowed_origins}")
@@ -317,8 +311,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "camera=(), microphone=(), geolocation=()"
         )
 
-        # Content Security Policy (CSP)
-        if os.getenv("ENVIRONMENT", "production").lower() == "production":
+        # Hors développement explicite (toute autre valeur vaut production)
+        if not development:
+            # Content Security Policy (CSP)
             # Permettre les ressources Cloudflare et connexions externes
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
@@ -330,9 +325,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "frame-ancestors 'none'; "
                 "form-action 'self';"
             )
-
-        # HSTS en production HTTPS uniquement
-        if os.getenv("ENVIRONMENT", "production").lower() == "production":
+            # HSTS en production HTTPS uniquement
             response.headers["Strict-Transport-Security"] = (
                 "max-age=31536000; includeSubDomains; preload"
             )
@@ -384,7 +377,7 @@ async def root():
     return {
         "message": "Welcome to the Yaka API",
         "version": "1.0.0",
-        "documentation": "/docs",
+        "documentation": app.docs_url,
         "usage": "Use /board/{board_uid} to access a specific board",
     }
 

@@ -13,7 +13,7 @@ Code comments, docstrings and commit history are largely in French; user-facing 
 ### Backend (`backend/`, Python 3.12+, uv)
 
 ```bash
-uv run uvicorn app.main:app --reload      # dev server → http://localhost:8000 (docs at /docs)
+uv run uvicorn app.main:app --reload      # dev server → http://localhost:8000 (docs at /docs only with ENVIRONMENT=development)
 uv run pytest                             # full suite (~1124 tests)
 uv run pytest tests/test_card.py          # one file
 uv run pytest tests/test_card.py::TestCardService::test_x   # one test

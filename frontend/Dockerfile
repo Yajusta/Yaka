@@ -70,15 +70,19 @@ COPY --from=desktop-builder /app/dist /usr/share/nginx/html
 
 # Copier une configuration Nginx personnalisée (optionnel, pour SPA)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+# En-têtes de sécurité (CSP complétée par l'entrypoint avec l'origine de l'API)
+COPY nginx-security-headers.conf /etc/nginx/security-headers.conf.template
 
 # Script d'initialisation qui génère les fichiers de config au démarrage
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 # Nginx tourne sous l'utilisateur `nginx` (non root) : le PID va dans /tmp et
-# l'entrypoint doit pouvoir écrire les fichiers de config dans le dossier servi.
+# l'entrypoint doit pouvoir écrire les fichiers de config dans le dossier servi
+# et les en-têtes de sécurité dans /etc/nginx/yaka.
 RUN chmod +x /docker-entrypoint.sh \
     && sed -i 's|^pid .*|pid /tmp/nginx.pid;|' /etc/nginx/nginx.conf \
-    && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx
+    && mkdir -p /etc/nginx/yaka \
+    && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /etc/nginx/yaka
 USER 101
 
 # Exposer le port 8080 (port non privilégié, requis en non root)
@@ -106,15 +110,19 @@ COPY --from=mobile-builder /app/mobile/dist /usr/share/nginx/html
 
 # Copier une configuration Nginx personnalisée (optionnel, pour SPA)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+# En-têtes de sécurité (CSP complétée par l'entrypoint avec l'origine de l'API)
+COPY nginx-security-headers.conf /etc/nginx/security-headers.conf.template
 
 # Script d'initialisation qui génère les fichiers de config au démarrage
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 # Nginx tourne sous l'utilisateur `nginx` (non root) : le PID va dans /tmp et
-# l'entrypoint doit pouvoir écrire les fichiers de config dans le dossier servi.
+# l'entrypoint doit pouvoir écrire les fichiers de config dans le dossier servi
+# et les en-têtes de sécurité dans /etc/nginx/yaka.
 RUN chmod +x /docker-entrypoint.sh \
     && sed -i 's|^pid .*|pid /tmp/nginx.pid;|' /etc/nginx/nginx.conf \
-    && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx
+    && mkdir -p /etc/nginx/yaka \
+    && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /etc/nginx/yaka
 USER 101
 
 # Exposer le port 8080 (port non privilégié, requis en non root)
