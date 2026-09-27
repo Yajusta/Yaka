@@ -1,8 +1,12 @@
-# Étape de build pour la version desktop
-FROM node:22-alpine AS desktop-builder
+# Images épinglées par digest (index multi-arch) : le tag reste indicatif, seul
+# le digest fait foi. Les correctifs de sécurité n'arrivent plus au rebuild :
+# récupérer régulièrement le nouveau digest du tag (pas d'`apk upgrade`, qui
+# annulerait l'épinglage). Déclarées une seule fois pour que les étapes desktop et mobile ne divergent pas.
+ARG NODE_IMAGE=node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+ARG NGINX_IMAGE=nginx:alpine@sha256:df221db836e1754089190208cee7eeda94f233197056426eda74a43ab1abeac2
 
-# Installer les dépendances système et mettre à jour
-RUN apk update && apk upgrade
+# Étape de build pour la version desktop
+FROM ${NODE_IMAGE} AS desktop-builder
 
 # Définir le répertoire de travail
 WORKDIR /app
@@ -25,10 +29,7 @@ COPY . .
 RUN pnpm build
 
 # Étape de build pour la version mobile
-FROM node:22-alpine AS mobile-builder
-
-# Installer les dépendances système et mettre à jour
-RUN apk update && apk upgrade
+FROM ${NODE_IMAGE} AS mobile-builder
 
 # Définir le répertoire de travail
 WORKDIR /app
@@ -57,7 +58,7 @@ COPY mobile/vite.config.ts ./
 RUN pnpm build
 
 # Étape de production pour desktop
-FROM nginx:alpine AS desktop-production
+FROM ${NGINX_IMAGE} AS desktop-production
 
 # Utiliser l'argument de build pour les variables d'environnement
 ARG DEMO_MODE=false
@@ -97,7 +98,7 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
 
 # Étape de production pour mobile
-FROM nginx:alpine AS mobile-production
+FROM ${NGINX_IMAGE} AS mobile-production
 
 # Utiliser l'argument de build pour les variables d'environnement
 ARG DEMO_MODE=false

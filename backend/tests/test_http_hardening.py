@@ -82,6 +82,13 @@ class TestAllowedOrigins:
         clean_env.setenv("MOBILE_ORIGINS", "http://localhost")
         assert "http://localhost" in build_allowed_origins()
 
+    @pytest.mark.parametrize("value", ["", "  "])
+    def test_empty_mobile_origins_falls_back_to_default(self, clean_env, value):
+        clean_env.setenv("MOBILE_ORIGINS", value)
+        origins = build_allowed_origins()
+        assert "capacitor://localhost" in origins
+        assert "ionic://localhost" in origins
+
 
 class TestApiDocumentation:
     @pytest.mark.parametrize(

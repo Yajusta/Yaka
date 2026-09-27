@@ -42,8 +42,10 @@ venv.bak/
 .DS_Store
 Thumbs.db
 
-# Testing
+# Testing and linting caches
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .coverage
 htmlcov/
 
@@ -52,6 +54,10 @@ htmlcov/
 
 # Database files (will be mounted as volume)
 *.db
+data/
+
+# Tests (not needed at runtime, including their tests/data/ databases)
+tests/
 
 # Git
 .git

@@ -49,7 +49,9 @@ def build_allowed_origins() -> list[str]:
         get_frontend_url(),
         os.getenv("BASE_URL_MOBILE", "http://localhost:5174"),
         *os.getenv("ALLOWED_ORIGINS", "").split(","),
-        *os.getenv("MOBILE_ORIGINS", default_mobile_origins).split(","),
+        # Vide (ou blanche) ou absente : valeur par défaut, comme les autres
+        # variables (docker-compose la transmet toujours, vide par défaut)
+        *(os.getenv("MOBILE_ORIGINS", "").strip() or default_mobile_origins).split(","),
     ]
     # file:// pour le développement mobile (uniquement en développement)
     if development:

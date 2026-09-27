@@ -23,6 +23,10 @@ services:
       - LOGIN_RATE_LIMIT=${LOGIN_RATE_LIMIT:-}
       - PASSWORD_RESET_RATE_LIMIT=${PASSWORD_RESET_RATE_LIMIT:-}
       - LOGIN_ACCOUNT_RATE_LIMIT=${LOGIN_ACCOUNT_RATE_LIMIT:-}
+      - VOICE_CONTROL_RATE_LIMIT=${VOICE_CONTROL_RATE_LIMIT:-}
+      - LLM_MAX_CONCURRENT_CALLS=${LLM_MAX_CONCURRENT_CALLS:-}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
+      - MOBILE_ORIGINS=${MOBILE_ORIGINS:-}
       - FORWARDED_ALLOW_IPS=${FORWARDED_ALLOW_IPS:-127.0.0.1}
       - BASE_URL=${BASE_URL:-http://localhost:3000}
       - BASE_URL_MOBILE=${BASE_URL_MOBILE:-http://localhost:3001}
@@ -30,17 +34,14 @@ services:
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-fr}
       - ENVIRONMENT=${ENVIRONMENT:-production}
     user: "10001:10001"
+    # ./data doit appartenir à l'UID 10001 (sinon Docker le crée en root et le
+    # backend ne peut pas créer ses bases) : mkdir -p data && chown 10001:10001 data
     volumes:
       - ./data/:/app/data/
     restart: unless-stopped
     healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import requests; requests.get('http://localhost:8000/health')",
-        ]
+      # Sonde héritée du HEALTHCHECK de l'image (curl -fsS /health) ; seul le
+      # rythme est redéfini ici
       interval: 30s
       timeout: 10s
       retries: 3
@@ -135,19 +136,20 @@ services:
       - yaka-network
 
   demo-cron:
-    image: alpine:latest
+    image: alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
     container_name: yaka-demo-cron
     environment:
       - DEMO_MODE=${DEMO_MODE:-false}
     depends_on:
       backend:
         condition: service_healthy
+    # $$DEMO_MODE est lu dans le conteneur (pas interpolé par compose). Host
+    # forcé à localhost : TrustedHostMiddleware refuse l'hôte yaka-backend.
     command: >
       sh -c "
-        if [ \"$DEMO_MODE\" = \"true\" ]; then
+        if [ \"$$DEMO_MODE\" = \"true\" ]; then
           echo '🔄 Mode démo activé - Configuration du cron pour la réinitialisation horaire'
-          apk add --no-cache wget
-          echo '0 * * * * wget -q -O - --method=POST http://yaka-backend:8000/demo/reset >/dev/null 2>&1' > /etc/crontabs/root
+          echo '0 * * * * wget -q -O /dev/null --header=\"Host: localhost\" --post-data=\"\" http://yaka-backend:8000/demo/reset >/dev/null 2>&1' > /etc/crontabs/root
           echo '🔄 Cron configuré pour réinitialiser la base toutes les heures'
           crond -f -l 2
         else
