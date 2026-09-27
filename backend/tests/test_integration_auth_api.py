@@ -73,7 +73,7 @@ async def test_password_reset_request_invited_user(
 
     # Create an invited user
     from app.models.user import UserRole
-    from app.services.user import invite_user
+    from app.services.user import TOKEN_RESEND_DELAY, invite_user
 
     session = integration_session_factory()
     try:
@@ -85,6 +85,9 @@ async def test_password_reset_request_invited_user(
         )
         invited_email = invited_user.email
         original_token = invited_user.invite_token
+        # Au-delà du délai minimal entre deux jetons
+        invited_user.invited_at = invited_user.invited_at - TOKEN_RESEND_DELAY
+        session.commit()
     finally:
         session.close()
 

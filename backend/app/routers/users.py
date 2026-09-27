@@ -1,13 +1,13 @@
 """Routeur pour la gestion des utilisateurs."""
 
-import contextlib
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..models import User, UserRole, UserStatus
+from ..multi_database import get_current_board_uid
 from ..multi_database import get_dynamic_db as get_db
 from ..schemas import (
     LanguageUpdate,
@@ -30,11 +30,7 @@ class InvitePayload(BaseModel):
     email: str
     display_name: Optional[str] = None
     role: UserRole = UserRole.VISITOR
-    board_uid: Optional[str] = None
-
-
-class ResendInvitationPayload(BaseModel):
-    board_uid: Optional[str] = None
+    # Pas de board_uid : le lien vise le board du chemin de la requête (F04)
 
 
 router = APIRouter(prefix="/users", tags=["utilisateurs"])
@@ -107,6 +103,7 @@ async def create_user(
 @router.post("/invite", response_model=UserResponse)
 async def invite_user(
     payload: InvitePayload,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -127,7 +124,8 @@ async def invite_user(
             email=payload.email,
             display_name=payload.display_name,
             role=payload.role,
-            board_uid=payload.board_uid,
+            board_uid=get_current_board_uid(),
+            defer=background_tasks.add_task,
         )
     except ValueError as exc:
         raise HTTPException(
@@ -218,7 +216,7 @@ async def update_user_language(
 @router.post("/{user_id}/resend-invitation", response_model=UserResponse)
 async def resend_invitation(
     user_id: int,
-    payload: ResendInvitationPayload,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -235,45 +233,13 @@ async def resend_invitation(
             detail="L'utilisateur n'est pas dans un état d'invitation",
         )
 
-    # Vérifier le délai d'une minute
-    from datetime import datetime
-
-    if db_user.invited_at:
-        # Convertir invited_at en timezone-aware si nécessaire
-        if db_user.invited_at.tzinfo is None:
-            # Si invited_at est timezone-naive, l'assumer en UTC
-            invited_at_aware = db_user.invited_at.astimezone()
-        else:
-            invited_at_aware = db_user.invited_at
-
-        time_diff = datetime.now().astimezone() - invited_at_aware
-        if time_diff.total_seconds() < 60:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Une invitation a déjà été envoyée il y a moins d'une minute",
-            )
-
-    # Générer un nouveau token et mettre à jour l'horodatage
-    import secrets
-
-    new_token = secrets.token_urlsafe(32)
-    new_invited_at = datetime.now().astimezone()
-
-    db_user.invite_token = new_token
-    # S'assurer que invited_at est timezone-aware
-    db_user.invited_at = new_invited_at
-    db.commit()
-    db.refresh(db_user)
-
-    # Renvoyer l'email d'invitation
-    with contextlib.suppress(Exception):
-        from ..services import email as email_service
-
-        email_service.send_invitation(
-            email=db_user.email,
-            display_name=db_user.display_name,
-            token=new_token,
-            board_uid=payload.board_uid,
+    # Nouveau jeton + email en tâche de fond, sauf si émis il y a moins d'une minute
+    if not user_service.issue_pending_token(
+        db, db_user, get_current_board_uid(), defer=background_tasks.add_task
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Une invitation a déjà été envoyée il y a moins d'une minute",
         )
     return db_user
 

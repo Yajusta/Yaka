@@ -195,12 +195,8 @@ const LoginForm = () => {
     setResetLoading(true);
 
     try {
-      // Extraire le board_uid de l'URL si présent
-      const boardUidMatch =
-        window.location.pathname.match(/^\/board\/([^\/]+)/);
-      const boardUid = boardUidMatch ? boardUidMatch[1] : undefined;
-
-      await authService.requestPasswordReset(resetEmail, boardUid);
+      // Le board est déduit du chemin de l'API (/board/{uid}/...)
+      await authService.requestPasswordReset(resetEmail);
       setResetSuccess(true);
     } catch (error: any) {
       setResetError(

@@ -2,11 +2,12 @@
 
 import os
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from ..models import User
+from ..multi_database import get_current_board_uid
 from ..multi_database import get_dynamic_db as get_db
 from ..schemas import (
     PasswordChange,
@@ -83,12 +84,22 @@ async def logout(
 
 @router.post("/request-password-reset")
 async def request_password_reset(
-    request: PasswordResetRequest, db: Session = Depends(get_db)
+    request: PasswordResetRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
 ):
-    """Demander une réinitialisation de mot de passe."""
-    from ..services import user as user_service
+    """Demander une réinitialisation de mot de passe.
 
-    user_service.request_password_reset(db, request.email, request.board_uid)
+    Le board du lien est celui du chemin (validé par BoardContextMiddleware),
+    jamais une valeur fournie par le client. L'email part en tâche de fond :
+    la réponse est identique et immédiate, que le compte existe ou non.
+    """
+    user_service.request_password_reset(
+        db,
+        request.email,
+        get_current_board_uid(),
+        defer=background_tasks.add_task,
+    )
     return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé"}
 
 

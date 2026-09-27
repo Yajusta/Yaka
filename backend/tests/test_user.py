@@ -15,6 +15,7 @@ from app.database import Base
 from app.models.user import User, UserRole, UserStatus
 from app.schemas.user import UserCreate, UserUpdate
 from app.services.user import (
+    TOKEN_RESEND_DELAY,
     authenticate_user,
     create_admin_user,
     create_user,
@@ -663,6 +664,9 @@ class TestRequestPasswordReset:
         user = sample_users[1]
         assert user.status == UserStatus.INVITED  # Vérifier qu'il est bien invité
         original_token = user.invite_token
+        # Au-delà du délai minimal entre deux jetons
+        user.invited_at = user.invited_at - TOKEN_RESEND_DELAY
+        db_session.commit()
 
         result = request_password_reset(db_session, user.email)
 

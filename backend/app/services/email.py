@@ -40,6 +40,8 @@ FROM_ADDRESS = os.getenv("SMTP_FROM", "no-reply@kanban.local")
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 INVITE_BASE_URL = f"{BASE_URL}/invite"
 PASSWORD_RESET_BASE_URL = f"{BASE_URL}/invite"
+# Délai maximal (secondes) des opérations SMTP : un serveur lent ne bloque pas l'envoi
+SMTP_TIMEOUT = 10
 
 
 def send_mail(to: str, subject: str, html_body: str, plain_body: str = ""):
@@ -56,12 +58,12 @@ def send_mail(to: str, subject: str, html_body: str, plain_body: str = ""):
 
     try:
         if SMTP_SECURE == "ssl":
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as server:
                 if SMTP_USER and SMTP_PASS:
                     server.login(SMTP_USER, SMTP_PASS)
                 server.send_message(msg)
         else:
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as server:
                 server.ehlo()
                 if SMTP_SECURE == "starttls":
                     server.starttls()
@@ -77,16 +79,21 @@ def send_mail(to: str, subject: str, html_body: str, plain_body: str = ""):
         raise e
 
 
+def _board_links(
+    board_uid: Optional[str], token: str, default_invite_url: str
+) -> tuple[str, str]:
+    """Retourne (lien avec jeton, URL du board), chaque composant étant encodé."""
+    encoded_token = urllib.parse.quote_plus(token)
+    if board_uid:
+        board_url = f"{BASE_URL}/board/{urllib.parse.quote(board_uid, safe='')}"
+        return f"{board_url}/invite?token={encoded_token}", board_url
+    return f"{default_invite_url}?token={encoded_token}", BASE_URL
+
+
 def send_invitation(
     email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None
 ):
-    encoded_token = urllib.parse.quote_plus(token)
-    if board_uid:
-        invite_link = f"{BASE_URL}/board/{board_uid}/invite?token={encoded_token}"
-        board_url = f"{BASE_URL}/board/{board_uid}"
-    else:
-        invite_link = f"{INVITE_BASE_URL}?token={encoded_token}"
-        board_url = BASE_URL
+    invite_link, board_url = _board_links(board_uid, token, INVITE_BASE_URL)
 
     name = display_name or "User"
     subject = "Invitation to Join Yaka (Yet Another Kanban App)"
@@ -98,15 +105,8 @@ def send_invitation(
 def send_password_reset(
     email: str, display_name: Optional[str], token: str, board_uid: Optional[str] = None
 ):
-    encoded_token = urllib.parse.quote_plus(token)
-    if board_uid:
-        reset_link = (
-            f"{BASE_URL}/board/{board_uid}/invite?token={encoded_token}&reset=true"
-        )
-        board_url = f"{BASE_URL}/board/{board_uid}"
-    else:
-        reset_link = f"{PASSWORD_RESET_BASE_URL}?token={encoded_token}&reset=true"
-        board_url = BASE_URL
+    link, board_url = _board_links(board_uid, token, PASSWORD_RESET_BASE_URL)
+    reset_link = f"{link}&reset=true"
 
     name = display_name or "User"
     subject = "Password reset - Yaka (Yet Another Kanban App)"

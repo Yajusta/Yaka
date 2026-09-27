@@ -334,12 +334,10 @@ export const authService = {
       }
     }
   },
-  async requestPasswordReset(email: string, boardUid?: string): Promise<void> {
-    // Calls backend endpoint that returns a generic message regardless of existence
-    await getApiInstance().post("/auth/request-password-reset", {
-      email,
-      board_uid: boardUid,
-    });
+  async requestPasswordReset(email: string): Promise<void> {
+    // Calls backend endpoint that returns a generic message regardless of existence.
+    // The board is taken from the request path (/board/{uid}/...), never from the body.
+    await getApiInstance().post("/auth/request-password-reset", { email });
   },
 
   async checkAIFeatures(): Promise<{ ai_available: boolean }> {

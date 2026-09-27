@@ -612,6 +612,9 @@ class TestUsersRouter:
         )
 
         with patch(
+            "app.routers.users.user_service.get_user_by_any_token",
+            return_value=MagicMock(),
+        ), patch(
             "app.routers.users.user_service.set_password_from_invite"
         ) as mock_set_password:
             mock_set_password.return_value = mock_user
@@ -634,6 +637,9 @@ class TestUsersRouter:
         password_payload = SetPasswordPayload(token="b" * 32, password="NewPassword123")
 
         with patch(
+            "app.routers.users.user_service.get_user_by_any_token",
+            return_value=MagicMock(),
+        ), patch(
             "app.routers.users.user_service.set_password_from_invite"
         ) as mock_set_password:
             mock_set_password.side_effect = ValueError("Token invalide ou expiré")

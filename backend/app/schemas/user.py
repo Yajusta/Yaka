@@ -149,8 +149,8 @@ class PasswordChange(BaseModel):
 class PasswordResetRequest(BaseModel):
     """Schéma pour demander une réinitialisation de mot de passe."""
 
+    # Pas de board_uid : le board est celui du chemin de la requête (F04)
     email: str
-    board_uid: Optional[str] = None
 
     @field_validator("email")
     @classmethod

@@ -5,7 +5,7 @@ import datetime
 import logging
 import secrets
 from os import getenv
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from pydantic import ValidationError
 from sqlalchemy import and_
@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
 from ..models import User, UserRole, UserStatus
+from ..models.helpers import get_system_timezone_datetime
 from ..schemas import UserCreate, UserUpdate
 from ..schemas.user import _validate_password_strength
 from ..utils.demo_mode import is_demo_mode
@@ -28,6 +29,13 @@ logger = logging.getLogger(__name__)
 DEMO_ADMIN_PASSWORD = "Admin123"  # nosec B105
 # Email historique de l'administrateur initial (valeur par défaut de DEFAULT_ADMIN_EMAIL)
 LEGACY_ADMIN_EMAIL = "admin@yaka.local"
+
+# Durée de vie des jetons (invite_token) : réinitialisation d'un compte ACTIVE,
+# invitation d'un compte INVITED. Comptée depuis invited_at.
+RESET_TOKEN_TTL = datetime.timedelta(hours=1)
+INVITE_TOKEN_TTL = datetime.timedelta(days=7)
+# Délai minimal avant de remplacer un jeton en attente (renvoi d'email)
+TOKEN_RESEND_DELAY = datetime.timedelta(seconds=60)
 
 
 def default_admin_email() -> str:
@@ -60,9 +68,138 @@ def logout_user(db: Session, user: User) -> None:
         raise
 
 
-def get_system_timezone_datetime():
-    """Retourne la date et heure actuelle dans le fuseau horaire du système."""
-    return datetime.datetime.now().astimezone()
+def clear_pending_token(user: User) -> None:
+    """Invalider le jeton d'invitation/réinitialisation en attente (commit par l'appelant)."""
+    user.invite_token = None
+    user.invited_at = None
+
+
+def set_user_password(user: User, password: str, *, must_change: bool = False) -> None:
+    """Définir le mot de passe (commit par l'appelant).
+
+    Point unique : invalide aussi le jeton en attente et les sessions existantes.
+    """
+    user.password_hash = get_password_hash(password)
+    user.must_change_password = must_change
+    clear_pending_token(user)
+    revoke_sessions(user)
+
+
+def token_age(user: User) -> Optional[datetime.timedelta]:
+    """Âge du jeton en attente (None si invited_at absent).
+
+    SQLite restitue invited_at sans fuseau : il a été enregistré en heure locale.
+    """
+    if user.invited_at is None:
+        return None
+    invited_at = user.invited_at
+    if invited_at.tzinfo is None:
+        invited_at = invited_at.astimezone()
+    return get_system_timezone_datetime() - invited_at
+
+
+def token_recently_issued(user: User) -> bool:
+    """Vrai si un jeton en attente a été émis il y a moins de TOKEN_RESEND_DELAY."""
+    age = token_age(user)
+    return bool(user.invite_token) and age is not None and age < TOKEN_RESEND_DELAY
+
+
+def _unexpired_token_user(db: Session, user: Optional[User]) -> Optional[User]:
+    """Retourne l'utilisateur si son jeton est encore valide, sinon efface le jeton."""
+    if user is None:
+        return None
+    ttl = INVITE_TOKEN_TTL if user.status == UserStatus.INVITED else RESET_TOKEN_TTL
+    age = token_age(user)
+    if age is not None and age <= ttl:
+        return user
+    clear_pending_token(user)
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+    return None
+
+
+def send_quietly(send: Callable[..., None], **kwargs) -> None:
+    """Envoyer un email sans propager l'erreur (journalisée avec la trace)."""
+    try:
+        send(**kwargs)
+    except Exception:
+        logger.exception("Échec de l'envoi d'un email")
+
+
+def _send_now(func: Callable[..., None], *args, **kwargs) -> None:
+    """Planificateur par défaut : exécution immédiate (scripts, appels hors requête)."""
+    func(*args, **kwargs)
+
+
+def _defer_token_email(
+    user: User,
+    token: str,
+    board_uid: Optional[str],
+    defer: Callable[..., None],
+) -> None:
+    """Planifier l'email portant le jeton : invitation (INVITED) ou réinitialisation."""
+    send = (
+        email_service.send_invitation
+        if user.status == UserStatus.INVITED
+        else email_service.send_password_reset
+    )
+    defer(
+        send_quietly,
+        send,
+        email=user.email,
+        display_name=user.display_name,
+        token=token,
+        board_uid=board_uid,
+    )
+
+
+def issue_pending_token(
+    db: Session,
+    user: User,
+    board_uid: Optional[str] = None,
+    defer: Callable[..., None] = _send_now,
+) -> bool:
+    """Émettre un nouveau jeton (invitation/réinitialisation) et planifier son email.
+
+    Retourne False sans rien faire si un jeton a été émis il y a moins de
+    TOKEN_RESEND_DELAY. `defer` planifie l'envoi (ex. BackgroundTasks.add_task).
+    """
+    if token_recently_issued(user):
+        return False
+    # Le champ invite_token sert aussi de jeton de réinitialisation
+    token = secrets.token_urlsafe(32)
+    previous = user.invite_token
+    # Remplacement conditionnel (compare-and-set) : de deux demandes concurrentes,
+    # une seule remplace le jeton lu, l'autre est traitée comme une rafale
+    same_token = (
+        User.invite_token.is_(None)
+        if previous is None
+        else User.invite_token == previous
+    )
+    try:
+        replaced = (
+            db.query(User)
+            .filter(User.id == user.id, same_token)
+            .update(
+                {
+                    User.invite_token: token,
+                    User.invited_at: get_system_timezone_datetime(),
+                },
+                synchronize_session=False,
+            )
+        )
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+    # Pas de refresh : le commit a expiré l'instance, rechargée à la lecture
+    if not replaced:
+        return False
+    _defer_token_email(user, token, board_uid, defer)
+    return True
 
 
 def get_user(db: Session, user_id: int) -> Optional[User]:
@@ -133,8 +270,12 @@ def invite_user(
     display_name: str | None,
     role: UserRole,
     board_uid: Optional[str] = None,
+    defer: Callable[..., None] = _send_now,
 ) -> User:
-    """Creer un utilisateur en tant qu'invite et envoyer un email d'invitation."""
+    """Creer un utilisateur en tant qu'invite et envoyer un email d'invitation.
+
+    `defer` planifie l'envoi (ex. BackgroundTasks.add_task) ; immédiat par défaut.
+    """
     invite_token = secrets.token_urlsafe(32)
     invited_at = get_system_timezone_datetime()
     normalized_email = email.strip().lower()
@@ -156,17 +297,7 @@ def invite_user(
     db.commit()
     db.refresh(db_user)
 
-    try:
-        email_service.send_invitation(
-            email=normalized_email,
-            display_name=display_name,
-            token=invite_token,
-            board_uid=board_uid,
-        )
-    except Exception as exc:
-        print(
-            f"ERROR: Erreur lors de l'envoi de l'email d'invitation a {normalized_email}: {exc}"
-        )
+    _defer_token_email(db_user, invite_token, board_uid, defer)
     return db_user
 
 
@@ -186,15 +317,18 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[
             raise ValueError("Un utilisateur avec cet email existe deja")
 
     # Hacher le nouveau mot de passe si fourni
-    if "password" in update_data:
-        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
-        # Mot de passe défini par un administrateur : plus aléatoire ni public
-        db_user.must_change_password = False
+    # Mot de passe défini par un administrateur : plus aléatoire ni public ;
+    # jeton en attente et sessions invalidés
+    new_password = update_data.pop("password", None)
+    if new_password is not None:
+        set_user_password(db_user, new_password)
+        # Le jeton d'invitation vient d'être effacé : un compte INVITED resterait
+        # sans moyen de connexion, il devient actif avec ce mot de passe
+        if db_user.status == UserStatus.INVITED and "status" not in update_data:
+            db_user.status = UserStatus.ACTIVE
 
-    # Nouveau mot de passe ou rôle modifié : les jetons existants sont révoqués
-    if "password_hash" in update_data or (
-        "role" in update_data and update_data["role"] != db_user.role
-    ):
+    # Rôle modifié : les jetons existants sont révoqués (déjà fait si nouveau mot de passe)
+    elif "role" in update_data and update_data["role"] != db_user.role:
         revoke_sessions(db_user)
 
     for field, value in update_data.items():
@@ -207,7 +341,7 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[
 
 
 def get_user_by_invite_token(db: Session, token: str) -> Optional[User]:
-    return (
+    user = (
         db.query(User)
         .filter(
             and_(
@@ -217,6 +351,7 @@ def get_user_by_invite_token(db: Session, token: str) -> Optional[User]:
         )
         .first()
     )
+    return _unexpired_token_user(db, user)
 
 
 def set_password_from_invite(db: Session, user: User, password: str) -> bool:
@@ -234,75 +369,40 @@ def set_password_from_invite(db: Session, user: User, password: str) -> bool:
     if db_user.status not in [UserStatus.INVITED, UserStatus.ACTIVE]:
         return False
 
-    db_user.password_hash = get_password_hash(password)
-    db_user.must_change_password = False
+    set_user_password(db_user, password)
     db_user.status = UserStatus.ACTIVE
-    db_user.invite_token = None
-    db_user.invited_at = None
-    revoke_sessions(db_user)
     db.commit()
     db.refresh(db_user)
     return True
 
 
 def request_password_reset(
-    db: Session, email: str, board_uid: Optional[str] = None
+    db: Session,
+    email: str,
+    board_uid: Optional[str] = None,
+    defer: Callable[..., None] = _send_now,
 ) -> bool:
     """Demander une réinitialisation de mot de passe.
 
     Si l'utilisateur est INVITED (n'a pas encore validé son invitation),
     renvoie un email d'invitation au lieu d'un email de reset.
     Si l'utilisateur est ACTIVE, envoie un email de reset password.
-    Pour tous les autres cas (inexistant, DELETED), retourne True sans rien faire
-    pour des raisons de sécurité (ne pas révéler l'existence ou non de l'utilisateur).
+    Pour tous les autres cas (inexistant, DELETED), ou si un jeton a été émis il y a
+    moins de TOKEN_RESEND_DELAY, retourne True sans rien faire pour des raisons de
+    sécurité (ne pas révéler l'existence ou non de l'utilisateur).
+    `defer` planifie l'envoi (ex. BackgroundTasks.add_task) ; immédiat par défaut.
     """
     user = get_user_by_email(db, email)
 
-    # Cas 1: Utilisateur inexistant ou supprimé - Ne rien faire pour des raisons de sécurité
-    if not user or user.status == UserStatus.DELETED:
-        return True
-
-    # Cas 2: Utilisateur invité mais pas encore actif - Renvoyer l'email d'invitation
-    if user.status == UserStatus.INVITED:
-        invite_token = secrets.token_urlsafe(32)
-        user.invite_token = invite_token
-        user.invited_at = get_system_timezone_datetime()
-        db.commit()
-
-        with contextlib.suppress(Exception):
-            email_service.send_invitation(
-                email=email,
-                display_name=user.display_name,
-                token=invite_token,
-                board_uid=board_uid,
-            )
-        return True
-
-    # Cas 3: Utilisateur actif - Envoyer l'email de réinitialisation de mot de passe
-    if user.status == UserStatus.ACTIVE:
-        reset_token = secrets.token_urlsafe(32)
-        user.invite_token = (
-            reset_token  # Réutiliser le champ invite_token pour la réinitialisation
-        )
-        user.invited_at = get_system_timezone_datetime()
-        db.commit()
-
-        with contextlib.suppress(Exception):
-            email_service.send_password_reset(
-                email=email,
-                display_name=user.display_name,
-                token=reset_token,
-                board_uid=board_uid,
-            )
-        return True
-
-    # Sécurité: retourner True pour tous les autres cas
+    if user and user.status in (UserStatus.INVITED, UserStatus.ACTIVE):
+        # Demande en rafale (jeton tout juste émis) : ignorée silencieusement
+        issue_pending_token(db, user, board_uid, defer)
     return True
 
 
 def get_user_by_reset_token(db: Session, token: str) -> Optional[User]:
     """Récupérer un utilisateur par son token de réinitialisation (pour utilisateurs actifs)."""
-    return (
+    user = (
         db.query(User)
         .filter(
             and_(
@@ -312,11 +412,13 @@ def get_user_by_reset_token(db: Session, token: str) -> Optional[User]:
         )
         .first()
     )
+    return _unexpired_token_user(db, user)
 
 
 def get_user_by_any_token(db: Session, token: str) -> Optional[User]:
     """Récupérer un utilisateur par son token (invitation ou réinitialisation)."""
-    return db.query(User).filter(User.__table__.c.invite_token == token).first()
+    user = db.query(User).filter(User.__table__.c.invite_token == token).first()
+    return _unexpired_token_user(db, user)
 
 
 def delete_user(db: Session, user_id: int) -> bool:
@@ -428,9 +530,7 @@ def change_password(
         raise ValueError("Mot de passe actuel incorrect")
     if current_password == new_password:
         raise ValueError("Le nouveau mot de passe doit être différent de l'actuel")
-    user.password_hash = get_password_hash(new_password)
-    user.must_change_password = False
-    revoke_sessions(user)
+    set_user_password(user, new_password)
     try:
         db.commit()
         db.refresh(user)

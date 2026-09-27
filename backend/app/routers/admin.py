@@ -4,7 +4,7 @@ import hmac
 import logging
 import os
 
-from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 from sqlalchemy import create_engine
@@ -64,7 +64,9 @@ def verify_admin_api_key(
 
 @router.post("/boards", status_code=201)
 async def create_board(
-    request: CreateBoardRequest, authorized: bool = Depends(verify_admin_api_key)
+    request: CreateBoardRequest,
+    background_tasks: BackgroundTasks,
+    authorized: bool = Depends(verify_admin_api_key),
 ):
     """
     Create a new database for a board.
@@ -140,18 +142,31 @@ async def create_board(
                     # Initialize board settings
                     initialize_default_settings(db)
 
-                    # Send automatic invitation (this creates the admin user)
+                    # Send automatic invitation (this creates the admin user);
+                    # the email goes out after the response (no SMTP on the event loop)
                     invited_user = user_service.invite_user(
-                        db, admin_email, None, UserRole.ADMIN, board_uid
+                        db,
+                        admin_email,
+                        None,
+                        UserRole.ADMIN,
+                        board_uid,
+                        defer=background_tasks.add_task,
                     )
                     result["invitation_sent"] = str(True)
                     result["invited_email"] = admin_email
                     result["invitation_token"] = str(invited_user.invite_token)
 
-                    # Create demo board content (lists, labels, and initial configuration task) with the invited admin user
-                    create_demo_board_content(db, admin_user=invited_user)
-
-                    result["default_data_initialized"] = str(True)
+                    # Create demo board content (lists, labels, and initial configuration task) with the invited admin user.
+                    # The admin user is already committed and its email queued: a failure here
+                    # is reported separately, not as an invitation failure.
+                    try:
+                        create_demo_board_content(db, admin_user=invited_user)
+                        result["default_data_initialized"] = str(True)
+                    except Exception as e:
+                        db.rollback()
+                        result["default_data_warning"] = (
+                            f"Board created but default data failed: {str(e)}"
+                        )
 
                 except Exception as e:
                     db.rollback()

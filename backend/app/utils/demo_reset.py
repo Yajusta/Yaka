@@ -37,9 +37,10 @@ from app.services.user import (
     generate_initial_password,
     get_user_by_email,
     revoke_sessions,
+    set_user_password,
 )
 from app.utils.demo_mode import is_demo_mode
-from app.utils.security import get_password_hash, verify_password
+from app.utils.security import verify_password
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import Session
 
@@ -96,9 +97,7 @@ def secure_default_accounts(db_session) -> list[str]:
             # could supply it as the current one. Replace it with a random
             # password, shown only once in the logs.
             new_password = generate_initial_password()
-            user.password_hash = get_password_hash(new_password)
-            user.must_change_password = True
-            revoke_sessions(user)
+            set_user_password(user, new_password, must_change=True)
             changes.append(
                 f"{email} password reset to {new_password} "
                 "(must be changed at next login)"

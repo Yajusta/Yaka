@@ -185,7 +185,7 @@ class TestSendMail:
         send_mail(**sample_email_data)
 
         # Vérifier que la configuration par défaut est utilisée
-        mock_smtp["smtp_class"].assert_called_once_with("localhost", 587)
+        mock_smtp["smtp_class"].assert_called_once_with("localhost", 587, timeout=10)
         mock_smtp["smtp"].login.assert_not_called()  # Pas d'auth par défaut
 
     def test_send_mail_missing_plain_body(self, sample_email_data):
@@ -266,7 +266,9 @@ class TestSendMail:
             send_mail(**sample_email_data)
 
             # Vérifier que le port personnalisé est utilisé
-            mock_smtp["smtp_class"].assert_called_once_with("localhost", custom_port)
+            mock_smtp["smtp_class"].assert_called_once_with(
+                "localhost", custom_port, timeout=10
+            )
 
     def test_send_mail_host_configuration(self, mock_smtp, sample_email_data):
         """Test avec une configuration d'hôte personnalisée."""
@@ -275,7 +277,9 @@ class TestSendMail:
             send_mail(**sample_email_data)
 
             # Vérifier que l'hôte personnalisé est utilisé
-            mock_smtp["smtp_class"].assert_called_once_with(custom_host, 587)
+            mock_smtp["smtp_class"].assert_called_once_with(
+                custom_host, 587, timeout=10
+            )
 
 
 class TestSendInvitation:
