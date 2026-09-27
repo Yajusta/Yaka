@@ -480,7 +480,7 @@ class TestFormulaInjection:
                 if cell.value is not None:
                     assert cell.data_type == "s"
 
-        for row, payload in zip(rows, FORMULA_PAYLOADS):
+        for row, payload in zip(rows, FORMULA_PAYLOADS, strict=False):
             # Le XML normalise "\r" en "\n" à la relecture
             expected = ("'" + payload).replace("\r", "\n")
             assert row[0].value == "'+liste"

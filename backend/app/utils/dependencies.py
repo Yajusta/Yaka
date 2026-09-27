@@ -13,7 +13,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 # Code d'erreur (detail du 403) reconnu par l'intercepteur axios du frontend
 # (shared/services/api.tsx) pour afficher l'écran de changement de mot de passe.
-PASSWORD_CHANGE_REQUIRED = "password_change_required"
+PASSWORD_CHANGE_REQUIRED = "password_change_required"  # nosec B105
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,

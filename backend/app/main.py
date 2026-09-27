@@ -90,8 +90,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def ensure_database_exists():
     """Vérifie si la base de données existe et la crée si nécessaire."""
     try:
-        import os
-
         # Vérifier si le répertoire data existe
         db_path = "./data"
         if not os.path.exists(db_path):
@@ -234,8 +232,6 @@ def upgrade_if_needed(conn, text, db_url: str, db_name: str):
 
 def run_migrations():
     """Exécute les migrations Alembic pour toutes les bases de données .db du répertoire data."""
-    import os
-
     # Trouver tous les fichiers .db dans le répertoire data
     db_files = db_manager.list_database_paths()
 

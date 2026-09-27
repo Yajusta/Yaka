@@ -460,7 +460,7 @@ def generate_initial_password() -> str:
 # Variable d'environnement à l'origine de chaque champ de l'administrateur initial
 _ADMIN_ENV_VARS = {
     "email": "DEFAULT_ADMIN_EMAIL",
-    "password": "DEFAULT_ADMIN_PASSWORD",
+    "password": "DEFAULT_ADMIN_PASSWORD",  # nosec B105
     "display_name": "DEFAULT_ADMIN_DISPLAY_NAME",
     "language": "DEFAULT_LANGUAGE",
 }

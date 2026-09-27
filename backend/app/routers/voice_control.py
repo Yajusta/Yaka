@@ -106,11 +106,11 @@ def process_voice_transcript(
     # Fonction désactivée : 503 sans consommer le quota
     try:
         llm_service = LLMService()
-    except LLMNotConfiguredError:
+    except LLMNotConfiguredError as err:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Pilotage vocal non configuré",
-        )
+        ) from err
 
     consume_account_attempt(
         VOICE_CONTROL_SCOPE, str(current_user.id), VOICE_CONTROL_RATE_LIMITS
@@ -137,16 +137,16 @@ def process_voice_transcript(
             user_context=user_context,
             response_type=payload.response_type,
         )
-    except LLMBusyError:
+    except LLMBusyError as err:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Service vocal saturé, réessayez dans quelques instants",
-        )
-    except LLMProviderError:
+        ) from err
+    except LLMProviderError as err:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Le service d'analyse vocale est indisponible",
-        )
+        ) from err
 
     # Nettoyer l'objet de réponse
     response_data = json.loads(response_json)

@@ -37,7 +37,7 @@ RATE_LIMIT_MESSAGE = "Trop de tentatives, réessayez plus tard"
 
 # Portées des compteurs par compte
 LOGIN_SCOPE = "login"
-CHANGE_PASSWORD_SCOPE = "change-password"
+CHANGE_PASSWORD_SCOPE = "change-password"  # nosec B105
 VOICE_CONTROL_SCOPE = "voice-control"
 
 

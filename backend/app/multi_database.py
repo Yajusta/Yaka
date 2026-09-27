@@ -10,7 +10,7 @@ from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, Optional, TypeVar
 
-from sqlalchemy import create_engine
+from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 logger = logging.getLogger(__name__)
@@ -67,9 +67,15 @@ class MultiDatabaseManager:
 
             # mode=rw : une connexion ouverte après l'archivage du fichier
             # échoue au lieu de recréer une base vide à sa place.
-            # as_uri() encode les caractères réservés du chemin (#, ?, %)
+            # as_uri() encode les caractères réservés du chemin (#, ?, %) ;
+            # URL.create() le transmet tel quel (une URL texte serait décodée
+            # par SQLAlchemy >= 2.1, rendant au '#' son sens de fragment).
             engine = create_engine(
-                f"sqlite:///{Path(db_path).resolve().as_uri()}?mode=rw&uri=true",
+                URL.create(
+                    "sqlite",
+                    database=Path(db_path).resolve().as_uri(),
+                    query={"mode": "rw", "uri": "true"},
+                ),
                 connect_args={"check_same_thread": False, "timeout": 30},
                 pool_pre_ping=True,
                 pool_recycle=3600,

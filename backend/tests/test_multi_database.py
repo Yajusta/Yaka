@@ -15,13 +15,14 @@ from app.multi_database import (
     publish_board_database,
     set_current_board_uid,
 )
-from sqlalchemy import create_engine
+from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import sessionmaker
 
 
 def _create_board_db(db_path: str) -> None:
     """Create a board database file and release its file lock (Windows)."""
-    engine = create_engine(f"sqlite:///{db_path}")
+    # URL.create : un '%' du chemin ne doit pas être décodé (SQLAlchemy >= 2.1)
+    engine = create_engine(URL.create("sqlite", database=db_path))
     Base.metadata.create_all(bind=engine)
     engine.dispose()
 
