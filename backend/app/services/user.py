@@ -18,7 +18,11 @@ from ..models.helpers import get_system_timezone_datetime
 from ..schemas import UserCreate, UserUpdate
 from ..schemas.user import _validate_password_strength
 from ..utils.demo_mode import is_demo_mode
-from ..utils.security import get_password_hash, verify_password
+from ..utils.security import (
+    dummy_password_hash,
+    get_password_hash,
+    verify_password,
+)
 from . import email as email_service
 
 # Note: email_service requires SMTP_* env vars to be set for invitations to be sent
@@ -434,17 +438,16 @@ def delete_user(db: Session, user_id: int) -> bool:
 
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
-    """Authentifier un utilisateur."""
-    normalized_email = email.strip().lower()
-    if user := get_user_by_email(db, normalized_email):
-        return (
-            user
-            if user.status == UserStatus.ACTIVE
-            and verify_password(password, user.password_hash)
-            else None
-        )
-    else:
+    """Authentifier un utilisateur.
+
+    bcrypt s'exécute dans tous les cas (hash factice si le compte est inconnu ou
+    inactif) : le temps de réponse ne révèle pas l'existence du compte.
+    """
+    user = get_user_by_email(db, email.strip().lower())
+    if not user or user.status != UserStatus.ACTIVE or not user.password_hash:
+        verify_password(password, dummy_password_hash())
         return None
+    return user if verify_password(password, user.password_hash) else None
 
 
 def generate_initial_password() -> str:

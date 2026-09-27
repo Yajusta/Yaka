@@ -21,6 +21,9 @@ os.environ["JWT_SECRET"] = "test-jwt-secret-0123456789abcdef0123456789abcdef"
 # Known admin password for seeded test databases (otherwise a random one is
 # generated and a password change is required before any other call).
 os.environ["DEFAULT_ADMIN_PASSWORD"] = "Admin-Test1"
+# Rate limiting off by default (shared in-memory counters across tests);
+# dedicated tests enable it with the `rate_limit_enabled` fixture.
+os.environ["RATELIMIT_ENABLED"] = "false"
 
 from app.database import Base
 from app.models.user import UserRole
@@ -29,6 +32,7 @@ from app.schemas import KanbanListCreate, UserCreate
 from app.services.board_settings import initialize_default_settings
 from app.services.kanban_list import create_list as service_create_list
 from app.services.user import create_admin_user, create_user
+from app.utils.rate_limit import limiter
 
 
 @pytest.fixture(scope="session")
@@ -185,3 +189,15 @@ def disable_email_sending(monkeypatch):
     monkeypatch.setattr("app.services.user.email_service.send_mail", _noop)
     monkeypatch.setattr("app.services.user.email_service.send_invitation", _noop)
     monkeypatch.setattr("app.services.user.email_service.send_password_reset", _noop)
+
+
+@pytest.fixture
+def rate_limit_enabled():
+    """Enable rate limiting with fresh counters for the duration of a test."""
+    limiter.enabled = True
+    limiter.reset()
+    try:
+        yield limiter
+    finally:
+        limiter.reset()
+        limiter.enabled = False

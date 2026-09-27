@@ -19,6 +19,7 @@ import {
   resetUsersCache,
 } from "@shared/services/api.tsx";
 import { listsApi } from "@shared/services/listsApi.ts";
+import { getAuthErrorMessage } from "@shared/utils/authError.ts";
 import {
   getCurrentBoardInfo,
   saveBoardConfig,
@@ -181,7 +182,7 @@ const LoginForm = () => {
         navigate("/", { replace: true });
       }
     } catch (error: any) {
-      setError(error.response?.data?.detail || t("auth.loginError"));
+      setError(getAuthErrorMessage(error, t, "auth.loginError"));
     } finally {
       setLoading(false);
     }
@@ -199,9 +200,7 @@ const LoginForm = () => {
       await authService.requestPasswordReset(resetEmail);
       setResetSuccess(true);
     } catch (error: any) {
-      setResetError(
-        error.response?.data?.detail || t("auth.resetPasswordError"),
-      );
+      setResetError(getAuthErrorMessage(error, t, "auth.resetPasswordError"));
     } finally {
       setResetLoading(false);
     }

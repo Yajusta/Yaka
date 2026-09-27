@@ -105,8 +105,8 @@ class TestAuthRouter:
                 form_data = OAuth2PasswordRequestForm(
                     username="test@example.com", password="password123"
                 )
-                result = asyncio.run(
-                    login(form_data, mock_db.return_value.__enter__.return_value)
+                result = login(
+                    MagicMock(), form_data, mock_db.return_value.__enter__.return_value
                 )
 
                 assert "access_token" in result
@@ -128,8 +128,10 @@ class TestAuthRouter:
                 )
 
                 with pytest.raises(HTTPException) as exc_info:
-                    asyncio.run(
-                        login(form_data, mock_db.return_value.__enter__.return_value)
+                    login(
+                        MagicMock(),
+                        form_data,
+                        mock_db.return_value.__enter__.return_value,
                     )
 
                 assert exc_info.value.status_code == 401
@@ -168,10 +170,11 @@ class TestAuthRouter:
 
                 # Test the function directly
                 request_data = PasswordResetRequest(email="test@example.com")
-                result = asyncio.run(
-                    request_password_reset(
-                        request_data, mock_db.return_value.__enter__.return_value
-                    )
+                result = request_password_reset(
+                    MagicMock(),
+                    request_data,
+                    MagicMock(),
+                    mock_db.return_value.__enter__.return_value,
                 )
 
                 assert (
@@ -193,10 +196,11 @@ class TestAuthRouter:
 
                 # Test the function directly
                 request_data = PasswordResetRequest(email="nonexistent@example.com")
-                result = asyncio.run(
-                    request_password_reset(
-                        request_data, mock_db.return_value.__enter__.return_value
-                    )
+                result = request_password_reset(
+                    MagicMock(),
+                    request_data,
+                    MagicMock(),
+                    mock_db.return_value.__enter__.return_value,
                 )
 
                 # Le message est le même pour des raisons de sécurité

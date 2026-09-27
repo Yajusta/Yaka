@@ -9,6 +9,7 @@ import {
 } from "@shared/services/api";
 import { listsApi } from "@shared/services/listsApi";
 import { saveBoardConfig, getCurrentBoardInfo } from "@shared/utils/boardUtils";
+import { getAuthErrorMessage } from "@shared/utils/authError";
 import {
   AlertTriangle,
   Copy,
@@ -111,7 +112,7 @@ const LoginScreen = () => {
         navigate("/");
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || t("auth.loginError"));
+      setError(getAuthErrorMessage(err, t, "auth.loginError"));
     } finally {
       setLoading(false);
     }

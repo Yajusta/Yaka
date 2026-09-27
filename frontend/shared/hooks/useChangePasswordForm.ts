@@ -43,10 +43,13 @@ export const useChangePasswordForm = () => {
     } catch (err: any) {
       // Les messages du backend ne sont pas traduits : le seul 400 possible
       // ici est un mot de passe actuel incorrect (égalité, complexité et longueur sont vérifiées plus haut)
+      const status = err?.response?.status;
       setError(
-        err?.response?.status === 400
+        status === 400
           ? t("changePassword.wrongCurrentPassword")
-          : t("changePassword.error"),
+          : status === 429
+            ? t("auth.tooManyAttempts")
+            : t("changePassword.error"),
       );
     } finally {
       setLoading(false);

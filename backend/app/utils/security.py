@@ -1,6 +1,7 @@
 """Security utilities for authentication and authorisation."""
 
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -10,6 +11,7 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 
 from ..multi_database import get_effective_board_uid
+from ..schemas.user import BCRYPT_MAX_PASSWORD_BYTES
 
 load_dotenv()
 
@@ -64,6 +66,10 @@ class TokenData(BaseModel):
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against its hash."""
     password_byte_enc = plain_password.encode("utf-8")
+    # bcrypt (>= 5) raises ValueError beyond 72 bytes and no stored hash can
+    # match a longer password: reject it instead of failing with a 500
+    if len(password_byte_enc) > BCRYPT_MAX_PASSWORD_BYTES:
+        return False
     hashed_password_bytes = hashed_password.encode("utf-8")
     return bcrypt.checkpw(
         password=password_byte_enc, hashed_password=hashed_password_bytes
@@ -76,6 +82,21 @@ def get_password_hash(password: str) -> str:
     salt = bcrypt.gensalt()
     hashed_password = bcrypt.hashpw(password=pwd_bytes, salt=salt)
     return hashed_password.decode("utf-8")
+
+
+# Computed at import, before any request can arrive: a lazy (or cached but
+# not thread-safe) value would cost the first unknown-account logins a second
+# bcrypt, revealing that the account does not exist.
+_DUMMY_PASSWORD_HASH = get_password_hash(secrets.token_urlsafe(16))
+
+
+def dummy_password_hash() -> str:
+    """Hash of a random password.
+
+    Checked against when the account is unknown or inactive so that login takes
+    the same time whether or not the account exists.
+    """
+    return _DUMMY_PASSWORD_HASH
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
